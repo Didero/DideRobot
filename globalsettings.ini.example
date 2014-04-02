@@ -1,0 +1,14 @@
+[connection]
+port=6667
+nickname=DideRobot
+realname=DideRobot
+
+[scripts]
+keepChannelLogs=true
+keepPrivateLogs=true
+keepSystemLogs=true
+commandPrefix=!
+joinChannels=
+allowedChannels=
+admins=
+userIgnoreList=
