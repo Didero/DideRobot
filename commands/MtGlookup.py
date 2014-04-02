@@ -15,7 +15,7 @@ class Command(CommandTemplate):
 	isUpdating = False
 
 	def onStart(self):
-		self.updateCardFile(False)
+		GlobalStore.reactor.callInThread(self.updateCardFile)
 
 	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
 		starttime = time.time()
