@@ -293,7 +293,7 @@ class Command(CommandTemplate):
 				os.remove(versionFilename)
 			os.rename(newversionfilename, versionFilename)
 
-		if forceUpdate or latestVersion != currentVersion:
+		if forceUpdate or latestVersion != currentVersion or not os.path.exists(cardsJsonFilename):
 			updateNeeded = True
 
 		if updateNeeded:

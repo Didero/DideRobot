@@ -218,25 +218,3 @@ class DideRobotFactory(protocol.ClientFactory):
 		if user in self.admins or user.split('!', 1)[0] in self.admins:
 			return True
 		return False
-			
-
-if __name__ == "__main__":
-	GlobalStore.reactor = reactor
-	print "Launching bot!"
-	#Get the settings location and log target location from the command line
-	argparser = argparse.ArgumentParser()
-	argparser.add_argument("folder", help="Indicates the folder with the settings file and the place where logs will be stored")
-	args = argparser.parse_args()	
-
-	GlobalStore.serverfolder = os.path.join(GlobalStore.scriptfolder, "serverSettings", args.folder)
-	
-	#Start the bot, woo!
-	GlobalStore.settings = ConfigParser()
-	GlobalStore.apikeys = ConfigParser()
-	GlobalStore.settings.read([os.path.join(GlobalStore.scriptfolder, "globalsettings.ini"), os.path.join(GlobalStore.serverfolder, "settings.ini"), os.path.join(GlobalStore.scriptfolder, "apikeys.ini")])
-	server = GlobalStore.settings.get("connection", "server")
-	port = GlobalStore.settings.getint("connection", "port")
-	
-	botfactory = DideRobotFactory()
-	reactor.connectTCP(server, port, botfactory)
-	reactor.run()
