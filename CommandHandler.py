@@ -6,17 +6,17 @@ import GlobalStore
 
 class CommandHandler:
 	commands = {}
-	apikeys = None
+	apikeys = ConfigParser()
 	
 	def __init__(self):
 		self.loadApiKeys()
 
 
 	def loadApiKeys(self):
+		self.apikeys = ConfigParser()
 		if not os.path.exists('apikeys.ini'):
 			print "ERROR: API key file not found!"
 		else:
-			self.apikeys = ConfigParser()
 			self.apikeys.read("apikeys.ini")
 
 	def saveApiKeys(self):
