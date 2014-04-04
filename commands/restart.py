@@ -11,5 +11,5 @@ class Command(CommandTemplate):
 		if msgPartsLength > 1:
 			quitmessage = msgWithoutFirstWord
 		serverfolder = bot.factory.serverfolder
-		GlobalStore.bothandler.stopBotfactory(serverfolder, quitmessage)
+		GlobalStore.bothandler.stopBotfactory(serverfolder, quitmessage, True)
 		GlobalStore.reactor.callLater(5.0, GlobalStore.bothandler.startBotfactory, serverfolder)

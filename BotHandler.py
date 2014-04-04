@@ -1,4 +1,4 @@
-﻿import argparse, os, sys
+﻿import os, sys
 
 from twisted.internet import reactor
 
@@ -36,12 +36,12 @@ class BotHandler:
 		self.botfactories[serverfolder] = botfactory
 		return True
 
-	def stopBotfactory(self, serverfolder, quitmessage="Quitting..."):
+	def stopBotfactory(self, serverfolder, quitmessage="Quitting...", isRestarting=False):
 		if serverfolder not in self.botfactories:
 			print "ERROR: Asked to stop an unknown botfactory '{}'!".format(serverfolder)
 		else:
 			self.botfactories[serverfolder].bot.quit(quitmessage)
-			self.unregisterFactory(serverfolder)
+			self.unregisterFactory(serverfolder, isRestarting)
 
 	def shutdown(self, quitmessage='Shutting down...'):
 		for serverfolder, botfactory in self.botfactories.iteritems():
@@ -51,22 +51,20 @@ class BotHandler:
 		GlobalStore.reactor.callLater(2.0, GlobalStore.reactor.stop)
 
 
-	def unregisterFactory(self, serverfolder):
+	def unregisterFactory(self, serverfolder, isRestarting=False):
 		if serverfolder in self.botfactories:
 			del self.botfactories[serverfolder]
 			#If there's no more bots running, there's no need to hang about
 			if len(self.botfactories) == 0:
-				print "Out of bots, shutting down!"
-				GlobalStore.reactor.callLater(2.0, GlobalStore.reactor.stop)
+				if isRestarting:
+					print "Last bot unregistered, not shutting down because restart expected"
+				else:
+					print "Out of bots, shutting down!"
+					GlobalStore.reactor.callLater(2.0, GlobalStore.reactor.stop)
 
 if __name__ == "__main__":
 	GlobalStore.reactor = reactor
 	#Get the settings location and log target location from the command line
-	'''
-	argparser = argparse.ArgumentParser()
-	argparser.add_argument("folders", help="Indicates the folder(s) with the settings file and the place where logs will be stored. If providing multipe servers, separate with comma")
-	args = argparser.parse_args()	
-	'''
 	serverfolderList = sys.argv[1].split(',')
 	print "First argument: '{}'; Server folder list: '{}'".format(sys.argv[1], serverfolderList)
 	bothandler = BotHandler(serverfolderList)
