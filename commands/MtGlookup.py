@@ -41,7 +41,7 @@ class Command(CommandTemplate):
 			bot.say(target, replytext)
 			return
 		#Check if the data file even exists
-		elif not os.path.exists('MTGcards.json'):
+		elif not os.path.exists(os.path.join('data', 'MTGcards.json')):
 			replytext = u""
 			if self.isUpdating:
 				replytext = u"I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
@@ -52,7 +52,7 @@ class Command(CommandTemplate):
 			return
 		
 		#All entered data is valid, look through the stored cards
-		with open('MTGcards.json') as jsonfile:
+		with open(os.path.join('data', 'MTGcards.json')) as jsonfile:
 			cardStore = json.load(jsonfile)
 
 		searchDict = {}
@@ -249,10 +249,10 @@ class Command(CommandTemplate):
 		starttime = time.time()
 		self.isUpdating = True
 		replytext = u""
-		cardsJsonFilename = 'MTGcards.json'
+		cardsJsonFilename = os.path.join('data', 'MTGcards.json')
 		updateNeeded = False
 		
-		versionFilename = 'MTGversion-full.json'
+		versionFilename = os.path.join('data', 'MTGversion-full.json')
 		currentVersion = "0.00"
 		latestVersion = ""			
 		#Load in the currently stored version number
@@ -271,7 +271,7 @@ class Command(CommandTemplate):
 
 		#Download the latest version file
 		url = "http://mtgjson.com/json/version-full.json"
-		newversionfilename = url.split('/')[-1]
+		newversionfilename = os.path.join('data', url.split('/')[-1])
 		urllib.urlretrieve(url, newversionfilename)
 		urllib.urlcleanup()
 
@@ -299,8 +299,8 @@ class Command(CommandTemplate):
 		if updateNeeded:
 			print "[MtG] Updating card database!"
 			url = "http://mtgjson.com/json/AllSets.json.zip"
-			cardzipFilename = url.split('/')[-1]
-			urllib.urlretrieve(url, cardzipFilename)#, reportDownloadProgress)
+			cardzipFilename = os.path.join('data', url.split('/')[-1])
+			urllib.urlretrieve(url, cardzipFilename)
 
 			#Since it's a zip, extract it
 			zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
@@ -318,7 +318,7 @@ class Command(CommandTemplate):
 			#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
 			newcards = {}
 			with open(newcardfilename, 'r') as newcardfile:
-				newcards = json.load(newcardfile)#, parse_float=None, parse_int=None)
+				newcards = json.load(newcardfile)
 			print "Going through cards"
 			for setcode, set in newcards.iteritems():
 				for card in set['cards']:

@@ -12,13 +12,16 @@ class BotHandler:
 	def __init__(self, serverfolderList):
 		GlobalStore.bothandler = self
 		GlobalStore.scriptfolder = os.path.dirname(__file__)
-		
-		for serverfolder in serverfolderList:
-			self.startBotfactory(serverfolder)
 
-		GlobalStore.commandhandler = CommandHandler()
-		GlobalStore.commandhandler.loadCommands()
-		GlobalStore.reactor.run()
+		if not os.path.exists(os.path.join('serverSettings', 'globalsettings.ini')):
+			print "ERROR: 'globalsettings.ini' file not found in 'serverSettings' folder! Shutting down"
+		else:		
+			for serverfolder in serverfolderList:
+				self.startBotfactory(serverfolder)
+
+			GlobalStore.commandhandler = CommandHandler()
+			GlobalStore.commandhandler.loadCommands()
+			GlobalStore.reactor.run()
 
 	def startBotfactory(self, serverfolder):
 		if serverfolder in self.botfactories:

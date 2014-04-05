@@ -5,7 +5,7 @@ import requests
 
 import GlobalStore
 
-twitterFolder = 'TwitterData'
+twitterFolder = 'data'
 twitterInfoFilename = os.path.join(twitterFolder, 'TwitterInfo.dat')
 
 if not os.path.exists(twitterFolder):

@@ -36,10 +36,9 @@ _ReSharper*/
 *.pyc
 
 #Project-specific files to ignore
-apikeys.ini
-globalsettings.ini
-serverSettings/
-TwitterData/
+serverSettings/**
+data/**
 ToDo.txt
-MTGcards.json
-MTGversion-full.json
+
+#The example settings file should be in the repo
+!serverSettings/globalsettings.ini.example

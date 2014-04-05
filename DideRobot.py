@@ -199,9 +199,8 @@ class DideRobotFactory(protocol.ClientFactory):
 		
 	def updateSettings(self, updateLogger=True):
 		self.settings = ConfigParser()
-		print "Loading settings from '{}'".format(os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, "settings.ini"))
-		self.settings.read(["globalsettings.ini", os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, "settings.ini")])
-		#Put some commonly-used settings directly in the dict, for easy access
+		self.settings.read([os.path.join('serverSettings', "globalsettings.ini"), os.path.join('serverSettings', self.serverfolder, "settings.ini")])
+		#Put some commonly-used settings in variables, for easy access
 		self.commandPrefix = self.settings.get("scripts", "commandPrefix")
 		self.commandPrefixLength = len(self.commandPrefix)
 		self.userIgnoreList = self.settings.get("scripts", "userIgnoreList").split(',')

@@ -14,13 +14,13 @@ class CommandHandler:
 
 	def loadApiKeys(self):
 		self.apikeys = ConfigParser()
-		if not os.path.exists('apikeys.ini'):
+		if not os.path.exists(os.path.join('data', 'apikeys.ini')):
 			print "ERROR: API key file not found!"
 		else:
-			self.apikeys.read("apikeys.ini")
+			self.apikeys.read(os.path.join('data', 'apikeys.ini'))
 
 	def saveApiKeys(self):
-		with open('apikeys.ini', 'w') as apifile:
+		with open(os.path.join('data', 'apikeys.ini'), 'w') as apifile:
 			self.apikeys.write(apifile)
 
 	
