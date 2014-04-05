@@ -5,7 +5,7 @@ import requests
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
-import TwitterFunctions
+import SharedFunctions
 
 class Command(CommandTemplate):
 	triggers = ['startrektip', 'sttip', 'startrektips']
@@ -24,7 +24,7 @@ class Command(CommandTemplate):
 
 		replytext = ""
 		if name in self.twitterUsernames:
-			replytext = TwitterFunctions.getRandomLine(self.twitterUsernames[name])
+			replytext = SharedFunctions.getRandomLineFromTwitterFile(self.twitterUsernames[name])
 			if not replytext.lower().startswith(name):
 				replytext = u"{} tip: {}".format(name[0:1].upper() + name[1:], replytext)
 		else:
@@ -43,6 +43,6 @@ class Command(CommandTemplate):
 	def updateTwitterMessages(self):
 		self.isUpdating = True
 		for name, username in self.twitterUsernames.iteritems():
-			print "Updating stored twitter messages for '{}'".format(username)
-			TwitterFunctions.downloadNewTweets(username)
+			#print "Updating stored twitter messages for '{}'".format(username)
+			SharedFunctions.downloadNewTweets(username)
 		self.isUpdating = False
