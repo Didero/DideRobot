@@ -9,7 +9,7 @@ from CommandTemplate import CommandTemplate
 class Command(CommandTemplate):
 	triggers = ['humble', 'humblebundle']
 	helptext = "Displays information about the latest Humble Bundle. Add the 'weekly' parameter to get info on their Weekly sale"
-	#callInThread = True
+	callInThread = True
 
 	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
 		replytext = u""
