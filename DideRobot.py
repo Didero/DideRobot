@@ -3,18 +3,14 @@
 # https://github.com/MatthewCox/PyMoronBot
 
 import os, time
-import argparse
 from ConfigParser import ConfigParser
 
-from twisted.internet import protocol#, reactor
-from twisted.python import log
-from twisted.python.logfile import DailyLogFile
+from twisted.internet import protocol
 from twisted.words.protocols import irc
 
-import Logger
 import GlobalStore
-from CommandHandler import CommandHandler
-#import TwitterFunctions
+import Logger
+
 
 class DideRobot(irc.IRCClient):
 	channelsUserList = {}
@@ -42,7 +38,9 @@ class DideRobot(irc.IRCClient):
 		if self.nickname != self.factory.nickname:
 			self.factory.logger.log("Nickname wasn't available, using nick '{0}'".format(self.nickname))
 		#Join channels
-		if self.factory.settings.has_option('connection', 'joinChannels'):
+		if not self.factory.settings.has_option('connection', 'joinChannels'):
+			print "|{}| No join channels specified, idling".format(self.factory.serverfolder)
+		else:
 			joinChannels = self.factory.settings.get("connection", "joinChannels")
 			if len(joinChannels) > 0:
 				for channel in joinChannels.split(","):
@@ -55,7 +53,6 @@ class DideRobot(irc.IRCClient):
 		#Keep track of the channels we're in
 		if prefix.split("!", 1)[0] == self.nickname:
 			if params[0] not in self.channelsUserList:
-				#self.channelsUserList[params[0]] = [prefix]
 				self.retrieveChannelUsers(params[0])
 		#If we don't know this user yet, add it to our list
 		elif prefix not in self.channelsUserList[params[0]]:
@@ -75,6 +72,7 @@ class DideRobot(irc.IRCClient):
 	def irc_QUIT(self, prefix, params):
 		"""Called when a user quits"""
 		#'prefix' is the user address, 'params' is a single-item list with the quit messages
+		#log for every channel the user was in that they quit
 		for channel, userlist in self.channelsUserList.iteritems():
 			if prefix in userlist:
 				self.factory.logger.log("User {} quit: {}".format(prefix, params[0]), channel)
@@ -88,6 +86,8 @@ class DideRobot(irc.IRCClient):
 		if params[1].split("!", 1)[0] == self.nickname:
 			if params[0] in self.channelsUserList:
 				self.channelsUserList.pop(params[0])
+				#If we were kicked, rejoin
+				self.join(params[0])
 		elif params[1] in self.channelsUserList[params[0]]:
 				self.channelsUserList[params[0]].remove(params[1])
 
@@ -99,7 +99,7 @@ class DideRobot(irc.IRCClient):
 	def irc_RPL_WHOREPLY(self, prefix, params):
 		#'prefix' is the server, 'params' is a list, with meaning [own_nick, channel, other_username, other_address, other_server, other_nick, flags, hops realname]
 		# Flags can be H for active or G for away, and a * for oper, + for voiced
-		print "WHOREPLY on '{}'. Prefix: '{}'. Params: '{}'".format(self.factory.serverfolder, prefix, params)
+		#print "WHOREPLY on '{}'. Prefix: '{}'. Params: '{}'".format(self.factory.serverfolder, prefix, params)
 		if params[1] not in self.channelsUserList:
 			self.channelsUserList[params[1]] = []
 		#print "[{}] adding user {} to userlist".format(self.factory.serverfolder, params[5])
@@ -177,14 +177,15 @@ class DideRobotFactory(protocol.ClientFactory):
 	def __init__(self, serverfolder):
 		print "New botfactory for server '{}' started".format(serverfolder)
 		self.serverfolder = serverfolder
-		self.updateSettings(False)
-		self.logger = Logger.Logger(self)
-		#self.logger.updateLogSettings() #already done in logger__init__()
+		if not self.updateSettings(False):
+			print "ERROR while loading settings for bot '{}', aborting launch!".format(self.serverfolder)
+		else:
+			self.logger = Logger.Logger(self)
 		
-		self.nickname = self.settings.get("connection", "nickname")
-		self.realname = self.settings.get("connection", "realname")
+			self.nickname = self.settings.get("connection", "nickname")
+			self.realname = self.settings.get("connection", "realname")
 
-		GlobalStore.reactor.connectTCP(self.settings.get("connection", "server"), self.settings.getint("connection", "port"), self)
+			GlobalStore.reactor.connectTCP(self.settings.get("connection", "server"), self.settings.getint("connection", "port"), self)
 				
 		
 	def buildProtocol(self, addr):
@@ -199,19 +200,41 @@ class DideRobotFactory(protocol.ClientFactory):
 		
 	def updateSettings(self, updateLogger=True):
 		self.settings = ConfigParser()
+		if not os.path.exists(os.path.join("serverSettings", "globalsettings.ini")):
+			print "ERROR: globalsettings.ini not found!"
+			return False
+		if not os.path.exists(os.path.join("serverSettings", self.serverfolder, "settings.ini")):
+			print "ERROR: no settings.ini file in '{}' server folder!".format(self.serverfolder)
+			return False
+
 		self.settings.read([os.path.join('serverSettings', "globalsettings.ini"), os.path.join('serverSettings', self.serverfolder, "settings.ini")])
+		#First make sure the required settings are in there
+		settingsToEnsure = {"connection": ["server", "port", "nickname", "realname"], "scripts": ["commandPrefix", "admins", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs"]}
+		for section, optionlist in settingsToEnsure.iteritems():
+			if not self.settings.has_section(section):
+				print "ERROR: Required section '{}' not found in settings.ini file for server '{}'".format(section, self.serverfolder)
+				return False
+			for optionToEnsure in optionlist:
+				if not self.settings.has_option(section, optionToEnsure):
+					print "ERROR: Required option '{}' not found in section '{}' of settings.ini file for server '{}'".format(optionToEnsure, section, self.serverfolder)
+					return False
+
+		#If we reached this far, then all required options have to be in there
 		#Put some commonly-used settings in variables, for easy access
 		self.commandPrefix = self.settings.get("scripts", "commandPrefix")
 		self.commandPrefixLength = len(self.commandPrefix)
-		self.userIgnoreList = self.settings.get("scripts", "userIgnoreList").split(',')
 		self.admins = self.settings.get('scripts', 'admins').split(',')
+
+		if self.settings.has_option('scripts', 'userIgnoreList'):
+			self.userIgnoreList = self.settings.get("scripts", "userIgnoreList").split(',')
 		if self.settings.has_option('scripts', 'commandWhitelist'):
 			self.commandWhitelist = self.settings.get('scripts', 'commandWhitelist').split(',')
 		elif self.settings.has_option('scripts', 'commandBlacklist'):
 			self.commandBlacklist = self.settings.get('scripts', 'commandBlacklist').split(',')
 
-		if updateLogger == True:
+		if updateLogger:
 			self.logger.updateLogSettings()
+		return True
 
 	def isUserAdmin(self, user):
 		if user in self.admins or user.split('!', 1)[0] in self.admins:
