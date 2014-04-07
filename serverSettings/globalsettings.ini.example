@@ -1,4 +1,5 @@
 [connection]
+server=
 port=6667
 nickname=DideRobot
 realname=DideRobot
