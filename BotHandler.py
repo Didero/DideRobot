@@ -1,4 +1,5 @@
-﻿import os, sys
+﻿import os, site, sys
+site.addsitedir('libraries')
 
 from twisted.internet import reactor
 
