@@ -163,3 +163,18 @@ def parseIsoDate(isoString, formatstring=""):
 		return formatstring.format(**durations)
 	else:
 		return durations
+
+def durationSecondsToText(durationInSeconds):
+	minutes, seconds = divmod(durationInSeconds, 60)
+	hours, minutes = divmod(minutes, 60)
+	days, hours = divmod(hours, 24)
+
+	replytext = u""
+	if days > 0:
+		replytext += u"{:,.0f} days, ".format(days)
+	if hours > 0:
+		replytext += u"{:,.0f} hours, ".format(hours)
+	if minutes > 0:
+		replytext += u"{:,.0f} minutes, ".format(minutes)
+	replytext += u"{:,.0f} seconds".format(seconds)
+	return replytext
