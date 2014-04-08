@@ -1,6 +1,7 @@
 import datetime, time
 
 from CommandTemplate import CommandTemplate
+import SharedFunctions
 
 class Command(CommandTemplate):
 	triggers = ['uptime']
@@ -9,18 +10,7 @@ class Command(CommandTemplate):
 	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
 
 		uptime = round(time.time() - bot.connectedAt)
-		minutes, seconds = divmod(uptime, 60)
-		hours, minutes = divmod(minutes, 60)
-		days, hours = divmod(hours, 24)
-
-		replytext = u"I have been running for "
-		if days > 0:
-			replytext += u"{:,.0f} days, ".format(days)
-		if hours > 0:
-			replytext += u"{:,.0f} hours, ".format(hours)
-		if minutes > 0:
-			replytext += u"{:,.0f} minutes, ".format(minutes)
-		replytext += u"{:,.0f} seconds".format(seconds)
+		replytext = u"I have been running for {}".format(SharedFunctions.durationSecondsToText(uptime))
 
 		bot.say(target, replytext)
 
