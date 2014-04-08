@@ -24,7 +24,6 @@ class Command(CommandTemplate):
 			xmltext = apireturn.text
 			xmltext = xmltext.replace(r'\:', r'\u') #weird WolframAlpha way of writing Unicode
 			#Replace '\u0440' and the like with the actual character (first encode with latin-1 and not utf-8, otherwise pound signs and stuff mess up with a weird accented A in front)
-			#xmltext = unicode(xmltext.encode('latin-1'), encoding="unicode-escape")
 			try:
 				xmltext = unicode(xmltext.encode('latin-1'), encoding='unicode-escape')
 			except Exception as e:
@@ -51,13 +50,8 @@ class Command(CommandTemplate):
 					if len(suggestions) > 0:
 						print "Number of suggestions found: {}".format(len(suggestions))
 						replystring += u". Did you perhaps mean: {}".format(", ".join(suggestions))
-
-
 			else:
 				pods = xml.findall('pod')
-				#Show the search string WA actually used
-				#replystring += u"{}: ".format(pods[0].find('subpod').find('plaintext').text)
-
 				resultFound = False
 				for pod in pods[1:]:
 					if pod.attrib['title'] == "Input":
@@ -65,9 +59,14 @@ class Command(CommandTemplate):
 					#print u"Pod '{}'".format(pod.attrib['title'])
 					for subpod in pod.findall('subpod'):
 						text = subpod.find('plaintext').text
-						if text == None or len(text) == 0:
+						if text == None:
 							continue
-						replystring += text.replace('\n', ' ')
+						text = text.replace('\n', ' ').strip()
+						#If there's no text in this pod (for instance if it's just an image)
+						#  or if the result is useless (searching for '3 usd' for instance returns coin weight first, starts with an opening bracket), skip it
+						if len(text) == 0 or text.startswith('('):
+							continue
+						replystring += text
 						resultFound = True
 						break
 					if resultFound:
@@ -82,8 +81,3 @@ class Command(CommandTemplate):
 				replystring += u" (http://www.wolframalpha.com/input/?i={})".format(searchstring.replace(" ", "+"))
 			
 		bot.say(target, replystring)
-
-
-
-
-
