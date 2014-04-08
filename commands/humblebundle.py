@@ -1,10 +1,10 @@
-import json, re
+import json, re, time
 
-from twisted.words.protocols.irc import assembleFormattedText, attributes as attr
 import requests
 from bs4 import BeautifulSoup
 
 from CommandTemplate import CommandTemplate
+import SharedFunctions
 
 class Command(CommandTemplate):
 	triggers = ['humble', 'humblebundle']
@@ -76,6 +76,7 @@ class Command(CommandTemplate):
 		totalMoney = -1.0
 		contributors = -1
 		avgPrice = -1.0
+		timeLeft = u""
 		for scriptElement in page.find_all('script'):
 			script = scriptElement.text
 			if script.count("'initial_stats_data':") > 0:
@@ -85,13 +86,9 @@ class Command(CommandTemplate):
 					print "Expected to find initial values, but failed!"
 					print script
 				else:
-					#print "matches found: {}".format(len(match.groups()))
 					data = json.loads(match.group(1))
-					#print data
 					if 'rawtotal' in data:
 						totalMoney = data['rawtotal']
-						#print "Total: '{0}'; formatted: '{1:,}'".format(data['rawtotal'], round(data['rawtotal'], 2))
-						#print "Type of 'total': {}".format(type(data['rawtotal']))
 					else:
 						print "Sales data found, but total amount is missing!"
 						print data
@@ -104,15 +101,21 @@ class Command(CommandTemplate):
 					if totalMoney > -1.0 and contributors > -1:
 						avgPrice = totalMoney / contributors
 
+					timeLeftMatch = re.search('var timing = \{"end": (\d+)\};', script)
+					if timeLeftMatch:
+						timeLeft = SharedFunctions.durationSecondsToText(int(timeLeftMatch.group(1)) - time.time())
+
 					break
 
 		if totalMoney == -1.0 or contributors == -1 or avgPrice == -1.0:
 			replytext = "Sorry, the data could not be retrieved. This is either because the site is down, or because of some weird bug. Please try again in a little while"
 		else:
 			replytext = u"{title} has an average price of ${avgPrice:.2f} and raised ${totalMoney:,} from {contributors:,} people."
+			if timeLeft != u"":
+				replytext += u" It will end in {timeLeft}."
 			#If we didn't find any games, pretend like nothing's wrong
 			if len(gamenames) > 0:
 				replytext += u" It contains {gamelist}"
-			replytext = replytext.format(title=title, avgPrice=round(avgPrice, 2), totalMoney=round(totalMoney, 2), contributors=contributors, gamelist="; ".join(gamenames))
+			replytext = replytext.format(title=title, avgPrice=round(avgPrice, 2), totalMoney=round(totalMoney, 2), contributors=contributors, timeLeft=timeLeft, gamelist="; ".join(gamenames))
 
 		bot.say(target, replytext)
