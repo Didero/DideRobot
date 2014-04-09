@@ -6,15 +6,18 @@ import re
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
+import SharedFunctions
 
 class Command(CommandTemplate):
 	triggers = ['mtg', 'mtgf']
 	helptext = "Looks up info on 'Magic The Gathering' cards. Provide a card name or a regex match to search for. Or search for 'random', and see what comes up. "
 	helptext += "With the parameter 'search', you can enter JSON-style data to search for other attributes, see http://mtgjson.com/ for what's available. {commandPrefix}mtgf adds the flavor text to the result"
+	scheduledFunctionTime = 172800.0 #Every other day, since it doesn't update too often
 
 	isUpdating = False
 
-	def onStart(self):
+
+	def executeScheduledFunction(self):
 		GlobalStore.reactor.callInThread(self.updateCardFile)
 
 	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
@@ -50,10 +53,7 @@ class Command(CommandTemplate):
 				GlobalStore.reactor.callInThread(self.updateCardFile, True)
 			bot.say(target, replytext)
 			return
-		
-		#All entered data is valid, look through the stored cards
-		with open(os.path.join('data', 'MTGcards.json')) as jsonfile:
-			cardStore = json.load(jsonfile)
+		#If we reached here, we're gonna search through the card store
 
 		searchDict = {}
 		if searchType == 'search' or (searchType == 'random' and msgPartsLength > 2) or (searchType == 'randomcommander' and msgPartsLength > 2):
@@ -61,7 +61,6 @@ class Command(CommandTemplate):
 			if msgPartsLength <= 2:
 				bot.say(target, 'Please provide an advanced search query too, in JSON format, so "key1: value1, key2:value2". Look at www.mtgjson.com for available fields')
 				return
-
 
 			searchterm = " ".join(msgParts[2:])
 			if searchterm.startswith('{'):
@@ -75,7 +74,6 @@ class Command(CommandTemplate):
 				#Add a quotation mark at the start and end of the sentence, and before and after each : and ,
 				searchterm = '"' + re.sub('((?P<char>:|,) *)', '"\g<char>"', searchterm) + '"'
 			searchterm = '{' + searchterm + '}'
-
 
 			#Prevent quote errors, because JSON requires " instead of '
 			searchterm = searchterm.replace("'", '"')
@@ -117,50 +115,51 @@ class Command(CommandTemplate):
 			replytext = u"(Error(s) occured with attributes: {}) ".format(", ".join(errors))
 			print "[MtG] " + replytext
 		regexAttribCount = len(regexDict)
+		print "Parsed search terms at {} seconds in".format(time.time() - starttime)
 
+		#All entered data is valid, look through the stored cards
+		with open(os.path.join('data', 'MTGcards.json')) as jsonfile:
+			cardstore = json.load(jsonfile)
+		print "Opened file at {} seconds in".format(time.time() - starttime)
+		
 		#The actual search!
+		cardNamesToSearchThrough = []
+		if 'name' in regexDict:
+			#If the name is literally there, use that
+			if regexDict['name'] in cardstore:
+				cardNamesToSearchThrough = [regexDict['name']]
+			#Otherwise, try to find a match
+			else:
+				for cardname in cardstore.keys():
+					if regexDict['name'].search(cardname):
+						cardNamesToSearchThrough.append(cardname)
+			#Remove the 'name' element from the regex dict to save on search time later
+			regexDict.pop('name')
+			regexAttribCount = len(regexDict)
+		else:
+			cardNamesToSearchThrough = cardstore.keys()
+		print "Determined that we have to search through {} cards at {} seconds in".format(len(cardNamesToSearchThrough), time.time() - starttime)
+
 		matchingCards = {}
-		for setcode, set in cardStore.iteritems():
-			#If we're searching for a specific set, and this one isn't it, no need to go over the cards
-			if 'set' in regexDict and regexDict['set'].search(set['name']) is None:
-				continue
-			for card in set['cards']:
-				regexMatchesFound = 0
-				#If we didn't get a 'set' match, we wouldn't even be here, so if we did, assume it IS a match
-				if 'set' in regexDict:
-					regexMatchesFound += 1
-				for attrib, regex in regexDict.iteritems():
-					if attrib in card and regex.search(card[attrib]) is not None:
-						regexMatchesFound += 1
-				if regexMatchesFound == regexAttribCount:
-					card['set'] = set['name']
-					#If we haven't found any other cards with the same name, store it
-					if card['name'] not in matchingCards:
-						matchingCards[card['name']] = [card]
-					#If we have found a similarly named card, check if the cards are exactly the same
-					else:
-						addCard = True
-						for sameNamedCard in matchingCards[card['name']]:
-							if sameNamedCard['text'] == card['text']:
-								addCard = False
-								break
-						if addCard:
-							matchingCards[card['name']].append(card)
-		#print "Cards: {}".format(matchingCards)
+		#Check to see if we need to make any other checks
+		if regexAttribCount > 1 or 'name' not in regexDict:
+			for cardname in cardNamesToSearchThrough:
+				for card in cardstore[cardname]:
+					matchingAttribsFound = 0
+					for attrib, regex in regexDict.iteritems():
+						if attrib in card and regex.search(card[attrib]):
+							matchingAttribsFound += 1
+					#Only store the card if all provided attributes match
+					if matchingAttribsFound == regexAttribCount:
+						if cardname not in matchingCards:
+							matchingCards[cardname] = [card]
+						else:
+							matchingCards[cardname].append(card)
+
+		print "Searched through cards at {} seconds in".format(time.time() - starttime)
 
 		cardnamesFound = len(matchingCards)
 		if cardnamesFound > 0:
-			#Sometimes searches for a literal title return multiple cards that only contain part of the search. (Try searching for 'jund', for instance). Fix that
-			if 'name' in regexDict and regexAttribCount == 1:
-				newMatchingCards = {}
-				#print "Checking to see if we have a literal title match for '{}'".format(regexDict['name'].pattern)
-				for matchingCardname in matchingCards.keys():
-					if regexDict['name'].pattern == matchingCardname.lower():
-						#print "Literal match found, making that the singular matching card"
-						newMatchingCards[matchingCardname] = matchingCards[matchingCardname]
-				if len(newMatchingCards) > 0:
-					matchingCards = newMatchingCards
-
 			#If the user wants a random card, pick one from the matches
 			if searchType == 'random' or searchType == 'randomcommander':
 				allcards = []
@@ -171,6 +170,7 @@ class Command(CommandTemplate):
 				matchingCards[randomCard['name']] = [randomCard]
 			cardnamesFound = len(matchingCards)
 
+		print "Cleaned up found cards at {} seconds in, {} found cards left".format(time.time() - starttime, cardnamesFound)
 		#Determine the proper response
 		if cardnamesFound == 0:
 			replytext += u"Sorry, no card matching your query was found"
@@ -217,14 +217,10 @@ class Command(CommandTemplate):
 		if 'layout' in card and card['layout'] != 'normal':
 			replytext += u" (Layout is '{card[layout]}'"
 			if 'names' in card:
-				#print "Initial 'names' value: '{}'".format(card['names'])
 				names = card['names'].split(', ')
-				#print "After split: '{}'".format(names)
 				if card['name'] in names:
 					names.remove(card['name'])
-				#print "Removed own name: '{}'".format(names)
 				names = ', '.join(names)
-				print "rejoined: '{}'".format(names)
 				replytext += u", also contains {names}".format(names=names)
 			replytext += u")"
 		replytext += u"."
@@ -267,7 +263,7 @@ class Command(CommandTemplate):
 					print "[MtG] Unexpected content of stored version file:"
 					for key, value in oldversiondata.iteritems():
 						print "  {}: {}".format(key, value)
-		print "[MtG] Local version: '{}'".format(currentVersion)
+		#print "[MtG] Local version: '{}'".format(currentVersion)
 
 		#Download the latest version file
 		url = "http://mtgjson.com/json/version-full.json"
@@ -284,7 +280,7 @@ class Command(CommandTemplate):
 				print "[MtG] Unexpected contents of downloaded version file:"
 				for key, value in versiondata.iteritems():
 					print " {}: {}".format(key, value)
-		print "[MtG] Latest version: '{}'".format(latestVersion)
+		#print "[MtG] Latest version: '{}'".format(latestVersion)
 		if latestVersion == "":
 			replytext =  u"Something went wrong, the latest MtG database version number could not be retrieved"
 		else:
@@ -298,16 +294,16 @@ class Command(CommandTemplate):
 
 		if updateNeeded:
 			print "[MtG] Updating card database!"
-			url = "http://mtgjson.com/json/AllSets.json.zip"
+			url = "http://mtgjson.com/json/AllSets-x.json.zip"
 			cardzipFilename = os.path.join('data', url.split('/')[-1])
 			urllib.urlretrieve(url, cardzipFilename)
 
 			#Since it's a zip, extract it
 			zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
-			newcardfilename = zipWithJson.namelist()[0]
+			newcardfilename = os.path.join('data', zipWithJson.namelist()[0])
 			if os.path.exists(newcardfilename):
 				os.remove(newcardfilename)
-			zipWithJson.extractall()
+			zipWithJson.extractall('data')
 			zipWithJson.close()
 			#We don't need the zip anymore
 			os.remove(cardzipFilename)
@@ -316,55 +312,76 @@ class Command(CommandTemplate):
 				os.remove(cardsJsonFilename)
 
 			#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
-			newcards = {}
+			downloadedCardstore = {}
 			with open(newcardfilename, 'r') as newcardfile:
-				newcards = json.load(newcardfile)
+				downloadedCardstore = json.load(newcardfile)
+			newcardstore = {}
 			print "Going through cards"
-			for setcode, set in newcards.iteritems():
+			for setcode, set in downloadedCardstore.iteritems():
 				for card in set['cards']:
-					cardname = card['name'].encode('utf-8')
+					cardname = card['name'].encode('utf-8').lower()
+					addCard = True
+					if cardname not in newcardstore:
+						newcardstore[cardname] = []
+					else:
+						for sameNamedCard in newcardstore[cardname]:
+							#There are three possibilities: Both text, if the same they're duplicates; Neither text, they're duplicates; One text other not, not duplicates
+							if ('text' not in sameNamedCard and 'text' not in card) or ('text' in sameNamedCard and 'text' in card and sameNamedCard['text'] == card['text']):
+								#Since it's a duplicate, update the original card with info on the set it's also in
+								sameNamedCard['sets'] += ", {}".format(set['name'])
+								addCard = False
+								break
+					if addCard:
+						#Remove some other useless data to save some space, memory and time
+						keysToRemove = ['imageName', 'variations', 'foreignNames', 'originalText', 'originalType'] #Last three are from the database with extras
+						for keyToRemove in keysToRemove:
+							card.pop(keyToRemove, None)
+						keysToMakeLowerCase = ['manaCost']
+						#Make sure all keys are fully lowercase, to make matching them easy
+						for keyToMakeLowerCase in keysToMakeLowerCase:
+							if keyToMakeLowerCase in card:
+								card[keyToMakeLowerCase.lower()] = card[keyToMakeLowerCase]
+								card.pop(keyToMakeLowerCase)
 
-					#Remove some other useless data to save some space, memory and time
-					keysToRemove = ['imageName']
-					for keyToRemove in keysToRemove:
-						card.pop(keyToRemove, None)
-					keysToMakeLowerCase = ['manaCost']
-					#Make sure all keys are fully lowercase, to make matching them easy
-					for keyToMakeLowerCase in keysToMakeLowerCase:
-						if keyToMakeLowerCase in card:
-							#print "Turning {nonlower}={value} into {lower}={value}".format(nonlower=keyToMakeLowerCase, lower=keyToMakeLowerCase.lower(), value=card[keyToMakeLowerCase])
-							card[keyToMakeLowerCase.lower()] = card[keyToMakeLowerCase]
-							card.pop(keyToMakeLowerCase)
+						#make sure all stored values are strings, that makes searching later much easier
+						for attrib in card:
+							#Re.search stumbles over numbers, convert them to strings first
+							if isinstance(card[attrib], (int, long, float)):
+								card[attrib] = str(card[attrib])
+							#Regexes can't search lists either, make them strings too
+							elif isinstance(card[attrib], list):
+								oldlist = card[attrib]
+								newlist = []
+								for entry in oldlist:
+									#There's lists of strings and lists of ints, handle both
+									if isinstance(entry, (int, long, float)):
+										newlist.append(str(entry))
+									#There's even lists of dictionaries
+									elif isinstance(entry, dict):
+										newlist.append(SharedFunctions.dictToString(entry))
+									else:
+										newlist.append(entry.encode('utf-8'))
+								card[attrib] = ", ".join(newlist)
+							#If lists are hard, don't even mention dictionaries. A bit harder to convert, but not impossible
+							elif isinstance(card[attrib], dict):
+								card[attrib] = SharedFunctions.dictToString(card[attrib])
 
-					#make sure all stored values are strings, that makes searching later much easier
-					for attrib in card:
-						#Re.search stumbles over numbers, convert them to strings first
-						if isinstance(card[attrib], (int, long, float)):
-							card[attrib] = str(card[attrib])
-						#Regexes can't search lists either, make them strings too
-						elif isinstance(card[attrib], list):
-							oldlist = card[attrib]
-							newlist = []
-							for entry in oldlist:
-								#There's lists of strings and lists of ints, handle both
-								if isinstance(entry, (int, long, float)):
-									newlist.append(str(entry))
-								else:
-									newlist.append(entry.encode('utf-8'))
-							card[attrib] = ", ".join(newlist)
-
-					#To make searching easier later, without all sorts of key checking, make sure these keys always exist
-					keysToEnsure = ['text']
-					for keyToEnsure in keysToEnsure:
-						if keyToEnsure not in card:
-							card[keyToEnsure] = u""
+						#To make searching easier later, without all sorts of key checking, make sure these keys always exist
+						keysToEnsure = ['text']
+						for keyToEnsure in keysToEnsure:
+							if keyToEnsure not in card:
+								card[keyToEnsure] = u""
+						
+						card['sets'] = set['name']
+						#Finally, put the card in the new storage
+						newcardstore[cardname].append(card)
 
 
 			#Save the new database to disk
 			print "Done parsing cards, saving file to disk"
 			with open(cardsJsonFilename, 'w') as cardfile:
 				#json.dump(cards, cardfile) #This is dozens of seconds slower than below
-				cardfile.write(json.dumps(newcards))
+				cardfile.write(json.dumps(newcardstore))
 			print "Done saving file to disk"
 
 			#Remove the file downloaded from MTGjson.com
@@ -377,3 +394,4 @@ class Command(CommandTemplate):
 		self.isUpdating = False
 		print "[MtG] updating database took {} seconds".format(time.time() - starttime)
 		return replytext
+
