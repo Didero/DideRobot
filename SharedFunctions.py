@@ -178,3 +178,11 @@ def durationSecondsToText(durationInSeconds):
 		replytext += u"{:,.0f} minutes, ".format(minutes)
 	replytext += u"{:,.0f} seconds".format(seconds)
 	return replytext
+
+def dictToString(dict):
+	dictstring = u""
+	for key, value in dict.iteritems():
+		dictstring += u"{}: {}, ".format(key, value)
+	if len(dictstring) > 2:
+		dictstring = dictstring[:-2]
+	return dictstring
