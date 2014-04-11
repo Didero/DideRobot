@@ -25,6 +25,8 @@ class Command(CommandTemplate):
 		pagetext = requests.get(url).content
 		#BeautifulSoup doesn't handle non-standard newlines very well, it inserts </br> at the very end, messing up searching. Prevent that
 		pagetext = pagetext.replace("<br>", "<br />")
+		#Sometimes important tags are in comments, remove those
+		##pagetext = pagetext.replace("<!--", ">").replace("-->", ">")
 		page = BeautifulSoup(pagetext)
 
 		#Title is formatted like "Humble Weekly Sale: [company] (pay what...)"
@@ -50,10 +52,11 @@ class Command(CommandTemplate):
 				continue
 			gameEntries = gamecontainer.find_all('li', recursive=False)
 			for gameEntry in gameEntries:
-				gameEntryLink = gameEntry.find('a')
-				if not gameEntryLink:
+				gameEntryLinks = gameEntry.find_all('a', recursive=False)
+				if not gameEntryLinks:
 					continue
-				else:
+				#Sometimes there are multiple games in each li-tag, get all the games
+				for gameEntryLink in gameEntryLinks:
 					gamename = u""
 					gameEntryLinkTexts = gameEntryLink.find_all(text=True, recursive=False)
 					for gameEntryLinkText in gameEntryLinkTexts:
@@ -61,15 +64,17 @@ class Command(CommandTemplate):
 						if len(gameEntryLinkText.strip()) > 0 and 'Comment' not in str(type(gameEntryLinkText)):
 							gamename += ' ' + gameEntryLinkText.strip()
 					for smallSubtitle in gameEntry.find_all(class_='small-subtitle'):
-						gamename += ' ' + smallSubtitle.text.strip()
-				if ('class' in gameEntry.attrs and 'bta' in gameEntry['class']) or gameEntry.find(alt="lock icon"):
-					gamename += u" [BTA]"
-				elif gameEntry.find(class_='hb-lock blue'):
-					gamename += u" [fixed price]"
+						gamename += u' ' + smallSubtitle.text.strip()
+					if ('class' in gameEntry.attrs and 'bta' in gameEntry['class']) or gameEntry.find(alt="lock icon"):
+						gamename += u" [BTA]"
+					elif gameEntry.find(class_="game-price"):
+						gamename += u" [{}]".format(gameEntry.find(class_="game-price").text)
+					elif gameEntry.find(class_='hb-lock'):
+						gamename += u" [fixed price]"
 
-				gamename = gamename.strip()
-				if gamename != u"":
-					gamenames.append(gamename)
+					gamename = gamename.strip()
+					if gamename != u"":
+						gamenames.append(gamename)
 
 
 		#Totals aren't shown on the site immediately, but are edited into the page with Javascript. Get info from there
