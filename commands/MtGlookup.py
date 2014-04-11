@@ -124,10 +124,11 @@ class Command(CommandTemplate):
 		
 		#The actual search!
 		cardNamesToSearchThrough = []
-		if 'name' in regexDict:
+		if 'name' in searchDict:
 			#If the name is literally there, use that
-			if regexDict['name'] in cardstore:
-				cardNamesToSearchThrough = [regexDict['name']]
+			if searchDict['name'] in cardstore:
+				print "regex '{}' is a literal name in the card database".format(searchDict['name'])
+				cardNamesToSearchThrough = [searchDict['name']]
 			#Otherwise, try to find a match
 			else:
 				for cardname in cardstore.keys():
@@ -180,12 +181,28 @@ class Command(CommandTemplate):
 				replytext += self.getFormattedCardInfo(cardsFound[0], triggerInMsg=='mtgf')
 			else:
 				replytext += u"Multiple cards with the same name were found: "
+				setlist = u""
 				for cardFound in cardsFound:
-					replytext += u"{} [set '{}']; ".format(cardFound['name'].encode('utf-8'), cardFound['set'].encode('utf-8'))
+					setlist = "'{}'".format(cardFound['sets'].split(', ',1)[0])
+					if cardFound['sets'].count(',') > 0:
+						setlist += u" (and more)"
+					replytext += u"{} [set {}]; ".format(cardFound['name'].encode('utf-8'), setlist)
 				replytext = replytext[:-2]
 		#Check if listing all the found cardnames is viable. The limit is higher for private messages than for channels
 		elif cardnamesFound <= maxCardsToListInChannel or (cardnamesFound <= maxCardsToListInPm and not target.startswith('#')):
-			replytext += u"Search returned {} cards: {}".format(cardnamesFound, "; ".join(sorted(matchingCards.keys())))
+			cardnamestring = u""
+			for cardname in sorted(matchingCards.keys()):
+				cardlist = matchingCards[cardname]
+				cardnamestring += cardlist[0]['name']
+				if len(cardlist) > 1:
+					cardnamestring += u" [from sets "
+					for card in cardlist:
+						cardnamestring += u"'{}', ".format(card['sets'].split(',',1)[0])
+					cardnamestring = cardnamestring[:-2] + u"]"
+				cardnamestring += u"; "
+			cardnamestring = cardnamestring[:-2]
+
+			replytext += u"Search returned {} cards: {}".format(cardnamesFound, cardnamestring)
 		else:
 			replytext += u"Your searchterm returned {} cards, please be more specific".format(cardnamesFound)
 
