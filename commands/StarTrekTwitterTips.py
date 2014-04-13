@@ -10,7 +10,7 @@ import SharedFunctions
 class Command(CommandTemplate):
 	triggers = ['startrektip', 'sttip', 'startrektips']
 	helptext = "Shows a randomly chosen tip from one of the Star Trek Tips accounts, or of a specific one if a name is provided"
-	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'locutus': 'LocutusTips', 'picard': 'PicardTips', 'quark': 'QuarkTips', 'riker': 'RikerTips', 'worf': 'WorfTips'}
+	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'laforge': 'LaForgeTips', 'locutus': 'LocutusTips', 'picard': 'PicardTips', 'quark': 'QuarkTips', 'riker': 'RikerTips', 'worf': 'WorfTips'}
 	scheduledFunctionTime = 18000.0 #Every 5 hours
 
 	isUpdating = False
