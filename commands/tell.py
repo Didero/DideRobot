@@ -63,19 +63,22 @@ class Command(CommandTemplate):
 			elif msgPartsLength == 2:
 				replytext = u"What do you want me to tell {}? Add that as an argument too, otherwise I'm just gonna stare at them and we'll all be uncomfortable".format(msgParts[1])
 			else:
-				tellSender = nick
-				tellMessage = " ".join(msgParts[2:])
 				tellRecipient = msgParts[1]
-				if tellRecipient not in self.storedTells:
-					self.storedTells[tellRecipient] = []
+				#Prevent tells to us, in case that would ever come up
+				if tellRecipient.lower() == bot.nickname.lower():
+					replytext = "You can talk to me directly, I'm here for you now!"
+				else:
+					tellMessage = " ".join(msgParts[2:])
+					if tellRecipient not in self.storedTells:
+						self.storedTells[tellRecipient] = []
 
-				tell = {"message": tellMessage, "sender": tellSender, "sentAt": round(time.time()), "sentInChannel": target}
-				self.storedTells[tellRecipient].append(tell)
+					tell = {"message": tellMessage, "sender": nick, "sentAt": round(time.time()), "sentInChannel": target}
+					self.storedTells[tellRecipient].append(tell)
 
-				print "storedTells: ", self.storedTells
+					print "storedTells: ", self.storedTells
 
-				replytext = u"All right, I'll tell {} when they show a sign of life".format(msgParts[1])
-				self.saveTellsToFile()
+					replytext = u"All right, I'll tell {} when they show a sign of life".format(tellRecipient)
+					self.saveTellsToFile()
 
 			bot.say(target, replytext)
 
