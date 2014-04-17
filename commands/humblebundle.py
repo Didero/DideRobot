@@ -46,35 +46,47 @@ class Command(CommandTemplate):
 				title = "The " + titlematches.group(1)
 
 		gamecontainers = page.find_all(class_="game-boxes")
-		for gamecontainer in gamecontainers:
-			#Don't show the soundtracks
-			if 'class' in gamecontainer.attrs and 'soundtracks' in gamecontainer['class']:
-				continue
-			gameEntries = gamecontainer.find_all('li', recursive=False)
-			for gameEntry in gameEntries:
-				gameEntryLinks = gameEntry.find_all('a', recursive=False)
-				if not gameEntryLinks:
+		if len(gamecontainers) > 0:
+			for gamecontainer in gamecontainers:
+				#Don't show the soundtracks
+				if 'class' in gamecontainer.attrs and 'soundtracks' in gamecontainer['class']:
 					continue
-				#Sometimes there are multiple games in each li-tag, get all the games
-				for gameEntryLink in gameEntryLinks:
-					gamename = u""
-					gameEntryLinkTexts = gameEntryLink.find_all(text=True, recursive=False)
-					for gameEntryLinkText in gameEntryLinkTexts:
-						#Only add it if there is something to add, and if the current text isn't a comment
-						if len(gameEntryLinkText.strip()) > 0 and 'Comment' not in str(type(gameEntryLinkText)):
-							gamename += ' ' + gameEntryLinkText.strip()
-					for smallSubtitle in gameEntry.find_all(class_='small-subtitle'):
-						gamename += u' ' + smallSubtitle.text.strip()
-					if ('class' in gameEntry.attrs and 'bta' in gameEntry['class']) or gameEntry.find(alt="lock icon"):
-						gamename += u" [BTA]"
-					elif gameEntry.find(class_="game-price"):
-						gamename += u" [{}]".format(gameEntry.find(class_="game-price").text)
-					elif gameEntry.find(class_='hb-lock'):
-						gamename += u" [fixed price]"
+				gameEntries = gamecontainer.find_all('li', recursive=False)
+				for gameEntry in gameEntries:
+					gameEntryLinks = gameEntry.find_all('a', recursive=False)
+					if not gameEntryLinks:
+						continue
+					#Sometimes there are multiple games in each li-tag, get all the games
+					for gameEntryLink in gameEntryLinks:
+						gamename = u""
+						gameEntryLinkTexts = gameEntryLink.find_all(text=True, recursive=False)
+						for gameEntryLinkText in gameEntryLinkTexts:
+							#Only add it if there is something to add, and if the current text isn't a comment
+							if len(gameEntryLinkText.strip()) > 0 and 'Comment' not in str(type(gameEntryLinkText)):
+								gamename += ' ' + gameEntryLinkText.strip()
+						for smallSubtitle in gameEntry.find_all(class_='small-subtitle'):
+							gamename += u' ' + smallSubtitle.text.strip()
+						if ('class' in gameEntry.attrs and 'bta' in gameEntry['class']) or gameEntry.find(alt="lock icon"):
+							gamename += u" [BTA]"
+						elif gameEntry.find(class_="game-price"):
+							gamename += u" [{}]".format(gameEntry.find(class_="game-price").text)
+						elif gameEntry.find(class_='hb-lock'):
+							gamename += u" [fixed price]"
 
-					gamename = gamename.strip()
-					if gamename != u"":
-						gamenames.append(gamename)
+						gamename = gamename.strip()
+						if gamename != u"":
+							gamenames.append(gamename)
+		#No game containers found. This means it's probably a Mobile bundle, with a different layout
+		else:
+			gametitles = page.find_all(class_="item-title")
+			for gametitle in gametitles:
+				#Skip the entry advertising more games
+				if 'class' in gametitle.parent.attrs and 'bta-teaser' in gametitle.parent.attrs['class']:
+					continue
+				gamename = gametitle.text.strip()
+				if gametitle.find(class_='green'):
+					gamename += u" [BTA]"
+				gamenames.append(gamename)
 
 
 		#Totals aren't shown on the site immediately, but are edited into the page with Javascript. Get info from there
