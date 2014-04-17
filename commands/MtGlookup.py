@@ -76,28 +76,8 @@ class Command(CommandTemplate):
 				bot.say(target, 'Please provide an advanced search query too, in JSON format, so "key1: value1, key2:value2". Look at www.mtgjson.com for available fields')
 				return
 
-			searchterm = " ".join(msgParts[2:])
-			if searchterm.startswith('{'):
-				searchterm = searchterm[1:]
-			if searchterm.endswith('}'):
-				searchterm = searchterm[:-1]
-			#If the user didn't add (enough) quotation marks, add them in
-			expectedQuoteCount = searchterm.count(':') * 4
-			if searchterm.count('"') < expectedQuoteCount and searchterm.count("'") < expectedQuoteCount:
-				searchterm = searchterm.replace('"', '').replace("'", "")
-				#Add a quotation mark at the start and end of the sentence, and before and after each : and ,
-				searchterm = '"' + re.sub('((?P<char>:|,) *)', '"\g<char>"', searchterm) + '"'
-			searchterm = '{' + searchterm + '}'
-
-			#Prevent quote errors, because JSON requires " instead of '
-			searchterm = searchterm.replace("'", '"')
-			searchterm = searchterm.lower()
-
-			try:
-				print "Trying to parse '{}'".format(searchterm)
-				searchDict = json.loads(searchterm)
-			except:
-				print "JSON parse error: ", sys.exc_info()
+			searchDict = SharedFunctions.stringToDict(" ".join(msgParts[2:]))
+			if searchDict == {}:
 				bot.say(target, "That is not a valid search query. It should be entered like JSON, so \"'key': 'value', 'key2': 'value2',...\"")
 				return
 		#If the only parameter is 'random', just get all cards
@@ -108,8 +88,11 @@ class Command(CommandTemplate):
 			searchDict['name'] = msgWithoutFirstWord.lower()
 
 		#Commander search. Regardless of everything else, it has to be a legendary creature
-		if searchType == 'randomcommander' and 'type' not in searchDict:
-			searchDict['type'] = '.*legendary.*creature'
+		if searchType == 'randomcommander':
+			if 'type' not in searchDict:
+				searchDict['type'] = u""
+			#Don't just search for 'legendary creature.*', because there are legendary artifact creatures too
+			searchDict['type'] = 'legendary.*creature.*' + searchDict['type']
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
 		searchTermsToCorrect = {"set": "sets"}
@@ -237,7 +220,8 @@ class Command(CommandTemplate):
 		replytext = u"{card[name]} [{card[type]}]"
 		if 'manacost' in card:
 			replytext += u" ({card[manacost]} mana"
-			if 'cmc' in card:
+			#Only add the cummulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total'). Manacost is stored with parentheses('{3}'), remove those
+			if 'cmc' in card and (len(card['manacost']) <2 or card['cmc'] != card['manacost'][1:-1]):
 				replytext += u", {card[cmc]} total"
 			replytext += u")"
 		if 'power' in card and 'toughness' in card:
