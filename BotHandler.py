@@ -1,5 +1,6 @@
 ﻿import os, site, sys
-site.addsitedir('libraries')
+#Make sure 'import' also searches inside the 'libraries' folder, so it can find Twisted and the like without cluttering up the main directory
+site.addsitedir(os.path.join(os.path.dirname(__file__), 'libraries'))
 
 from twisted.internet import reactor
 
@@ -41,6 +42,7 @@ class BotHandler:
 		return True
 
 	def stopBotfactory(self, serverfolder, quitmessage="Quitting...", isRestarting=False):
+		quitmessage = quitmessage.encode('utf-8')
 		if serverfolder not in self.botfactories:
 			print "ERROR: Asked to stop an unknown botfactory '{}'!".format(serverfolder)
 		else:
@@ -48,11 +50,12 @@ class BotHandler:
 			self.unregisterFactory(serverfolder, isRestarting)
 
 	def shutdown(self, quitmessage='Shutting down...'):
+		quitmessage = quitmessage.encode('utf-8')
 		for serverfolder, botfactory in self.botfactories.iteritems():
 			botfactory.bot.quit(quitmessage)
 		self.botfactories = {}
 		#Give all bots a little time to shut down
-		GlobalStore.reactor.callLater(2.0, GlobalStore.reactor.stop)
+		GlobalStore.reactor.callLater(4.0, GlobalStore.reactor.stop)
 
 
 	def unregisterFactory(self, serverfolder, isRestarting=False):
