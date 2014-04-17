@@ -3,17 +3,19 @@ import time
 from datetime import datetime, timedelta
 
 from CommandTemplate import CommandTemplate
+import SharedFunctions
 
 class Command(CommandTemplate):
 	triggers = ['tell']
 	helptext = "Stores messages you want to send to other users, and says them to that user when they speak"
 	claimCommandExecution = False
 
+	tellsFileLocation = os.path.join("data", "tells.json")
 	storedTells = {}
 
 	def onStart(self):
-		if os.path.exists("tells.json"):
-			with open("tells.json", 'r') as tellsfile:
+		if os.path.exists(self.tellsFileLocation):
+			with open(self.tellsFileLocation, 'r') as tellsfile:
 				self.storedTells = json.load(tellsfile)
 
 	def shouldExecute(self, bot, commandExecutionClaimed, triggerInMsg, msg, msgParts):
@@ -35,22 +37,10 @@ class Command(CommandTemplate):
 			for tell in tells:
 				if tell["sentInChannel"] == target:
 					timeSent = datetime.utcfromtimestamp(tell['sentAt'])
-					timeSinceTell = datetime.utcnow() - timeSent
-					#Since the timedelta class doesn't have a nice strftime() method, let's make one ourselves. Yay, this is not ugly at all!
-					hoursSinceTell, remainder = divmod(timeSinceTell.seconds, 3600)
-					minutesSinceTell, secondsSinceTell = divmod(remainder, 60)
-					timeSinceTellFormattedList = []
-					if timeSinceTell.days > 0:
-						timeSinceTellFormattedList.append("{} days".format(timeSinceTell.days))
-					if hoursSinceTell > 0:
-					    timeSinceTellFormattedList.append("{} hours".format(hoursSinceTell))
-					if minutesSinceTell > 0:
-						timeSinceTellFormattedList.append("{} minutes".format(minutesSinceTell))
-					if secondsSinceTell > 0:
-						timeSinceTellFormattedList.append("{} seconds".format(secondsSinceTell))
-					timeSinceTellFormatted = ", ".join(timeSinceTellFormattedList)
+					timeSinceTell = (datetime.utcnow() - timeSent).seconds
+					timeSinceTellFormatted = SharedFunctions.durationSecondsToText(timeSinceTell)
 
-					bot.say(target, u"{recipient}: {message} (sent by {sender} on {timeSent}, {timeSinceTell} ago)".format(
+					bot.say(target, u"{recipient}: {message} (sent by {sender} on {timeSent}; {timeSinceTell} ago)".format(
 											recipient=nick, message=tell["message"], sender=tell["sender"], timeSent=timeSent.isoformat(' '), timeSinceTell=timeSinceTellFormatted))
 			#Store the changed tells to disk
 			self.saveTellsToFile()
@@ -83,5 +73,5 @@ class Command(CommandTemplate):
 			bot.say(target, replytext)
 
 	def saveTellsToFile(self):
-		with open("tells.json", 'w') as tellsfile:
+		with open(self.tellsFileLocation, 'w') as tellsfile:
 			tellsfile.write(json.dumps(self.storedTells)) #Faster than 'json.dump(self.storedTells, tellsfile)'
