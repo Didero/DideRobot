@@ -42,3 +42,5 @@ ToDo.txt
 
 #The example settings file should be in the repo
 !serverSettings/globalsettings.ini.example
+#As should the MTG definitions file, since I made them
+!data/MTGdefinitions.json
