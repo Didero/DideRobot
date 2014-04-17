@@ -43,7 +43,6 @@ class Command(CommandTemplate):
 			return
 		#Check if the data file even exists
 		elif not os.path.exists(os.path.join('data', 'MTGcards.json')):
-			replytext = u""
 			if self.isUpdating:
 				replytext = u"I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
 			else:
@@ -51,8 +50,25 @@ class Command(CommandTemplate):
 				GlobalStore.reactor.callInThread(self.updateCardFile, True)
 			bot.say(target, replytext)
 			return
-		#If we reached here, we're gonna search through the card store
+		#We can also search for definitions
+		elif searchType == 'define':
+			#Definitions are copied from this list: http://wizards.custhelp.com/app/answers/detail/a_id/17/~/magic%3A-the-gathering%3A-keywords-and-ability-words
+			if not os.path.exists(os.path.join('data', 'MTGdefinitions.json')):
+				replytext = u"I'm sorry, I don't seem to have my definitions file. You should tell my owner"
+			elif len(msgParts) < 2:
+				replytext = u"Please add a definition to search for"
+			else:
+				searchDefinition =  " ".join(msgParts[2:])
+				with open(os.path.join('data', 'MTGdefinitions.json'), 'r') as definitionsFile:
+					definitions = json.load(definitionsFile)
+				if searchDefinition.lower() in definitions:
+					replytext = u"Definition of '{}': {}".format(searchDefinition, definitions[searchDefinition.lower()])
+				else:
+					replytext = u"I'm sorry, I'm not familiar with that term. Tell my owner, maybe they'll add it!"
+			bot.say(target, replytext)
+			return
 
+		#If we reached here, we're gonna search through the card store
 		searchDict = {}
 		if searchType == 'search' or (searchType == 'random' and msgPartsLength > 2) or (searchType == 'randomcommander' and msgPartsLength > 2):
 			#Advanced search!
