@@ -91,6 +91,25 @@ class DideRobot(irc.IRCClient):
 		elif params[1] in self.channelsUserList[params[0]]:
 				self.channelsUserList[params[0]].remove(params[1])
 
+	def irc_NICK(self, prefix, params):
+		"""Called when a user or me change their nickname"""
+		#'prefix' is the full user address with the old nickname, params[0] is the new nickname
+		#Update the userlists for all channels this user is in
+		for channel, userlist in self.channelsUserList.iteritems():
+			if prefix in userlist:
+				#New nick plus old address
+				userlist.append(params[0] + prefix.split("!",1)[1])
+				userlist.remove(prefix)
+				self.factory.logger.log("{} changed their nick from {} to {}".format(prefix, prefix.split("!",1)[0]), params[0], channel)
+
+	#Misc. logging
+	def topicUpdated(self, user, channel, newTopic):
+		self.factory.logger.log("Channel topic: '{}' (Set by {})".format(newTopic, user), channel)
+
+	def receivedMOTD(self, motd):
+		#Since the Message Of The Day can consist of multiple lines, print them all
+		self.factory.logger.log("Server message of the day:\n {}").format("\n ".join(motd))
+
 
 	#Create a list of user addresses per channel
 	def retrieveChannelUsers(self, channel):
@@ -107,9 +126,8 @@ class DideRobot(irc.IRCClient):
 
 	def irc_RPL_ENDOFWHO(self, prefix, params):
 		#print "END WHOREPLY. Prefix: '{}'. Params: '{}'".format(prefix, params)
-		print "End of WHO. User list for {}:".format(self.factory.serverfolder)
-		print self.channelsUserList
-		#pass
+		print "End of WHO. User list for {}, have users for channels {}".format(self.factory.serverfolder, ", ".join(self.channelsUserList.keys()))
+		#print self.channelsUserList
 
 
 	def privmsg(self, user, channel, msg):
