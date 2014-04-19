@@ -17,14 +17,16 @@ class Command(CommandTemplate):
 		if msgPartsLength == 1:
 			replytext = u"Please provide a term to search for"
 		else:
-			searchresponse = requests.get("http://en.wikipedia.org/wiki/Special:Search?search={}".format(msgWithoutFirstWord))
-			#print searchpage.content
-			print "Number of redirects: {}".format(len(searchresponse.history))
-			print "Final URL: {}".format(searchresponse.url)
+			wikipediaPage = requests.get("http://en.wikipedia.org/wiki/Special:Search?search={}".format(msgWithoutFirstWord))
+			wikipediaText = wikipediaPage.content
 
 			#Loading the page into BeautifulSoup takes a full core a second or two, so it's not the best solution. So on to regex, yay!
 
-			match = re.search(ur'<p.*?>(.+?)</p>', searchresponse.content)
+			#First remove all tables, so the output isn't from an intro or side data table
+			wikipediaText = re.sub('<table.*?>.+?</table>', '', wikipediaText, flags=re.DOTALL)
+
+			#The main article is put inside <p> tags
+			match = re.search(ur'<p.*?>(.+?)</p>', wikipediaText)
 			if not match:
 				replytext = u"No paragraph matches found!"
 			else:
@@ -47,20 +49,22 @@ class Command(CommandTemplate):
 					else:
 						print "[wiki] single sentence too short"
 
-				#Cap the length to prevent spamming
+				#Cap the length to prevent spamming, neatly at the last space so words don't get cut off
 				if len(replytext) > replyLengthLimit:
-					replytext = replytext[:replyLengthLimit] + '[...]'
+					replytext = replytext[:replyLengthLimit]
 
-					'''
 					lastSpaceIndex = replytext.rfind(u' ')
 					if lastSpaceIndex > -1:
 						replytext = replytext[:lastSpaceIndex]
 					
 					while replytext.endswith(u',') or replytext.endswith(u'.'):
 						replytext = replytext[:-1]
-					replytext += u'...'
-					'''				
+					replytext += u' [...]'
 
-				replytext = u"{replytext} ({url})".format(replytext=replytext, url=searchresponse.url)
+				#If there's a link to a disambuigation page or something similar, it's in a div with a 'dablink' class
+				if 'dablink' in wikipediaText:
+					replytext += " (Multiple meanings)"
+
+				replytext = u"{replytext} ({url})".format(replytext=replytext, url=wikipediaPage.url)
 
 		bot.say(target, replytext)
