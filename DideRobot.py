@@ -95,12 +95,15 @@ class DideRobot(irc.IRCClient):
 		"""Called when a user or me change their nickname"""
 		#'prefix' is the full user address with the old nickname, params[0] is the new nickname
 		#Update the userlists for all channels this user is in
+		oldnick = prefix.split("!", 1)[0]
+		newnick = params[0]
+		newaddress = newnick + "!" + prefix.split("!",1)[1]
 		for channel, userlist in self.channelsUserList.iteritems():
 			if prefix in userlist:
 				#New nick plus old address
-				userlist.append(params[0] + prefix.split("!",1)[1])
+				userlist.append(newaddress)
 				userlist.remove(prefix)
-				self.factory.logger.log("{} changed their nick from {} to {}".format(prefix, prefix.split("!",1)[0]), params[0], channel)
+				self.factory.logger.log("{} changed their nick from {} to {}".format(prefix, oldnick, newnick), channel)
 
 	#Misc. logging
 	def topicUpdated(self, user, channel, newTopic):
@@ -108,7 +111,7 @@ class DideRobot(irc.IRCClient):
 
 	def receivedMOTD(self, motd):
 		#Since the Message Of The Day can consist of multiple lines, print them all
-		self.factory.logger.log("Server message of the day:\n {}").format("\n ".join(motd))
+		self.factory.logger.log("Server message of the day:\n {}".format("\n ".join(motd)))
 
 
 	#Create a list of user addresses per channel
