@@ -2,6 +2,8 @@
 
 import gc, json, os, random, re, sys, time, urllib, zipfile
 
+import requests
+
 from CommandTemplate import CommandTemplate
 import GlobalStore
 import SharedFunctions
@@ -17,6 +19,7 @@ class Command(CommandTemplate):
 
 	def executeScheduledFunction(self):
 		GlobalStore.reactor.callInThread(self.updateCardFile)
+		GlobalStore.reactor.callInThread(self.updateDefinitions)
 
 	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
 		starttime = time.time()
@@ -39,6 +42,7 @@ class Command(CommandTemplate):
 				replytext = u"Sorry, only admins can use my update function"
 			else:
 				replytext = self.updateCardFile(msgWithoutFirstWord.lower()=='forceupdate')
+				replytext += " " + self.updateDefinitions(msgWithoutFirstWord.lower()=='forceupdate')
 			bot.say(target, replytext)
 			return
 		#Check if the data file even exists
@@ -52,9 +56,9 @@ class Command(CommandTemplate):
 			return
 		#We can also search for definitions
 		elif searchType == 'define':
-			#Definitions are copied from this list: http://wizards.custhelp.com/app/answers/detail/a_id/17/~/magic%3A-the-gathering%3A-keywords-and-ability-words
 			if not os.path.exists(os.path.join('data', 'MTGdefinitions.json')):
-				replytext = u"I'm sorry, I don't seem to have my definitions file. You should tell my owner"
+				replytext = u"I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
+				self.updateDefinitions(True)
 			elif len(msgParts) < 2:
 				replytext = u"Please add a definition to search for"
 			else:
@@ -62,7 +66,9 @@ class Command(CommandTemplate):
 				with open(os.path.join('data', 'MTGdefinitions.json'), 'r') as definitionsFile:
 					definitions = json.load(definitionsFile)
 				if searchDefinition.lower() in definitions:
-					replytext = u"Definition of '{}': {}".format(searchDefinition, definitions[searchDefinition.lower()])
+					replytext = u"'{}': {}".format(searchDefinition, definitions[searchDefinition.lower()]['short'])
+					if triggerInMsg == 'mtgf':
+						replytext += " " + definitions[searchDefinition.lower()]['extended']
 				else:
 					replytext = u"I'm sorry, I'm not familiar with that term. Tell my owner, maybe they'll add it!"
 			bot.say(target, replytext)
@@ -312,7 +318,7 @@ class Command(CommandTemplate):
 					print " {}: {}".format(key, value)
 		#print "[MtG] Latest version: '{}'".format(latestVersion)
 		if latestVersion == "":
-			replytext =  u"Something went wrong, the latest MtG database version number could not be retrieved"
+			replytext =  u"Something went wrong, the latest MtG database version number could not be retrieved."
 		else:
 			#Replace the old version file with the new one
 			if os.path.exists(versionFilename):
@@ -420,12 +426,79 @@ class Command(CommandTemplate):
 			#Remove the file downloaded from MTGjson.com
 			os.remove(newcardfilename)
 
-			replytext = u"MtG Card database successfully updated to version {} (Changelog: http://mtgjson.com/#changeLog)".format(latestVersion)
+			replytext = u"MtG card database successfully updated to version {} (Changelog: http://mtgjson.com/#changeLog).".format(latestVersion)
 		else:
-			replytext = u"No update needed, I already have the latest MtG card database version (v {})".format(latestVersion)
+			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
 
 		urllib.urlcleanup()
 		self.isUpdating = False
 		print "[MtG] updating database took {} seconds".format(time.time() - starttime)
 		return replytext
 
+	def updateDefinitions(self, forceUpdate=False):
+		starttime = time.time()
+		definitionsFileLocation = os.path.join("data", "MTGdefinitions.json")
+
+		#Check if a new rules file exists
+		rulespage = requests.get("http://www.wizards.com/Magic/TCG/Article.aspx?x=magic/rules")
+		textfileMatch = re.search('<a.*href="(?P<url>http://media.wizards.com/images/magic/tcg/resources/rules/MagicCompRules_(?P<date>\d+)\.txt)">TXT</a>', rulespage.text)
+		if not textfileMatch:
+			print "[MtG] [definitions update] Unable to locate the URL to the rules text file!"
+		else:
+			textfileLocation = textfileMatch.group('url')
+			date = textfileMatch.group('date')
+
+			oldDefinitionDate = ""
+			if not forceUpdate and os.path.exists(definitionsFileLocation):
+				with open(definitionsFileLocation, 'r') as definitionsFile:
+					definitions = json.load(definitionsFile)
+				if '_date' in definitions:
+					oldDefinitionDate = definitions['_date']
+
+			if forceUpdate or oldDefinitionDate != date:
+				rulesfilelocation = os.path.join("data", "MtGrules.txt")
+				#Retrieve the rules document and parse the definitions
+				urllib.urlretrieve(textfileLocation, rulesfilelocation)
+
+				definitions = {}
+				#Keywords are defined in chapters 701 and 702, in the format '701.2. [keyword]' '701.2a [definition]' '701.2b [more definition]' etc.
+				keywordPattern = re.compile("70[12]\.(\d+)\. (.+)")
+				definitionPattern = re.compile("70[12]\.\d+[a-z] (.+)")
+				
+				with open(rulesfilelocation, 'r') as rulesfile:
+					for line in rulesfile:
+						#Decode to latin-1, because there's some weird quotes in the file for some reason
+						keywordMatch = re.search(keywordPattern, line)
+						if keywordMatch and keywordMatch.group(1) != '1': #Ignore the first entries, since that's just a description of the chapter
+							currentKeyword = keywordMatch.group(2).lower().decode('latin1')
+							definitions[currentKeyword] = {}
+						else:
+							definitionMatch = re.search(definitionPattern, line)
+							if definitionMatch:
+								definition =  definitionMatch.group(1).decode('latin1')
+								#Keep a short description for quick lookups
+								if "short" not in definitions[currentKeyword]:
+									definitions[currentKeyword]["short"] = definition
+								#But too short a description is pretty useless, extend it if it's too short
+								elif len(definitions[currentKeyword]['short']) < 100:
+									definitions[currentKeyword]['short'] += " " + definition
+								#Keep the rest of the definition for complete searches
+								elif "extended" not in definitions[currentKeyword]:
+									definitions[currentKeyword]["extended"] = definition
+								else:
+									definitions[currentKeyword]["extended"] += " " + definition
+
+				#Save the definitions to file
+				definitions['_date'] = date
+				with open(definitionsFileLocation, 'w') as definitionsFile:
+					definitionsFile.write(json.dumps(definitions))
+
+				#Clean up the rules file, we don't need it anymore
+				os.remove(rulesfilelocation)
+
+				print "[MtG] Updated definitions file to version {} in {} seconds".format(date, time.time() - starttime)
+				return "Definitions successfully updated to the version from {}.".format(date)
+			else:
+				#No update neccessary
+				print "[MtG] No need to update definitions file, {} is still newest. Check took {} seconds".format(date, time.time() - starttime)
+				return "No definitions update needed, version {} is still up-to-date.".format(date)
