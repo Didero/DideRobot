@@ -45,14 +45,19 @@ class BotHandler:
 		quitmessage = quitmessage.encode('utf-8')
 		if serverfolder not in self.botfactories:
 			print "ERROR: Asked to stop an unknown botfactory '{}'!".format(serverfolder)
+			return False
 		else:
+			self.botfactories[serverfolder].shouldReconnect = False
 			self.botfactories[serverfolder].bot.quit(quitmessage)
 			self.unregisterFactory(serverfolder, isRestarting)
+			return True
 
 	def shutdown(self, quitmessage='Shutting down...'):
 		quitmessage = quitmessage.encode('utf-8')
 		for serverfolder, botfactory in self.botfactories.iteritems():
-			botfactory.bot.quit(quitmessage)
+			if botfactory.bot:
+				botfactory.shouldReconnect = False
+				botfactory.bot.quit(quitmessage)
 		self.botfactories = {}
 		#Give all bots a little time to shut down
 		GlobalStore.reactor.callLater(4.0, GlobalStore.reactor.stop)

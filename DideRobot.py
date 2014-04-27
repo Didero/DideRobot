@@ -24,6 +24,8 @@ class DideRobot(irc.IRCClient):
 		irc.IRCClient.connectionMade(self)
 		
 		self.factory.logger.log("Connection to server made")
+		#Let the factory know we've connected, needed because it's a reconnecting factory
+		self.factory.resetDelay()
 
 	def connectionLost(self, reason):
 		"""Called when a connection is lost."""
@@ -176,13 +178,13 @@ class DideRobot(irc.IRCClient):
 			self.msg(target, msg)
 			
 			
-class DideRobotFactory(protocol.ClientFactory):
+class DideRobotFactory(protocol.ReconnectingClientFactory):
 	"""The factory creates the connection, that the bot itself handles and uses"""
 	
 	#Set the connection handler
-	protocol=DideRobot
+	protocol = DideRobot
 	bot = None
-	serverfolder = ""
+	serverfolder = u""
 	logger = None
 
 	#Bot settings, with a few lifted out because they're frequently needed
@@ -193,6 +195,9 @@ class DideRobotFactory(protocol.ClientFactory):
 	admins = []
 	commandWhitelist = None
 	commandBlacklist = None
+
+	shouldReconnect = True
+	maxRetries = 5
 
 
 	def __init__(self, serverfolder):
@@ -213,11 +218,27 @@ class DideRobotFactory(protocol.ClientFactory):
 		self.bot = DideRobot()
 		self.bot.factory = self
 		return self.bot
+
+	def startedConnecting(self, connector):
+		self.logger.log("Started connecting, attempt {} (Max is {})".format(self.retries, self.maxRetries))
 		
 	def clientConnectionLost(self, connector, reason):
-		self.logger.log("Client connection lost (Reason: '{0}'); Quitting".format(reason))
-		self.logger.closelogs()
-		GlobalStore.bothandler.unregisterFactory(self.serverfolder)
+		self.logger.log("Client connection lost (Reason: '{0}')".format(reason))
+		if self.shouldReconnect:
+			self.logger.log(" Restarting")
+			protocol.ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
+		else:
+			self.logger.log(" Quitting")
+			self.logger.closelogs()
+			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
+
+	def clientConnectionFailed(self, connector, reason):
+		self.logger.log("Client connection failed (Reason: '{}')".format(reason))
+		protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
+		if self.retries > self.maxRetries:
+			self.logger.log("Max amount of connection retries reached, removing bot factory")
+			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
+
 		
 	def updateSettings(self, updateLogger=True):
 		self.settings = ConfigParser()
