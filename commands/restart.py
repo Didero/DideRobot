@@ -14,10 +14,16 @@ class Command(CommandTemplate):
 			quitmessage = msgWithoutFirstWord
 
 		if triggerInMsg == 'restart':
+			if not target.startswith("#"):
+				#Private message, let the other person know the command was received
+				bot.say(target, "All right, restarting, I'll be back in a bit if everything goes well")
+
 			serverfolder = bot.factory.serverfolder
 			GlobalStore.bothandler.stopBotfactory(serverfolder, quitmessage, True)
 			GlobalStore.reactor.callLater(5.0, GlobalStore.bothandler.startBotfactory, serverfolder)
 		elif triggerInMsg == 'restartfull':
+			if not target.startswith("#"):
+				bot.say(target, "Fully restarting bot, hopefully I'll be back in a couple of seconds")
 			#Idea from PyMoronBot (as usual)
 			#First shut down all bots to make sure the logs are saved properly
 			GlobalStore.bothandler.shutdown(quitmessage)
