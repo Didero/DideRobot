@@ -153,7 +153,7 @@ class Command(CommandTemplate):
 				for card in cardstore[cardname]:
 					matchingAttribsFound = 0
 					for attrib, regex in regexDict.iteritems():
-						if attrib not in card or regex.search(card[attrib]):
+						if attrib in card and regex.search(card[attrib]):
 							matchingAttribsFound += 1
 					#Only store the card if all provided attributes match
 					if matchingAttribsFound == regexAttribCount:
@@ -266,7 +266,7 @@ class Command(CommandTemplate):
 		#FILL THAT SHIT IN
 		replytext = replytext.format(card=card)
 		#Clean up the text			Remove brackets around mana cost	Remove newlines but make sure sentences are separated by a period	Prevent double spaces
-		replytext = replytext.replace('{', '').replace('}','').replace('.\n','\n').replace('\n\n','\n').replace('\n','. ').replace(u'  ', u' ').strip()
+		replytext = replytext.replace('}{', ' ').replace('{', '').replace('}','').replace('.\n','\n').replace('\n\n','\n').replace('\n','. ').replace(u'  ', u' ').strip()
 		#replytext = re.sub('[{}]', '', replytext)
 		#replytext = re.sub('\.?(\n)+ *', '. ', replytext)
 		return replytext
