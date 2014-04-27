@@ -237,6 +237,8 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 		if self.retries > self.maxRetries:
 			self.logger.log("Max amount of connection retries reached, removing bot factory")
+			self.logger.closelogs()
+			self.stopTrying()
 			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
 
 		
