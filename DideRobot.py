@@ -19,8 +19,8 @@ class DideRobot(irc.IRCClient):
 	
 	def connectionMade(self):
 		"""Called when a connection is made."""
-		self.nickname = self.factory.nickname
-		self.realname = self.factory.realname
+		self.nickname = self.factory.settings.get("connection", "nickname")
+		self.realname = self.factory.settings.get("connection", "realname")
 		irc.IRCClient.connectionMade(self)
 		
 		self.factory.logger.log("Connection to server made")
@@ -37,7 +37,7 @@ class DideRobot(irc.IRCClient):
 		self.factory.logger.log("Signed on to server as {}".format(self.username))
 		self.connectedAt = time.time()
 		#Check if we have the nickname we should
-		if self.nickname != self.factory.nickname:
+		if self.nickname != self.factory.settings.get("connection", "nickname"):
 			self.factory.logger.log("Nickname wasn't available, using nick '{0}'".format(self.nickname))
 		#Join channels
 		if not self.factory.settings.has_option('connection', 'joinChannels'):
@@ -176,6 +176,15 @@ class DideRobot(irc.IRCClient):
 			self.factory.logger.logmsg(msg, target, self.nickname)
 			print "Saying '{0}' to '{1}'".format(msg, target)
 			self.msg(target, msg)
+
+	def sendNotice(self, target, msg):
+		try:
+			msg = msg.encode('utf-8', 'replace')
+		except:
+			msg = msg
+		self.factory.logger.logmsg(msg, target, self.nickname)
+		print "Sending '{}' as notice to {}".format(msg, target)
+		self.notice(target, msg)
 			
 			
 class DideRobotFactory(protocol.ReconnectingClientFactory):
@@ -207,12 +216,7 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			print "ERROR while loading settings for bot '{}', aborting launch!".format(self.serverfolder)
 		else:
 			self.logger = Logger.Logger(self)
-		
-			self.nickname = self.settings.get("connection", "nickname")
-			self.realname = self.settings.get("connection", "realname")
-
-			GlobalStore.reactor.connectTCP(self.settings.get("connection", "server"), self.settings.getint("connection", "port"), self)
-				
+			GlobalStore.reactor.connectTCP(self.settings.get("connection", "server"), self.settings.getint("connection", "port"), self)				
 		
 	def buildProtocol(self, addr):
 		self.bot = DideRobot()
