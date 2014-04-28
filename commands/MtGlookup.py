@@ -68,7 +68,16 @@ class Command(CommandTemplate):
 				if searchDefinition.lower() in definitions:
 					replytext = u"'{}': {}".format(searchDefinition, definitions[searchDefinition.lower()]['short'])
 					if triggerInMsg == 'mtgf':
-						replytext += " " + definitions[searchDefinition.lower()]['extended']
+						extendedDefinition = definitions[searchDefinition.lower()]['extended']
+						#Let's not spam channels with MtG definitions, shall we
+						if not target.startswith('#') or len(replytext) + len(extendedDefinition) < 500:
+							replytext += " " + extendedDefinition
+						else:
+							bot.sendNotice(user.split("!", 1)[0], replytext)
+							while len(extendedDefinition) > 0:
+								bot.sendNotice(user.split("!", 1)[0], extendedDefinition[:800])
+								extendedDefinition = extendedDefinition[800:]
+							replytext += u" [definition too long, rest sent in notice]"
 				else:
 					replytext = u"I'm sorry, I'm not familiar with that term. Tell my owner, maybe they'll add it!"
 			bot.say(target, replytext)
