@@ -13,9 +13,11 @@ import Logger
 
 
 class DideRobot(irc.IRCClient):
-	channelsUserList = {}
-	connectedAt = 0.0
-	isMuted = False
+
+	def __init__(self):
+		self.channelsUserList = {}
+		self.connectedAt = 0.0
+		self.isMuted = False
 	
 	def connectionMade(self):
 		"""Called when a connection is made."""
@@ -163,7 +165,7 @@ class DideRobot(irc.IRCClient):
 			target = user.split("!", 1)[0]
 			
 		#Let the CommandHandler see if something needs to be said
-		GlobalStore.commandhandler.fireCommand(self, user, target, msg)
+		GlobalStore.commandhandler.fireCommand(self, user, target, irc.stripFormatting(msg))
 			
 
 	def say(self, target, msg):
