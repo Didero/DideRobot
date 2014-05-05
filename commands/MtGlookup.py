@@ -232,7 +232,9 @@ class Command(CommandTemplate):
 		bot.say(target, replytext)
 
 	def getFormattedCardInfo(self, card, addExtendedInfo=False):
-		replytext = u"{card[name]} [{card[type]}]"
+		replytext = u"{card[name]} "
+		if 'type' in card and len(card['type']) > 0:
+			replytext += u"[{card[type]}]"
 		if 'manacost' in card:
 			replytext += u" ({card[manacost]} mana"
 			#Only add the cummulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total'). Manacost is stored with parentheses('{3}'), remove those
@@ -255,10 +257,10 @@ class Command(CommandTemplate):
 		if 'layout' in card and card['layout'] != 'normal':
 			replytext += u" (Layout is '{card[layout]}'"
 			if 'names' in card:
-				names = card['names'].split(', ')
+				names = card['names'].split('; ')
 				if card['name'] in names:
 					names.remove(card['name'])
-				names = ', '.join(names)
+				names = '; '.join(names)
 				replytext += u", also contains {names}".format(names=names)
 			replytext += u")"
 		replytext += u"."
@@ -269,7 +271,9 @@ class Command(CommandTemplate):
 		if 'sets' in card:
 			sets = card['sets'].split(',')
 			if addExtendedInfo:
-				if len(sets) < 5:
+				if len(sets) == 1:
+					replytext += u" [in set {card[sets]}]"
+				elif len(sets) < 5:
 					replytext += u" [in sets {card[sets]}]"
 				else:
 					replytext += u" [in sets {shortSetList} and {setCount} more]".format(shortSetList="; ".join(sets[:5]), setCount=len(sets)-5)
@@ -406,7 +410,7 @@ class Command(CommandTemplate):
 										newlist.append(SharedFunctions.dictToString(entry))
 									else:
 										newlist.append(entry.encode('utf-8'))
-								card[attrib] = ", ".join(newlist)
+								card[attrib] = "; ".join(newlist)
 							#If lists are hard for the re module, don't even mention dictionaries. A bit harder to convert, but not impossible
 							elif isinstance(card[attrib], dict):
 								card[attrib] = SharedFunctions.dictToString(card[attrib])
