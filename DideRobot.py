@@ -149,6 +149,7 @@ class DideRobot(irc.IRCClient):
 		#Check if a command needs to be executed
 		self.handleMessage(user, channel, msg)
 
+	#Incoming action
 	def action(self, user, channel, msg):
 		self.factory.logger.log("{0} {1}".format(user, msg), channel)
 		self.handleMessage(user, channel, msg)
@@ -166,27 +167,32 @@ class DideRobot(irc.IRCClient):
 			
 		#Let the CommandHandler see if something needs to be said
 		GlobalStore.commandhandler.fireCommand(self, user, target, irc.stripFormatting(msg))
-			
 
-	def say(self, target, msg):
-		if  not self.isMuted or not target.startswith('#'):
+	def sendMessage(self, target, msg, messageType='say'):
+		#Only say something if we're not muted, or if it's a private message or a notice
+		if  not self.isMuted or not target.startswith('#') or messageType == 'notice':
 			try:
 				msg = msg.encode(encoding='utf-8', errors='replace')
 			except:
 				msg = msg
-			#print "Logging '{}' to '{}'".format(msg, target)
-			self.factory.logger.logmsg(msg, target, self.nickname)
-			print "Saying '{0}' to '{1}'".format(msg, target)
-			self.msg(target, msg)
+			if messageType == 'say':
+				self.factory.logger.log("{0}: {1}".format(self.nickname, msg), target)
+				self.msg(target, msg)
+			elif messageType == 'action':
+				self.factory.logger.log("*{0} {1}".format(self.nickname, action), target)
+				self.describe(target, action)
+			elif messageType == 'notice':
+				self.factory.logger.log("[notice] {0}: {1}".format(self.nickname, msg), target)
+				self.notice(target, msg)			
+
+	def say(self, target, msg):
+		self.sendMessage(target, msg, 'say')
+
+	def doAction(self, target, action):
+		self.sendMessage(target, action, 'action')
 
 	def sendNotice(self, target, msg):
-		try:
-			msg = msg.encode('utf-8', 'replace')
-		except:
-			msg = msg
-		self.factory.logger.logmsg(msg, target, self.nickname)
-		print "Sending '{}' as notice to {}".format(msg, target)
-		self.notice(target, msg)
+		self.sendMessage(target, msg, 'notice')
 			
 			
 class DideRobotFactory(protocol.ReconnectingClientFactory):
@@ -194,28 +200,30 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 	
 	#Set the connection handler
 	protocol = DideRobot
-	bot = None
-	serverfolder = u""
-	logger = None
-
-	#Bot settings, with a few lifted out because they're frequently needed
-	settings = None
-	commandPrefix = u""
-	commandPrefixLength = 0
-	userIgnoreList = []
-	admins = []
-	commandWhitelist = None
-	commandBlacklist = None
-
-	shouldReconnect = True
-	maxRetries = 5
-
 
 	def __init__(self, serverfolder):
 		print "New botfactory for server '{}' started".format(serverfolder)
 		self.serverfolder = serverfolder
+
+		#Initialize some variables (in init() instead of outside it to prevent object sharing between instances)
+		self.bot = None
+		self.logger = None
+		#Bot settings, with a few lifted out because they're frequently needed
+		self.settings = None
+		self.commandPrefix = u""
+		self.commandPrefixLength = 0
+		self.userIgnoreList = []
+		self.admins = []
+		self.commandWhitelist = None
+		self.commandBlacklist = None
+
+		self.shouldReconnect = True
+		self.maxRetries = 5
+
+
 		if not self.updateSettings(False):
 			print "ERROR while loading settings for bot '{}', aborting launch!".format(self.serverfolder)
+			GlobalStore.reactor.callLater(2.0, GlobalStore.bothandler.unregisterFactory, serverfolder)
 		else:
 			self.logger = Logger.Logger(self)
 			GlobalStore.reactor.connectTCP(self.settings.get("connection", "server"), self.settings.getint("connection", "port"), self)				
