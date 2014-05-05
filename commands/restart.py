@@ -18,9 +18,19 @@ class Command(CommandTemplate):
 				#Private message, let the other person know the command was received
 				bot.say(target, "All right, restarting, I'll be back in a bit if everything goes well")
 
-			serverfolder = bot.factory.serverfolder
-			GlobalStore.bothandler.stopBotfactory(serverfolder, quitmessage, True)
-			GlobalStore.reactor.callLater(5.0, GlobalStore.bothandler.startBotfactory, serverfolder)
+			serverfolder = u""
+			if msgWithoutFirstWord == u"":
+				#restart this bot
+				serverfolder = bot.factory.serverfolder
+			elif msgWithoutFirstWord in GlobalStore.bothandler.botfactories:
+				#Restart other bot
+				serverfolder = msgWithoutFirstWord
+			else:
+				bot.say(target, "I'm not familiar with that server, sorry")
+
+			if serverfolder != u"":
+				GlobalStore.bothandler.stopBotfactory(serverfolder, quitmessage, True)
+				GlobalStore.reactor.callLater(5.0, GlobalStore.bothandler.startBotfactory, serverfolder)
 		elif triggerInMsg == 'restartfull':
 			if not target.startswith("#"):
 				bot.say(target, "Fully restarting bot, hopefully I'll be back in a couple of seconds")
