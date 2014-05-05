@@ -33,7 +33,9 @@ class Command(CommandTemplate):
 			xml = ElementTree.fromstring(xmltext.encode('utf8'))
 			if xml.attrib['error'] != 'false':
 				replystring = u"An error occurred"
+				print xmltext.encode('utf-8')
 			elif xml.attrib['success'] != 'true':
+				print xmltext.encode('utf-8')
 				#Most likely no results were found. See if there are suggestions for search improvements
 				if (xml.find('didyoumeans') is not None):
 					didyoumeans = xml.find('didyoumeans').findall('didyoumean')
@@ -60,11 +62,17 @@ class Command(CommandTemplate):
 					for subpod in pod.findall('subpod'):
 						text = subpod.find('plaintext').text
 						if text == None:
+							print "No text found, skipping subpod"
 							continue
 						text = text.replace('\n', ' ').strip()
 						#If there's no text in this pod (for instance if it's just an image)
 						#  or if the result is useless (searching for '3 usd' for instance returns coin weight first, starts with an opening bracket), skip it
-						if len(text) == 0 or text.startswith('('):
+						if len(text) == 0:# or text.startswith('('):
+							print "Text is empty, skipping subpod"
+							continue
+						elif text.startswith('('):
+							print "Assuming useless text, skipping"
+							print "  {}".format(text)
 							continue
 						replystring += text
 						resultFound = True
