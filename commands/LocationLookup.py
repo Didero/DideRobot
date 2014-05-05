@@ -69,7 +69,8 @@ class Command(CommandTemplate):
 				print apiReturn.text
 				if apiReturn.text.startswith('Sorry'):
 					#An error occurred
-					replytext = apiReturn.text
+					print apiReturn.text
+					replytext = u"Sorry, an error occurred. Tell my owner to check the debug output, the exact error is in there"
 				elif apiReturn.text.lower() == 'no data':
 					replytext = u"I'm sorry, I can't find any country data for that user"
 				else:
