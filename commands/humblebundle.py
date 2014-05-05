@@ -9,11 +9,11 @@ import SharedFunctions
 class Command(CommandTemplate):
 	triggers = ['humble', 'humblebundle']
 	helptext = "Displays information about the latest Humble Bundle. Add the 'weekly' parameter to get info on their Weekly sale"
-	callInThread = True
+	#callInThread = True
 
 	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
 		replytext = u""
-		gamenames = []
+		gamenames = {}
 		page = None
 		title = u""
 		isWeekly = (msgWithoutFirstWord.lower() == 'weekly' or msgWithoutFirstWord.lower() == 'week')
@@ -49,7 +49,7 @@ class Command(CommandTemplate):
 		if len(gamecontainers) > 0:
 			for gamecontainer in gamecontainers:
 				#Don't show the soundtracks
-				if 'class' in gamecontainer.attrs and 'soundtracks' in gamecontainer['class']:
+				if 'class' in gamecontainer.attrs and ('soundtracks' in gamecontainer.attrs['class'] or 'charity' in gamecontainer.attrs['class']):
 					continue
 				gameEntries = gamecontainer.find_all('li', recursive=False)
 				for gameEntry in gameEntries:
@@ -64,18 +64,51 @@ class Command(CommandTemplate):
 							#Only add it if there is something to add, and if the current text isn't a comment
 							if len(gameEntryLinkText.strip()) > 0 and 'Comment' not in str(type(gameEntryLinkText)):
 								gamename += ' ' + gameEntryLinkText.strip()
+							else:
+								print "Skipping '{}' because it's too short or a comment (from LI '{}')".format(gameEntryLinkText, gameEntry.attrs['class'])
+						if gamename == u"":
+							gameTitle = gameEntryLink.find(class_="game-info-title")
+							if gameTitle:
+								gamename = gameTitle.text.strip()
+						if gamename == u"":
+							gameTitle = gameEntryLink.find(class_="item-title")
+							if gameTitle:
+								gamename = gameTitle.text.strip()
 						for smallSubtitle in gameEntry.find_all(class_='small-subtitle'):
 							gamename += u' ' + smallSubtitle.text.strip()
-						if ('class' in gameEntry.attrs and 'bta' in gameEntry['class']) or gameEntry.find(alt="lock icon"):
-							gamename += u" [BTA]"
-						elif gameEntry.find(class_="game-price"):
-							gamename += u" [{}]".format(gameEntry.find(class_="game-price").text)
-						elif gameEntry.find(class_='hb-lock'):
-							gamename += u" [fixed price]"
 
-						gamename = gamename.strip()
-						if gamename != u"":
-							gamenames.append(gamename)
+						if ('class' in gameEntry.attrs and 'bta' in gameEntry['class']) or gameEntry.find(alt="lock") or gameEntry.find(class_='hb-lock green'):
+							print "'{}' is a BTA game!".format(gamename)
+							#gamename += u" [BTA]"
+							if 'BTA' not in gamenames:
+								gamenames['BTA'] = []
+							gamenames['BTA'].append(gamename)
+						elif gameEntry.find(class_="game-price"):
+							price = u""
+							priceMatch = re.search('\$ ?(\d+(\.\d+)?)', gameEntry.find(class_="game-price").text)
+							if priceMatch:
+								try:
+									price = float(priceMatch.group(1))
+								except:
+									price = priceMatch.group(1)
+							else:
+								price = gameEntry.find(class_="game-price").text
+							#gamename += u" [{}]".format(price)
+							if price not in gamenames:
+								gamenames[price] = []
+							gamenames[price].append(gamename)
+						elif gameEntry.find(class_='hb-lock') and gameEntry.find(class_='blue'):
+							#gamename += u" [fixed price]"
+							if 'Fixed price' not in gamenames:
+								gamenames['Fixed price'] = []
+							gamenames['Fixed price'].append(gamename)
+						else:
+							if 'PWYW' not in gamenames:
+								gamenames['PWYW'] = []
+							gamenames['PWYW'].append(gamename)
+
+						#if gamename != u"":
+						#	gamenames.append(gamename)
 		#No game containers found. This means it's probably a Mobile bundle, with a different layout
 		else:
 			gametitles = page.find_all(class_="item-title")
@@ -85,8 +118,11 @@ class Command(CommandTemplate):
 					continue
 				gamename = gametitle.text.strip()
 				if gametitle.find(class_='green'):
-					gamename += u" [BTA]"
-				gamenames.append(gamename)
+					#gamename += u" [BTA]"
+					if 'BTA' not in gamenames:
+						gamenames['BTA'] = []
+					gamenames['BTA'].append(gamename)
+				#gamenames.append(gamename)
 
 
 		#Totals aren't shown on the site immediately, but are edited into the page with Javascript. Get info from there
@@ -128,11 +164,21 @@ class Command(CommandTemplate):
 			replytext = "Sorry, the data could not be retrieved. This is either because the site is down, or because of some weird bug. Please try again in a little while"
 		else:
 			replytext = u"{title} has an average price of ${avgPrice:.2f} and raised ${totalMoney:,} from {contributors:,} people."
+			gamelist = u""
 			if timeLeft != u"":
 				replytext += u" It will end in {timeLeft}."
 			#If we didn't find any games, pretend like nothing's wrong
 			if len(gamenames) > 0:
 				replytext += u" It contains {gamelist}"
-			replytext = replytext.format(title=title, avgPrice=round(avgPrice, 2), totalMoney=round(totalMoney, 2), contributors=contributors, timeLeft=timeLeft, gamelist="; ".join(gamenames))
+				#Make sure the cheapest games are in the front
+				if 'PWYW' in gamenames:
+					gamelist += '{}.'.format("; ".join(gamenames['PWYW']))
+					gamenames.pop('PWYW')
+				for pricelevel in sorted(gamenames.keys()):
+					pricelevelText = str(pricelevel)
+					if isinstance(pricelevel, (int, float)):
+						pricelevelText = '${}'.format(pricelevel)
+					gamelist += ' {pricelevel}: {games}.'.format(pricelevel=pricelevelText, games="; ".join(gamenames[pricelevel]))
+			replytext = replytext.format(title=title, avgPrice=round(avgPrice, 2), totalMoney=round(totalMoney, 2), contributors=contributors, timeLeft=timeLeft, gamelist=gamelist)
 
 		bot.say(target, replytext)
