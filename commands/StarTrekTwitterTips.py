@@ -24,7 +24,7 @@ class Command(CommandTemplate):
 
 		replytext = ""
 		if name in self.twitterUsernames:
-			replytext = SharedFunctions.getRandomLineFromTwitterFile(self.twitterUsernames[name])
+			replytext = SharedFunctions.getRandomLineFromTweetFile(self.twitterUsernames[name])
 			if not replytext.lower().startswith(name):
 				replytext = u"{} tip: {}".format(name[0:1].upper() + name[1:], replytext)
 		else:
