@@ -139,19 +139,12 @@ class DideRobot(irc.IRCClient):
 
 	def privmsg(self, user, channel, msg):
 		"""Bot received a message in a channel or directly from another user"""
-		#For private messages, the source is the user that sent it, while on channels it's the channel name
-		# This is different for private messages that the bot sends, since there the target is actually the target
-		source = channel
-		if not channel.startswith("#") and user != self.nickname:
-			source = user.split("!", 1)[0]
-
 		self.factory.logger.log("{0}: {1}".format(user, msg), source)
-		#Check if a command needs to be executed
 		self.handleMessage(user, channel, msg)
 
 	#Incoming action
 	def action(self, user, channel, msg):
-		self.factory.logger.log("{0} {1}".format(user, msg), channel)
+		self.factory.logger.log("*{0} {1}".format(user, msg), channel)
 		self.handleMessage(user, channel, msg)
 
 	def handleMessage(self, user, channel, msg):
@@ -161,6 +154,7 @@ class DideRobot(irc.IRCClient):
 		if not channel.startswith('#'):
 			isPrivateMessage = True
 		
+		#For private messages, the source (and therefor the target) is the user that sent it, while on channels it's the channel name
 		target = channel
 		if isPrivateMessage:
 			target = user.split("!", 1)[0]
