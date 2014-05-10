@@ -139,7 +139,7 @@ class DideRobot(irc.IRCClient):
 
 	def privmsg(self, user, channel, msg):
 		"""Bot received a message in a channel or directly from another user"""
-		self.factory.logger.log("{0}: {1}".format(user, msg), source)
+		self.factory.logger.log("{0}: {1}".format(user, msg), channel)
 		self.handleMessage(user, channel, msg)
 
 	#Incoming action
