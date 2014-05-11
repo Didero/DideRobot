@@ -173,8 +173,8 @@ class DideRobot(irc.IRCClient):
 				self.factory.logger.log("{0}: {1}".format(self.nickname, msg), target)
 				self.msg(target, msg)
 			elif messageType == 'action':
-				self.factory.logger.log("*{0} {1}".format(self.nickname, action), target)
-				self.describe(target, action)
+				self.factory.logger.log("*{0} {1}".format(self.nickname, msg), target)
+				self.describe(target, msg)
 			elif messageType == 'notice':
 				self.factory.logger.log("[notice] {0}: {1}".format(self.nickname, msg), target)
 				self.notice(target, msg)			
