@@ -15,8 +15,13 @@ class BotHandler:
 		GlobalStore.bothandler = self
 		GlobalStore.scriptfolder = os.path.dirname(__file__)
 
+		#Since a lot of modules save stuff to the 'data' subfolder, make sure it exists to save all of them some checking time
+		if not os.path.exists('data'):
+			os.mkdir('data')
+
 		if not os.path.exists(os.path.join('serverSettings', 'globalsettings.ini')):
 			print "ERROR: 'globalsettings.ini' file not found in 'serverSettings' folder! Shutting down"
+			self.shutdown()
 		else:		
 			for serverfolder in serverfolderList:
 				self.startBotfactory(serverfolder)
@@ -73,6 +78,8 @@ class BotHandler:
 				else:
 					print "Out of bots, shutting down!"
 					GlobalStore.reactor.callLater(2.0, GlobalStore.reactor.stop)
+			else:
+				print "Unregistered bot '{}', {} left: {}".format(serverfolder, len(self.botfactories), "; ".join(self.botfactories.keys()))
 
 if __name__ == "__main__":
 	GlobalStore.reactor = reactor
