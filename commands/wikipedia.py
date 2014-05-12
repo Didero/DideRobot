@@ -41,11 +41,13 @@ class Command(CommandTemplate):
 				#print "[wiki] replytext before shortening: '{}'".format(replytext)
 				if triggerInMsg == 'wiki':
 					#Get just the first sentence
-					print "First period at index: {}".format(replytext.find(u'. ')+1)
+					##print "First period at index: {}".format(replytext.find(u'. ')+1)
 					#Find the first sentence, which is the part until the first period. If it's a one-sentence paragraph, the sentence is the paragraph, otherwise there's a space and a new sentence
-					sentence = re.split('\. ?', replytext)[0]
+					sentence = re.split('\.[ \Z]', replytext)[0].strip()
 					if len(sentence) > 0:
-						replytext = sentence + '.'
+						replytext = sentence
+						if not replytext.endswith('.'):
+							replytext += '.'
 					else:
 						print "[wiki] single sentence too short"
 
