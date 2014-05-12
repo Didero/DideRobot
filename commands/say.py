@@ -1,7 +1,7 @@
 from CommandTemplate import CommandTemplate
 
 class Command(CommandTemplate):
-	triggers = ['say', 'do']
+	triggers = ['say', 'do', 'notice']
 	helptext = "Makes the bot say the provided text in the provided channel  (format 'say [channel/user] text')"
 	adminOnly = True
 	showInCommandList = False
@@ -15,7 +15,10 @@ class Command(CommandTemplate):
 		#Nothing's stopping us now! Say it!
 		else:
 			messageToSay = " ".join(msgParts[2:])
-			if triggerInMsg == 'say':
-				bot.say(msgParts[1], messageToSay)
-			elif triggerInMsg == 'do':
-				bot.doAction(msgParts[1], messageToSay)
+			messageType = 'say'
+			if triggerInMsg == 'do':
+				messageType = 'action'
+			elif triggerInMsg == 'notice':
+				messageType = 'notice'
+
+			bot.sendMessage(msgParts[1], messageToSay, messageType)
