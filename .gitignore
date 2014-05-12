@@ -32,6 +32,9 @@ _ReSharper*/
 *.sln
 *.suo
 
+#Ignore PyCharm files
+.idea/
+
 #Ignore some Python files
 *.pyc
 
