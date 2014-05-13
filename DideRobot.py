@@ -110,8 +110,30 @@ class DideRobot(irc.IRCClient):
 				self.factory.logger.log("{} changed their nick from {} to {}".format(prefix, oldnick, newnick), channel)
 
 	#Misc. logging
-	def topicUpdated(self, user, channel, newTopic):
-		self.factory.logger.log("Channel topic: '{}' (Set by {})".format(newTopic, user), channel)
+	#def topicUpdated(self, user, channel, newTopic):
+	#	self.factory.logger.log("Channel topic: '{}' (Set by {})".format(newTopic, user), channel)
+	def irc_TOPIC(self, prefix, params):
+		print "irc_TOPIC called, prefix is '{}', params is '{}'".format(prefix, params)
+
+	def irc_RPL_TOPIC(self, prefix, params):
+		print "irc_RPL_TOPIC called, prefix is '{}', params is '{}'".format(prefix, params)
+	def irc_RPL_NOTOPIC(self, prefix, params):
+		print "irc_RPL_NOTOPIC called, prefix is '{}', params is '{}'".format(prefix, params)
+
+	def irc_unknown(self, prefix, command, params):
+		commandsToIgnore = ['PONG', 'RPL_NAMREPLY', 'RPL_ENDOFNAMES']
+		#265 is rpl_localusers, 266 is globalusers. The last parameter is a string text saying how many users there are and the max.
+		#  Sometimes previous parameters are these numbers separately
+		if command == '265':
+			print "|{}| rpl_localusers: '{}'".format(self.factory.serverfolder, params[-1])
+		elif command == '266':
+			print "|{}| rpl_globalusers: '{}'".format(self.factory.serverfolder, params[-1])
+		#Sometimes there's no Message Of The Day
+		elif command == 'ERR_NOMOTD':
+			print "|{}| No MOTD".format(self.factory.serverfolder)
+		elif command not in commandsToIgnore:
+			print "|{}| UNKNOWN COMMAND (command is '{}', prefix is '{}', params are '{}'".format(self.factory.serverfolder, command, prefix, params)
+
 
 	def receivedMOTD(self, motd):
 		#Since the Message Of The Day can consist of multiple lines, print them all
@@ -146,6 +168,10 @@ class DideRobot(irc.IRCClient):
 	def action(self, user, channel, msg):
 		self.factory.logger.log("*{0} {1}".format(user, msg), channel)
 		self.handleMessage(user, channel, msg)
+
+	def noticed(self, user, channel, msg):
+		self.factory.logger.log("[notice] {0}: {1}".format(user, msg), channel)
+		#Don't send this to 'handleMessage', since you're not supposed to respond to notices
 
 	def handleMessage(self, user, channel, msg):
 		"""Called when the bot receives a message, which can be either in a channel, a private message, or an action."""
