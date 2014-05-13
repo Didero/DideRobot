@@ -110,7 +110,7 @@ class Command(CommandTemplate):
 			searchDict['type'] = 'legendary.*creature.*' + searchDict['type']
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
-		searchTermsToCorrect = {"set": "sets"}
+		searchTermsToCorrect = {"set": "sets", "color": "colors", "colour": "colors", "colours": "colors"}
 		for searchTermToCorrect, correctTerm in searchTermsToCorrect.iteritems():
 			if searchTermToCorrect in searchDict and correctTerm not in searchDict:
 				searchDict[correctTerm] = searchDict[searchTermToCorrect]
