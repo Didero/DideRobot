@@ -9,6 +9,7 @@ class CommandHandler:
 	apikeys = ConfigParser()
 	
 	def __init__(self):
+		GlobalStore.commandhandler = self
 		self.loadApiKeys()
 
 
@@ -32,7 +33,8 @@ class CommandHandler:
 
 			triggerInMsg = ""
 			if msg.startswith(bot.factory.commandPrefix):
-				triggerInMsg = msgParts[0][bot.factory.commandPrefixLength:].lower()
+				triggerInMsg = msg[bot.factory.commandPrefixLength:].lower()
+				triggerInMsg = triggerInMsg.split(" ")[0]
 			#Check if message started with something like "DideRobot:". Interpret it as the same as a command prefix
 			elif msg.startswith(bot.nickname) and len(msgParts[0]) == len(bot.nickname) + 1:
 				#Remove the nickname part, otherwise all the modules need to have extra checks to handle this exception
@@ -43,9 +45,7 @@ class CommandHandler:
 					if triggerInMsg.startswith(bot.factory.commandPrefix):
 						triggerInMsg = triggerInMsg[bot.factory.commandPrefixLength:]
 
-			msgWithoutFirstWord = ""
-			if msgPartsLength > 1:
-				msgWithoutFirstWord = " ".join(msgParts[1:])
+			msgWithoutFirstWord = msg[bot.factory.commandPrefixLength + len(triggerInMsg):].strip()
 
 			commandExecutionClaimed = False
 			for commandname, command in self.commands.iteritems():
