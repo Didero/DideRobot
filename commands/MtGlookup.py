@@ -7,6 +7,8 @@ import requests
 from CommandTemplate import CommandTemplate
 import GlobalStore
 import SharedFunctions
+from IrcMessage import IrcMessage
+
 
 class Command(CommandTemplate):
 	triggers = ['mtg', 'mtgf']
@@ -21,29 +23,32 @@ class Command(CommandTemplate):
 		GlobalStore.reactor.callInThread(self.updateCardFile)
 		GlobalStore.reactor.callInThread(self.updateDefinitions)
 
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 		starttime = time.time()
 		replytext = u""
 		maxCardsToListInChannel = 20
 		maxCardsToListInPm = 50
 
 		searchType = u""
-		if msgPartsLength > 1:
-			searchType = msgParts[1].lower()
+		if message.messagePartsLength > 0:
+			searchType = message.messageParts[0].lower()
 
-		if msgPartsLength == 1:
-			bot.say(target, u"Please provide a card name to search for")
+		if message.messagePartsLength == 0:
+			message.bot.say(message.source, u"Please provide a card name to search for")
 			return
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
 		elif searchType == 'update' or searchType == 'forceupdate':
 			if self.isUpdating:
 				replytext = u"I'm already updating!"
-			elif not bot.factory.isUserAdmin(user):
+			elif not message.bot.factory.isUserAdmin(message.user):
 				replytext = u"Sorry, only admins can use my update function"
 			else:
-				replytext = self.updateCardFile(msgWithoutFirstWord.lower()=='forceupdate')
-				replytext += " " + self.updateDefinitions(msgWithoutFirstWord.lower()=='forceupdate')
-			bot.say(target, replytext)
+				replytext = self.updateCardFile(message.message.lower()=='forceupdate')
+				replytext += " " + self.updateDefinitions(message.message.lower()=='forceupdate')
+			message.bot.say(message.source, replytext)
 			return
 		#Check if the data file even exists
 		elif not os.path.exists(os.path.join('data', 'MTGcards.json')):
@@ -52,55 +57,55 @@ class Command(CommandTemplate):
 			else:
 				replytext = u"Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
 				GlobalStore.reactor.callInThread(self.updateCardFile, True)
-			bot.say(target, replytext)
+			message.bot.say(message.source, replytext)
 			return
 		#We can also search for definitions
 		elif searchType == 'define':
 			if not os.path.exists(os.path.join('data', 'MTGdefinitions.json')):
 				replytext = u"I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
 				self.updateDefinitions(True)
-			elif len(msgParts) < 2:
+			elif message.messagePartsLength < 2:
 				replytext = u"Please add a definition to search for"
 			else:
-				searchDefinition =  " ".join(msgParts[2:])
+				searchDefinition =  " ".join(message.messageParts[1:])
 				with open(os.path.join('data', 'MTGdefinitions.json'), 'r') as definitionsFile:
 					definitions = json.load(definitionsFile)
 				if searchDefinition.lower() in definitions:
 					replytext = u"'{}': {}".format(searchDefinition, definitions[searchDefinition.lower()]['short'])
-					if triggerInMsg == 'mtgf':
+					if message.trigger == 'mtgf':
 						extendedDefinition = definitions[searchDefinition.lower()]['extended']
 						#Let's not spam channels with MtG definitions, shall we
-						if not target.startswith('#') or len(replytext) + len(extendedDefinition) < 500:
+						if message.isPrivateMessage or len(replytext) + len(extendedDefinition) < 500:
 							replytext += " " + extendedDefinition
 						else:
-							bot.sendNotice(user.split("!", 1)[0], replytext)
+							message.bot.sendNotice(message.userNickname, replytext)
 							while len(extendedDefinition) > 0:
-								bot.sendNotice(user.split("!", 1)[0], extendedDefinition[:800])
+								message.bot.sendNotice(message.userNickname, extendedDefinition[:800])
 								extendedDefinition = extendedDefinition[800:]
 							replytext += u" [definition too long, rest sent in notice]"
 				else:
 					replytext = u"I'm sorry, I'm not familiar with that term. Tell my owner, maybe they'll add it!"
-			bot.say(target, replytext)
+			message.bot.say(message.source, replytext)
 			return
 
 		#If we reached here, we're gonna search through the card store
 		searchDict = {}
-		if searchType == 'search' or (searchType == 'random' and msgPartsLength > 2) or (searchType == 'randomcommander' and msgPartsLength > 2):
+		if searchType == 'search' or (searchType == 'random' and message.messagePartsLength > 1) or (searchType == 'randomcommander' and message.messagePartsLength > 1):
 			#Advanced search!
-			if msgPartsLength <= 2:
-				bot.say(target, 'Please provide an advanced search query too, in JSON format, so "key1: value1, key2:value2". Look at www.mtgjson.com for available fields')
+			if message.messagePartsLength <= 1:
+				message.bot.say(message.source, 'Please provide an advanced search query too, in JSON format, so "key1: value1, key2:value2". Look at www.mtgjson.com for available fields')
 				return
 
-			searchDict = SharedFunctions.stringToDict(" ".join(msgParts[2:]))
-			if searchDict == {}:
-				bot.say(target, "That is not a valid search query. It should be entered like JSON, so \"'key': 'value', 'key2': 'value2',...\"")
+			searchDict = SharedFunctions.stringToDict(" ".join(message.messageParts[1:]))
+			if len(searchDict) == 0:
+				message.bot.say(message.source, "That is not a valid search query. It should be entered like JSON, so \"'key': 'value', 'key2': 'value2',...\"")
 				return
 		#If the only parameter is 'random', just get all cards
-		elif searchType == 'random' and msgPartsLength == 2:
+		elif searchType == 'random' and message.messagePartsLength == 1:
 			searchDict['name'] = '.*'
 		#No fancy search string, just search for a matching name
 		elif searchType != 'randomcommander':
-			searchDict['name'] = msgWithoutFirstWord.lower()
+			searchDict['name'] = message.message.lower()
 
 		#Commander search. Regardless of everything else, it has to be a legendary creature
 		if searchType == 'randomcommander':
@@ -198,7 +203,7 @@ class Command(CommandTemplate):
 		elif cardnamesFound == 1:
 			cardsFound = matchingCards[matchingCards.keys()[0]]
 			if len(cardsFound) == 1:
-				replytext += self.getFormattedCardInfo(cardsFound[0], triggerInMsg=='mtgf')
+				replytext += self.getFormattedCardInfo(cardsFound[0], message.trigger=='mtgf')
 			else:
 				replytext += u"Multiple cards with the same name were found: "
 				setlist = u""
@@ -209,7 +214,7 @@ class Command(CommandTemplate):
 					replytext += u"{} [set {}]; ".format(cardFound['name'].encode('utf-8'), setlist)
 				replytext = replytext[:-2]
 		#Check if listing all the found cardnames is viable. The limit is higher for private messages than for channels
-		elif cardnamesFound <= maxCardsToListInChannel or (cardnamesFound <= maxCardsToListInPm and not target.startswith('#')):
+		elif cardnamesFound <= maxCardsToListInChannel or (cardnamesFound <= maxCardsToListInPm and message.isPrivateMessage):
 			cardnamestring = u""
 			for cardname in sorted(matchingCards.keys()):
 				cardlist = matchingCards[cardname]
@@ -226,10 +231,10 @@ class Command(CommandTemplate):
 		else:
 			replytext += u"Your searchterm returned {} cards, please be more specific".format(cardnamesFound)
 
-		re.purge() #Clear the stored regexes, since we don't need them anymore
-		gc.collect() #Make sure memory usage doesn't slowly creep up from loading in the data file (hopefully)
+		re.purge()  #Clear the stored regexes, since we don't need them anymore
+		gc.collect()  #Make sure memory usage doesn't slowly creep up from loading in the data file (hopefully)
 		print "[MtG] Execution time: {} seconds".format(time.time() - starttime)
-		bot.say(target, replytext)
+		message.bot.say(message.source, replytext)
 
 	def getFormattedCardInfo(self, card, addExtendedInfo=False):
 		replytext = u"{card[name]} "

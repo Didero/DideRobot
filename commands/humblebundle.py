@@ -5,18 +5,23 @@ from bs4 import BeautifulSoup
 
 from CommandTemplate import CommandTemplate
 import SharedFunctions
+from IrcMessage import IrcMessage
+
 
 class Command(CommandTemplate):
 	triggers = ['humble', 'humblebundle']
 	helptext = "Displays information about the latest Humble Bundle. Add the 'weekly' parameter to get info on their Weekly sale"
 	#callInThread = True
 
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 		replytext = u""
 		gamenames = {}
 		page = None
 		title = u""
-		isWeekly = (msgWithoutFirstWord.lower() == 'weekly' or msgWithoutFirstWord.lower() == 'week')
+		isWeekly = (message.message.lower() == 'weekly' or message.message.lower() == 'week')
 
 		url = "http://www.humblebundle.com/"
 		if isWeekly:
@@ -181,4 +186,4 @@ class Command(CommandTemplate):
 					gamelist += ' {pricelevel}: {games}.'.format(pricelevel=pricelevelText, games="; ".join(gamenames[pricelevel]))
 			replytext = replytext.format(title=title, avgPrice=round(avgPrice, 2), totalMoney=round(totalMoney, 2), contributors=contributors, timeLeft=timeLeft, gamelist=gamelist)
 
-		bot.say(target, replytext)
+		message.bot.say(message.source, replytext)

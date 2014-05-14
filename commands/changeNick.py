@@ -1,14 +1,19 @@
 from CommandTemplate import CommandTemplate
 import GlobalStore
+from IrcMessage import IrcMessage
+
 
 class Command(CommandTemplate):
 	triggers = ['nick', 'nickname']
 	helptext = "Changes my nick to the provided new one, assuming it's not taken. If no argument is provided, try to change back to the default as set in the server settings"
 	adminOnly = True
 	
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
-		if msgPartsLength == 1:
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
+		if message.messagePartsLength == 0:
 			#Change nick back to the default
-			bot.setNick(bot.factory.settings.get("connection", "nickname"))
+			message.bot.setNick(message.bot.factory.settings.get("connection", "nickname"))
 		else:
-			bot.setNick(msgParts[1])
+			message.bot.setNick(message.messageParts[0])

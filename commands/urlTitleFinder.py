@@ -6,6 +6,7 @@ import requests
 from CommandTemplate import CommandTemplate
 import GlobalStore
 import SharedFunctions
+from IrcMessage import IrcMessage
 
 class Command(CommandTemplate):
 	
@@ -13,17 +14,20 @@ class Command(CommandTemplate):
 	helptext = "Shows the title of the page somebody just posted a link to"
 	showInCommandList = False
 	claimCommandExecution = False
-	callInThread = True #We can't know how slow sites are, so prevent the bot from locking up on slow sites
+	callInThread = True  #We can't know how slow sites are, so prevent the bot from locking up on slow sites
 
-	def shouldExecute(self, bot, commandExecutionClaimed, triggerInMsg, msg, msgParts):
+	def shouldExecute(self, message, commandExecutionClaimed):
 		for trigger in self.triggers:
-			if msg.count(trigger) > 0:
+			if trigger in message.message:
 				return True
 		return False
 	
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 		starttime = time.time()
-		urlmatch = re.search(r"(https?:\/\/\S+)", msg)
+		urlmatch = re.search(r"(https?://\S+)", message.message)
 		if not urlmatch:
 			print "(Title Retrieve module triggered, but no url found)"
 		else:
@@ -32,7 +36,7 @@ class Command(CommandTemplate):
 				url = url[:-1]
 
 			try:
-				title = u""
+				title = None
 				#There's some special cases for often used pages.
 				#Twitch!
 				if url.count('twitch.tv') > 0:
@@ -63,9 +67,9 @@ class Command(CommandTemplate):
 						#		print u"  {}: {}".format(key, value)
 
 							title = u"Twitch - {username}"
-							if channeldata['game'] != None:
+							if channeldata['game'] is not None:
 								title += u", playing {game}"
-							if channeldata['mature'] == True:
+							if channeldata['mature']:
 								title += u" [Mature]"
 							if isChannelOnline:
 								title += u" (Online)"
@@ -146,7 +150,7 @@ class Command(CommandTemplate):
 								imgdata = imgdata['data']
 								if imgdata['title'] is None:
 									imgdata['title'] = u"No Title"
-								title += u"{imgdata[title]} ("
+								title = u"{imgdata[title]} ("
 								if isGallery:
 									title += u"{imgdata[images_count]} images"
 								else:
@@ -195,10 +199,8 @@ class Command(CommandTemplate):
 									title += u". Verified account"
 								title = title.format(**twitterdata)
 
-
-
-				#If nothing's been found so far, just display whatever's between the <title> tags
-				if title == u"":
+				#If nothing has been found so far, just display whatever is between the <title> tags
+				if title is None:
 					print "Using default title search"
 					#Check here and not later because sites like Imgur can have .jpg URLs and we still want to check those
 					extensionsToIgnore = ['.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.zip', '.rar', '.7z', '.pdf']
@@ -211,14 +213,11 @@ class Command(CommandTemplate):
 						print "No title found on page '{}'".format(url)
 					else:
 						title = titlematch.group(1).strip()
-				page = requests.get(url)
 			except requests.exceptions.ConnectionError as error:
-				print "(A connection error occured while trying to retrieve '{}': {})".format(url, error)
+				print "(A connection error occurred while trying to retrieve '{}': {})".format(url, error)
 
-
-			if title != u"":
-
-
+			#Finally, display the result of all the hard work, if there was any
+			if title is not None:
 				title = title.replace('\n', ' ')
 				#Convert weird characters like &#39 back into normal ones like '
 				title = HTMLParser.HTMLParser().unescape(title)
@@ -226,5 +225,5 @@ class Command(CommandTemplate):
 				if len(title) > 250:
 					title = title[:250] + "..."
 
-				print "time taken: {} seconds".format(time.time() - starttime)
-				bot.say(target, u"Title: {}".format(title))
+				print "[urlTitleFinder] Time taken: {} seconds".format(time.time() - starttime)
+				message.bot.say(message.source, u"Title: {}".format(title))

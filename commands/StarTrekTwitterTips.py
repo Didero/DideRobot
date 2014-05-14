@@ -6,19 +6,24 @@ import requests
 from CommandTemplate import CommandTemplate
 import GlobalStore
 import SharedFunctions
+from IrcMessage import IrcMessage
+
 
 class Command(CommandTemplate):
 	triggers = ['startrektip', 'sttip', 'startrektips']
 	helptext = "Shows a randomly chosen tip from one of the Star Trek Tips accounts, or of a specific one if a name is provided"
 	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'laforge': 'LaForgeTips', 'locutus': 'LocutusTips', 'picard': 'PicardTips', 'quark': 'QuarkTips', 'riker': 'RikerTips', 'worf': 'WorfTips'}
-	scheduledFunctionTime = 18000.0 #Every 5 hours
+	scheduledFunctionTime = 18000.0  #Every 5 hours
 
 	isUpdating = False
 
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 		name = ""
-		if msgPartsLength > 1:
-			name = msgParts[1].lower()
+		if message.messagePartsLength > 0:
+			name = message.messageParts[0].lower()
 		if name == 'random':
 			name = random.choice(self.twitterUsernames.keys())
 
@@ -30,11 +35,11 @@ class Command(CommandTemplate):
 		else:
 			if name != "":
 				replytext = "I don't know anybody by the name of '{}', sorry. ".format(name)
-			replytext += "Type '{}{} <name>' to hear one of <name>'s tips, or use 'random' to have me pick a name for you. ".format(bot.factory.commandPrefix, triggerInMsg)
+			replytext += "Type '{}{} <name>' to hear one of <name>'s tips, or use 'random' to have me pick a name for you. ".format(message.bot.factory.commandPrefix, message.trigger)
 			replytext += "Available tip-givers: {}".format(", ".join(sorted(self.twitterUsernames.keys())))
 
 		replytext = replytext.encode('utf-8', 'replace')
-		bot.say(target, replytext)
+		message.bot.say(message.source, replytext)
 
 
 	def executeScheduledFunction(self):

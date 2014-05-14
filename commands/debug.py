@@ -1,5 +1,7 @@
 from CommandTemplate import CommandTemplate
 import GlobalStore
+from IrcMessage import IrcMessage
+
 
 class Command(CommandTemplate):
 	triggers = ['debug']
@@ -7,7 +9,10 @@ class Command(CommandTemplate):
 	showInCommandList = False
 	adminOnly = True
 
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 		for serverfolder, botfactory in GlobalStore.bothandler.botfactories.iteritems():
 			print "Channel and user list for {}:".format(botfactory.serverfolder)
 			print botfactory.bot.channelsUserList

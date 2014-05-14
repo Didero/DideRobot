@@ -1,14 +1,19 @@
 import os
 
 from CommandTemplate import CommandTemplate
+from IrcMessage import IrcMessage
+
 
 class Command(CommandTemplate):
 	triggers = ['info']
-	helptext = "Gives some info about the bot. Mainly used for debugging now"
+	helptext = "Gives some basic info about the bot"
 	
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 
 		replytext = u"Hi {nick}, my name is {mynick}. I'm not very old, and my skills include whatever modules I've currently got loaded."
 		replytext += u" I'm not sure what else to tell you, really. I probably have a {commandprefix}help module if you want to know what I'm capable of!"
-		replytext = replytext.format(nick=user.split("!", 1)[0], mynick=bot.nickname, commandprefix=bot.factory.commandPrefix)
-		bot.say(target, replytext)
+		replytext = replytext.format(nick=message.userNickname, mynick=message.bot.nickname, commandprefix=message.bot.factory.commandPrefix)
+		message.bot.say(message.source, replytext)

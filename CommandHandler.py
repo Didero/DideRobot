@@ -3,6 +3,7 @@ import traceback
 from ConfigParser import ConfigParser
 
 import GlobalStore
+from IrcMessage import IrcMessage
 
 class CommandHandler:
 	commands = {}
@@ -25,47 +26,30 @@ class CommandHandler:
 			self.apikeys.write(apifile)
 
 	
-	def fireCommand(self, bot, user, target, msg):
-		username = user.split("!", 1)[0]
-		if username not in bot.factory.userIgnoreList and user not in bot.factory.userIgnoreList:
-			msgParts = msg.split(" ")
-			msgPartsLength = len(msgParts)
-
-			triggerInMsg = ""
-			if msg.startswith(bot.factory.commandPrefix):
-				triggerInMsg = msg[bot.factory.commandPrefixLength:].lower()
-				triggerInMsg = triggerInMsg.split(" ")[0]
-			#Check if message started with something like "DideRobot:". Interpret it as the same as a command prefix
-			elif msg.startswith(bot.nickname) and len(msgParts[0]) == len(bot.nickname) + 1:
-				#Remove the nickname part, otherwise all the modules need to have extra checks to handle this exception
-				if msgPartsLength > 1:
-					msgParts = msgParts[1:]
-					msgPartsLength -= 1
-					triggerInMsg = msgParts[0].lower()
-					if triggerInMsg.startswith(bot.factory.commandPrefix):
-						triggerInMsg = triggerInMsg[bot.factory.commandPrefixLength:]
-
-			msgWithoutFirstWord = msg[bot.factory.commandPrefixLength + len(triggerInMsg):].strip()
-
+	def fireCommand(self, message):
+		"""
+		:type message: IrcMessage
+		"""
+		if message.userNickname not in message.bot.factory.userIgnoreList and message.userNickname not in message.bot.factory.userIgnoreList:
 			commandExecutionClaimed = False
 			for commandname, command in self.commands.iteritems():
-				if not self.isCommandAllowedForBot(bot, commandname):
+				if not self.isCommandAllowedForBot(message.bot, commandname):
 					continue
 
-				if command.shouldExecute(bot, commandExecutionClaimed, triggerInMsg, msg, msgParts):
-					if command.adminOnly and username not in bot.factory.admins and user not in bot.factory.admins:
-						bot.say(target, "Sorry, this command is admin-only")
+				if command.shouldExecute(message, commandExecutionClaimed):
+					if command.adminOnly and message.userNickname not in message.bot.factory.admins and message.user not in message.bot.factory.admins:
+						message.bot.say(message.source, "Sorry, this command is admin-only")
 					else:
 						try:
 							if command.callInThread:
 								print "Calling '{}' in thread".format(command.triggers[0])
-								GlobalStore.reactor.callInThread(command.execute, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength)
+								GlobalStore.reactor.callInThread(command.execute, message)
 							else:
-								command.execute(bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength)
+								command.execute(message)
 						except Exception as e:
-							bot.factory.logger.log("ERROR executing '{}': {}".format(commandname, str(e)), target)
+							message.bot.factory.logger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
 							traceback.print_exc()
-							bot.say(target, "Sorry, an error occured while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it")
+							message.bot.say(message.source, "Sorry, an error occured while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it")
 						finally:
 							if command.claimCommandExecution:
 								commandExecutionClaimed = True

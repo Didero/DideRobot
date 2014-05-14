@@ -8,19 +8,20 @@ import requests
 from CommandTemplate import CommandTemplate
 import GlobalStore
 
+
 class Command(CommandTemplate):
 	triggers = ['pokemon']
 	helptext = "Looks up info on the provided Pokemon"
 	callInThread = True #WolframAlpha can be a bit slow
 
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
+	def execute(self, message):
 		replytext = u""
-		if msgPartsLength == 1:
+		if message.messagePartsLength == 1:
 			replytext = u"Please provide the name of a Pokemon to search for"
 		elif not GlobalStore.commandhandler.apikeys.has_section('wolframalpha') or not GlobalStore.commandhandler.apikeys.has_option('wolframalpha', 'key'):
 			replytext = u"No API key for Wolfram Alpha found. That's kinda sloppy, owner"
 		else:
-			searchstring = "pokemon " + msgWithoutFirstWord
+			searchstring = "pokemon " + message.message
 			params = {'appid': GlobalStore.commandhandler.apikeys.get('wolframalpha', 'key'), 'format': 'plaintext', 'input': searchstring}
 			apireturn = requests.get("http://api.wolframalpha.com/v2/query", params=params)
 			xmltext = apireturn.text
@@ -38,16 +39,16 @@ class Command(CommandTemplate):
 			else:
 				pokemondata = {}
 				dataKeysToKeep = ['name', u'Pokédex number', 'type', 'generation', 'species', 'evolves from', 'evolves into', 'natural abilities',
-					  'hit points', 'attack', 'defense', 'special attack', 'special defense', 'speed']
+								  'hit points', 'attack', 'defense', 'special attack', 'special defense', 'speed']
 
 				#Go through all the pods and subpods to collect interesting data
 				for pod in xml.findall('pod')[1:]:
 					text = pod.find('subpod').find('plaintext').text
 					if text:
-						dict = self.turnWolframTableIntoDict(text)
-						for key, value in dict.iteritems():
+						tableAsDict = self.turnWolframTableIntoDict(text)
+						for key, value in tableAsDict.iteritems():
 							if key in dataKeysToKeep:
-								value = re.sub(' *\| *', ', ', value) #'type' for instance is displayed as 'fire  |  flying' sometimes. Clean that up
+								value = re.sub(' *\| *', ', ', value)  #'type' for instance is displayed as 'fire  |  flying' sometimes. Clean that up
 								pokemondata[key] = value
 				print "Collected data: ", pokemondata
 
@@ -64,11 +65,11 @@ class Command(CommandTemplate):
 					replytext += u"{pokemondata[special attack]} SAtk, {pokemondata[special defense]} SDef, {pokemondata[speed]} Spd."
 					replytext = replytext.format(pokemondata=pokemondata)
 
-		bot.say(target, replytext)
+		message.bot.say(message.source, replytext)
 
 	def turnWolframTableIntoDict(self, text):
 		text = text.replace('<plaintext>', '').replace('</plaintext>', '')
-		dict = {}
+		tableAsDict = {}
 		lines = text.splitlines()
 		for line in lines:
 			parts = line.split(r'|', 1)
@@ -77,5 +78,5 @@ class Command(CommandTemplate):
 				parts[0] = parts[0].strip()
 				parts[1] = parts[1].strip()
 				if len(parts[0]) > 0 and len(parts[1]) > 0:
-				   dict[parts[0]] = parts[1]
-		return dict
+				   tableAsDict[parts[0]] = parts[1]
+		return tableAsDict

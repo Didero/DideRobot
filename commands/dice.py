@@ -1,15 +1,19 @@
 import random
 
 from CommandTemplate import CommandTemplate
+from IrcMessage import IrcMessage
+
 
 class Command(CommandTemplate):
 	triggers = ['dice', 'roll']
 	helptext = "Roll dice. Simple. Format is either <sides> [<rolls>], or <rolls>d<sides> like in those nerdy tabletop games"
 
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
-
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 		replytext = u""
-		rollcount = -1
+		rollcount = 1
 		sides = -1
 		rollValues = []
 		total = 0.0
@@ -17,29 +21,29 @@ class Command(CommandTemplate):
 		rollLimit = 1000
 		displayRollsLimit = 20
 
-		if msgPartsLength == 1:
+		if message.messagePartsLength == 0:
 			replytext = u"You want the classic six-sided die, I assume? Rolling... And it lands on a... {}!".format(random.randint(1,6))
-		if msgPartsLength > 1:
+		else:
 			#No '1d12' or anything, just numbers
-			if msgWithoutFirstWord.count('d') == 0:
+			if message.message.count('d') == 0:
 
 				#assuming '^dice [sides] [rolls]
-				if msgPartsLength > 1:
+				if message.messagePartsLength > 0:
 					try:
-						sides = int(msgParts[1])
-					except:
+						sides = int(message.messageParts[0])
+					except ValueError:
 						sides = 6
-						replytext += u"(I don't think '{}' is a valid number of sides, assuming {} sides) ".format(msgParts[1], sides)
-				if msgPartsLength > 2:
+						replytext += u"(I don't think '{}' is a valid number of sides, assuming {} sides) ".format(message.messageParts[0], sides)
+				if message.messagePartsLength > 1:
 					try:
-						rollcount = int(msgParts[2])
-					except:
-						replytext += u"(I don't know how to roll '{}' times, I'm just gonna roll once) ".format(msgParts[2])
+						rollcount = int(message.messageParts[1])
+					except ValueError:
+						replytext += u"(I don't know how to roll '{}' times, I'm just gonna roll once) ".format(message.messageParts[1])
 						rollcount = 1
 
 			else:
 				#There's a 'd' in the message, so it's probably something like '1d12
-				diceroll = ' '.join(msgParts[1:]).lower().split("d")
+				diceroll = message.message.lower().split("d")
 				print "Diceroll in parts: {}".format(", ".join(diceroll))
 
 				#Verify that the number of sides was entered correctly
@@ -49,7 +53,7 @@ class Command(CommandTemplate):
 				else:
 					try:
 						sides = int(diceroll[1])
-					except:
+					except ValueError:
 						sides = 20
 						replytext += u"(I don't know what to do with '{}', assuming {} sides) ".format(diceroll[1], sides)
 
@@ -60,10 +64,9 @@ class Command(CommandTemplate):
 				else:
 					try:
 						rollcount = int(diceroll[0])
-					except:
+					except ValueError:
 						rollcount = 1
 						replytext += u"(I don't know what to do with '{}', assuming {} roll) ".format(diceroll[0], rollcount)
-
 
 			#Preventing negative numbers
 			if rollcount <= 0:
@@ -104,5 +107,5 @@ class Command(CommandTemplate):
 			else:
 				replytext += u"{} is a LOT of rolls, even I would spend ages on that. I'll just give you the expected value, that'll be close enough. And that is... {}!".format(rollcount, total)
 
-		bot.say(target, replytext)
+		message.bot.say(message.source, replytext)
 

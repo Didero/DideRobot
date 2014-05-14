@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 
 from CommandTemplate import CommandTemplate
 import SharedFunctions
+from IrcMessage import IrcMessage
+
 
 class Command(CommandTemplate):
 	triggers = ['tell']
@@ -18,51 +20,53 @@ class Command(CommandTemplate):
 			with open(self.tellsFileLocation, 'r') as tellsfile:
 				self.storedTells = json.load(tellsfile)
 
-	def shouldExecute(self, bot, commandExecutionClaimed, triggerInMsg, msg, msgParts):
+	def shouldExecute(self, message, commandExecutionClaimed):
 		#Moved to the 'execute' function, since we have to check on every message if there's a tell for that person
 		return True
 	
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
-		nick = user.split("!", 1)[0]
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 		tells = []
 		#Load in the tell data for the person if needed, and delete them
-		if user in self.storedTells:
-			tells = self.storedTells[user]
-			self.storedTells.pop(user, None)
-		elif nick in self.storedTells:
-			tells = self.storedTells[nick]
-			self.storedTells.pop(nick, None)
+		if message.user in self.storedTells:
+			tells = self.storedTells[message.user]
+			self.storedTells.pop(message.user)
+		elif message.userNickname in self.storedTells:
+			tells = self.storedTells[message.userNickname]
+			self.storedTells.pop(message.userNickname)
 
 		if len(tells) > 0:
 			for tell in tells:
-				if tell["sentInChannel"] == target:
+				if tell["sentInChannel"] == message.source:
 					timeSent = datetime.utcfromtimestamp(tell['sentAt'])
 					timeSinceTell = (datetime.utcnow() - timeSent).seconds
 					timeSinceTellFormatted = SharedFunctions.durationSecondsToText(timeSinceTell)
 
-					bot.say(target, u"{recipient}: {message} (sent by {sender} on {timeSent}; {timeSinceTell} ago)".format(
-											recipient=nick, message=tell["message"], sender=tell["sender"], timeSent=timeSent.isoformat(' '), timeSinceTell=timeSinceTellFormatted))
+					message.bot.say(message.source, u"{recipient}: {message} (sent by {sender} on {timeSent}; {timeSinceTell} ago)"
+						.format(recipient=message.userNickname, message=tell["message"], sender=tell["sender"], timeSent=timeSent.isoformat(' '), timeSinceTell=timeSinceTellFormatted))
 			#Store the changed tells to disk
 			self.saveTellsToFile()
 
 		#Done here instead of in 'shouldExecute', because it should execute every time to check if there is a tell for that user
-		if triggerInMsg in self.triggers:
+		if message.trigger in self.triggers:
 			replytext = u""
-			if msgPartsLength == 1:
+			if message.messagePartsLength == 0:
 				replytext = u"Add a username and a message as arguments, then we'll tell-I mean talk"
-			elif msgPartsLength == 2:
-				replytext = u"What do you want me to tell {}? Add that as an argument too, otherwise I'm just gonna stare at them and we'll all be uncomfortable".format(msgParts[1])
+			elif message.messagePartsLength == 1:
+				replytext = u"What do you want me to tell {}? Add that as an argument too, otherwise I'm just gonna stare at them and we'll all be uncomfortable".format(message.messageParts[0])
 			else:
-				tellRecipient = msgParts[1]
+				tellRecipient = message.messageParts[0]
 				#Prevent tells to us, in case that would ever come up
-				if tellRecipient.lower() == bot.nickname.lower():
+				if tellRecipient.lower() == message.bot.nickname.lower():
 					replytext = "You can talk to me directly, I'm here for you now!"
 				else:
-					tellMessage = " ".join(msgParts[2:])
+					tellMessage = " ".join(message.messageParts[1:])
 					if tellRecipient not in self.storedTells:
 						self.storedTells[tellRecipient] = []
 
-					tell = {"message": tellMessage, "sender": nick, "sentAt": round(time.time()), "sentInChannel": target}
+					tell = {"message": tellMessage, "sender": message.userNickname, "sentAt": round(time.time()), "sentInChannel": message.source}
 					self.storedTells[tellRecipient].append(tell)
 
 					print "storedTells: ", self.storedTells
@@ -70,7 +74,7 @@ class Command(CommandTemplate):
 					replytext = u"All right, I'll tell {} when they show a sign of life".format(tellRecipient)
 					self.saveTellsToFile()
 
-			bot.say(target, replytext)
+			message.bot.say(message.source, replytext)
 
 	def saveTellsToFile(self):
 		with open(self.tellsFileLocation, 'w') as tellsfile:

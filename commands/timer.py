@@ -1,22 +1,25 @@
 import GlobalStore
 from CommandTemplate import CommandTemplate
+from IrcMessage import IrcMessage
+
 
 class Command(CommandTemplate):
 	triggers = ['timer', 'remind']
 	helptext = "Set a timer to remind you of something later. parameters are [time in seconds] ([message])"
 
-	def execute(self, bot, user, target, triggerInMsg, msg, msgWithoutFirstWord, msgParts, msgPartsLength):
+	def execute(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 		replytext = u""
-		if msgPartsLength == 1:
+		if message.messagePartsLength == 1:
 			replytext = u"Please add a time (in seconds) and optionally a reminder message"
 		else:
-			nick = user.split("!", 1)[0]
-
 			waittime = -1.0
 			try:
-				waittime = float(msgParts[1])
-			except:
-				replytext = u"'{}' is not a valid number".format(msgParts[1])
+				waittime = float(message.messageParts[0])
+			except ValueError:
+				replytext = u"'{}' is not a valid number".format(message.messageParts[0])
 
 			#Only continue if no error message has already been set
 			if replytext == u"":
@@ -24,15 +27,15 @@ class Command(CommandTemplate):
 					replytext = u"Your timer of {} seconds ago is already up, since it's negative".format(waittime)
 				elif waittime <= 10.0:
 					replytext = u"Surely you don't forget stuff that quickly? Try a delay of more than 10 seconds"
-				elif waittime > 86400.0: #Longer than a day
+				elif waittime > 86400.0:  #Longer than a day
 					replytext = u"That's a bit too long of a wait time, sorry. Try less than a day"
 				else:
-					if msgPartsLength > 2:
-						timerMsg = "{}: {}".format(nick, " ".join(msgParts[2:]))
-						GlobalStore.reactor.callLater(waittime, bot.say, target, timerMsg)
+					if message.messagePartsLength > 2:
+						timerMsg = "{}: {}".format(message.userNickname, " ".join(message.messageParts[1:]))
+						GlobalStore.reactor.callLater(waittime, message.bot.say, message.source, timerMsg)
 					else:
-						GlobalStore.reactor.callLater(waittime, bot.say, target, "{}: Your timer is up".format(nick))
+						GlobalStore.reactor.callLater(waittime, message.bot.say, message.source, "{}: Your timer is up".format(message.userNickname))
 
-					replytext = u"{}: Your timer will fire in {} seconds".format(nick, waittime)
+					replytext = u"{}: Your timer will fire in {} seconds".format(message.userNickname, waittime)
 
-		bot.say(target, replytext)
+		message.bot.say(message.source, replytext)

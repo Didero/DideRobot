@@ -10,6 +10,7 @@ from twisted.words.protocols import irc
 
 import GlobalStore
 import Logger
+from IrcMessage import IrcMessage
 
 
 class DideRobot(irc.IRCClient):
@@ -162,39 +163,31 @@ class DideRobot(irc.IRCClient):
 	def privmsg(self, user, channel, msg):
 		"""Bot received a message in a channel or directly from another user"""
 		self.factory.logger.log("{0}: {1}".format(user, msg), channel)
-		self.handleMessage(user, channel, msg)
+		self.handleMessage(user, channel, msg, 'say')
 
 	#Incoming action
 	def action(self, user, channel, msg):
 		self.factory.logger.log("*{0} {1}".format(user, msg), channel)
-		self.handleMessage(user, channel, msg)
+		self.handleMessage(user, channel, msg, 'action')
 
 	def noticed(self, user, channel, msg):
 		self.factory.logger.log("[notice] {0}: {1}".format(user, msg), channel)
 		#Don't send this to 'handleMessage', since you're not supposed to respond to notices
 
-	def handleMessage(self, user, channel, msg):
-		"""Called when the bot receives a message, which can be either in a channel, a private message, or an action."""
-		
-		isPrivateMessage = False
-		if not channel.startswith('#'):
-			isPrivateMessage = True
-		
-		#For private messages, the source (and therefor the target) is the user that sent it, while on channels it's the channel name
-		target = channel
-		if isPrivateMessage:
-			target = user.split("!", 1)[0]
-			
+	def handleMessage(self, user, channel, msgText, type='say'):
+		"""Called when the bot receives a message, which can be either in a channel or in a private message, as text or an action."""
+
+		message = IrcMessage(irc.stripFormatting(msgText), self, type, user, channel)
 		#Let the CommandHandler see if something needs to be said
-		GlobalStore.commandhandler.fireCommand(self, user, target, irc.stripFormatting(msg))
+		GlobalStore.commandhandler.fireCommand(message)
 
 	def sendMessage(self, target, msg, messageType='say'):
 		#Only say something if we're not muted, or if it's a private message or a notice
-		if  not self.isMuted or not target.startswith('#') or messageType == 'notice':
+		if not self.isMuted or not target.startswith('#') or messageType == 'notice':
 			try:
 				msg = msg.encode(encoding='utf-8', errors='replace')
-			except:
-				msg = msg
+			except (UnicodeDecodeError, UnicodeEncodeError):
+				print "Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg)
 			if messageType == 'say':
 				self.factory.logger.log("{0}: {1}".format(self.nickname, msg), target)
 				self.msg(target, msg)
