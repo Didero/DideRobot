@@ -55,10 +55,9 @@ class DideRobot(irc.IRCClient):
 		"""Called when a user or the bot joins a channel"""
 		#'prefix' is the user, 'params' is a list with apparently just one entry, the channel
 		self.factory.logger.log("User {} joined".format(prefix), params[0])
-		#Keep track of the channels we're in
-		if prefix.split("!", 1)[0] == self.nickname:
-			if params[0] not in self.channelsUserList:
-				self.retrieveChannelUsers(params[0])
+		#If we just joined a channel, or if don't have a record of this channel yet, get all the users in it
+		if prefix.split("!", 1)[0] == self.nickname or params[0] not in self.channelsUserList:
+			self.retrieveChannelUsers(params[0])
 		#If we don't know this user yet, add it to our list
 		elif prefix not in self.channelsUserList[params[0]]:
 			self.channelsUserList[params[0]].append(prefix)
@@ -143,6 +142,9 @@ class DideRobot(irc.IRCClient):
 
 	#Create a list of user addresses per channel
 	def retrieveChannelUsers(self, channel):
+		#Make sure we don't get duplicate data
+		if channel in self.channelsUserList:
+			self.channelsUserList.pop(channel)
 		self.sendLine("WHO {}".format(channel))
 
 	def irc_RPL_WHOREPLY(self, prefix, params):
