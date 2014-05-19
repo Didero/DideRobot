@@ -43,7 +43,10 @@ class IrcMessage(object):
 			self.message = self.rawText.strip()
 		
 		#messageParts should never include the trigger, so we split the messageWithoutTrigger
-		self.messageParts = self.message.split(u" ")
+		if self.message != u"":
+			self.messageParts = self.message.split(u" ")
+		else:
+			self.messageParts = []
 		self.messagePartsLength = len(self.messageParts)
 
 
