@@ -68,20 +68,25 @@ class Command(CommandTemplate):
 			else:
 				params = {'key': GlobalStore.commandhandler.apikeys.get('locatorhq', 'key'), 'user': GlobalStore.commandhandler.apikeys.get('locatorhq', 'username'), 'ip': userIp, 'format': 'json'}
 				apiReturn = requests.get("http://api.locatorhq.com", params=params)
-				print u"Url: '{}'".format(apiReturn.url)
-				print u"Response:"
-				print apiReturn.text
-				if apiReturn.text.startswith('Sorry'):
-					#An error occurred
-					print apiReturn.text
-					replytext = u"Sorry, an error occurred. Tell my owner to check the debug output, the exact error is in there"
-				elif apiReturn.text.lower() == 'no data':
-					replytext = u"I'm sorry, I can't find any country data for that user"
-				else:
+
+				try:
 					data = json.loads(apiReturn.text)
+				except ValueError:
+					#If there's an error message in the API output, it's not valid JSON. Check if we know what's wrong
+					print "[location] ERROR: '{}'".format(apiReturn.text)
+					error = apiReturn.text.lower()
+					if error == 'no data':
+						replytext = u"I'm sorry, I can't find any country data for that user"
+					elif "server too busy" in error:
+						replytext = u"The location lookup API is a bit busy, please try again in a little while"
+					else:
+						#Unknown error, vague error report
+						replytext = u"Sorry, an error occurred. Tell my owner to check the debug output, the exact error is in there"
+				else:
 					if 'countryName' not in data or data['countryName'] == '-':
 						replytext = u"I'm sorry, but I don't know which country that user is from"
 					else:
 						replytext = u"{} appears to be from {}".format(userAddress.split('!', 1)[0], data['countryName'])
+
 
 		message.bot.say(message.source, replytext)
