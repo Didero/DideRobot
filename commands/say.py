@@ -26,4 +26,11 @@ class Command(CommandTemplate):
 			elif message.trigger == u'notice':
 				messageType = u'notice'
 
-			message.bot.sendMessage(message.messageParts[0], messageToSay, messageType)
+			target = message.messageParts[0]
+			#Make absolutely sure the target isn't unicode, because Twisted doesn't like that
+			try:
+				target = target.encode('utf-8')
+			except (UnicodeEncodeError, UnicodeDecodeError):
+				print "[Say module] Unable to convert '{}' to a string".format(target)
+
+			message.bot.sendMessage(target, messageToSay, messageType)
