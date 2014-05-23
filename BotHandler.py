@@ -1,6 +1,6 @@
-﻿import os, site, sys
-#Make sure 'import' also searches inside the 'libraries' folder, so it can find Twisted and the like without cluttering up the main directory
-site.addsitedir(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libraries'))
+﻿import os, sys
+#Make sure 'import' also searches inside the 'libraries' folder, so it can find Twisted and the like without those libs cluttering up the main directory
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libraries'))
 
 from twisted.internet import reactor
 
