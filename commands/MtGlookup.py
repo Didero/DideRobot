@@ -51,7 +51,7 @@ class Command(CommandTemplate):
 			message.bot.say(message.source, replytext)
 			return
 		#Check if the data file even exists
-		elif not os.path.exists(os.path.join('data', 'MTGcards.json')):
+		elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')):
 			if self.isUpdating:
 				replytext = u"I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
 			else:
@@ -61,7 +61,7 @@ class Command(CommandTemplate):
 			return
 		#We can also search for definitions
 		elif searchType == 'define':
-			if not os.path.exists(os.path.join('data', 'MTGdefinitions.json')):
+			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')):
 				replytext = u"I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
 				self.updateDefinitions(True)
 			elif message.messagePartsLength < 2:
@@ -354,7 +354,7 @@ class Command(CommandTemplate):
 
 			#Since it's a zip, extract it
 			zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
-			newcardfilename = os.path.join('data', zipWithJson.namelist()[0])
+			newcardfilename = os.path.join(GlobalStore.scriptfolder, 'data', zipWithJson.namelist()[0])
 			if os.path.exists(newcardfilename):
 				os.remove(newcardfilename)
 			zipWithJson.extractall('data')

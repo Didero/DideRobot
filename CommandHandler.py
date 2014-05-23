@@ -16,13 +16,13 @@ class CommandHandler:
 
 	def loadApiKeys(self):
 		self.apikeys = ConfigParser()
-		if not os.path.exists(os.path.join('data', 'apikeys.ini')):
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini')):
 			print "ERROR: API key file not found!"
 		else:
-			self.apikeys.read(os.path.join('data', 'apikeys.ini'))
+			self.apikeys.read(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini'))
 
 	def saveApiKeys(self):
-		with open(os.path.join('data', 'apikeys.ini'), 'w') as apifile:
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini'), 'w') as apifile:
 			self.apikeys.write(apifile)
 
 	
@@ -145,9 +145,9 @@ class CommandHandler:
 	def reloadCommand(self, name, folder='commands'):
 		if name in self.commands:
 			success = True
-			if self.unloadCommand(name, folder) == False:
+			if not self.unloadCommand(name, folder):
 				success = False
-			if self.loadCommand(name, folder) == False:
+			if not self.loadCommand(name, folder):
 				success = False
 			return success
 		else:
