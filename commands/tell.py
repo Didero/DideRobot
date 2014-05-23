@@ -3,6 +3,7 @@ import time
 from datetime import datetime, timedelta
 
 from CommandTemplate import CommandTemplate
+import GlobalStore
 import SharedFunctions
 from IrcMessage import IrcMessage
 
@@ -12,7 +13,7 @@ class Command(CommandTemplate):
 	helptext = "Stores messages you want to send to other users, and says them to that user when they speak"
 	claimCommandExecution = False
 
-	tellsFileLocation = os.path.join("data", "tells.json")
+	tellsFileLocation = os.path.join(GlobalStore.scriptfolder, "data", "tells.json")
 	storedTells = {}
 
 	def onStart(self):

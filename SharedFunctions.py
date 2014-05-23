@@ -1,4 +1,4 @@
-import base64, json, os, random, re
+import base64, json, os, random, re, sys
 from ConfigParser import ConfigParser
 
 import requests
@@ -35,8 +35,8 @@ def updateTwitterToken():
 def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=999999999999999999):
 	highestIdDownloaded = 0
 	storedInfo = ConfigParser()
-	storedInfo.optionxform = str #Makes sure options preserve their case. Prolly breaks something down the line, but CASE!
-	twitterInfoFilename = os.path.join('data', 'TwitterInfo.dat')
+	storedInfo.optionxform = str  #Makes sure options preserve their case. Prolly breaks something down the line, but CASE!
+	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.dat')
 	if os.path.exists(twitterInfoFilename):
 		storedInfo.read(twitterInfoFilename)
 	if not storedInfo.has_section(username):
@@ -75,7 +75,7 @@ def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=9999999
 			#	print "  skipping duplicate tweet"
 
 	#All tweets downloaded. Time to process them
-	tweetfile = open(os.path.join('data', "tweets-{}.txt".format(username)), "a")
+	tweetfile = open(os.path.join(GlobalStore.scriptfolder, 'data', "tweets-{}.txt".format(username)), "a")
 	#Sort the keys before saving, so we're writing from oldest to newest, so in the same order as the Twitter timeline (Not absolutely necessary, but it IS neat and tidy)
 	for id in sorted(tweets.keys()):
 		tweetfile.write(tweets[id] + "\n")
@@ -95,7 +95,7 @@ def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=9999999
 
 def downloadNewTweets(username):
 	highestIdDownloaded = -1
-	twitterInfoFilename = os.path.join('data', 'TwitterInfo.dat')
+	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.dat')
 	if os.path.exists(twitterInfoFilename):
 		storedInfo = ConfigParser()
 		storedInfo.read(twitterInfoFilename)
@@ -107,7 +107,7 @@ def downloadNewTweets(username):
 def getLineFromTweetFile(username, linenumber):
 	linenumber = linenumber -1 #iteration function starts at 0
 
-	twitterInfoFilename = os.path.join('data', 'TwitterInfo.dat')
+	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.dat')
 	if not os.path.exists(twitterInfoFilename):
 		return "ERROR: No data file found!"
 	
@@ -118,14 +118,14 @@ def getLineFromTweetFile(username, linenumber):
 	if not storedInfo.has_option(username, "linecount"):
 		return "ERROR: Number of lines not stored!"
 	
-	if not os.path.exists(os.path.join('data', "tweets-{}.txt".format(username))):
+	if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', "tweets-{}.txt".format(username))):
 		return "ERROR: No tweets for '{}' stored!".format(username)
 
 	if linenumber > storedInfo.getint(username, 'linecount'):
 		return "ERROR: Requested line number {} while there are only {} lines".format(linenumber+1, storedInfo.getint(username, 'linecount'))
 
 	#print "Picking line {} out of {}".format(linenumber+1, storedInfo.getint(username, "linecount"))
-	with open(os.path.join('data', "tweets-{}.txt".format(username))) as linefile:
+	with open(os.path.join(GlobalStore.scriptfolder, 'data', "tweets-{}.txt".format(username))) as linefile:
 		for filelinenumber, line in enumerate(linefile):
 			if filelinenumber == linenumber:
 				return unicode(line.replace("\n", ""))
@@ -134,7 +134,7 @@ def getLineFromTweetFile(username, linenumber):
 
 def getRandomLineFromTweetFile(username):
 	storedInfo = ConfigParser()
-	storedInfo.read(os.path.join('data', 'TwitterInfo.dat'))
+	storedInfo.read(os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.dat'))
 	if not storedInfo.has_section(username):
 		return "ERROR: No info on '{}' found!".format(username)
 	if not storedInfo.has_option(username, "linecount"):

@@ -273,14 +273,14 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		
 	def updateSettings(self, updateLogger=True):
 		self.settings = ConfigParser()
-		if not os.path.exists(os.path.join("serverSettings", "globalsettings.ini")):
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", "globalsettings.ini")):
 			print "ERROR: globalsettings.ini not found!"
 			return False
-		if not os.path.exists(os.path.join("serverSettings", self.serverfolder, "settings.ini")):
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", self.serverfolder, "settings.ini")):
 			print "ERROR: no settings.ini file in '{}' server folder!".format(self.serverfolder)
 			return False
 
-		self.settings.read([os.path.join('serverSettings', "globalsettings.ini"), os.path.join('serverSettings', self.serverfolder, "settings.ini")])
+		self.settings.read([os.path.join(GlobalStore.scriptfolder, 'serverSettings', "globalsettings.ini"), os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, "settings.ini")])
 		#First make sure the required settings are in there
 		settingsToEnsure = {"connection": ["server", "port", "nickname", "realname"], "scripts": ["commandPrefix", "admins", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs"]}
 		for section, optionlist in settingsToEnsure.iteritems():

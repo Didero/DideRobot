@@ -67,8 +67,8 @@ class Command(CommandTemplate):
 			elif message.messagePartsLength < 2:
 				replytext = u"Please add a definition to search for"
 			else:
-				searchDefinition =  " ".join(message.messageParts[1:])
-				with open(os.path.join('data', 'MTGdefinitions.json'), 'r') as definitionsFile:
+				searchDefinition = " ".join(message.messageParts[1:])
+				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
 					definitions = json.load(definitionsFile)
 				if searchDefinition.lower() in definitions:
 					replytext = u"'{}': {}".format(searchDefinition, definitions[searchDefinition.lower()]['short'])
@@ -142,7 +142,7 @@ class Command(CommandTemplate):
 		print "Parsed search terms at {} seconds in".format(time.time() - starttime)
 
 		#All entered data is valid, look through the stored cards
-		with open(os.path.join('data', 'MTGcards.json')) as jsonfile:
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
 			cardstore = json.load(jsonfile)
 		print "Opened file at {} seconds in".format(time.time() - starttime)
 		
@@ -300,10 +300,10 @@ class Command(CommandTemplate):
 		starttime = time.time()
 		self.isUpdating = True
 		replytext = u""
-		cardsJsonFilename = os.path.join('data', 'MTGcards.json')
+		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		updateNeeded = False
 		
-		versionFilename = os.path.join('data', 'MTGversion-full.json')
+		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion-full.json')
 		currentVersion = "0.00"
 		latestVersion = ""			
 		#Load in the currently stored version number
@@ -322,7 +322,7 @@ class Command(CommandTemplate):
 
 		#Download the latest version file
 		url = "http://mtgjson.com/json/version-full.json"
-		newversionfilename = os.path.join('data', url.split('/')[-1])
+		newversionfilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 		urllib.urlretrieve(url, newversionfilename)
 
 		#Load in that version file
@@ -349,7 +349,7 @@ class Command(CommandTemplate):
 		if updateNeeded:
 			print "[MtG] Updating card database!"
 			url = "http://mtgjson.com/json/AllSets-x.json.zip"
-			cardzipFilename = os.path.join('data', url.split('/')[-1])
+			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 			urllib.urlretrieve(url, cardzipFilename)
 
 			#Since it's a zip, extract it
@@ -455,7 +455,7 @@ class Command(CommandTemplate):
 
 	def updateDefinitions(self, forceUpdate=False):
 		starttime = time.time()
-		definitionsFileLocation = os.path.join("data", "MTGdefinitions.json")
+		definitionsFileLocation = os.path.join(GlobalStore.scriptfolder, "data", "MTGdefinitions.json")
 
 		#Check if a new rules file exists
 		rulespage = requests.get("http://www.wizards.com/Magic/TCG/Article.aspx?x=magic/rules")
@@ -474,7 +474,7 @@ class Command(CommandTemplate):
 					oldDefinitionDate = definitions['_date']
 
 			if forceUpdate or oldDefinitionDate != date:
-				rulesfilelocation = os.path.join("data", "MtGrules.txt")
+				rulesfilelocation = os.path.join(GlobalStore.scriptfolder, "data", "MtGrules.txt")
 				#Retrieve the rules document and parse the definitions
 				urllib.urlretrieve(textfileLocation, rulesfilelocation)
 

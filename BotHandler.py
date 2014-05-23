@@ -1,6 +1,6 @@
 ﻿import os, site, sys
 #Make sure 'import' also searches inside the 'libraries' folder, so it can find Twisted and the like without cluttering up the main directory
-site.addsitedir(os.path.join(os.path.dirname(__file__), 'libraries'))
+site.addsitedir(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libraries'))
 
 from twisted.internet import reactor
 
@@ -8,18 +8,19 @@ from DideRobot import DideRobot, DideRobotFactory
 import GlobalStore
 from CommandHandler import CommandHandler
 
+
 class BotHandler:
 	botfactories = {}
 
 	def __init__(self, serverfolderList):
 		GlobalStore.bothandler = self
-		GlobalStore.scriptfolder = os.path.dirname(__file__)
+		GlobalStore.scriptfolder = os.path.dirname(os.path.abspath(__file__))
 
 		#Since a lot of modules save stuff to the 'data' subfolder, make sure it exists to save all of them some checking time
-		if not os.path.exists('data'):
-			os.mkdir('data')
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data')):
+			os.mkdir(os.path.join(GlobalStore.scriptfolder, 'data'))
 
-		if not os.path.exists(os.path.join('serverSettings', 'globalsettings.ini')):
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'serverSettings', 'globalsettings.ini')):
 			print "ERROR: 'globalsettings.ini' file not found in 'serverSettings' folder! Shutting down"
 			self.shutdown()
 		else:		
@@ -67,7 +68,6 @@ class BotHandler:
 		#Give all bots a little time to shut down
 		GlobalStore.reactor.callLater(4.0, GlobalStore.reactor.stop)
 
-
 	def unregisterFactory(self, serverfolder, isRestarting=False):
 		if serverfolder in self.botfactories:
 			del self.botfactories[serverfolder]
@@ -79,7 +79,7 @@ class BotHandler:
 					print "Out of bots, shutting down!"
 					GlobalStore.reactor.callLater(2.0, GlobalStore.reactor.stop)
 			else:
-				print "Unregistered bot '{}', {} left: {}".format(serverfolder, len(self.botfactories), "; ".join(self.botfactories.keys()))
+				print "Successfully unregistered bot '{}', {} bots left: {}".format(serverfolder, len(self.botfactories), "; ".join(self.botfactories.keys()))
 
 if __name__ == "__main__":
 	GlobalStore.reactor = reactor
