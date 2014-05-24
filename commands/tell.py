@@ -10,7 +10,7 @@ from IrcMessage import IrcMessage
 
 class Command(CommandTemplate):
 	triggers = ['tell']
-	helptext = "Stores messages you want to send to other users, and says them to that user when they speak"
+	helptext = "Stores messages you want to send to other users, and says them to that user when they speak. Usage: {commandPrefix}tell [username] [message]"
 	claimCommandExecution = False
 
 	tellsFileLocation = os.path.join(GlobalStore.scriptfolder, "data", "tells.json")
