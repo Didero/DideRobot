@@ -1,6 +1,6 @@
 import os, json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
@@ -40,11 +40,12 @@ class Command(CommandTemplate):
 			self.storedTells.pop(message.userNickname)
 
 		if len(tells) > 0:
+			self.storedTells[message.userNickname] = []
 			#Sort the stored tells by their send time
 			sortedTells = sorted(tells, key=lambda k: k['sentAt'])
 			#If there's too many tells for one time, store the rest for next time but keep the first few
 			if len(sortedTells) > self.maxTellsAtATime:
-				self.storedTells[message.user] = sortedTells[self.maxTellsAtATime:]
+				self.storedTells[message.userNickname] = sortedTells[self.maxTellsAtATime:]
 				sortedTells = sortedTells[:self.maxTellsAtATime]
 
 			#Talkin' time!
@@ -56,6 +57,11 @@ class Command(CommandTemplate):
 
 					message.bot.say(message.source, u"{recipient}: {message} (sent by {sender} on {timeSent}; {timeSinceTell} ago)"
 						.format(recipient=message.userNickname, message=tell["message"], sender=tell["sender"], timeSent=timeSent.isoformat(' '), timeSinceTell=timeSinceTellFormatted))
+				else:
+					#Save unused tells back if they're not supposed to be said in this channel
+					self.storedTells[message.userNickname].append(tell)
+			if len(self.storedTells[message.userNickname]) == 0:
+				self.storedTells.pop(message.userNickname)
 			#Store the changed tells to disk
 			self.saveTellsToFile()
 
