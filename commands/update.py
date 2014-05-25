@@ -30,7 +30,7 @@ class Command(CommandTemplate):
 			#New files, new updates! Check what they are ('@{1}' returns the last commit)
 			output = subprocess.check_output(['git', 'log', '--format=oneline'])
 			outputLines = output.splitlines()
-			replytext = u"Updated: Commit messages: "
+			replytext = u"Updated! Commit messages: "
 			for line in outputLines:
 				lineparts = line.split(" ", 1)
 				#If we've reached a commit we've already mentioned, stop the whole thing
