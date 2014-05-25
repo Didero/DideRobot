@@ -43,7 +43,7 @@ class Command(CommandTemplate):
 			#Sort the stored tells by their send time
 			sortedTells = sorted(tells, key=lambda k: k['sentAt'])
 			#If there's too many tells for one time, store the rest for next time but keep the first few
-			if len(sortedTells > self.maxTellsAtATime):
+			if len(sortedTells) > self.maxTellsAtATime:
 				self.storedTells[message.user] = sortedTells[self.maxTellsAtATime:]
 				sortedTells = sortedTells[:self.maxTellsAtATime]
 
