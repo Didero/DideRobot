@@ -45,3 +45,6 @@ ToDo.txt
 
 #The example settings file should be in the repo
 !serverSettings/globalsettings.ini.example
+
+#My local quickstart script doesn't belong in the repo
+botstart.bat
