@@ -10,6 +10,11 @@ class Command(CommandTemplate):
 	adminOnly = True
 
 	lastCommitHash = ""
+
+	def onStart(self):
+		#Set the stored hash to the latest local one
+		output = subprocess.check_output(['git', 'log', '@{1}..', '--format=oneline'])
+		self.lastCommitHash = output.split(" ", 1)[0]
 	
 	def execute(self, message):
 		"""
