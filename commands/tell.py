@@ -15,6 +15,7 @@ class Command(CommandTemplate):
 
 	tellsFileLocation = os.path.join(GlobalStore.scriptfolder, "data", "tells.json")
 	storedTells = {}
+	maxTellsAtATime = 4
 
 	def onStart(self):
 		if os.path.exists(self.tellsFileLocation):
@@ -32,14 +33,22 @@ class Command(CommandTemplate):
 		tells = []
 		#Load in the tell data for the person if needed, and delete them
 		if message.user in self.storedTells:
-			tells = self.storedTells[message.user]
+			tells.extend(self.storedTells[message.user])
 			self.storedTells.pop(message.user)
-		elif message.userNickname in self.storedTells:
-			tells = self.storedTells[message.userNickname]
+		if message.userNickname in self.storedTells:
+			tells.extend(self.storedTells[message.userNickname])
 			self.storedTells.pop(message.userNickname)
 
 		if len(tells) > 0:
-			for tell in tells:
+			#Sort the stored tells by their send time
+			sortedTells = sorted(tells, key=lambda k: k['sentAt'])
+			#If there's too many tells for one time, store the rest for next time but keep the first few
+			if len(sortedTells > self.maxTellsAtATime):
+				self.storedTells[message.user] = sortedTells[self.maxTellsAtATime:]
+				sortedTells = sortedTells[:self.maxTellsAtATime]
+
+			#Talkin' time!
+			for tell in sortedTells:
 				if tell["sentInChannel"] == message.source:
 					timeSent = datetime.utcfromtimestamp(tell['sentAt'])
 					timeSinceTell = (datetime.utcnow() - timeSent).seconds
