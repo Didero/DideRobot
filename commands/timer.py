@@ -30,11 +30,11 @@ class Command(CommandTemplate):
 				elif waittime > 86400.0:  #Longer than a day
 					replytext = u"That's a bit too long of a wait time, sorry. Try less than a day"
 				else:
+					timerMsg = u"{}, your {}-second timer is up".format(message.userNickname, waittime)
 					if message.messagePartsLength >= 2:
-						timerMsg = "{}: {}".format(message.userNickname, " ".join(message.messageParts[1:]))
-						GlobalStore.reactor.callLater(waittime, message.bot.say, message.source, timerMsg)
-					else:
-						GlobalStore.reactor.callLater(waittime, message.bot.say, message.source, "{}: Your timer is up".format(message.userNickname))
+						timerMsg += u": {}".format(u" ".join(message.messageParts[1:]))
+
+					GlobalStore.reactor.callLater(waittime, message.bot.say, message.source, timerMsg)
 
 					replytext = u"{}: Your timer will fire in {} seconds".format(message.userNickname, waittime)
 
