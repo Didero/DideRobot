@@ -19,6 +19,10 @@ class DideRobot(irc.IRCClient):
 		self.channelsUserList = {}
 		self.connectedAt = 0.0
 		self.isMuted = False
+		if self.factory.settings.has_option("connection", "minSecondsBetweenMessages"):
+			self.lineRate = self.factory.settings.getfloat("connection", "minSecondsBetweenMessages")
+			if self.lineRate <= 0.0:
+				self.lineRate = None
 	
 	def connectionMade(self):
 		"""Called when a connection is made."""
