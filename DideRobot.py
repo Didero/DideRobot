@@ -15,7 +15,8 @@ from IrcMessage import IrcMessage
 
 class DideRobot(irc.IRCClient):
 
-	def __init__(self):
+	def __init__(self, factory):
+		self.factory = factory
 		self.channelsUserList = {}
 		self.connectedAt = 0.0
 		self.isMuted = False
@@ -248,8 +249,7 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			GlobalStore.reactor.connectTCP(self.settings.get("connection", "server"), self.settings.getint("connection", "port"), self)				
 		
 	def buildProtocol(self, addr):
-		self.bot = DideRobot()
-		self.bot.factory = self
+		self.bot = DideRobot(self)
 		return self.bot
 
 	def startedConnecting(self, connector):
