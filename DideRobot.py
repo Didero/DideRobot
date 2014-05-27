@@ -113,6 +113,7 @@ class DideRobot(irc.IRCClient):
 				userlist.append(newaddress)
 				userlist.remove(prefix)
 				self.factory.logger.log("{} changed their nick from {} to {}".format(prefix, oldnick, newnick), channel)
+		irc.IRCClient.irc_NICK(self, prefix, params)
 
 	#Misc. logging
 	#def topicUpdated(self, user, channel, newTopic):
