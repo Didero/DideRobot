@@ -106,7 +106,11 @@ class DideRobot(irc.IRCClient):
 		#Update the userlists for all channels this user is in
 		oldnick = prefix.split("!", 1)[0]
 		newnick = params[0]
-		newaddress = newnick + "!" + prefix.split("!",1)[1]
+		newaddress = newnick + "!" + prefix.split("!", 1)[1]
+		#If it's about us, apparently a nick change was successful
+		if oldnick == self.nickname:
+			self.nickname = newnick
+		#Log the change in every channel where it's relevant
 		for channel, userlist in self.channelsUserList.iteritems():
 			if prefix in userlist:
 				#New nick plus old address
