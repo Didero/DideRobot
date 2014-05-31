@@ -64,7 +64,7 @@ class Command(CommandTemplate):
 					print "[LocationLookup] Unable to determine IP address from host '{}.{}'".format(userAddressParts[-2], userAddressParts[-1])
 
 			if userIp == "":
-				replytext = u"I'm sorry, I couldn't determine the IP address of that user"
+				replytext = u"I'm sorry, I couldn't determine the IP address of {username}"
 			else:
 				params = {'key': GlobalStore.commandhandler.apikeys.get('locatorhq', 'key'), 'user': GlobalStore.commandhandler.apikeys.get('locatorhq', 'username'), 'ip': userIp, 'format': 'json'}
 				apiReturn = requests.get("http://api.locatorhq.com", params=params)
@@ -87,7 +87,7 @@ class Command(CommandTemplate):
 						replytext = u"I'm sorry, but I can't seem to determine which country {username} is from"
 					else:
 						replytext = u"{username} appears to be from {country}".format(country=data['countryName'])
-				replytext = replytext.format(username=userAddress.split('!', 1)[0])
+			replytext = replytext.format(username=userAddress.split('!', 1)[0])
 
 
 		message.bot.say(message.source, replytext)
