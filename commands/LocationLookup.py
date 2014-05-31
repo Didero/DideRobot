@@ -76,7 +76,7 @@ class Command(CommandTemplate):
 					print "[location] ERROR: '{}'".format(apiReturn.text)
 					error = apiReturn.text.lower()
 					if error == 'no data':
-						replytext = u"I'm sorry, I can't find any country data for that user"
+						replytext = u"I'm sorry, I can't find any country data for {username}"
 					elif "server too busy" in error:
 						replytext = u"The location lookup API is a bit busy, please try again in a little while"
 					else:
@@ -84,9 +84,10 @@ class Command(CommandTemplate):
 						replytext = u"Sorry, an error occurred. Tell my owner to check the debug output, the exact error is in there"
 				else:
 					if 'countryName' not in data or data['countryName'] == '-':
-						replytext = u"I'm sorry, but I don't know which country that user is from"
+						replytext = u"I'm sorry, but I can't seem to determine which country {username} is from"
 					else:
-						replytext = u"{} appears to be from {}".format(userAddress.split('!', 1)[0], data['countryName'])
+						replytext = u"{username} appears to be from {country}".format(country=data['countryName'])
+				replytext = replytext.format(username=userAddress.split('!', 1)[0])
 
 
 		message.bot.say(message.source, replytext)
