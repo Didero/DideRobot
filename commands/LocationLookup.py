@@ -50,6 +50,7 @@ class Command(CommandTemplate):
 
 		if userAddress != u"":
 			print "Using user address: '{}'".format(userAddress)
+			username = userAddress.split("!", 1)[0]
 			userIpMatches = re.search(".*!.*@\D*(\d{1,3}[-.]\d{1,3}[-.]\d{1,3}[-.]\d{1,3}).*", userAddress)
 			userIp = ""
 			if userIpMatches:
@@ -64,7 +65,7 @@ class Command(CommandTemplate):
 					print "[LocationLookup] Unable to determine IP address from host '{}.{}'".format(userAddressParts[-2], userAddressParts[-1])
 
 			if userIp == "":
-				replytext = u"I'm sorry, I couldn't determine the IP address of {username}"
+				replytext = u"I'm sorry, I couldn't determine the IP address of {username}".format(username=username)
 			else:
 				params = {'key': GlobalStore.commandhandler.apikeys.get('locatorhq', 'key'), 'user': GlobalStore.commandhandler.apikeys.get('locatorhq', 'username'), 'ip': userIp, 'format': 'json'}
 				apiReturn = requests.get("http://api.locatorhq.com", params=params)
@@ -76,7 +77,7 @@ class Command(CommandTemplate):
 					print "[location] ERROR: '{}'".format(apiReturn.text)
 					error = apiReturn.text.lower()
 					if error == 'no data':
-						replytext = u"I'm sorry, I can't find any country data for {username}"
+						replytext = u"I'm sorry, I can't find any country data for {username}".format(username=username)
 					elif "server too busy" in error:
 						replytext = u"The location lookup API is a bit busy, please try again in a little while"
 					else:
@@ -84,10 +85,8 @@ class Command(CommandTemplate):
 						replytext = u"Sorry, an error occurred. Tell my owner to check the debug output, the exact error is in there"
 				else:
 					if 'countryName' not in data or data['countryName'] == '-':
-						replytext = u"I'm sorry, but I can't seem to determine which country {username} is from"
+						replytext = u"I'm sorry, but I can't seem to determine which country {username} is from".format(username=username)
 					else:
-						replytext = u"{username} appears to be from {country}".format(country=data['countryName'])
-			replytext = replytext.format(username=userAddress.split('!', 1)[0])
-
+						replytext = u"{username} appears to be from {country}".format(username=username, country=data['countryName'])
 
 		message.bot.say(message.source, replytext)
