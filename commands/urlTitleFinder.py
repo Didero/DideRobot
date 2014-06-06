@@ -208,11 +208,11 @@ class Command(CommandTemplate):
 						if url.endswith(ext):
 							print "Skipping title search, ignorable extension"
 							return
-					titlematch = re.search(r'<title.*?>(.+)</title>', requests.get(url).text)
+					titlematch = re.search(r'<title.*?>(.+)</title>', requests.get(url).text, re.DOTALL)
 					if not titlematch:
 						print "No title found on page '{}'".format(url)
 					else:
-						title = titlematch.group(1).strip()
+						title = titlematch.group(1).replace('\n', '').strip()
 			except requests.exceptions.ConnectionError as error:
 				print "(A connection error occurred while trying to retrieve '{}': {})".format(url, error)
 
