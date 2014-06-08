@@ -16,7 +16,7 @@ class Command(CommandTemplate):
 
 	def execute(self, message):
 		replytext = u""
-		if message.messagePartsLength == 1:
+		if message.messagePartsLength == 0:
 			replytext = u"Please provide the name of a Pokemon to search for"
 		elif not GlobalStore.commandhandler.apikeys.has_section('wolframalpha') or not GlobalStore.commandhandler.apikeys.has_option('wolframalpha', 'key'):
 			replytext = u"No API key for Wolfram Alpha found. That's kinda sloppy, owner"
