@@ -15,7 +15,7 @@ class Command(CommandTemplate):
 		replytext = u""
 		replyLengthLimit = 300
 
-		if message.messagePartsLength == 1:
+		if message.messagePartsLength == 0:
 			replytext = u"Please provide a term to search for"
 		else:
 			wikipediaPage = requests.get("http://en.wikipedia.org/wiki/Special:Search?search={}".format(message.message))
