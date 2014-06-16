@@ -47,7 +47,7 @@ class Command(CommandTemplate):
 				replytext = u"Sorry, only admins can use my update function"
 			else:
 				replytext = self.updateCardFile(message.message.lower()=='forceupdate')
-				replytext += " " + self.updateDefinitions(message.message.lower()=='forceupdate')
+				replytext += u" " + self.updateDefinitions(message.message.lower()=='forceupdate')
 			message.bot.say(message.source, replytext)
 			return
 		#Check if the data file even exists
@@ -461,6 +461,7 @@ class Command(CommandTemplate):
 		textfileMatch = re.search('<a.*href="(?P<url>http://media.wizards.com/images/magic/tcg/resources/rules/MagicCompRules_(?P<date>\d+)\.txt)">TXT</a>', rulespage.text)
 		if not textfileMatch:
 			print "[MtG] [definitions update] Unable to locate the URL to the rules text file!"
+			return u"Definitions file not found."
 		else:
 			textfileLocation = textfileMatch.group('url')
 			date = textfileMatch.group('date')
@@ -514,8 +515,8 @@ class Command(CommandTemplate):
 				os.remove(rulesfilelocation)
 
 				print "[MtG] Updated definitions file to version {} in {} seconds".format(date, time.time() - starttime)
-				return "Definitions successfully updated to the version from {}.".format(date)
+				return u"Definitions successfully updated to the version from {}.".format(date)
 			else:
 				#No update neccessary
 				print "[MtG] No need to update definitions file, {} is still newest. Check took {} seconds".format(date, time.time() - starttime)
-				return "No definitions update needed, version {} is still up-to-date.".format(date)
+				return u"No definitions update needed, version {} is still up-to-date.".format(date)
