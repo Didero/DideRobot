@@ -349,7 +349,7 @@ class Command(CommandTemplate):
 			print "[MtG] Updating card database!"
 			url = "http://mtgjson.com/json/AllSets-x.json.zip"
 			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
-			#urllib.urlretrieve(url, cardzipFilename)
+			urllib.urlretrieve(url, cardzipFilename)
 
 			print "Done with downloading card database at {} seconds in".format(time.time() - starttime)
 
@@ -361,7 +361,7 @@ class Command(CommandTemplate):
 			zipWithJson.extractall('data')
 			zipWithJson.close()
 			#We don't need the zip anymore
-			#os.remove(cardzipFilename)
+			os.remove(cardzipFilename)
 
 			print "Done unzipping downloaded card database at {} seconds in".format(time.time() - starttime)
 
@@ -372,7 +372,6 @@ class Command(CommandTemplate):
 			print "Done loading the new cards into memory at {} seconds in".format(time.time() - starttime)
 			newcardstore = {}
 			print "Going through cards"
-			print u"Type of card name before encoding: '{}'".format(type(downloadedCardstore['EXO']['cards'][0]['name']))
 			for setcode, set in downloadedCardstore.iteritems():
 				for card in set['cards']:
 					cardname = card['name'] #.encode('utf-8').lower()
