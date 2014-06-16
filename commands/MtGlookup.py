@@ -358,7 +358,7 @@ class Command(CommandTemplate):
 			newcardfilename = os.path.join(GlobalStore.scriptfolder, 'data', zipWithJson.namelist()[0])
 			if os.path.exists(newcardfilename):
 				os.remove(newcardfilename)
-			zipWithJson.extractall('data')
+			zipWithJson.extractall(os.path.join(GlobalStore.scriptfolder, 'data'))
 			zipWithJson.close()
 			#We don't need the zip anymore
 			os.remove(cardzipFilename)
