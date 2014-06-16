@@ -208,8 +208,8 @@ class Command(CommandTemplate):
 				replytext += u"Multiple cards with the same name were found: "
 				setlist = u""
 				for cardFound in cardsFound:
-					setlist = "'{}'".format(cardFound['sets'].split(', ',1)[0])
-					if cardFound['sets'].count(',') > 0:
+					setlist = u"'{}'".format(cardFound['sets'].split('; ',1)[0])
+					if cardFound['sets'].count(';') > 0:
 						setlist += u" (and more)"
 					replytext += u"{} [set {}]; ".format(cardFound['name'].encode('utf-8'), setlist)
 				replytext = replytext[:-2]
@@ -222,7 +222,7 @@ class Command(CommandTemplate):
 				if len(cardlist) > 1:
 					cardnamestring += u" [from sets "
 					for card in cardlist:
-						cardnamestring += u"'{}', ".format(card['sets'].split(',',1)[0])
+						cardnamestring += u"'{}', ".format(card['sets'].split(';',1)[0])
 					cardnamestring = cardnamestring[:-2] + u"]"
 				cardnamestring += u"; "
 			cardnamestring = cardnamestring[:-2]
@@ -274,7 +274,7 @@ class Command(CommandTemplate):
 		if addExtendedInfo and 'flavor' in card:
 			replytext += u" Flavor: {card[flavor]}"
 		if 'sets' in card:
-			sets = card['sets'].split(',')
+			sets = card['sets'].split(';')
 			if addExtendedInfo:
 				if len(sets) == 1:
 					replytext += u" [in set {card[sets]}]"
@@ -381,7 +381,7 @@ class Command(CommandTemplate):
 							if ('text' not in card and sameNamedCard['text'] == u"") or (sameNamedCard['text'] != u"" and 'text' in card and sameNamedCard['text'] == card['text']):
 								#Since it's a duplicate, update the original card with info on the set it's also in, if it's not in there already
 								if set['name'] not in sameNamedCard['sets'].split(', '):
-									sameNamedCard['sets'] += ", {}".format(set['name'])
+									sameNamedCard['sets'] += "; {}".format(set['name'])
 								addCard = False
 								break
 
