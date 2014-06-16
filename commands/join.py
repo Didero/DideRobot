@@ -17,7 +17,7 @@ class Command(CommandTemplate):
 		else:
 			allowedChannels = message.bot.factory.settings.get('connection', 'allowedChannels').split(',')
 			
-			channel = message.messageParts[0]
+			channel = message.messageParts[0].encode('utf8')  #Make sure it's a str and not unicode, otherwise Twisted chokes on it
 			if channel.startswith('#'):
 				channel = channel[1:]
 			if channel not in allowedChannels and not message.bot.factory.isUserAdmin(message.user):
