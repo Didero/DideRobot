@@ -14,7 +14,7 @@ class Command(CommandTemplate):
 	triggers = ['mtg', 'mtgf']
 	helptext = "Looks up info on 'Magic The Gathering' cards. Provide a card name or a regex match to search for. Or search for 'random', and see what comes up. "
 	helptext += "With the parameter 'search', you can enter JSON-style data to search for other attributes, see http://mtgjson.com/ for what's available. {commandPrefix}mtgf adds the flavor text to the result"
-	scheduledFunctionTime = 172800.0 #Every other day, since it doesn't update too often
+	#scheduledFunctionTime = 172800.0 #Every other day, since it doesn't update too often
 
 	isUpdating = False
 
@@ -405,7 +405,7 @@ class Command(CommandTemplate):
 						for attrib in card:
 							#Re.search stumbles over numbers, convert them to strings first
 							if isinstance(card[attrib], (int, long, float)):
-								card[attrib] = str(card[attrib])
+								card[attrib] = unicode(card[attrib])
 							#Regexes can't search lists either, make them strings too
 							elif isinstance(card[attrib], list):
 								oldlist = card[attrib]
