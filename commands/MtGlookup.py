@@ -93,16 +93,16 @@ class Command(CommandTemplate):
 		if searchType == 'search' or (searchType == 'random' and message.messagePartsLength > 1) or (searchType == 'randomcommander' and message.messagePartsLength > 1):
 			#Advanced search!
 			if message.messagePartsLength <= 1:
-				message.bot.say(message.source, 'Please provide an advanced search query too, in JSON format, so "key1: value1, key2:value2". Look at www.mtgjson.com for available fields')
+				message.bot.say(message.source, u'Please provide an advanced search query too, in JSON format, so "key1: value1, key2:value2". Look at www.mtgjson.com for available fields')
 				return
 
-			searchDict = SharedFunctions.stringToDict(" ".join(message.messageParts[1:]))
+			searchDict = SharedFunctions.stringToDict(u" ".join(message.messageParts[1:]))
 			if len(searchDict) == 0:
-				message.bot.say(message.source, "That is not a valid search query. It should be entered like JSON, so \"'key': 'value', 'key2': 'value2',...\"")
+				message.bot.say(message.source, u"That is not a valid search query. It should be entered like JSON, so \"'key': 'value', 'key2': 'value2',...\"")
 				return
 		#If the only parameter is 'random', just get all cards
 		elif searchType == 'random' and message.messagePartsLength == 1:
-			searchDict['name'] = '.*'
+			searchDict['name'] = u'.*'
 		#No fancy search string, just search for a matching name
 		elif searchType != 'randomcommander':
 			searchDict['name'] = message.message.lower()
@@ -112,16 +112,16 @@ class Command(CommandTemplate):
 			if 'type' not in searchDict:
 				searchDict['type'] = u""
 			#Don't just search for 'legendary creature.*', because there are legendary artifact creatures too
-			searchDict['type'] = 'legendary.*creature.*' + searchDict['type']
+			searchDict['type'] = u'legendary.*creature.*' + searchDict['type']
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
-		searchTermsToCorrect = {"set": "sets", "color": "colors", "colour": "colors", "colours": "colors"}
+		searchTermsToCorrect = {u"set": u"sets", u"color": u"colors", u"colour": u"colors", u"colours": u"colors"}
 		for searchTermToCorrect, correctTerm in searchTermsToCorrect.iteritems():
 			if searchTermToCorrect in searchDict and correctTerm not in searchDict:
 				searchDict[correctTerm] = searchDict[searchTermToCorrect]
 				searchDict.pop(searchTermToCorrect)
 
-		print "[MtG] Search Dict: ", searchDict
+		print u"[MtG] Search Dict: ", searchDict
 				
 		#Turn the search strings into actual regexes
 		regexDict = {}
@@ -129,14 +129,14 @@ class Command(CommandTemplate):
 		for attrib, query in searchDict.iteritems():													
 			regex = None
 			try:
-				regex = re.compile(str(query), re.IGNORECASE)
+				regex = re.compile(query, re.IGNORECASE | re.UNICODE)
 			except:
 				#replytext = u"That is not a valid search term. Brush up on your regex, or just leave out any weird characters"
 				errors.append(attrib)
 			else:
 				regexDict[attrib] = regex
 		if len(errors) > 0:
-			replytext = u"(Error(s) occured with attributes: {}) ".format(", ".join(errors))
+			replytext = u"(Error(s) occurred with attributes: {}) ".format(", ".join(errors))
 			print "[MtG] " + replytext
 		regexAttribCount = len(regexDict)
 		print "Parsed search terms at {} seconds in".format(time.time() - starttime)
@@ -151,7 +151,7 @@ class Command(CommandTemplate):
 		if 'name' in searchDict:
 			#If the name is literally there, use that
 			if searchDict['name'] in cardstore:
-				print "regex '{}' is a literal name in the card database".format(searchDict['name'])
+				print u"regex '{}' is a literal name in the card database".format(searchDict['name'])
 				cardNamesToSearchThrough = [searchDict['name']]
 			#Otherwise, try to find a match
 			else:
@@ -211,7 +211,7 @@ class Command(CommandTemplate):
 					setlist = u"'{}'".format(cardFound['sets'].split(u'; ',1)[0])
 					if cardFound['sets'].count(u';') > 0:
 						setlist += u" (and more)"
-					replytext += u"{} [set {}]; ".format(cardFound['name'].encode('utf-8'), setlist)
+					replytext += u"{} [set {}]; ".format(cardFound['name'], setlist)  #.encode('utf-8'), setlist)
 				replytext = replytext[:-2]
 		#Check if listing all the found cardnames is viable. The limit is higher for private messages than for channels
 		elif cardnamesFound <= maxCardsToListInChannel or (cardnamesFound <= maxCardsToListInPm and message.isPrivateMessage):
@@ -337,20 +337,21 @@ class Command(CommandTemplate):
 		#print "[MtG] Latest version: '{}'".format(latestVersion)
 		if latestVersion == "":
 			replytext =  u"Something went wrong, the latest MtG database version number could not be retrieved."
-		else:
-			#Replace the old version file with the new one
-			if os.path.exists(versionFilename):
-				os.remove(versionFilename)
-			os.rename(newversionfilename, versionFilename)
 
 		if forceUpdate or latestVersion != currentVersion or not os.path.exists(cardsJsonFilename):
 			updateNeeded = True
 
-		if updateNeeded:
+		print "Done version-checking at {} seconds in".format(time.time() - starttime)
+
+		if not updateNeeded:
+			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
+		else:
 			print "[MtG] Updating card database!"
 			url = "http://mtgjson.com/json/AllSets-x.json.zip"
 			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
-			urllib.urlretrieve(url, cardzipFilename)
+			#urllib.urlretrieve(url, cardzipFilename)
+
+			print "Done with downloading card database at {} seconds in".format(time.time() - starttime)
 
 			#Since it's a zip, extract it
 			zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
@@ -360,17 +361,21 @@ class Command(CommandTemplate):
 			zipWithJson.extractall('data')
 			zipWithJson.close()
 			#We don't need the zip anymore
-			os.remove(cardzipFilename)
+			#os.remove(cardzipFilename)
+
+			print "Done unzipping downloaded card database at {} seconds in".format(time.time() - starttime)
 
 			#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
 			downloadedCardstore = {}
 			with open(newcardfilename, 'r') as newcardfile:
 				downloadedCardstore = json.load(newcardfile)
+			print "Done loading the new cards into memory at {} seconds in".format(time.time() - starttime)
 			newcardstore = {}
 			print "Going through cards"
+			print u"Type of card name before encoding: '{}'".format(type(downloadedCardstore['EXO']['cards'][0]['name']))
 			for setcode, set in downloadedCardstore.iteritems():
 				for card in set['cards']:
-					cardname = card['name'].encode('utf-8').lower()
+					cardname = card['name'] #.encode('utf-8').lower()
 					addCard = True
 					if cardname not in newcardstore:
 						newcardstore[cardname] = []
@@ -409,7 +414,7 @@ class Command(CommandTemplate):
 								for entry in oldlist:
 									#There's lists of strings and lists of ints, handle both
 									if isinstance(entry, (int, long, float)):
-										newlist.append(str(entry))
+										newlist.append(unicode(entry))
 									#There's even lists of dictionaries
 									elif isinstance(entry, dict):
 										newlist.append(SharedFunctions.dictToString(entry))
@@ -443,9 +448,12 @@ class Command(CommandTemplate):
 			#Remove the file downloaded from MTGjson.com
 			os.remove(newcardfilename)
 
+			#Replace the old version file with the new one
+			if os.path.exists(versionFilename):
+				os.remove(versionFilename)
+			os.rename(newversionfilename, versionFilename)
+
 			replytext = u"MtG card database successfully updated to version {} (Changelog: http://mtgjson.com/#changeLog).".format(latestVersion)
-		else:
-			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
 
 		urllib.urlcleanup()
 		self.isUpdating = False
