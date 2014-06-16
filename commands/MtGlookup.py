@@ -278,7 +278,7 @@ class Command(CommandTemplate):
 			if addExtendedInfo:
 				if len(sets) == 1:
 					replytext += u" [in set {card[sets]}]"
-				elif len(sets) < 5:
+				elif len(sets) <= 5:
 					replytext += u" [in sets {card[sets]}]"
 				else:
 					replytext += u" [in sets {shortSetList} and {setCount} more]".format(shortSetList="; ".join(sets[:5]), setCount=len(sets)-5)
@@ -429,7 +429,6 @@ class Command(CommandTemplate):
 						card['sets'] = set['name']
 						#Finally, put the card in the new storage
 						newcardstore[cardname].append(card)
-
 
 			#First delete the original file
 			if os.path.exists(cardsJsonFilename):
