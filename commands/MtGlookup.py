@@ -347,7 +347,7 @@ class Command(CommandTemplate):
 			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
 		else:
 			print "[MtG] Updating card database!"
-			url = "http://mtgjson.com/json/AllSets-x.json.zip"
+			url = "http://mtgjson.com/json/AllSets.json.zip"
 			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 			urllib.urlretrieve(url, cardzipFilename)
 
