@@ -14,10 +14,9 @@ class Command(CommandTemplate):
 	triggers = ['mtg', 'mtgf']
 	helptext = "Looks up info on 'Magic The Gathering' cards. Provide a card name or a regex match to search for. Or search for 'random', and see what comes up. "
 	helptext += "With the parameter 'search', you can enter JSON-style data to search for other attributes, see http://mtgjson.com/ for what's available. {commandPrefix}mtgf adds the flavor text to the result"
-	#scheduledFunctionTime = 172800.0 #Every other day, since it doesn't update too often
+	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 
 	isUpdating = False
-
 
 	def executeScheduledFunction(self):
 		GlobalStore.reactor.callInThread(self.updateCardFile)
@@ -347,7 +346,7 @@ class Command(CommandTemplate):
 			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
 		else:
 			print "[MtG] Updating card database!"
-			url = "http://mtgjson.com/json/AllSets.json.zip"
+			url = "http://mtgjson.com/json/AllSets.json.zip"  #Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
 			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 			urllib.urlretrieve(url, cardzipFilename)
 
