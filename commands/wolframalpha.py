@@ -16,7 +16,7 @@ class Command(CommandTemplate):
 		replystring = u""
 		if not GlobalStore.commandhandler.apikeys.has_section('wolframalpha') or not GlobalStore.commandhandler.apikeys.has_option('wolframalpha', 'key'):
 			replystring = u"No API key for Wolfram Alpha found. That's kinda sloppy, owner"
-		elif message.messagePartsLength == 1:
+		elif message.messagePartsLength == 0:
 			replystring = u"No query provided. I'm not just gonna make stuff up to send to Wolfram Alpha, I've got an API call limit! Add your query after the command."
 		else:
 			searchstring = message.message
