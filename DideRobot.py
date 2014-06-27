@@ -308,6 +308,9 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 
 		if self.settings.has_option('scripts', 'userIgnoreList'):
 			self.userIgnoreList = self.settings.get("scripts", "userIgnoreList").split(',')
+
+		self.commandWhitelist = None
+		self.commandBlacklist = None
 		if self.settings.has_option('scripts', 'commandWhitelist'):
 			self.commandWhitelist = self.settings.get('scripts', 'commandWhitelist').split(',')
 		elif self.settings.has_option('scripts', 'commandBlacklist'):
