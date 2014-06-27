@@ -39,6 +39,7 @@ _ReSharper*/
 *.pyc
 
 #Project-specific files to ignore
+libraries/
 serverSettings/**
 data/**
 ToDo.txt
