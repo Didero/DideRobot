@@ -173,24 +173,36 @@ class DideRobot(irc.IRCClient):
 
 	def privmsg(self, user, channel, msg):
 		"""Bot received a message in a channel or directly from another user"""
-		self.factory.logger.log("{0}: {1}".format(user, msg), channel)
 		self.handleMessage(user, channel, msg, 'say')
 
 	#Incoming action
 	def action(self, user, channel, msg):
-		self.factory.logger.log("*{0} {1}".format(user, msg), channel)
 		self.handleMessage(user, channel, msg, 'action')
 
 	def noticed(self, user, channel, msg):
-		self.factory.logger.log("[notice] {0}: {1}".format(user, msg), channel)
-		#Don't send this to 'handleMessage', since you're not supposed to respond to notices
+		self.handleMessage(user, channel, msg, 'notice')
 
 	def handleMessage(self, user, channel, msgText, type='say'):
 		"""Called when the bot receives a message, which can be either in a channel or in a private message, as text or an action."""
 
-		message = IrcMessage(irc.stripFormatting(msgText), self, type, user, channel)
-		#Let the CommandHandler see if something needs to be said
-		GlobalStore.commandhandler.fireCommand(message)
+		logsource = channel
+		if channel == self.nickname:
+			logsource = user.split("!", 1)[0]
+		logtext = u""
+		if type == 'say':
+			logtext = u"{user}: {msg}"
+		elif type == 'action':
+			logtext = u"*{user} {msg}"
+		elif type == 'notice':
+			logtext = u"[notice] {user}: {msg}"
+
+		self.factory.logger.log(logtext.format(user=user, msg=msgText), logsource)
+
+		#Don't respond to notices
+		if type != 'notice':
+			message = IrcMessage(irc.stripFormatting(msgText), self, type, user, channel)
+			#Let the CommandHandler see if something needs to be said
+			GlobalStore.commandhandler.fireCommand(message)
 
 	def sendMessage(self, target, msg, messageType='say'):
 		#Only say something if we're not muted, or if it's a private message or a notice
