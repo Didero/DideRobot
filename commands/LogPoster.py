@@ -76,6 +76,6 @@ class Command(CommandTemplate):
 						if replydata['status'] != 'success':
 							replytext = u"Something went wrong with uploading the log (Code {}: {})".format(replydata['errorcode'], replydata['error'])
 						else:
-							replytext = u"Log uploaded to Paste.ee: {} (Expires in {} minutes)".format(replydata['paste']['link'], pasteData['expire'])
+							replytext = u"Log uploaded to Paste.ee: {} (Expires in {} minutes)".format(replydata['paste']['link'], pasteData['expire'] / 60)
 
 		message.bot.sendMessage(message.source, replytext, 'say')
