@@ -65,7 +65,7 @@ class Command(CommandTemplate):
 					#Add the actual log to the paste
 					with open(logfilename, 'r') as logfile:
 						for line in logfile:
-							pasteData["paste"] += line
+							pasteData["paste"] += line.decode('utf-8')
 
 					#Send the collected data to Paste.ee
 					reply = requests.post("http://paste.ee/api", data=pasteData)
