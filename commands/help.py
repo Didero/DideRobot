@@ -31,11 +31,13 @@ class Command(CommandTemplate):
 		#check if the provided argument exists
 		if command in triggerlist:
 			#'!help, !helpfull: '
-			replytext = u"{commandPrefix}{triggers}".format(triggers=", {commandPrefix}".join(triggerlist[command].triggers), commandPrefix="{commandPrefix}")
+			replytext = u"{commandPrefix}" + u", {commandPrefix}".join(triggerlist[command].triggers)
+			#Since some modules have '{commandPrefix}' in their helptext, turn that into the actual command prefix
+			replytext = replytext.format(commandPrefix=message.bot.factory.commandPrefix)
 			#some commands can only be used by people in the admins list. Inform users of that
 			if triggerlist[command].adminOnly:
 				replytext += u" [admin-only]"			
-			replytext += u": {helptext}".format(helptext=triggerlist[command].helptext)
+			replytext += u": {helptext}".format(helptext=triggerlist[command].getHelp(message))
 		#If the provided command can't be found (either because of misspelling or because they didn't provide one),
 		# show a list of available commands
 		else:
@@ -50,6 +52,4 @@ class Command(CommandTemplate):
 			replytext += u"Commands loaded: {commandslist}. Type '{prefix}help [commandname]' for info on how to use that command"\
 				.format(commandslist=commandslist, prefix=message.bot.factory.commandPrefix)
 		
-		replytext = replytext.format(commandPrefix=message.bot.factory.commandPrefix)
-		message.bot.say(message.source, replytext)
-		
+		message.bot.sendMessage(message.source, replytext, 'say')

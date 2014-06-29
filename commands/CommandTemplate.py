@@ -21,6 +21,9 @@ class CommandTemplate(object):
 
 	def onStart(self):
 		pass
+
+	def getHelp(self, message):
+		return self.helptext.format(commandPrefix=message.bot.factory.commandPrefix)
 		
 	def shouldExecute(self, message, commandExecutionClaimed):
 		"""
