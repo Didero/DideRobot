@@ -182,25 +182,27 @@ class DideRobot(irc.IRCClient):
 	def noticed(self, user, channel, msg):
 		self.handleMessage(user, channel, msg, 'notice')
 
-	def handleMessage(self, user, channel, msgText, type='say'):
+	def handleMessage(self, user, channel, messageText, messageType='say'):
 		"""Called when the bot receives a message, which can be either in a channel or in a private message, as text or an action."""
+
+		usernick = user.split("!", 1)[0]
 
 		logsource = channel
 		if channel == self.nickname:
-			logsource = user.split("!", 1)[0]
+			logsource = usernick
 		logtext = u""
-		if type == 'say':
-			logtext = u"{user}: {msg}"
-		elif type == 'action':
-			logtext = u"*{user} {msg}"
-		elif type == 'notice':
-			logtext = u"[notice] {user}: {msg}"
+		if messageType == 'say':
+			logtext = u"{user}: {message}"
+		elif messageType == 'action':
+			logtext = u"*{user} {message}"
+		elif messageType == 'notice':
+			logtext = u"[notice] {user}: {message}"
 
-		self.factory.logger.log(logtext.format(user=user, msg=msgText), logsource)
+		self.factory.logger.log(logtext.format(user=usernick, message=messageText), logsource)
 
 		#Don't respond to notices
-		if type != 'notice':
-			message = IrcMessage(irc.stripFormatting(msgText), self, type, user, channel)
+		if messageType != 'notice':
+			message = IrcMessage(irc.stripFormatting(messageText), self, messageType, user, channel)
 			#Let the CommandHandler see if something needs to be said
 			GlobalStore.commandhandler.fireCommand(message)
 
@@ -210,16 +212,18 @@ class DideRobot(irc.IRCClient):
 			try:
 				msg = msg.encode(encoding='utf-8', errors='replace')
 			except (UnicodeDecodeError, UnicodeEncodeError):
-				print "Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg)
+				print u"Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg)
+			logtext = u""
 			if messageType == 'say':
-				self.factory.logger.log("{0}: {1}".format(self.nickname, msg), target)
+				logtext = u"{user}: {message}"
 				self.msg(target, msg)
 			elif messageType == 'action':
-				self.factory.logger.log("*{0} {1}".format(self.nickname, msg), target)
+				logtext = u"*{user} {message}"
 				self.describe(target, msg)
 			elif messageType == 'notice':
-				self.factory.logger.log("[notice] {0}: {1}".format(self.nickname, msg), target)
-				self.notice(target, msg)			
+				logtext = u"[notice] {user}: {message}"
+				self.notice(target, msg)
+			self.factory.logger.log(logtext.format(user=self.nickname, message=msg), target)
 
 	def say(self, target, msg):
 		self.sendMessage(target, msg, 'say')
