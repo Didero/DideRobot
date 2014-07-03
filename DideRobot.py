@@ -194,13 +194,15 @@ class DideRobot(irc.IRCClient):
 		logsource = channel
 		if channel == self.nickname:
 			logsource = usernick
-		logtext = u""
+		logtext = ""
 		if messageType == 'say':
-			logtext = u"{user}: {message}"
+			logtext = "{user}: {message}"
 		elif messageType == 'action':
-			logtext = u"*{user} {message}"
+			logtext = "*{user} {message}"
 		elif messageType == 'notice':
-			logtext = u"[notice] {user}: {message}"
+			logtext = "[notice] {user}: {message}"
+
+		print "[handleMessage] Type of usernick: '{}'; type of messageText: '{}'".format(type(usernick), type(messageText))
 
 		self.factory.logger.log(logtext.format(user=usernick, message=messageText), logsource)
 
@@ -214,19 +216,22 @@ class DideRobot(irc.IRCClient):
 		#Only say something if we're not muted, or if it's a private message or a notice
 		if not self.isMuted or not target.startswith('#') or messageType == 'notice':
 			try:
-				msg = msg.decode(encoding='utf-8', errors='replace')
+				msg = msg.encode(encoding='utf-8', errors='replace')
 			except (UnicodeDecodeError, UnicodeEncodeError):
 				print u"Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg)
-			logtext = u""
+			logtext = ""
 			if messageType == 'say':
-				logtext = u"{user}: {message}"
+				logtext = "{user}: {message}"
 				self.msg(target, msg)
 			elif messageType == 'action':
-				logtext = u"*{user} {message}"
+				logtext = "*{user} {message}"
 				self.describe(target, msg)
 			elif messageType == 'notice':
-				logtext = u"[notice] {user}: {message}"
+				logtext = "[notice] {user}: {message}"
 				self.notice(target, msg)
+
+			print "[sendMessage] Type of usernick: '{}'; type of messageText: '{}'".format(type(self.nickname), type(msg))
+
 			self.factory.logger.log(logtext.format(user=self.nickname, message=msg), target)
 
 	def say(self, target, msg):
