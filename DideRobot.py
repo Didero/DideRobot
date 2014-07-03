@@ -189,6 +189,11 @@ class DideRobot(irc.IRCClient):
 	def handleMessage(self, user, channel, messageText, messageType='say'):
 		"""Called when the bot receives a message, which can be either in a channel or in a private message, as text or an action."""
 
+		try:
+			messageText = messageText.decode(encoding='utf-8', errors='replace')
+		except (UnicodeDecodeError, UnicodeEncodeError):
+			print u"Error encoding message to string (is now type '{}'): '{}'".format(type(messageText), messageText)
+
 		usernick = user.split("!", 1)[0]
 
 		logsource = channel
@@ -214,7 +219,7 @@ class DideRobot(irc.IRCClient):
 		#Only say something if we're not muted, or if it's a private message or a notice
 		if not self.isMuted or not target.startswith('#') or messageType == 'notice':
 			try:
-				msg = msg.encode(encoding='utf-8', errors='replace')
+				msg = msg.decode(encoding='utf-8', errors='replace')
 			except (UnicodeDecodeError, UnicodeEncodeError):
 				print u"Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg)
 			logtext = u""
