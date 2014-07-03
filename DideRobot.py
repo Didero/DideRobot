@@ -202,8 +202,6 @@ class DideRobot(irc.IRCClient):
 		elif messageType == 'notice':
 			logtext = "[notice] {user}: {message}"
 
-		print "[handleMessage] Type of usernick: '{}'; type of messageText: '{}'".format(type(usernick), type(messageText))
-
 		self.factory.logger.log(logtext.format(user=usernick, message=messageText), logsource)
 
 		#Don't respond to notices
@@ -229,8 +227,6 @@ class DideRobot(irc.IRCClient):
 			elif messageType == 'notice':
 				logtext = "[notice] {user}: {message}"
 				self.notice(target, msg)
-
-			print "[sendMessage] Type of usernick: '{}'; type of messageText: '{}'".format(type(self.nickname), type(msg))
 
 			self.factory.logger.log(logtext.format(user=self.nickname, message=msg), target)
 
