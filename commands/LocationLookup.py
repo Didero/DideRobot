@@ -49,20 +49,23 @@ class Command(CommandTemplate):
 							replytext = u"I'm sorry, but I don't know who you're talking about..."
 
 		if userAddress != u"":
-			print "Using user address: '{}'".format(userAddress)
+			print "[location] Using user address: '{}'".format(userAddress)
 			username = userAddress.split("!", 1)[0]
 			userIpMatches = re.search(".*!.*@\D*(\d{1,3}[-.]\d{1,3}[-.]\d{1,3}[-.]\d{1,3}).*", userAddress)
 			userIp = ""
 			if userIpMatches:
 				userIp = userIpMatches.group(1).replace('-', '.')
-				print "IP match found, using IP '{}'".format(userIp)
+				print "[location] IP match found, using IP '{}'".format(userIp)
 			else:
-				userAddressParts = userAddress.split('.')
+				#Use just the part after the @, in case the hostmask only has one period
+				userAddressParts = userAddress.split("@")[1].split('.')
 				try:
+					print "[location] No IP match found, getting IP from hostname '{}.{}'".format(userAddressParts[-2], userAddressParts[-1])
 					userIp = socket.gethostbyname("{}.{}".format(userAddressParts[-2], userAddressParts[-1]))
-					print "No IP match found, getting IP from hostname '{}.{}', using IP '{}'".format(userAddressParts[-2], userAddressParts[-1], userIp)
-				except:
-					print "[LocationLookup] Unable to determine IP address from host '{}.{}'".format(userAddressParts[-2], userAddressParts[-1])
+				except socket.gaierror:
+					print "[location] Unable to determine IP address from host '{}.{}'".format(userAddressParts[-2], userAddressParts[-1])
+				else:
+					print "[location] Hostname resolved to IP '{}'".format(userIp)
 
 			if userIp == "":
 				replytext = u"I'm sorry, I couldn't determine the IP address of {username}".format(username=username)
