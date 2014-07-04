@@ -28,7 +28,7 @@ class Command(CommandTemplate):
 			req = requests.get("http://api.openweathermap.org/data/2.5/weather", params=params)
 			data = json.loads(req.text)
 			if data['cod'] != 200:
-				if data['cod'] == 404:
+				if data['cod'] == 404 or data['cod'] == '404':
 					replytext = u"I'm sorry, I don't know where that is"
 				else:
 					replytext = u"An error occurred, please tell my owner to look at the debug output, or try again in a little while ({}: {})".format(data['cod'], data['message'])
