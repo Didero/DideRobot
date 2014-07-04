@@ -50,7 +50,7 @@ class Command(CommandTemplate):
 				tempInFahrenheit = (data['main']['temp'] * 9 / 5) + 32
 
 				dataAge = round((time.time() - data['dt']) / 60)
-				replytext = u"{city} ({country}): {tempC:.2g}°C / {tempF:.2g}°F, {weatherType}. Wind: {windSpeed} m/s, {windDir}. Humidity of {humidity}% (Data is {dataAge:.0f} minutes old)"
+				replytext = u"{city} ({country}): {tempC:.2g}°C / {tempF:.3g}°F, {weatherType}. Wind: {windSpeed} m/s, {windDir}. Humidity of {humidity}% (Data is {dataAge:.0f} minutes old)"
 				replytext = replytext.format(city=data['name'], country=data['sys']['country'], tempC=data['main']['temp'], tempF=tempInFahrenheit,
 											 weatherType=data['weather'][0]['description'], windSpeed=data['wind']['speed'], windDir=windDirection,
 											 humidity=data['main']['humidity'], dataAge=dataAge)
