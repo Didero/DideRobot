@@ -86,14 +86,14 @@ class Command(CommandTemplate):
 						if url.count('youtu.be') > 0:
 							videoId = url[url.rfind('/')+1:]
 						else:
-							videoIdMatch = re.search('.+v=([^&#\Z]+)', url)
+							videoIdMatch = re.search('.+v=([^&#]+)', url)
 							if videoIdMatch:
 								videoId = videoIdMatch.group(1)
 
 						if videoId != u"":
 							googleUrl = "https://www.googleapis.com/youtube/v3/videos"
-							params = {'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': GlobalStore.commandhandler.apikeys.get('google', 'apikey')}
-							params['fields'] = 'items/snippet(title,description),items/contentDetails/duration,items/statistics(viewCount,likeCount,dislikeCount)'
+							params = {'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': GlobalStore.commandhandler.apikeys.get('google', 'apikey'),
+									  'fields': 'items/snippet(title,description),items/contentDetails/duration,items/statistics(viewCount,likeCount,dislikeCount)'}
 							googleJson = json.loads(requests.get(googleUrl, params=params).text.encode('utf-8'))
 
 							if 'error' in googleJson:
