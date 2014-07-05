@@ -50,9 +50,23 @@ class Command(CommandTemplate):
 				tempInFahrenheit = (data['main']['temp'] * 9 / 5) + 32
 
 				dataAge = round((time.time() - data['dt']) / 60)
-				replytext = u"{city} ({country}): {tempC:.2g}°C / {tempF:.3g}°F, {weatherType}. Wind: {windSpeed} m/s, {windDir}. Humidity of {humidity}% (Data is {dataAge:.0f} minutes old)"
-				replytext = replytext.format(city=data['name'], country=data['sys']['country'], tempC=data['main']['temp'], tempF=tempInFahrenheit,
-											 weatherType=data['weather'][0]['description'], windSpeed=data['wind']['speed'], windDir=windDirection,
-											 humidity=data['main']['humidity'], dataAge=dataAge)
+				dataAgeDisplay = u""
+				if dataAge == 0:
+					dataAge = u"brand new"
+				else:
+					dataAgeDisplay = u"{dataAge:.0f} minute"
+					if dataAge > 1:
+						dataAgeDisplay += u"s"
+					dataAgeDisplay += u" old"
+					dataAgeDisplay = dataAgeDisplay.format(dataAge=dataAge)
+
+				#Not all replies include a placename
+				if 'name' in data and len(data['name']) > 0:
+					replytext += u"{city} ({country}): "
+				elif 'country' in data['sys'] and len(data['sys']['country']) > 0:
+					replytext += u"Somewhere in {country}: "
+				replytext += u"{tempC:.2g}°C / {tempF:.3g}°F, {weatherType}. Wind: {windSpeed} m/s, {windDir}. Humidity of {humidity}% (Data is {dataAge})"
+				replytext = replytext.format(city=data['name'], country=data['sys']['country'], tempC=data['main']['temp'], tempF=tempInFahrenheit, weatherType=data['weather'][0]['description'],
+											 windSpeed=data['wind']['speed'], windDir=windDirection, humidity=data['main']['humidity'], dataAge=dataAgeDisplay)
 
 		message.bot.sendMessage(message.source, replytext)
