@@ -15,16 +15,21 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		replytext = u""
-		userAddress = u""
 
+		#First check for the presence of the API key
 		if not GlobalStore.commandhandler.apikeys.has_section('locatorhq') or not GlobalStore.commandhandler.apikeys.has_option('locatorhq', 'key') or not GlobalStore.commandhandler.apikeys.has_option('locatorhq', 'username'):
 			message.bot.say(message.source, u"I'm sorry, my owner hasn't filled in the required API key for this module. Please poke them to add it")
 			return
 
+		replytext = u""
+		userAddress = u""
+
 		#no parameters added. Look up location of this user
 		if message.messagePartsLength == 0:
 			userAddress = message.user
+		#Allow for any user address to be entered
+		elif u'@' in message.messageParts[0]:
+			userAddress = message.messageParts[0]
 		#A username was provided. Convert that to a full user address
 		else:
 			#Check if a channel name was provided as well
@@ -51,25 +56,24 @@ class Command(CommandTemplate):
 		if userAddress != u"":
 			print "[location] Using user address: '{}'".format(userAddress)
 			username = userAddress.split("!", 1)[0]
-			userIpMatches = re.search(".*!.*@\D*(\d{1,3}[-.]\d{1,3}[-.]\d{1,3}[-.]\d{1,3}).*", userAddress)
+			if username == userAddress:
+				username = u'that user'
+
+			#Try to turn the hostname into an IP address. Take off parts from the front until we have one or run out of parts
 			userIp = ""
-			if userIpMatches:
-				userIp = userIpMatches.group(1).replace('-', '.')
-				print "[location] IP match found, using IP '{}'".format(userIp)
-			else:
-				#Use just the part after the @, in case the hostmask only has one period
-				userAddressParts = userAddress.split("@")[1].split('.')
+			userHostname = userAddress.split('@', 1)[1]
+			userHostnameParts = userHostname.split('.')
+			while userIp == "" and len(userHostnameParts) > 1:
+				#print "[location] Trying to find IP for {}".format(".".join(userHostnameParts))
 				try:
-					print "[location] No IP match found, getting IP from hostname '{}.{}'".format(userAddressParts[-2], userAddressParts[-1])
-					userIp = socket.gethostbyname("{}.{}".format(userAddressParts[-2], userAddressParts[-1]))
+					userIp = socket.gethostbyname(".".join(userHostnameParts))
 				except socket.gaierror:
-					print "[location] Unable to determine IP address from host '{}.{}'".format(userAddressParts[-2], userAddressParts[-1])
-				else:
-					print "[location] Hostname resolved to IP '{}'".format(userIp)
+					userHostnameParts.pop(0)
 
 			if userIp == "":
 				replytext = u"I'm sorry, I couldn't determine the IP address of {username}".format(username=username)
 			else:
+				#print "[location] Using IP address: '{}'".format(userIp)
 				params = {'key': GlobalStore.commandhandler.apikeys.get('locatorhq', 'key'), 'user': GlobalStore.commandhandler.apikeys.get('locatorhq', 'username'), 'ip': userIp, 'format': 'json'}
 				apiReturn = requests.get("http://api.locatorhq.com", params=params)
 
