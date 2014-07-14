@@ -94,6 +94,9 @@ class Command(CommandTemplate):
 					if 'countryName' not in data or data['countryName'] == '-':
 						replytext = u"I'm sorry, but I can't seem to determine which country {username} is from".format(username=username)
 					else:
-						replytext = u"{username} appears to be from {country}".format(username=username, country=data['countryName'])
+						if username == message.bot.nickname.lower():
+							replytext = u"I'm right here for you! And by 'here' I mean {country}".format(country=data['countryName'])
+						else:
+							replytext = u"{username} appears to be from {country}".format(username=username, country=data['countryName'])
 
 		message.bot.say(message.source, replytext)
