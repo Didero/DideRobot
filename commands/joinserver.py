@@ -24,6 +24,6 @@ class Command(CommandTemplate):
 			if success:
 				replytext = u"Successfully created new bot instance for server '{}'".format(message.message)
 			else:
-				replytext = u"Something went wrong with trying to create a bot instance for server '{}'. Most likely a typo in the name, or maybe no settings exist yet for that server".format(msgWithoutFirstWord)
+				replytext = u"Something went wrong with trying to create a bot instance for server '{}'. Most likely a typo in the name, or maybe no settings exist yet for that server".format(message.message)
 
 		message.bot.say(message.source, replytext)
