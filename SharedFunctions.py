@@ -187,18 +187,20 @@ def dictToString(dict):
 		dictstring = dictstring[:-2]
 	return dictstring
 
-def stringToDict(string):
-	if string.startswith('{'):
-		string = string[1:]
-	if string.endswith('}'):
-		string = string[:-1]
+def stringToDict(string, removeStartAndEndBrackets=True):
+	if removeStartAndEndBrackets:
+		if string.startswith('{'):
+			string = string[1:]
+		if string.endswith('}'):
+			string = string[:-1]
 	#If the user didn't add (enough) quotation marks, add them in
 	expectedQuoteCount = string.count(':') * 4
 	if string.count('"') < expectedQuoteCount and string.count("'") < expectedQuoteCount:
 		string = string.replace('"', '').replace("'", "")
 		#Add a quotation mark at the start and end of the sentence, and before and after each : and ,
 		string = '"' + re.sub('((?P<char>:|,) *)', '"\g<char>"', string) + '"'
-	string = '{' + string + '}'
+	if not string.startswith('{') or not string.endswith('}'):
+		string = '{' + string + '}'
 
 	#Prevent quote errors, because JSON requires " instead of '
 	string = string.replace("'", '"')
