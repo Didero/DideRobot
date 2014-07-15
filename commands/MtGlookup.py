@@ -395,7 +395,6 @@ class Command(CommandTemplate):
 						for keyToRemove in keysToRemove:
 							card.pop(keyToRemove, None)
 
-
 						#Make sure all keys are fully lowercase, to make matching them easy
 						keysToMakeLowerCase = ['manaCost']
 						for keyToMakeLowerCase in keysToMakeLowerCase:
@@ -426,20 +425,6 @@ class Command(CommandTemplate):
 							elif isinstance(card[attrib], dict):
 								card[attrib] = SharedFunctions.dictToString(card[attrib])
 
-						#Clean up the text formatting, so we don't have to do that every time
-						keysToFormatNicer = ['manacost', 'text', 'flavor']
-						for keyToFormat in keysToFormatNicer:
-							if keyToFormat in card:
-								newText = card[keyToFormat]
-								#Remove brackets around mana cost
-								if '{' in newText:
-									newText = newText.replace('}{', ' ').replace('{', '').replace('}', '')
-								#Remove newlines but make sure sentences are separated by a period
-								newText = newText.replace('.\n', '\n').replace('\n\n', '\n').replace('\n', '. ')
-								#Prevent double spaces
-								newText = newText.replace(u'  ', u' ').strip()
-								card[keyToFormat] = newText
-
 						#To make searching easier later, without all sorts of key checking, make sure these keys always exist
 						keysToEnsure = ['text']
 						for keyToEnsure in keysToEnsure:
@@ -449,6 +434,24 @@ class Command(CommandTemplate):
 						card['sets'] = setData['name']
 						#Finally, put the card in the new storage
 						newcardstore[cardname].append(card)
+
+			#Format the text after the main loop, so we can compare texts to prevent duplicates
+			for cardlist in newcardstore.values():
+				for card in cardlist:
+					#Clean up the text formatting, so we don't have to do that every time
+					keysToFormatNicer = ['manacost', 'text', 'flavor']
+					for keyToFormat in keysToFormatNicer:
+						if keyToFormat in card:
+							newText = card[keyToFormat]
+							#Remove brackets around mana cost
+							if '{' in newText:
+								newText = newText.replace('}{', ' ').replace('{', '').replace('}', '')
+							#Remove newlines but make sure sentences are separated by a period
+							newText = newText.replace('.\n', '\n').replace('\n\n', '\n').replace('\n', '. ')
+							#Prevent double spaces
+							newText = newText.replace(u'  ', u' ').strip()
+							card[keyToFormat] = newText
+
 
 			#First delete the original file
 			if os.path.exists(cardsJsonFilename):
