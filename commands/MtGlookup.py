@@ -95,7 +95,7 @@ class Command(CommandTemplate):
 				message.bot.say(message.source, u'Please provide an advanced search query too, in JSON format, so "key1: value1, key2:value2". Look at www.mtgjson.com for available fields')
 				return
 
-			searchDict = SharedFunctions.stringToDict(u" ".join(message.messageParts[1:]))
+			searchDict = SharedFunctions.stringToDict(u" ".join(message.messageParts[1:]), False)
 			if len(searchDict) == 0:
 				message.bot.say(message.source, u"That is not a valid search query. It should be entered like JSON, so \"'key': 'value', 'key2': 'value2',...\"")
 				return
@@ -114,7 +114,7 @@ class Command(CommandTemplate):
 			searchDict['type'] = u'legendary.*creature.*' + searchDict['type']
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
-		searchTermsToCorrect = {u"set": u"sets", u"color": u"colors", u"colour": u"colors", u"colours": u"colors"}
+		searchTermsToCorrect = {u"set": u"sets", u"color": u"colors", u"colour": u"colors", u"colours": u"colors", u"types": u"type", u"flavour": u"flavor"}
 		for searchTermToCorrect, correctTerm in searchTermsToCorrect.iteritems():
 			if searchTermToCorrect in searchDict and correctTerm not in searchDict:
 				searchDict[correctTerm] = searchDict[searchTermToCorrect]
@@ -129,8 +129,8 @@ class Command(CommandTemplate):
 			regex = None
 			try:
 				regex = re.compile(query, re.IGNORECASE | re.UNICODE)
-			except:
-				#replytext = u"That is not a valid search term. Brush up on your regex, or just leave out any weird characters"
+			except (re.error, SyntaxError):
+				print "[MTG] Regex error when trying to parse '{}'".format(query)
 				errors.append(attrib)
 			else:
 				regexDict[attrib] = regex
@@ -288,10 +288,6 @@ class Command(CommandTemplate):
 						break
 		#FILL THAT SHIT IN
 		replytext = replytext.format(card=card)
-		#Clean up the text			Remove brackets around mana cost	Remove newlines but make sure sentences are separated by a period	Prevent double spaces
-		replytext = replytext.replace('}{', ' ').replace('{', '').replace('}','').replace('.\n','\n').replace('\n\n','\n').replace('\n','. ').replace(u'  ', u' ').strip()
-		#replytext = re.sub('[{}]', '', replytext)
-		#replytext = re.sub('\.?(\n)+ *', '. ', replytext)
 		return replytext
 
 
@@ -371,9 +367,13 @@ class Command(CommandTemplate):
 			print "Done loading the new cards into memory at {} seconds in".format(time.time() - starttime)
 			newcardstore = {}
 			print "Going through cards"
-			for setcode, set in downloadedCardstore.iteritems():
-				for card in set['cards']:
-					cardname = card['name'] #.encode('utf-8').lower()
+			#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
+			for setcode in downloadedCardstore.keys():
+				setData = downloadedCardstore.pop(setcode)
+				#Again, pop off cards when we need them, to save on memory
+				for i in range(0, len(setData['cards'])):
+					card = setData['cards'].pop(0)
+					cardname = card['name']  #.encode('utf-8').lower()
 					addCard = True
 					if cardname not in newcardstore:
 						newcardstore[cardname] = []
@@ -383,18 +383,21 @@ class Command(CommandTemplate):
 							#  Since we later ensure that all cards have a 'text' field, instead of checking for 'text in sameNameCard', we check whether 'text' is an empty string
 							if ('text' not in card and sameNamedCard['text'] == u"") or (sameNamedCard['text'] != u"" and 'text' in card and sameNamedCard['text'] == card['text']):
 								#Since it's a duplicate, update the original card with info on the set it's also in, if it's not in there already
-								if set['name'] not in sameNamedCard['sets'].split(u'; '):
-									sameNamedCard['sets'] += u"; {}".format(set['name'])
+								if setData['name'] not in sameNamedCard['sets'].split(u'; '):
+									sameNamedCard['sets'] += u"; {}".format(setData['name'])
 								addCard = False
 								break
 
 					if addCard:
 						#Remove some other useless data to save some space, memory and time
-						keysToRemove = ['imageName', 'variations', 'foreignNames', 'originalText', 'originalType'] #Last three are from the database with extras
+						keysToRemove = ['imageName', 'variations', 'types', 'supertypes', 'subtypes',
+										'foreignNames', 'originalText', 'originalType']  #Last three are from the database with extras
 						for keyToRemove in keysToRemove:
 							card.pop(keyToRemove, None)
-						keysToMakeLowerCase = ['manaCost']
+
+
 						#Make sure all keys are fully lowercase, to make matching them easy
+						keysToMakeLowerCase = ['manaCost']
 						for keyToMakeLowerCase in keysToMakeLowerCase:
 							if keyToMakeLowerCase in card:
 								card[keyToMakeLowerCase.lower()] = card[keyToMakeLowerCase]
@@ -423,13 +426,27 @@ class Command(CommandTemplate):
 							elif isinstance(card[attrib], dict):
 								card[attrib] = SharedFunctions.dictToString(card[attrib])
 
+						#Clean up the text formatting, so we don't have to do that every time
+						keysToFormatNicer = ['manacost', 'text', 'flavor']
+						for keyToFormat in keysToFormatNicer:
+							if keyToFormat in card:
+								newText = card[keyToFormat]
+								#Remove brackets around mana cost
+								if '{' in newText:
+									newText = newText.replace('}{', ' ').replace('{', '').replace('}', '')
+								#Remove newlines but make sure sentences are separated by a period
+								newText = newText.replace('.\n', '\n').replace('\n\n', '\n').replace('\n', '. ')
+								#Prevent double spaces
+								newText = newText.replace(u'  ', u' ').strip()
+								card[keyToFormat] = newText
+
 						#To make searching easier later, without all sorts of key checking, make sure these keys always exist
 						keysToEnsure = ['text']
 						for keyToEnsure in keysToEnsure:
 							if keyToEnsure not in card:
 								card[keyToEnsure] = u""
 						
-						card['sets'] = set['name']
+						card['sets'] = setData['name']
 						#Finally, put the card in the new storage
 						newcardstore[cardname].append(card)
 
