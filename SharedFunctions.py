@@ -144,6 +144,22 @@ def getRandomLineFromTweetFile(username):
 	return getLineFromTweetFile(username, randomlinenumber)
 
 
+def getRandomLineFromFile(filename):
+	lines = getAllLinesFromFile(filename)
+	return random.choice(lines).strip()
+
+def getAllLinesFromFile(filename):
+	if not os.path.exists(filename):
+		return u"ERROR: File '{}' does not exist".format(filename)
+	#Make sure it's an absolute filename
+	if GlobalStore.scriptfolder not in filename:
+		filename = os.path.join(GlobalStore.scriptfolder, filename)
+	file = open(filename, 'r')
+	lines = file.readlines()
+	file.close()
+	return lines
+
+
 def parseIsoDate(isoString, formatstring=""):
 	"""Turn an ISO 8601 formatted duration string like P1DT45M3S into something readable like "1 day, 45 minutes, 3 seconds"""
 
@@ -163,6 +179,18 @@ def parseIsoDate(isoString, formatstring=""):
 		return formatstring.format(**durations)
 	else:
 		return durations
+
+def parseInt(text, defaultValue=None, minValue=None, maxValue=None):
+	try:
+		integer = int(text)
+		if minValue:
+			integer = min(integer, minValue)
+		if maxValue:
+			integer = max(integer, maxValue)
+		return integer
+	except (TypeError, ValueError):
+		return defaultValue
+
 
 def durationSecondsToText(durationInSeconds):
 	minutes, seconds = divmod(durationInSeconds, 60)

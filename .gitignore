@@ -41,7 +41,8 @@ _ReSharper*/
 #Project-specific files to ignore
 libraries/
 serverSettings/**
-data/**
+data/*
+!data/generators/
 ToDo.txt
 
 #The example settings file should be in the repo
