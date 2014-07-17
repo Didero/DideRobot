@@ -279,20 +279,20 @@ class Command(CommandTemplate):
 				#In most cases, add an onset
 				if random.randint(1, 100) <= 75:
 					if random.randint(1, 100) <= simpleLetterChance:
-						word += self.basicOrSpecialLetter("consonant", basicLetterChance)
+						word += self.getBasicOrSpecialLetter("consonant", basicLetterChance)
 					else:
 						word += random.choice(onsets)
 
 				#Nucleus!
 				if random.randint(1, 100) <= simpleLetterChance:
-					word += self.basicOrSpecialLetter("vowel", basicLetterChance)
+					word += self.getBasicOrSpecialLetter("vowel", basicLetterChance)
 				else:
 					word += random.choice(nuclei)
 
 				#Add a coda in most cases (Always add it if this is the last syllable of the word and it'd be too short otherwise)
 				if (j == syllableCount - 1 and len(word) < 3) or random.randint(1, 100) <= 75:
 					if random.randint(1, 100) <= simpleLetterChance:
-						word += self.basicOrSpecialLetter("consonant", basicLetterChance)
+						word += self.getBasicOrSpecialLetter("consonant", basicLetterChance)
 					else:
 						word += random.choice(codas)
 
