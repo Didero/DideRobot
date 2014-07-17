@@ -59,6 +59,30 @@ class Command(CommandTemplate):
 			#TODO: Handle numbers larger than 19 by combining words, like "twenty" and "two" for 22
 			return unicode(number)
 
+	def getBasicOrSpecialLetter(self, vowelOrConsonant, basicLetterChance):
+		basicLetters = []
+		specialLetters = []
+
+		if isinstance(vowelOrConsonant, int):
+			#Assume the provided argument is a chance percentage of vowel
+			if random.randint(1, 100) <= vowelOrConsonant:
+				vowelOrConsonant = "vowel"
+			else:
+				vowelOrConsonant = "consonant"
+
+		if vowelOrConsonant == "vowel":
+			basicLetters = ['a', 'e', 'i', 'o', 'u']
+			specialLetters = ['y']
+		else:
+			basicLetters = ['b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't']
+			specialLetters = ['j', 'q', 'v', 'w', 'x', 'z']
+
+		if random.randint(1, 100) <= basicLetterChance:
+			return random.choice(basicLetters)
+		else:
+			return random.choice(specialLetters)
+
+
 	def parseGrammarFile(self, grammarFilename, variableDict={}):
 		with open(os.path.join(GlobalStore.scriptfolder, "data", "generators", grammarFilename), "r") as grammarfile:
 			grammar = json.load(grammarfile)
@@ -138,7 +162,12 @@ class Command(CommandTemplate):
 			firstName = self.getRandomLine(self.filesLocation, "FirstNamesFemale.txt")
 		else:
 			firstName = self.getRandomLine(self.filesLocation, "FirstNamesMale.txt")
-		return u"{} {}".format(firstName, lastName)
+
+		#with a chance add a middle letter:
+		if random.randint(1, 100) <= 15:
+			return u"{} {}. {}".format(firstName, self.getBasicOrSpecialLetter(50, 75), lastName)
+		else:
+			return u"{} {}".format(firstName, lastName)
 
 
 	def generateCreature(self, extraArgument):
@@ -150,7 +179,7 @@ class Command(CommandTemplate):
 
 		# With a small chance, pick an existing saying
 		if extraArgument == u"original" or random.randint(1, 100) <= 5:
-			return self.getRandomLine(basefilename, "OriginalSentences.txt")
+			return self.getRandomLine(basefilename, "SamsOriginalSentences.txt")
 		#Construct an original sentence
 		else:
 			sentence = self.parseGrammarFile("SamsSurprises.grammar")
@@ -214,17 +243,7 @@ class Command(CommandTemplate):
 	def generateWord2(self, extraArgument):
 		"""Another method to generate a word. Based on a slightly more advanced method, from an old project of mine that didn't go anywhere"""
 
-		#Initial set-up
-		vowels = ['a', 'e', 'i', 'o', 'u']
-		specialVowels = ['y']
-
-		consonants = ['b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't']
-		specialConsonants = ['j', 'q', 'v', 'w', 'x', 'z']
-
-		#Temporary, for testing and to prevent increased bloat
-		#vowels.extend(specialVowels)
-		#consonants.extend(specialConsonants)
-
+		##Initial set-up
 		#A syllable consists of an optional onset, a nucleus, and an optional coda
 		#Sources:
 		# http://en.wikipedia.org/wiki/English_phonology#Phonotactics
@@ -243,11 +262,6 @@ class Command(CommandTemplate):
 		basicLetterChance = 75  #percent, whether a simple consonant/vowel is chosen over  a more rare one
 
 		#Prevent unnecessary and ugly code repetition
-		def basicOrSpecialLetter(basicLetters, specialLetters, basicChance):
-			if random.randint(1, 100) <= basicChance:
-				return random.choice(basicLetters)
-			else:
-				return random.choice(specialLetters)
 
 		#Start the word
 		repeats = 1
@@ -267,20 +281,20 @@ class Command(CommandTemplate):
 				#In most cases, add an onset
 				if random.randint(1, 100) <= 75:
 					if random.randint(1, 100) <= simpleLetterChance:
-						word += basicOrSpecialLetter(consonants, specialConsonants, basicLetterChance)
+						word += self.basicOrSpecialLetter("consonant", basicLetterChance)
 					else:
 						word += random.choice(onsets)
 
 				#Nucleus!
 				if random.randint(1, 100) <= simpleLetterChance:
-					word += basicOrSpecialLetter(vowels, specialVowels, basicLetterChance)
+					word += self.basicOrSpecialLetter("vowel", basicLetterChance)
 				else:
 					word += random.choice(nuclei)
 
 				#Add a coda in most cases (Always add it if this is the last syllable of the word and it'd be too short otherwise)
 				if (j == syllableCount - 1 and len(word) < 3) or random.randint(1, 100) <= 75:
 					if random.randint(1, 100) <= simpleLetterChance:
-						word += basicOrSpecialLetter(consonants, specialConsonants, basicLetterChance)
+						word += self.basicOrSpecialLetter("consonant", basicLetterChance)
 					else:
 						word += random.choice(codas)
 
