@@ -175,11 +175,9 @@ class Command(CommandTemplate):
 
 
 	def generateSamAndMaxSentence(self, extraArgument):
-		basefilename = os.path.join(self.filesLocation, "SamAndMax")
-
 		# With a small chance, pick an existing saying
 		if extraArgument == u"original" or random.randint(1, 100) <= 5:
-			return self.getRandomLine(basefilename, "SamsOriginalSentences.txt")
+			return self.getRandomLine(self.filesLocation, "SamsOriginalSentences.txt")
 		#Construct an original sentence
 		else:
 			sentence = self.parseGrammarFile("SamsSurprises.grammar")
