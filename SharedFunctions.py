@@ -150,7 +150,8 @@ def getRandomLineFromFile(filename):
 
 def getAllLinesFromFile(filename):
 	if not os.path.exists(filename):
-		return u"ERROR: File '{}' does not exist".format(filename)
+		print u"LINE READ ERROR: File '{}' does not exist".format(filename)
+		return None
 	#Make sure it's an absolute filename
 	if GlobalStore.scriptfolder not in filename:
 		filename = os.path.join(GlobalStore.scriptfolder, filename)
@@ -180,13 +181,13 @@ def parseIsoDate(isoString, formatstring=""):
 	else:
 		return durations
 
-def parseInt(text, defaultValue=None, minValue=None, maxValue=None):
+def parseInt(text, defaultValue=None, lowestValue=None, highestValue=None):
 	try:
 		integer = int(text)
-		if minValue:
-			integer = min(integer, minValue)
-		if maxValue:
-			integer = max(integer, maxValue)
+		if lowestValue:
+			integer = max(integer, lowestValue)
+		if highestValue:
+			integer = min(integer, highestValue)
 		return integer
 	except (TypeError, ValueError):
 		return defaultValue
