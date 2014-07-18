@@ -157,6 +157,8 @@ class Command(CommandTemplate):
 				replacement = replacement.upper()
 			elif 'camelcase' in arguments or 'titlecase' in arguments:
 				replacement = replacement.title()
+			elif 'firstletteruppercase' in arguments:
+				replacement = replacement[0].upper() + replacement[1:]
 
 			sentence = sentence.replace(u"<{}>".format(field), replacement, 1).strip()
 		#Exited from loop, return the fully filled-in sentence
