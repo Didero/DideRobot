@@ -15,8 +15,8 @@ class Command(CommandTemplate):
 
 	def onStart(self):
 		# Set in 'onStart' so referencing the methods actually works
-		self.generators = {"creature": self.generateCreature, "name": self.generateName, "SamAndMax": self.generateSamAndMaxSentence,
-						   "word": self.generateWord, "word2": self.generateWord2}
+		self.generators = {"creature": self.generateCreature, "name": self.generateName, "samAndMax": self.generateSamAndMaxSentence,
+						   "superhero": self.generateSuperhero, "word": self.generateWord, "word2": self.generateWord2}
 		self.helptext += ", ".join(sorted(self.generators.keys()))
 
 	def execute(self, message):
@@ -84,7 +84,7 @@ class Command(CommandTemplate):
 
 
 	def parseGrammarFile(self, grammarFilename, variableDict={}):
-		with open(os.path.join(GlobalStore.scriptfolder, "data", "generators", grammarFilename), "r") as grammarfile:
+		with open(os.path.join(self.filesLocation, grammarFilename), "r") as grammarfile:
 			grammar = json.load(grammarfile)
 		sentence = grammar["_start"]
 		optionSeparator = u"|"
@@ -97,48 +97,68 @@ class Command(CommandTemplate):
 			field = tagmatch.group(1)
 
 			#Special commands start with an underscore
-			if field.startswith(u"_"):
-				arguments = field.split(optionSeparator)
-				if field.startswith(u"_randint"):
+			arguments = field.split(optionSeparator)
+			fieldKey = arguments[0]
+			if fieldKey.startswith(u"_"):
+				if fieldKey == u"_randint" or fieldKey == u"_randintasword":
 					value = random.randint(int(arguments[1]), int(arguments[2]))
-					if arguments[0] == u"_randint":
+					if fieldKey == u"_randint":
 						replacement = unicode(value)
-					elif arguments[0] == u"_randintasword":
+					elif fieldKey == u"_randintasword":
 						replacement = self.numberToText(value)
-				elif field.startswith(u"_file"):
+				elif fieldKey == u"_file":
 					#Load a sentence from the specified file. Useful for not cluttering up the grammar file with a lot of options
-					newFilename = field.split(optionSeparator)[1]
-					replacement = SharedFunctions.getRandomLineFromFile(newFilename)
-				elif field.startswith(u"_variable"):
+					newFilename = arguments[1]
+					replacement = self.getRandomLine(newFilename)
+				elif fieldKey == u"_variable" or fieldKey == u"_var":
 					#Variable, fill it in if it's in the variable dictionary
 					if arguments[1] not in variableDict:
-						return u"Error: Referenced undefined variable '{}'".format(arguments[1])
+						return u"Error: Referenced undefined variable '{}' in field '{}'".format(arguments[1], fieldKey)
 					else:
 						replacement = variableDict[arguments[1]]
+				elif fieldKey == u"_if":
+					#<_if|varname=string|stringIfTrue|stringIfFalse>
+					firstArgumentParts = arguments[1].split('=')
+					if len(arguments) < 4:
+						return u"Error: Not enough arguments in 'if' for field '{}'".format(fieldKey)
+					if firstArgumentParts[0] not in variableDict:
+						return u"Error: Referenced undefined variable '{}' in 'if' of field '{}'".format(firstArgumentParts[0], fieldKey)
+					if variableDict[firstArgumentParts[0]] == firstArgumentParts[1]:
+						replacement = arguments[2]
+					else:
+						replacement = arguments[3]
 				else:
-					return u"Error: Unknown command '{}' found!".format(field)
+					return u"Error: Unknown command '{}' found!".format(fieldKey)
 			#No command, so check if it's a valid key
-			elif field not in grammar:
-				return u"Error: Field '{}' not found in grammar file!".format(field)
+			elif fieldKey not in grammar:
+				return u"Error: Field '{}' not found in grammar file!".format(fieldKey)
 			#All's well, fill it in
 			else:
-				if isinstance(grammar[field], list):
+				if isinstance(grammar[fieldKey], list):
 					#It's a list! Just pick a random entry
-					replacement = random.choice(grammar[field])
-				elif isinstance(grammar[field], dict):
+					replacement = random.choice(grammar[fieldKey])
+				elif isinstance(grammar[fieldKey], dict):
 					#Dictionary! The keys are chance percentages, the values are the replacement strings
 					roll = random.randint(1, 100)
-					for chance in sorted(grammar[field].keys()):
+					for chance in sorted(grammar[fieldKey].keys()):
 						if roll <= int(chance):
-							replacement = grammar[field][chance]
+							replacement = grammar[fieldKey][chance]
 							break
-				elif isinstance(grammar[field], basestring):
-					#If it's a string, just dump it in
-					replacement = grammar[field]
+				elif isinstance(grammar[fieldKey], basestring):
+					#If it's a string (either the string class or the unicode class), just dump it in
+					replacement = grammar[fieldKey]
 				else:
-					return u"Error: No handling defined for type '{}' found in field '{}'".format(type(grammar[field]), field)
+					return u"Error: No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey)
 
-			sentence = sentence.replace("<{}>".format(field), replacement, 1).strip()
+			#Process the possible arguments that can be provided
+			if 'lowercase' in arguments:
+				replacement = replacement.lower()
+			elif 'uppercase' in arguments:
+				replacement = replacement.upper()
+			elif 'camelcase' in arguments or 'titlecase' in arguments:
+				replacement = replacement.title()
+
+			sentence = sentence.replace(u"<{}>".format(field), replacement, 1).strip()
 		#Exited from loop, return the fully filled-in sentence
 		return sentence
 
@@ -165,7 +185,7 @@ class Command(CommandTemplate):
 
 		#with a chance add a middle letter:
 		if random.randint(1, 100) <= 15:
-			return u"{} {}. {}".format(firstName, self.getBasicOrSpecialLetter(50, 75), lastName)
+			return u"{} {}. {}".format(firstName, self.getBasicOrSpecialLetter(50, 75).upper(), lastName)
 		else:
 			return u"{} {}".format(firstName, lastName)
 
@@ -300,3 +320,24 @@ class Command(CommandTemplate):
 			words.append(word)
 
 		return u", ".join(words)
+
+	def generateSuperhero(self, extraArgument):
+		variableDict = {}
+
+		gender = "f"
+		if extraArgument in ["f", "female", "woman", "girl"]:
+			gender = "f"
+		elif extraArgument in ["m", "male", "man", "boy"]:
+			gender = "m"
+		elif random.randint(1, 100) <= 50:
+			gender = "m"
+
+		if gender == "f":
+			variableDict = {"gender": "f", "genderNoun": "Woman", "genderNounYoung": "Girl", "genderAdjective": "Female",
+							"pronoun": "she", "possessivePronoun": "her", "personalPronoun": "her"}
+		else:
+			variableDict = {"gender": "m", "genderNoun": "Man", "genderNounYoung": "Boy", "genderAdjective": "Male",
+							"pronoun": "he", "possessivePronoun": "his", "personalPronoun": "him"}
+		variableDict["name"] = self.generateName(gender)
+
+		return self.parseGrammarFile("SuperheroGenerator.grammar", variableDict)
