@@ -90,10 +90,10 @@ class Command(CommandTemplate):
 					else:
 						#Forecast
 						replytext = u"Forecast for "
-						if 'name' in data['city']:
+						if 'name' in data['city'] and len(data['city']['name']) > 0:
 							replytext += u"{city} ({country}). "
 						else:
-							replytext += u"somewhere in {country}. "
+							replytext += u"{country}. "
 						replytext = replytext.format(city=data['city']['name'], country=data['city']['country'])
 						for day in data['list']:
 							dayname = datetime.datetime.utcfromtimestamp(day['dt']).strftime(u"%A")
