@@ -45,6 +45,9 @@ data/*
 !data/generators/
 ToDo.txt
 
+#The debug module is only for testing, don't include it
+commands/debug.py
+
 #The example settings file should be in the repo
 !serverSettings/globalsettings.ini.example
 
