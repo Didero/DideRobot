@@ -7,10 +7,10 @@ from CommandTemplate import CommandTemplate
 
 
 class Command(CommandTemplate):
-	triggers = ['wikipedia', 'wiki', 'randomwiki']
+	triggers = ['wikipedia', 'wiki', 'wikirandom']
 	helptext = "Searches for the provided text on Wikipedia, and returns the start of the article, if it's found. " \
 			   "{commandPrefix}wiki only returns the first sentence, {commandPrefix}wikipedia returns the first paragraph. " \
-			   "{commandPrefix}randomwiki returns a random wikipedia page"
+			   "{commandPrefix}wikirandom returns a random wikipedia page"
 
 	def execute(self, message):
 		"""
@@ -19,11 +19,11 @@ class Command(CommandTemplate):
 		replytext = u""
 		replyLengthLimit = 300
 
-		if message.messagePartsLength == 0 and message.trigger != 'randomwiki':
+		if message.messagePartsLength == 0 and message.trigger != 'wikirandom':
 			replytext = u"Please provide a term to search for"
 		else:
 			wikiPage = None
-			if message.trigger == 'randomwiki':
+			if message.trigger == 'wikirandom':
 				wikiPage = requests.get('http://en.m.wikipedia.org/wiki/Special:Random/#/random')
 			else:
 				wikiPage = requests.get("http://en.m.wikipedia.org/w/index.php", params={'search': message.message})
@@ -43,14 +43,15 @@ class Command(CommandTemplate):
 				if replytext.endswith(u"may refer to:"):
 					replytext = u"'{}' can refer to multiple things: {}".format(message.message, wikiPage.url.replace('en.m', 'en', 1))
 				else:
+					#Remove the links to references ('[1]') from the text (Done before the shortening or linesplitting so it doesn't mess that up)
+					replytext = re.sub(r'\[.+?\]', u'', replytext)
+
 					if message.trigger != u'wikipedia':
-						#Short reply
+						#Short reply, just the first sentence
 						replytext = replytext.split(u". ", 1)[0]
 						if not replytext.endswith(u'.'):
 							replytext += u"."
 
-					#Remove the links to references ('[1]') from the text
-					replytext = re.sub(r'\[.+\]', u'', replytext)
 
 					#Shorten the reply if it's too long
 					if len(replytext) > replyLengthLimit:
