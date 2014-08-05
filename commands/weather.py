@@ -96,7 +96,7 @@ class Command(CommandTemplate):
 							replytext += u"{country}. "
 						replytext = replytext.format(city=data['city']['name'], country=data['city']['country'])
 						for day in data['list']:
-							dayname = datetime.datetime.utcfromtimestamp(day['dt']).strftime(u"%A")
+							dayname = datetime.datetime.utcfromtimestamp(day['dt']).strftime(u"%a").upper()
 
 							replytext += u"{dayname}: {minTempC:.2g}-{maxTempC:.2g}°C / {minTempF:.0f}-{maxTempF:.0f}°F, {weatherType}, {humidity}% hum., {windSpeed:.2g}m/s {windDir} wind.  "
 							replytext = replytext.format(dayname=dayname, minTempC=day['temp']['min'], maxTempC=day['temp']['max'],
