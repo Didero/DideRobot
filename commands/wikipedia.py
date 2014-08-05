@@ -48,7 +48,10 @@ class Command(CommandTemplate):
 
 					if message.trigger != u'wikipedia':
 						#Short reply, just the first sentence
-						replytext = replytext.split(u". ", 1)[0]
+						#If it's too short, add more (Fixes f.i. articles about court cases, 'defendant v. accuser'
+						lines = replytext.split(u". ")
+						while len(replytext) < 25 and len(lines) > 0:
+							replytext += u". " + lines.pop()
 						if not replytext.endswith(u'.'):
 							replytext += u"."
 
