@@ -1,4 +1,4 @@
-import re, time
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -35,28 +35,48 @@ class Command(CommandTemplate):
 				if suggestions:
 					replytext += suggestions.text + u"?"
 			else:
-				replytext = wikitext.find(id="content")  #The actual article is in a div with id 'content'
-				replytext = replytext.find('div')  #For some reason it's nested in another div tag
-				replytext = replytext.find('p', recursive=False)  #The article starts with a <p> tag in the root (ignore p-tags in tables)
-				replytext = replytext.text  #Get the actual text, without any HTML
+				articleContainer = wikitext.find(id="content")  #The actual article is in a div with id 'content'
+				articleContainer = articleContainer.find('div')  #For some reason it's nested in another div tag
+				replytext = articleContainer.find('p', recursive=False).text  #The article starts with a <p> tag in the root (ignore p-tags in tables)
 
-				if message.trigger != 'wikipedia':
-					#Short reply
-					replytext = replytext.split(". ", 1)[0] + "."
+				#Check if we're on a disambiguation page
+				if replytext.endswith(u"may refer to:"):
+					replytext = u"'{}' can refer to multiple things: {}".format(message.message, wikiPage.url.replace('en.m', 'en', 1))
+				else:
+					if message.trigger != u'wikipedia':
+						#Short reply
+						replytext = replytext.split(u". ", 1)[0]
+						if not replytext.endswith(u'.'):
+							replytext += u"."
 
-				#Shorten the reply if it's too long
-				if len(replytext) > replyLengthLimit:
-					replytext = replytext[:replyLengthLimit]
+					#Remove the links to references ('[1]') from the text
+					replytext = re.sub(r'\[.+\]', u'', replytext)
 
-					#Try not to chop up words
-					lastSpaceIndex = replytext.rfind(u' ')
-					if lastSpaceIndex > -1:
-						replytext = replytext[:lastSpaceIndex]
+					#Shorten the reply if it's too long
+					if len(replytext) > replyLengthLimit:
+						replytext = replytext[:replyLengthLimit]
 
-					replytext += u' [...]'
+						#Try not to chop up words
+						lastSpaceIndex = replytext.rfind(u' ')
+						if lastSpaceIndex > -1:
+							replytext = replytext[:lastSpaceIndex]
 
-				#Add the URL to the end of the reply, so you can easily click to the full article
-				# (On the full Wikipedia, not the mobile version we're using)
-				replytext += u" ({})".format(wikiPage.url.replace('en.m', 'en', 1))
+						replytext += u' [...]'
+
+					#Check if there is a link to a disambiguation page at the top
+					#Also check if the link to the disambiguation page doesn't refer to something that also redirects to this page
+					#  For instance, if you search for 'British Thermal Unit', it says that BTU redirects there but can also mean other things
+					#  If we got there by searching 'British Thermal Unit', don't add 'multiple meanings', if we got there with 'BTU', do
+					notices = articleContainer.find_all("div", class_="hatnote")
+					disambiguationStringToCompare = u'{} (disambiguation)'.format(message.message.lower())
+					if len(notices) > 0:
+						for notice in notices:
+							if disambiguationStringToCompare in notice.text.lower():
+								replytext += u" (multiple meanings)"
+								break
+
+					#Add the URL to the end of the reply, so you can easily click to the full article
+					# (On the full Wikipedia, not the mobile version we're using)
+					replytext += u" ({})".format(wikiPage.url.replace('en.m', 'en', 1))
 
 		message.bot.say(message.source, replytext)
