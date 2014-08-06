@@ -18,6 +18,8 @@ class Command(CommandTemplate):
 		"""
 		replytext = u""
 		replyLengthLimit = 300
+		minimumSentenceLength = 50
+		maximumSearchResults = 3
 
 		if message.messagePartsLength == 0 and message.trigger != 'wikirandom':
 			replytext = u"Please provide a term to search for"
@@ -30,10 +32,26 @@ class Command(CommandTemplate):
 			wikitext = BeautifulSoup(wikiPage.content)
 			if len(wikiPage.history) == 0:
 				#We're still on the search page, so the search didn't lead to an article
-				replytext = u"Sorry, no article with that name found found. "
+				replytext = u"Sorry, no article with that name was found. "
+				#If it's a simple typo, Wikipedia offers suggestions
 				suggestions = wikitext.find(class_="searchdidyoumean")
 				if suggestions:
 					replytext += suggestions.text + u"?"
+				#Otherwise, list the first few search results, if there are any
+				else:
+					searchresultContainer = wikitext.find(class_="searchresults")
+					if searchresultContainer and not searchresultContainer.find(class_="mw-search-nonefound"):
+						searchresults = searchresultContainer.find(class_="mw-search-results").find_all('a', limit=maximumSearchResults)
+						replytext += u"Perhaps try: "
+						for result in searchresults:
+							replytext += result.text + u"; "
+						replytext = replytext[:-2]
+
+						resultinfo = wikitext.find(class_="results-info")
+						if resultinfo:
+							resultCount = int(resultinfo.find_all('b')[1].text.replace(',', ''))
+							resultCount -= len(searchresults)
+							replytext += u" ({:,} more possible results)".format(resultCount)
 			else:
 				articleContainer = wikitext.find(id="content")  #The actual article is in a div with id 'content'
 				articleContainer = articleContainer.find('div')  #For some reason it's nested in another div tag
@@ -41,7 +59,7 @@ class Command(CommandTemplate):
 
 				#Check if we're on a disambiguation page
 				if replytext.endswith(u"may refer to:"):
-					replytext = u"'{}' can refer to multiple things: {}".format(message.message, wikiPage.url.replace('en.m', 'en', 1))
+					replytext = u"'{}' has mutliple meanings: {}".format(message.message, wikiPage.url.replace('en.m', 'en', 1))
 				else:
 					#Remove the links to references ('[1]') from the text (Done before the shortening or linesplitting so it doesn't mess that up)
 					replytext = re.sub(r'\[.+?\]', u'', replytext)
@@ -49,12 +67,12 @@ class Command(CommandTemplate):
 					if message.trigger != u'wikipedia':
 						#Short reply, just the first sentence
 						#If it's too short, add more (Fixes f.i. articles about court cases, 'defendant v. accuser'
-						lines = replytext.split(u". ")
-						while len(replytext) < 25 and len(lines) > 0:
-							replytext += u". " + lines.pop()
+						lines = re.split(r"\. (?=[A-Z])", replytext)  #use lookahead ('(?=...)') so the letter isn't cut off
+						replytext = lines.pop(0)
+						while len(replytext) < minimumSentenceLength and len(lines) > 0:
+							replytext += u". " + lines.pop(0)
 						if not replytext.endswith(u'.'):
 							replytext += u"."
-
 
 					#Shorten the reply if it's too long
 					if len(replytext) > replyLengthLimit:
@@ -67,17 +85,20 @@ class Command(CommandTemplate):
 
 						replytext += u' [...]'
 
+					if wikiPage.url.endswith(u"(disambiguation)"):
+						replytext += u" (multiple meanings)"
 					#Check if there is a link to a disambiguation page at the top
 					#Also check if the link to the disambiguation page doesn't refer to something that also redirects to this page
 					#  For instance, if you search for 'British Thermal Unit', it says that BTU redirects there but can also mean other things
 					#  If we got there by searching 'British Thermal Unit', don't add 'multiple meanings', if we got there with 'BTU', do
-					notices = articleContainer.find_all("div", class_="hatnote")
-					disambiguationStringToCompare = u'{} (disambiguation)'.format(message.message.lower())
-					if len(notices) > 0:
-						for notice in notices:
-							if disambiguationStringToCompare in notice.text.lower():
-								replytext += u" (multiple meanings)"
-								break
+					else:
+						notices = articleContainer.find_all("div", class_="hatnote")
+						disambiguationStringToCompare = u'{} (disambiguation)'.format(message.message.lower())
+						if len(notices) > 0:
+							for notice in notices:
+								if disambiguationStringToCompare in notice.text.lower():
+									replytext += u" (multiple meanings)"
+									break
 
 					#Add the URL to the end of the reply, so you can easily click to the full article
 					# (On the full Wikipedia, not the mobile version we're using)
