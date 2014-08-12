@@ -1,4 +1,4 @@
-import os, sys
+import argparse, os, sys
 #Make sure 'import' also searches inside the 'libraries' folder, so those libs don't clutter up the main directory
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libraries'))
 
@@ -9,21 +9,26 @@ from CommandHandler import CommandHandler
 from BotHandler import BotHandler
 
 
-if __name__ == "__main__":
-	#Store where in the filesystem we are for future reference
-	GlobalStore.scriptfolder = os.path.dirname(os.path.abspath(__file__))
+#Set up fancy argument parsing
+argparser = argparse.ArgumentParser()
+argparser.add_argument("serverlist", help="The comma-separated list of folders in serverSettings that you want to load the config from and start")
+args = argparser.parse_args()
 
-	#Some commands need the reactor, register it already
-	GlobalStore.reactor = reactor
+#Store where in the filesystem we are for future reference
+GlobalStore.scriptfolder = os.path.dirname(os.path.abspath(__file__))
 
-	#Start up the CommandHandler and have it load in all the modules
-	GlobalStore.commandhandler = CommandHandler()
-	GlobalStore.commandhandler.loadCommands()
+#Some commands need the reactor, register it already
+GlobalStore.reactor = reactor
 
-	#Get the settings location and log target location from the command line
-	serverfolderList = sys.argv[1].split(',')
-	print "Server folder list: '{}'".format(sys.argv[1], serverfolderList)
-	bothandler = BotHandler(serverfolderList)
+#Start up the CommandHandler and have it load in all the modules
+GlobalStore.commandhandler = CommandHandler()
+GlobalStore.commandhandler.loadCommands()
 
-	#Finally, start the whole thing
-	GlobalStore.reactor.run()
+#Get the config files we need to load from the argument parser
+serverfolderList = args.serverlist.split(',')
+print "Server folder list: '{}'".format(serverfolderList)
+#Start up the bots
+bothandler = BotHandler(serverfolderList)
+
+#Finally, set the whole thing off
+GlobalStore.reactor.run()
