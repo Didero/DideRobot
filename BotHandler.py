@@ -1,12 +1,7 @@
-﻿import os, sys
-#Make sure 'import' also searches inside the 'libraries' folder, so it can find Twisted and the like without those libs cluttering up the main directory
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libraries'))
+﻿import os
 
-from twisted.internet import reactor
-
-from DideRobot import DideRobot, DideRobotFactory
+from DideRobot import DideRobotFactory
 import GlobalStore
-from CommandHandler import CommandHandler
 
 
 class BotHandler:
@@ -14,7 +9,6 @@ class BotHandler:
 
 	def __init__(self, serverfolderList):
 		GlobalStore.bothandler = self
-		GlobalStore.scriptfolder = os.path.dirname(os.path.abspath(__file__))
 
 		#Since a lot of modules save stuff to the 'data' subfolder, make sure it exists to save all of them some checking time
 		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data')):
@@ -26,10 +20,6 @@ class BotHandler:
 		else:		
 			for serverfolder in serverfolderList:
 				self.startBotfactory(serverfolder)
-
-			GlobalStore.commandhandler = CommandHandler()
-			GlobalStore.commandhandler.loadCommands()
-			GlobalStore.reactor.run()
 
 	def startBotfactory(self, serverfolder):
 		if serverfolder in self.botfactories:
@@ -80,10 +70,3 @@ class BotHandler:
 					GlobalStore.reactor.callLater(2.0, GlobalStore.reactor.stop)
 			else:
 				print "Successfully unregistered bot '{}', {} bots left: {}".format(serverfolder, len(self.botfactories), "; ".join(self.botfactories.keys()))
-
-if __name__ == "__main__":
-	GlobalStore.reactor = reactor
-	#Get the settings location and log target location from the command line
-	serverfolderList = sys.argv[1].split(',')
-	print "First argument: '{}'; Server folder list: '{}'".format(sys.argv[1], serverfolderList)
-	bothandler = BotHandler(serverfolderList)
