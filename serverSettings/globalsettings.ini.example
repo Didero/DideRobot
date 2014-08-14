@@ -3,6 +3,7 @@ server=
 port=6667
 nickname=DideRobot
 realname=DideRobot
+maxConnectionRetries=5
 
 [scripts]
 keepChannelLogs=true

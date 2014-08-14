@@ -263,8 +263,6 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		self.commandBlacklist = None
 
 		self.shouldReconnect = True
-		self.maxRetries = 5
-
 
 		if not self.updateSettings(False):
 			print "ERROR while loading settings for bot '{}', aborting launch!".format(self.serverfolder)
@@ -278,7 +276,10 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		return self.bot
 
 	def startedConnecting(self, connector):
-		self.logger.log("Started connecting, attempt {} (Max is {})".format(self.retries, self.maxRetries))
+		maxRetries = self.maxRetries
+		if not self.maxRetries:
+			maxRetries = "not set"
+		self.logger.log("Started connecting, attempt {} (Max is {})".format(self.retries, maxRetries))
 		
 	def clientConnectionLost(self, connector, reason):
 		self.logger.log("Client connection lost (Reason: '{0}')".format(reason))
@@ -293,7 +294,8 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 	def clientConnectionFailed(self, connector, reason):
 		self.logger.log("Client connection failed (Reason: '{}')".format(reason))
 		protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
-		if self.retries > self.maxRetries:
+		#If there is a maximum number of retries set, and that maximum is exceeded, stop trying
+		if self.maxRetries and self.retries > self.maxRetries:
 			self.logger.log("Max amount of connection retries reached, removing bot factory")
 			self.logger.closelogs()
 			self.stopTrying()
@@ -336,6 +338,20 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			self.commandWhitelist = self.settings.get('scripts', 'commandWhitelist').split(',')
 		elif self.settings.has_option('scripts', 'commandBlacklist'):
 			self.commandBlacklist = self.settings.get('scripts', 'commandBlacklist').split(',')
+
+		#Load in the maximum connection settings to try, if there is any
+		if not self.settings.has_option('connection', 'maxConnectionRetries'):
+			self.maxRetries = None
+		else:
+			try:
+				self.maxRetries = self.settings.getint('connection', 'maxConnectionRetries')
+			except ValueError:
+				print "|{}| Invalid value in settings file for 'maxConnectionRetries'. Expected integer, got '{}'".format(self.serverfolder, self.settings.get("connection", "maxConnectionRetries"))
+				self.maxRetries = None
+			#Assume values smaller than zero mean endless retries
+			else:
+				if self.maxRetries < 0:
+					self.maxRetries = None
 
 		if updateLogger:
 			self.logger.updateLogSettings()
