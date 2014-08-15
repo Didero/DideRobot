@@ -134,9 +134,21 @@ class Command(CommandTemplate):
 				errors.append(attrib)
 			else:
 				regexDict[attrib] = regex
+		#If there were errors parsing the regular expressions, don't continue, to prevent errors further down
 		if len(errors) > 0:
-			replytext = u"(Error(s) occurred with attributes: {}) ".format(", ".join(errors))
+			#If there was only one search element to begin with, there's no need to specify
+			if len(searchDict) == 1:
+				replytext = u"An error occurred when trying to parse your search query. Please check if it is a valid regular expression"
+			#If there were more elements but only one error, specify
+			elif len(errors) == 1:
+				replytext = u"An error occurred while trying to parse the query for the '{}' field. Please check if it is a valid regular expression".format(errors[0])
+			#Multiple errors, list them all
+			else:
+				replytext = u"Errors occurred while parsing attributes: {}. Please check your regex for errors".format(u", ".join(errors))
 			print "[MtG] " + replytext
+			message.bot.say(message.source, replytext)
+			return
+
 		regexAttribCount = len(regexDict)
 		print "Parsed search terms at {} seconds in".format(time.time() - starttime)
 
