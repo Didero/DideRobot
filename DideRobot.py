@@ -14,7 +14,6 @@ from IrcMessage import IrcMessage
 
 
 class DideRobot(irc.IRCClient):
-
 	def __init__(self, factory):
 		self.factory = factory
 		self.channelsUserList = {}
@@ -59,56 +58,62 @@ class DideRobot(irc.IRCClient):
 	def irc_JOIN(self, prefix, params):
 		"""Called when a user or the bot joins a channel"""
 		#'prefix' is the user, 'params' is a list with apparently just one entry, the channel
-		usernick = prefix.split("!", 1)[0]
-		self.factory.logger.log("JOIN: {nick} ({address})".format(nick=usernick, address=prefix), params[0])
+		message = IrcMessage('join', self, prefix, params[0])
+		self.factory.logger.log("JOIN: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
 		#If we just joined a channel, or if don't have a record of this channel yet, get all the users in it
-		if usernick == self.nickname or params[0] not in self.channelsUserList:
+		if message.userNickname == self.nickname or params[0] not in self.channelsUserList:
 			self.retrieveChannelUsers(params[0])
 		#If we don't know this user yet, add it to our list
 		elif prefix not in self.channelsUserList[params[0]]:
 			self.channelsUserList[params[0]].append(prefix)
+		GlobalStore.commandhandler.fireCommand(message)
+
 		
 	def irc_PART(self, prefix, params):
 		"""Called when a user or the bot leaves a channel"""
 		#'prefix' is the user, 'params' is a list with only the channel
-		usernick = prefix.split("!", 1)[0]
-		self.factory.logger.log("PART: {nick} ({address})".format(nick=usernick, address=prefix), params[0])
+		message = IrcMessage('part', self, prefix, params[0])
+		self.factory.logger.log("PART: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
 		#Keep track of the channels we're in
-		if usernick == self.nickname:
+		if message.userNickname == self.nickname:
 			self.channelsUserList.pop(params[0])
 		#Keep track of channel users
 		elif prefix in self.channelsUserList[params[0]]:
 				self.channelsUserList[params[0]].remove(prefix)
+		GlobalStore.commandhandler.fireCommand(message)
 
 	def irc_QUIT(self, prefix, params):
 		"""Called when a user quits"""
 		#'prefix' is the user address, 'params' is a single-item list with the quit messages
 		#log for every channel the user was in that they quit
-		usernick = prefix.split("!", 1)[0]
+		message = IrcMessage('quit', self, prefix, None, params[0])
 		for channel, userlist in self.channelsUserList.iteritems():
 			if prefix in userlist:
-				self.factory.logger.log("QUIT: {nick} ({address}): '{quitmessage}' ".format(nick=usernick, address=prefix, quitmessage=params[0]), channel)
+				self.factory.logger.log("QUIT: {nick} ({address}): '{quitmessage}' ".format(nick=message.userNickname, address=prefix, quitmessage=params[0]), channel)
 				userlist.remove(prefix)
+		GlobalStore.commandhandler.fireCommand(message)
 
 	def irc_KICK(self, prefix, params):
 		"""Called when a user is kicked"""
 		#'prefix' is the kicker, params[0] is the channel, params[1] is the kicked, params[-1] is the message
-		usernick = prefix.split("!", 1)[0]
-		self.factory.logger.log("KICK: {kicked} was kicked by {kicker}, reason: '{reason}'".format(kicked=params[1].split("!", 1)[0], kicker=usernick, reason=params[-1]), params[0])
+		message = IrcMessage('kick', self, prefix, params[0], params[-1], {'kickedUser': params[1]})
+		self.factory.logger.log("KICK: {kicked} was kicked by {kicker}, reason: '{reason}'".format(kicked=params[1].split("!", 1)[0], kicker=message.userNickname, reason=params[-1]), params[0])
 		#Keep track of the channels we're in
-		if usernick == self.nickname:
+		if message.userNickname == self.nickname:
 			if params[0] in self.channelsUserList:
 				self.channelsUserList.pop(params[0])
 				#If we were kicked, rejoin
 				self.join(params[0])
 		elif params[1] in self.channelsUserList[params[0]]:
 				self.channelsUserList[params[0]].remove(params[1])
+		GlobalStore.commandhandler.fireCommand(message)
 
 	def irc_NICK(self, prefix, params):
 		"""Called when a user or me change their nickname"""
 		#'prefix' is the full user address with the old nickname, params[0] is the new nickname
 		#Update the userlists for all channels this user is in
-		oldnick = prefix.split("!", 1)[0]
+		message = IrcMessage('nickchange', self, prefix, None, params[0])
+		oldnick = message.userNickname
 		newnick = params[0]
 		newaddress = newnick + "!" + prefix.split("!", 1)[1]
 		#If it's about us, apparently a nick change was successful
@@ -121,6 +126,7 @@ class DideRobot(irc.IRCClient):
 				userlist.append(newaddress)
 				userlist.remove(prefix)
 				self.factory.logger.log("NICK CHANGE: {oldnick} changed their nick to {newnick}".format(oldnick=oldnick, newnick=newnick), channel)
+		GlobalStore.commandhandler.fireCommand(message)
 
 	#Misc. logging
 	#def topicUpdated(self, user, channel, newTopic):
@@ -204,11 +210,9 @@ class DideRobot(irc.IRCClient):
 
 		self.factory.logger.log(logtext.format(user=usernick, message=messageText), logsource)
 
-		#Don't respond to notices
-		if messageType != 'notice':
-			message = IrcMessage(irc.stripFormatting(messageText), self, messageType, user, channel)
-			#Let the CommandHandler see if something needs to be said
-			GlobalStore.commandhandler.fireCommand(message)
+		message = IrcMessage(messageType, self, user, channel, irc.stripFormatting(messageText))
+		#Let the CommandHandler see if something needs to be said
+		GlobalStore.commandhandler.fireCommand(message)
 
 	def sendMessage(self, target, msg, messageType='say'):
 		#Only say something if we're not muted, or if it's a private message or a notice
@@ -331,6 +335,8 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 
 		if self.settings.has_option('scripts', 'userIgnoreList'):
 			self.userIgnoreList = self.settings.get("scripts", "userIgnoreList").split(',')
+		else:
+			self.userIgnoreList = []
 
 		self.commandWhitelist = None
 		self.commandBlacklist = None

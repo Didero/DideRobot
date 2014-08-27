@@ -11,6 +11,7 @@ class CommandTemplate(object):
 	adminOnly = False
 	scheduledFunctionTime = -1.0
 	callInThread = False
+	allowedMessageTypes = ['say']
 	
 	def __init__(self):
 		self.onStart()
@@ -31,6 +32,8 @@ class CommandTemplate(object):
 		"""
 		#If another command already claimed sole execution rights, and this one wants it too, don't run this command at all
 		if commandExecutionClaimed and self.claimCommandExecution:
+			return False
+		if message.messageType not in self.allowedMessageTypes:
 			return False
 		if message.trigger and message.trigger in self.triggers:
 			return True
