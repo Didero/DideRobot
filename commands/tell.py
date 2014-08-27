@@ -1,5 +1,4 @@
 import os, json
-import time
 from datetime import datetime
 
 from CommandTemplate import CommandTemplate
@@ -10,7 +9,7 @@ from IrcMessage import IrcMessage
 
 class Command(CommandTemplate):
 	triggers = ['tell']
-	helptext = "Stores messages you want to send to other users, and says them to that user when they speak. Usage: {commandPrefix}tell [username] [message]"
+	helptext = "Stores messages you want to send to other users, and says them to that user when they speak. Add a tell in a PM to me, and I'll tell it privately. Usage: {commandPrefix}tell [username] [message]"
 	claimCommandExecution = False
 
 	tellsFileLocation = os.path.join(GlobalStore.scriptfolder, "data", "tells.json")
@@ -24,73 +23,95 @@ class Command(CommandTemplate):
 
 	def shouldExecute(self, message, commandExecutionClaimed):
 		#Moved to the 'execute' function, since we have to check on every message if there's a tell for that person
-		return True
-	
+		return message.messageType in self.allowedMessageTypes
+
 	def execute(self, message):
 		"""
 		:type message: IrcMessage
 		"""
-		tells = []
-		#Load in the tell data for the person if needed, and delete them
-		if message.user in self.storedTells:
-			tells.extend(self.storedTells[message.user])
-			self.storedTells.pop(message.user)
-		if message.userNickname in self.storedTells:
-			tells.extend(self.storedTells[message.userNickname])
-			self.storedTells.pop(message.userNickname)
 
-		if len(tells) > 0:
-			self.storedTells[message.userNickname] = []
-			#Sort the stored tells by their send time
-			sortedTells = sorted(tells, key=lambda k: k['sentAt'])
-			#If there's too many tells for one time, store the rest for next time but keep the first few
-			if len(sortedTells) > self.maxTellsAtATime:
-				self.storedTells[message.userNickname] = sortedTells[self.maxTellsAtATime:]
-				sortedTells = sortedTells[:self.maxTellsAtATime]
+		#The tell file consists of a couple of nested dictionaries
+		#The main dictionary has serverfolders as keys, and a list of users as items
+		#Each user dictionary has a list of channels, and an item '_private', for messages that should be send through PM or notice
+		#Each channel dict has a list of tells for that person
+		#storedTells[serverfolder][username][channel] = [tellMessage1, tellMessag2, ...]
 
-			#Talkin' time!
-			for tell in sortedTells:
-				if tell["sentInChannel"] == message.source:
-					timeSent = datetime.utcfromtimestamp(tell['sentAt'])
-					timeSinceTell = (datetime.utcnow() - timeSent).seconds
-					timeSinceTellFormatted = SharedFunctions.durationSecondsToText(timeSinceTell)
+		serverfolder = message.bot.factory.serverfolder
 
-					message.bot.say(message.source, u"{recipient}: {message} (sent by {sender} on {timeSent}; {timeSinceTell} ago)"
-						.format(recipient=message.userNickname, message=tell["message"], sender=tell["sender"], timeSent=timeSent.isoformat(' '), timeSinceTell=timeSinceTellFormatted))
-				else:
-					#Save unused tells back if they're not supposed to be said in this channel
-					self.storedTells[message.userNickname].append(tell)
-			if len(self.storedTells[message.userNickname]) == 0:
-				self.storedTells.pop(message.userNickname)
-			#Store the changed tells to disk
-			self.saveTellsToFile()
+		#Check if the person that said something has tells waiting for them
+		usernick = message.userNickname.lower()
+		if serverfolder in self.storedTells and usernick in self.storedTells[serverfolder]:
+			publicTells = self.retrieveTells(serverfolder, usernick, message.source)
+			sentTell = False
+			for tell in publicTells:
+				message.bot.sendMessage(message.source, self.formatTell(message.userNickname, tell))
+				sentTell = True
+			#If we haven't spammed the user enough, send them their private tells as well
+			if len(publicTells) < self.maxTellsAtATime:
+				for tell in self.retrieveTells(serverfolder, usernick, u"_private", self.maxTellsAtATime - len(publicTells)):
+					message.bot.sendMessage(message.source, self.formatTell(message.userNickname, tell), 'notice')
+					sentTell = True
+			if sentTell:
+				if len(self.storedTells[serverfolder][usernick]) == 0:
+					self.storedTells[serverfolder].pop(usernick)
+				if len(self.storedTells[serverfolder]) == 0:
+					self.storedTells.pop(serverfolder)
+				self.saveTellsToFile()
 
-		#Done here instead of in 'shouldExecute', because it should execute every time to check if there is a tell for that user
-		if message.trigger in self.triggers:
+		#Check if we need to add a new tell
+		if CommandTemplate.shouldExecute(self, message, False):
 			replytext = u""
 			if message.messagePartsLength == 0:
 				replytext = u"Add a username and a message as arguments, then we'll tell-I mean talk"
 			elif message.messagePartsLength == 1:
 				replytext = u"What do you want me to tell {}? Add that as an argument too, otherwise I'm just gonna stare at them and we'll all be uncomfortable".format(message.messageParts[0])
 			else:
-				tellRecipient = message.messageParts[0]
-				#Prevent tells to us, in case that would ever come up
-				if tellRecipient.lower() == message.bot.nickname.lower():
-					replytext = "You can talk to me directly, I'm here for you now!"
-				else:
-					tellMessage = " ".join(message.messageParts[1:])
-					if tellRecipient not in self.storedTells:
-						self.storedTells[tellRecipient] = []
+				#Store that tell!
+				messageTarget = u"_private" if message.isPrivateMessage else message.source
 
-					tell = {"message": tellMessage, "sender": message.userNickname, "sentAt": round(time.time()), "sentInChannel": message.source}
-					self.storedTells[tellRecipient].append(tell)
+				targetnicks = message.messageParts[0].lower().split(u'&')
+				for targetnick in targetnicks:
+					#Make sure all the nested dictionaries exist
+					if serverfolder not in self.storedTells:
+						self.storedTells[serverfolder] = {}
+					if targetnick not in self.storedTells[serverfolder]:
+						self.storedTells[serverfolder][targetnick] = {}
+					if messageTarget not in self.storedTells[serverfolder][targetnick]:
+						self.storedTells[serverfolder][targetnick][messageTarget] = []
 
-					print "storedTells: ", self.storedTells
+					self.storedTells[serverfolder][targetnick][messageTarget].append(self.createTell(message))
+				self.saveTellsToFile()
 
-					replytext = u"All right, I'll tell {} when they show a sign of life".format(tellRecipient)
-					self.saveTellsToFile()
+				targetnick = u"them" if len(targetnicks) > 1 else message.messageParts[0]
+				replytext = u"Ok, I'll tell {} that when they show a sign of life".format(targetnick)
 
 			message.bot.say(message.source, replytext)
+
+	@staticmethod
+	def createTell(message):
+		#		round to remove the milliseconds for nicer display
+		tell = {u"sentAt": round(message.createdAt), u"sender": message.userNickname, u"text": u" ".join(message.messageParts[1:])}
+		return tell
+
+	def retrieveTells(self, serverfolder, usernick, field, tellLimit=None):
+		if not tellLimit:
+			tellLimit = self.maxTellsAtATime
+		tells = []
+		if field in self.storedTells[serverfolder][usernick]:
+			for tell in self.storedTells[serverfolder][usernick][field][:tellLimit]:
+				tells.append(tell)
+			self.storedTells[serverfolder][usernick][field] = self.storedTells[serverfolder][usernick][field][tellLimit:]
+			if len(self.storedTells[serverfolder][usernick][field]) == 0:
+				self.storedTells[serverfolder][usernick].pop(field)
+		return tells
+
+	@staticmethod
+	def formatTell(targetNick, tell):
+		timeSent = datetime.utcfromtimestamp(tell[u"sentAt"])
+		timeSinceTell = SharedFunctions.durationSecondsToText((datetime.utcnow() - timeSent).seconds)
+
+		return u"{recipient}: {message} (sent by {sender} on {timeSent} UTC; {timeSinceTell} ago)"\
+			.format(recipient=targetNick, message=tell[u"text"], sender=tell[u"sender"], timeSent=timeSent.isoformat(' '), timeSinceTell=timeSinceTell)
 
 	def saveTellsToFile(self):
 		with open(self.tellsFileLocation, 'w') as tellsfile:
