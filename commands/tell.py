@@ -65,6 +65,8 @@ class Command(CommandTemplate):
 				replytext = u"Add a username and a message as arguments, then we'll tell-I mean talk"
 			elif message.messagePartsLength == 1:
 				replytext = u"What do you want me to tell {}? Add that as an argument too, otherwise I'm just gonna stare at them and we'll all be uncomfortable".format(message.messageParts[0])
+			elif message.messageParts[0].lower() == message.bot.nickname.lower():
+				replytext = u"All right, I'll tell myself to tell myself that. Hey {}, what {} said! There, done".format(message.bot.nickname, message.userNickname)
 			else:
 				#Store that tell!
 				messageTarget = u"_private" if message.isPrivateMessage else message.source
