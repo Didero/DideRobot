@@ -8,6 +8,8 @@ class Command(CommandTemplate):
 	helptext = "SAY MY NAME- I mean, if you just say my name, I'll give you some basic info about myself"
 
 	def shouldExecute(self, message, commandExecutionClaimed):
+		if message.messageType != 'say':
+			return False
 		botnick = message.bot.nickname.lower()
 		text = message.rawText.lower()
 		#If either the entire message is my nick, or something like 'DideRobot!'
