@@ -30,14 +30,14 @@ class CommandHandler:
 		"""
 		:type message: IrcMessage
 		"""
-		if message.userNickname not in message.bot.factory.userIgnoreList and message.userNickname not in message.bot.factory.userIgnoreList:
+		if not message.bot.factory.shouldUserBeIgnored(message.user, message.userNickname):
 			commandExecutionClaimed = False
 			for commandname, command in self.commands.iteritems():
 				if not self.isCommandAllowedForBot(message.bot, commandname):
 					continue
 
 				if command.shouldExecute(message, commandExecutionClaimed):
-					if command.adminOnly and message.userNickname not in message.bot.factory.admins and message.user not in message.bot.factory.admins:
+					if command.adminOnly and not message.bot.factory.isUserAdmin(message.user, message.userNickname):
 						message.bot.say(message.source, "Sorry, this command is admin-only")
 					else:
 						try:
@@ -55,6 +55,9 @@ class CommandHandler:
 								commandExecutionClaimed = True
 
 	def isCommandAllowedForBot(self, bot, commandname):
+	@staticmethod
+	def isCommandAllowedForBot(bot, commandname):
+		commandname = commandname.lower()
 		if bot.factory.commandWhitelist is not None and commandname not in bot.factory.commandWhitelist:
 			return False
 		elif bot.factory.commandBlacklist is not None and commandname in bot.factory.commandBlacklist:

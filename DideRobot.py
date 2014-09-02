@@ -331,19 +331,19 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		#Put some commonly-used settings in variables, for easy access
 		self.commandPrefix = self.settings.get("scripts", "commandPrefix")
 		self.commandPrefixLength = len(self.commandPrefix)
-		self.admins = self.settings.get('scripts', 'admins').split(',')
+		self.admins = self.settings.get('scripts', 'admins').lower().split(',')
 
 		if self.settings.has_option('scripts', 'userIgnoreList'):
-			self.userIgnoreList = self.settings.get("scripts", "userIgnoreList").split(',')
+			self.userIgnoreList = self.settings.get("scripts", "userIgnoreList").lower().split(',')
 		else:
 			self.userIgnoreList = []
 
 		self.commandWhitelist = None
 		self.commandBlacklist = None
 		if self.settings.has_option('scripts', 'commandWhitelist'):
-			self.commandWhitelist = self.settings.get('scripts', 'commandWhitelist').split(',')
+			self.commandWhitelist = self.settings.get('scripts', 'commandWhitelist').lower().split(',')
 		elif self.settings.has_option('scripts', 'commandBlacklist'):
-			self.commandBlacklist = self.settings.get('scripts', 'commandBlacklist').split(',')
+			self.commandBlacklist = self.settings.get('scripts', 'commandBlacklist').lower().split(',')
 
 		#Load in the maximum connection settings to try, if there is any
 		if not self.settings.has_option('connection', 'maxConnectionRetries'):
@@ -363,7 +363,17 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			self.logger.updateLogSettings()
 		return True
 
-	def isUserAdmin(self, user):
-		if user in self.admins or user.split('!', 1)[0] in self.admins:
+	def isUserAdmin(self, user, usernick=None):
+		return self.isUserInList(self.admins, user, usernick)
+
+	def shouldUserBeIgnored(self, user, usernick=None):
+		return self.isUserInList(self.userIgnoreList, user, usernick)
+
+	def isUserInList(self, list, user, usernick=None):
+		user = user.lower()
+		if user in list:
+			return True
+		#If a usernick is provided, use that, otherwise split the full user address ourselves
+		elif (usernick if usernick else user.split('!', 1)[0]) in list:
 			return True
 		return False
