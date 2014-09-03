@@ -203,8 +203,7 @@ class Command(CommandTemplate):
 				for cardname in matchingCards.keys():
 					allcards.extend(matchingCards[cardname])
 				randomCard = random.choice(allcards)
-				matchingCards = {}
-				matchingCards[randomCard['name']] = [randomCard]
+				matchingCards = {randomCard['name']: [randomCard]}
 			cardnamesFound = len(matchingCards)
 
 		print "Cleaned up found cards at {} seconds in, {} found cards left".format(time.time() - starttime, cardnamesFound)
@@ -253,7 +252,7 @@ class Command(CommandTemplate):
 			replytext += u"[{card[type]}]"
 		if 'manacost' in card:
 			replytext += u" ({card[manacost]} mana"
-			#Only add the cummulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total'). Manacost is stored with parentheses('{3}'), remove those
+			#Only add the cumulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total'). Manacost is stored with parentheses('{3}'), remove those
 			if 'cmc' in card and (len(card['manacost']) <2 or card['cmc'] != card['manacost'][1:-1]):
 				replytext += u", {card[cmc]} total"
 			replytext += u")"
@@ -343,7 +342,7 @@ class Command(CommandTemplate):
 					print " {}: {}".format(key, value)
 		#print "[MtG] Latest version: '{}'".format(latestVersion)
 		if latestVersion == "":
-			replytext =  u"Something went wrong, the latest MtG database version number could not be retrieved."
+			replytext = u"Something went wrong, the latest MtG database version number could not be retrieved."
 
 		if forceUpdate or latestVersion != currentVersion or not os.path.exists(cardsJsonFilename):
 			updateNeeded = True
@@ -352,6 +351,7 @@ class Command(CommandTemplate):
 
 		if not updateNeeded:
 			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
+			os.remove(newversionfilename)
 		else:
 			print "[MtG] Updating card database!"
 			url = "http://mtgjson.com/json/AllSets.json.zip"  #Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
@@ -395,8 +395,8 @@ class Command(CommandTemplate):
 							#  Since we later ensure that all cards have a 'text' field, instead of checking for 'text in sameNameCard', we check whether 'text' is an empty string
 							if ('text' not in card and sameNamedCard['text'] == u"") or (sameNamedCard['text'] != u"" and 'text' in card and sameNamedCard['text'] == card['text']):
 								#Since it's a duplicate, update the original card with info on the set it's also in, if it's not in there already
-								if setData['name'] not in sameNamedCard['sets'].split(u'; '):
-									sameNamedCard['sets'] += u"; {}".format(setData['name'])
+								if setData['name'] not in sameNamedCard['sets'].split(u';'):
+									sameNamedCard['sets'] += u";{}".format(setData['name'])
 								addCard = False
 								break
 
@@ -490,7 +490,8 @@ class Command(CommandTemplate):
 		print "[MtG] updating database took {} seconds".format(time.time() - starttime)
 		return replytext
 
-	def updateDefinitions(self, forceUpdate=False):
+	@staticmethod
+	def updateDefinitions(forceUpdate=False):
 		starttime = time.time()
 		definitionsFileLocation = os.path.join(GlobalStore.scriptfolder, "data", "MTGdefinitions.json")
 
@@ -555,6 +556,6 @@ class Command(CommandTemplate):
 				print "[MtG] Updated definitions file to version {} in {} seconds".format(date, time.time() - starttime)
 				return u"Definitions successfully updated to the version from {}.".format(date)
 			else:
-				#No update neccessary
+				#No update necessary
 				print "[MtG] No need to update definitions file, {} is still newest. Check took {} seconds".format(date, time.time() - starttime)
 				return u"No definitions update needed, version {} is still up-to-date.".format(date)
