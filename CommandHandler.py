@@ -25,7 +25,6 @@ class CommandHandler:
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini'), 'w') as apifile:
 			self.apikeys.write(apifile)
 
-	
 	def fireCommand(self, message):
 		"""
 		:type message: IrcMessage
@@ -40,21 +39,20 @@ class CommandHandler:
 					if command.adminOnly and not message.bot.factory.isUserAdmin(message.user, message.userNickname):
 						message.bot.say(message.source, "Sorry, this command is admin-only")
 					else:
-						try:
-							if command.callInThread:
-								print "Calling '{}' in thread".format(command.triggers[0])
-								GlobalStore.reactor.callInThread(command.execute, message)
-							else:
-								command.execute(message)
-						except Exception as e:
-							message.bot.factory.logger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
-							traceback.print_exc()
-							message.bot.say(message.source, "Sorry, an error occured while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it")
-						finally:
-							if command.claimCommandExecution:
-								commandExecutionClaimed = True
+						if command.callInThread:
+							#print "Calling '{}' in thread".format(command.triggers[0])
+							GlobalStore.reactor.callInThread(self.executeCommand, commandname, message)
+						else:
+							self.executeCommand(commandname, message)
 
-	def isCommandAllowedForBot(self, bot, commandname):
+	def executeCommand(self, commandname, message):
+		try:
+			self.commands[commandname].execute(message)
+		except Exception as e:
+			message.bot.say(message.source, "Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it")
+			message.bot.factory.logger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
+			traceback.print_exc()
+
 	@staticmethod
 	def isCommandAllowedForBot(bot, commandname):
 		commandname = commandname.lower()
