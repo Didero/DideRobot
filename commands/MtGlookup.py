@@ -284,14 +284,16 @@ class Command(CommandTemplate):
 		if addExtendedInfo and 'flavor' in card:
 			replytext += u" Flavor: {card[flavor]}"
 		if 'sets' in card:
-			sets = card['sets'].split(u';')
+			sets = card['sets'].split(u'; ')
+			setCount = len(sets)
+			maxSetsToDisplay = 4
 			if addExtendedInfo:
-				if len(sets) == 1:
+				if setCount == 1:
 					replytext += u" [in set {card[sets]}]"
-				elif len(sets) <= 5:
+				elif setCount <= maxSetsToDisplay:
 					replytext += u" [in sets {card[sets]}]"
 				else:
-					replytext += u" [in sets {shortSetList} and {setCount} more]".format(shortSetList="; ".join(sets[:5]), setCount=len(sets)-5)
+					replytext += u" [in sets {shortSetList} and {setCount} more]".format(shortSetList=u"; ".join(sets[:maxSetsToDisplay]), setCount=setCount-maxSetsToDisplay)
 			else:
 				for illegalSet in ['Unglued', 'Unhinged', 'Happy Holidays']:
 					if illegalSet in sets:
@@ -395,8 +397,8 @@ class Command(CommandTemplate):
 							#  Since we later ensure that all cards have a 'text' field, instead of checking for 'text in sameNameCard', we check whether 'text' is an empty string
 							if ('text' not in card and sameNamedCard['text'] == u"") or (sameNamedCard['text'] != u"" and 'text' in card and sameNamedCard['text'] == card['text']):
 								#Since it's a duplicate, update the original card with info on the set it's also in, if it's not in there already
-								if setData['name'] not in sameNamedCard['sets'].split(u';'):
-									sameNamedCard['sets'] += u";{}".format(setData['name'])
+								if setData['name'] not in sameNamedCard['sets'].split(u'; '):
+									sameNamedCard['sets'] += u"; {}".format(setData['name'])
 								addCard = False
 								break
 
