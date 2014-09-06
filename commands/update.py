@@ -27,17 +27,24 @@ class Command(CommandTemplate):
 		if output.startswith("Already up-to-date."):
 			replytext = u"No new updates"
 		else:
-			#New files, new updates! Check what they are ('@{1}' returns the last commit)
+			maxUpdatesToDisplay = 15
+			#New files, new updates! Check what they are
 			output = subprocess.check_output(['git', 'log', '--format=oneline'])
 			outputLines = output.splitlines()
-			replytext = u"Updated! Commit messages: "
-			for line in outputLines:
+			commitMessages = []
+			for line in outputLines[:maxUpdatesToDisplay]:
 				lineparts = line.split(" ", 1)
 				#If we've reached a commit we've already mentioned, stop the whole thing
 				if lineparts[0] == self.lastCommitHash:
 					break
-				replytext += u"'{}'; ".format(lineparts[1])
-			replytext = replytext[:-2]
+				commitMessages.append(lineparts[1])
+			linecount = len(outputLines)
+			if linecount == 1:
+				replytext = u"One new commit: {}".format(commitMessages[0])
+			else:
+				replytext = u"{:,} new commits: {}".format(linecount, u"; ".join(commitMessages.reverse()))  #Reverse, otherwise they're ordered new to old
+				if linecount > maxUpdatesToDisplay:
+					replytext += u"; {:,} more".format(linecount - maxUpdatesToDisplay)
 			#Set the last mentioned hash to the newest one
 			self.lastCommitHash = outputLines[0].split(" ", 1)[0]
 
