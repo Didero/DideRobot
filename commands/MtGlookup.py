@@ -28,8 +28,8 @@ class Command(CommandTemplate):
 		"""
 		starttime = time.time()
 		replytext = u""
-		maxCardsToListInChannel = 20
-		maxCardsToListInPm = 50
+		maxCardsToListInChannel = 10
+		maxCardsToListInPm = 20
 
 		searchType = u""
 		if message.messagePartsLength > 0:
@@ -165,26 +165,25 @@ class Command(CommandTemplate):
 		#First do an initial name search, to limit the amount of cards we have to search through
 		cardNamesToSearchThrough = []
 		if 'name' in searchDict:
-			#If the name is literally there, use that
-			if searchDict['name'] in cardstore:
-				print u"regex '{}' is a literal name in the card database".format(searchDict['name'])
-				cardNamesToSearchThrough = [searchDict['name']]
-			#Otherwise, try to find a match
-			else:
-				for cardname in cardstore.keys():
-					if regexDict['name'].search(cardname):
-						cardNamesToSearchThrough.append(cardname)
+			for cardname in cardstore.keys():
+				if regexDict['name'].search(cardname):
+					cardNamesToSearchThrough.append(cardname)
 			#Remove the 'name' element from the regex dict to save on search time later
 			regexDict.pop('name')
+		#No name specified, search through all the cards
 		else:
 			cardNamesToSearchThrough = cardstore.keys()
 		print "[MTG] Determined that we have to search through {} cards at {} seconds in".format(len(cardNamesToSearchThrough), time.time() - starttime)
 
-		#The actual search!
 		regexAttribCount = len(regexDict)
 		matchingCards = {}
-		#Check to see if we need to make any other checks
-		if regexAttribCount > 1 or 'name' not in regexDict:
+		#If we only had to check for a name, copy the cards directly into the results dict
+		if regexAttribCount == 0:
+			for i in xrange(0, len(cardNamesToSearchThrough)):
+				cardname = cardNamesToSearchThrough.pop(0)
+				matchingCards[cardname] = cardstore[cardname]
+		#If there's more attributes we need to check, go through every card
+		else:
 			for i in xrange(0, len(cardNamesToSearchThrough)):
 				cardname = cardNamesToSearchThrough.pop(0)
 				for card in cardstore[cardname]:
@@ -202,13 +201,12 @@ class Command(CommandTemplate):
 		print "[MTG] Searched through cards at {} seconds in".format(time.time() - starttime)
 
 		cardnamesFound = len(matchingCards)
-		if cardnamesFound > 0:
-			#If the user wants a random card, pick one from the matches
-			if searchType == 'random' or searchType == 'randomcommander':
-				#Pick a random name
-				randomCardname = random.choice(matchingCards.keys())
-				#Since there is the possibility there's multiple cards with the same name, pick a random card with the chosen name
-				matchingCards = {randomCardname: [random.choice(matchingCards[randomCardname])]}
+		#If the user wants a random card, pick one from the matches
+		if cardnamesFound > 0 and searchType in ['random', 'randomcommander']:
+			#Pick a random name
+			randomCardname = random.choice(matchingCards.keys())
+			#Since there is the possibility there's multiple cards with the same name, pick a random card with the chosen name
+			matchingCards = {randomCardname: [random.choice(matchingCards[randomCardname])]}
 			cardnamesFound = 1
 			print "[MTG] Picked a random card at {} seconds in".format(time.time() - starttime)
 
@@ -221,30 +219,36 @@ class Command(CommandTemplate):
 				replytext += self.getFormattedCardInfo(cardsFound[0], message.trigger=='mtgf')
 			else:
 				replytext += u"Multiple cards with the same name were found: "
-				setlist = u""
 				for cardFound in cardsFound:
 					setlist = u"'{}'".format(cardFound['sets'].split(u'; ',1)[0])
 					if cardFound['sets'].count(u';') > 0:
 						setlist += u" (and more)"
-					replytext += u"{} [set {}]; ".format(cardFound['name'], setlist)  #.encode('utf-8'), setlist)
+					replytext += u"{} [set {}]; ".format(cardFound['name'], setlist)
 				replytext = replytext[:-2]
-		#Check if listing all the found cardnames is viable. The limit is higher for private messages than for channels
-		elif cardnamesFound <= maxCardsToListInChannel or (cardnamesFound <= maxCardsToListInPm and message.isPrivateMessage):
-			cardnamestring = u""
-			for cardname in sorted(matchingCards.keys()):
-				cardlist = matchingCards[cardname]
-				cardnamestring += cardlist[0]['name']
-				if len(cardlist) > 1:
-					cardnamestring += u" [from sets "
-					for card in cardlist:
-						cardnamestring += u"'{}', ".format(card['sets'].split(u';',1)[0])
-					cardnamestring = cardnamestring[:-2] + u"]"
-				cardnamestring += u"; "
-			cardnamestring = cardnamestring[:-2]
-
-			replytext += u"Search returned {} cards: {}".format(cardnamesFound, cardnamestring)
 		else:
-			replytext += u"Your searchterm returned {} cards, please be more specific".format(cardnamesFound)
+			#If the entered name is literally in the results, show the full info on that, after the normal list of results
+			nameMatchedCard = None
+			if 'name' in searchDict and searchDict['name'] in matchingCards and len(matchingCards[searchDict['name']]) == 1:
+				nameMatchedCard = matchingCards.pop(searchDict['name'])[0]
+				print u"[MTG] Literal match found. Searched name: '{}', found card name: '{}'".format(searchDict['name'], nameMatchedCard['name'])
+			if cardnamesFound <= maxCardsToListInChannel or (cardnamesFound <= maxCardsToListInPm and message.isPrivateMessage):
+				cardnamestring = u""
+				for cardname in sorted(matchingCards.keys()):
+					cardlist = matchingCards[cardname]
+					cardnamestring += cardlist[0]['name']
+					if len(cardlist) > 1:
+						cardnamestring += u" [from sets "
+						for card in cardlist:
+							cardnamestring += u"'{}', ".format(card['sets'].split(u';',1)[0])
+						cardnamestring = cardnamestring[:-2] + u"]"
+					cardnamestring += u"; "
+				cardnamestring = cardnamestring[:-2]
+
+				replytext += u"Search returned {} cards: {}".format(cardnamesFound, cardnamestring)
+			else:
+				replytext += u"Your search returned {} cards, please be more specific".format(cardnamesFound)
+			if nameMatchedCard:
+				replytext += u"\nLiteral match: " + self.getFormattedCardInfo(nameMatchedCard, message.trigger=='mtgf')
 
 		re.purge()  #Clear the stored regexes, since we don't need them anymore
 		gc.collect()  #Make sure memory usage doesn't slowly creep up from loading in the data file (hopefully)
