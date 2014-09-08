@@ -200,20 +200,20 @@ class Command(CommandTemplate):
 
 		print "[MTG] Searched through cards at {} seconds in".format(time.time() - starttime)
 
-		cardnamesFound = len(matchingCards)
+		numberOfCardsFound = len(matchingCards)
 		#If the user wants a random card, pick one from the matches
-		if cardnamesFound > 0 and searchType in ['random', 'randomcommander']:
+		if numberOfCardsFound > 0 and searchType in ['random', 'randomcommander']:
 			#Pick a random name
 			randomCardname = random.choice(matchingCards.keys())
 			#Since there is the possibility there's multiple cards with the same name, pick a random card with the chosen name
 			matchingCards = {randomCardname: [random.choice(matchingCards[randomCardname])]}
-			cardnamesFound = 1
+			numberOfCardsFound = 1
 			print "[MTG] Picked a random card at {} seconds in".format(time.time() - starttime)
 
 		#Determine the proper response
-		if cardnamesFound == 0:
+		if numberOfCardsFound == 0:
 			replytext += u"Sorry, no card matching your query was found"
-		elif cardnamesFound == 1:
+		elif numberOfCardsFound == 1:
 			cardsFound = matchingCards[matchingCards.keys()[0]]
 			if len(cardsFound) == 1:
 				replytext += self.getFormattedCardInfo(cardsFound[0], message.trigger=='mtgf')
@@ -230,25 +230,32 @@ class Command(CommandTemplate):
 			nameMatchedCard = None
 			if 'name' in searchDict and searchDict['name'] in matchingCards and len(matchingCards[searchDict['name']]) == 1:
 				nameMatchedCard = matchingCards.pop(searchDict['name'])[0]
+				replytext = self.getFormattedCardInfo(nameMatchedCard, message.trigger=='mtgf')
+				numberOfCardsFound -= 1
 				print u"[MTG] Literal match found. Searched name: '{}', found card name: '{}'".format(searchDict['name'], nameMatchedCard['name'])
-			if cardnamesFound <= maxCardsToListInChannel or (cardnamesFound <= maxCardsToListInPm and message.isPrivateMessage):
-				cardnamestring = u""
-				for cardname in sorted(matchingCards.keys()):
-					cardlist = matchingCards[cardname]
-					cardnamestring += cardlist[0]['name']
-					if len(cardlist) > 1:
-						cardnamestring += u" [from sets "
-						for card in cardlist:
-							cardnamestring += u"'{}', ".format(card['sets'].split(u';',1)[0])
-						cardnamestring = cardnamestring[:-2] + u"]"
-					cardnamestring += u"; "
-				cardnamestring = cardnamestring[:-2]
 
-				replytext += u"Search returned {} cards: {}".format(cardnamesFound, cardnamestring)
+			cardlimit = maxCardsToListInPm if message.isPrivateMessage else maxCardsToListInChannel
+			cardnamelist = []
+			#If there's only a few cards found, show them sensibly sorted alphabetically
+			if numberOfCardsFound <= cardlimit:
+				cardnamelist = sorted(matchingCards.keys())
+			#If there are a lot of cards, have some fun and pick a few random ones, also sorted
 			else:
-				replytext += u"Your search returned {} cards, please be more specific".format(cardnamesFound)
+				cardnamelist = sorted(random.sample(matchingCards.keys(), cardlimit))
+
+			#Replace each lower-cased card name with the proper stored one,
+			#  by taking the first name and putting the proper name at the end, until all cardnames are fixed
+			for i in xrange(0, len(cardnamelist)):
+				cardname = cardnamelist.pop(0)
+				cardnamelist.append(cardstore[cardname][0]['name'])
+			cardnamelist = u"; ".join(cardnamelist)
 			if nameMatchedCard:
-				replytext += u"\nLiteral match: " + self.getFormattedCardInfo(nameMatchedCard, message.trigger=='mtgf')
+				replytext += u"\n{:,} more matching cards found: {}".format(numberOfCardsFound, cardnamelist)
+			else:
+				replytext = u"Search returned {:,} cards: {}".format(numberOfCardsFound, cardnamelist)
+			if numberOfCardsFound > cardlimit:
+				replytext += u"; and {:,} more".format(numberOfCardsFound - cardlimit)
+
 
 		re.purge()  #Clear the stored regexes, since we don't need them anymore
 		gc.collect()  #Make sure memory usage doesn't slowly creep up from loading in the data file (hopefully)
