@@ -258,9 +258,12 @@ class Command(CommandTemplate):
 			replytext += u"[{card[type]}]"
 		if 'manacost' in card:
 			replytext += u" ({card[manacost]}"
-			#Only add the cumulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total'). Manacost is stored with parentheses('{3}'), remove those
-			if 'cmc' in card and (len(card['manacost']) <2 or card['cmc'] != card['manacost'][1:-1]):
-				replytext += u", cmc {card[cmc]}"
+			#Only add the cumulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total')
+			if 'cmc' in card and card['cmc'] != card['manacost']:
+				replytext += u", {card[cmc]} total"
+			#If no cmc is shown, specify the number is the manacost
+			else:
+				replytext += u" mana"
 			replytext += u")"
 		if 'power' in card and 'toughness' in card:
 			replytext += u" ({card[power]}/{card[toughness]} P/T)"
