@@ -421,6 +421,12 @@ class Command(CommandTemplate):
 								card[keyToMakeLowerCase.lower()] = card[keyToMakeLowerCase]
 								card.pop(keyToMakeLowerCase)
 
+						#Some keys, like colors, benefit from some ordering. So order them alphabetically
+						keysToSort = ['colors']
+						for keyToSort in keysToSort:
+							if keyToSort in card:
+								card[keyToSort] = sorted(card[keyToSort])
+
 						#make sure all stored values are strings, that makes searching later much easier
 						for attrib in card:
 							#Re.search stumbles over numbers, convert them to strings first
