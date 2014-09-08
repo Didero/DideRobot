@@ -16,7 +16,7 @@ class Command(CommandTemplate):
 	helptext += "With the parameter 'search', you can enter JSON-style data to search for other attributes, see http://mtgjson.com/ for what's available. {commandPrefix}mtgf adds the flavor text to the result"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 
-	isUpdating = False
+	areCardfilesInUse = False
 
 	def executeScheduledFunction(self):
 		GlobalStore.reactor.callInThread(self.updateCardFile)
@@ -40,7 +40,7 @@ class Command(CommandTemplate):
 			return
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
 		elif searchType == 'update' or searchType == 'forceupdate':
-			if self.isUpdating:
+			if self.areCardfilesInUse:
 				replytext = u"I'm already updating!"
 			elif not message.bot.factory.isUserAdmin(message.user):
 				replytext = u"Sorry, only admins can use my update function"
@@ -51,7 +51,7 @@ class Command(CommandTemplate):
 			return
 		#Check if the data file even exists
 		elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')):
-			if self.isUpdating:
+			if self.areCardfilesInUse:
 				replytext = u"I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
 			else:
 				replytext = u"Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
@@ -61,7 +61,10 @@ class Command(CommandTemplate):
 		#We can also search for definitions
 		elif searchType == 'define':
 			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')):
-				replytext = u"I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
+				if self.areCardfilesInUse:
+					replytext = u"I'm sorry, but my definitions file seems to missing. Don't worry, I'm making up-I mean reading up on the rules as we speak. Try again in a bit!"
+				else:
+					replytext = u"I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
 				self.updateDefinitions(True)
 			elif message.messagePartsLength < 2:
 				replytext = u"Please add a definition to search for"
@@ -306,7 +309,7 @@ class Command(CommandTemplate):
 
 	def updateCardFile(self, forceUpdate=False):
 		starttime = time.time()
-		self.isUpdating = True
+		self.areCardfilesInUse = True
 		replytext = u""
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		updateNeeded = False
@@ -488,12 +491,11 @@ class Command(CommandTemplate):
 			replytext = u"MtG card database successfully updated to version {} (Changelog: http://mtgjson.com/#changeLog).".format(latestVersion)
 
 		urllib.urlcleanup()
-		self.isUpdating = False
+		self.areCardfilesInUse = False
 		print "[MtG] updating database took {} seconds".format(time.time() - starttime)
 		return replytext
 
-	@staticmethod
-	def updateDefinitions(forceUpdate=False):
+	def updateDefinitions(self, forceUpdate=False):
 		starttime = time.time()
 		definitionsFileLocation = os.path.join(GlobalStore.scriptfolder, "data", "MTGdefinitions.json")
 
@@ -504,6 +506,7 @@ class Command(CommandTemplate):
 			print "[MtG] [definitions update] Unable to locate the URL to the rules text file!"
 			return u"Definitions file not found."
 		else:
+			self.areCardfilesInUse = True
 			textfileLocation = textfileMatch.group('url')
 			date = textfileMatch.group('date')
 
@@ -555,9 +558,11 @@ class Command(CommandTemplate):
 				#Clean up the rules file, we don't need it anymore
 				os.remove(rulesfilelocation)
 
+				self.areCardfilesInUse = False
 				print "[MtG] Updated definitions file to version {} in {} seconds".format(date, time.time() - starttime)
 				return u"Definitions successfully updated to the version from {}.".format(date)
 			else:
 				#No update necessary
+				self.areCardfilesInUse = False
 				print "[MtG] No need to update definitions file, {} is still newest. Check took {} seconds".format(date, time.time() - starttime)
 				return u"No definitions update needed, version {} is still up-to-date.".format(date)
