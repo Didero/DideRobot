@@ -42,7 +42,8 @@ class Command(CommandTemplate):
 			if linecount == 1:
 				replytext = u"One new commit: {}".format(commitMessages[0])
 			else:
-				replytext = u"{:,} new commits: {}".format(linecount, u"; ".join(commitMessages.reverse()))  #Reverse, otherwise they're ordered new to old
+				commitMessages.reverse()  #Otherwise the messages are ordered new to old
+				replytext = u"{:,} new commits: {}".format(linecount, u"; ".join(commitMessages))
 				if linecount > maxUpdatesToDisplay:
 					replytext += u"; {:,} more".format(linecount - maxUpdatesToDisplay)
 			#Set the last mentioned hash to the newest one
