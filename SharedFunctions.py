@@ -223,10 +223,14 @@ def stringToDict(string, removeStartAndEndQuotes=True):
 
 	dictionary = {}
 	#Split the string on commas that aren't followed by any other commas before encountering a colon
+	#  This makes sure that it doesn't trip on commas in dictionary items
 	keyValuePairs = re.split(r",(?=[^,]+:)", string)
 
 	for pair in keyValuePairs:
 		parts = pair.split(':')
+		if len(parts) != 2:
+			print "ERROR in stringToDict when trying to parse pair '{}'. Expected 2 parts, found {}".format(pair, len(parts))
+			continue
 		key = parts[0].strip()
 		item = parts[1].strip()
 		if removeStartAndEndQuotes:
