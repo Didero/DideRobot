@@ -155,7 +155,6 @@ class Command(CommandTemplate):
 			message.bot.say(message.source, replytext)
 			return
 
-		regexAttribCount = len(regexDict)
 		print "Parsed search terms at {} seconds in".format(time.time() - starttime)
 
 		#All entered data is valid, look through the stored cards
@@ -177,16 +176,17 @@ class Command(CommandTemplate):
 						cardNamesToSearchThrough.append(cardname)
 			#Remove the 'name' element from the regex dict to save on search time later
 			regexDict.pop('name')
-			regexAttribCount = len(regexDict)
 		else:
 			cardNamesToSearchThrough = cardstore.keys()
 		print "Determined that we have to search through {} cards at {} seconds in".format(len(cardNamesToSearchThrough), time.time() - starttime)
 
 		#The actual search!
+		regexAttribCount = len(regexDict)
 		matchingCards = {}
 		#Check to see if we need to make any other checks
 		if regexAttribCount > 1 or 'name' not in regexDict:
-			for cardname in cardNamesToSearchThrough:
+			for i in xrange(0, len(cardNamesToSearchThrough)):
+				cardname = cardNamesToSearchThrough.pop(0)
 				for card in cardstore[cardname]:
 					matchingAttribsFound = 0
 					for attrib, regex in regexDict.iteritems():
@@ -205,12 +205,11 @@ class Command(CommandTemplate):
 		if cardnamesFound > 0:
 			#If the user wants a random card, pick one from the matches
 			if searchType == 'random' or searchType == 'randomcommander':
-				allcards = []
-				for cardname in matchingCards.keys():
-					allcards.extend(matchingCards[cardname])
-				randomCard = random.choice(allcards)
-				matchingCards = {randomCard['name']: [randomCard]}
-			cardnamesFound = len(matchingCards)
+				#Pick a random name
+				randomCardname = random.choice(matchingCards.keys())
+				#Since there is the possibility there's multiple cards with the same name, pick a random card with the chosen name
+				matchingCards = {randomCardname: [random.choice(matchingCards[randomCardname])]}
+			cardnamesFound = 1
 
 		print "Cleaned up found cards at {} seconds in, {} found cards left".format(time.time() - starttime, cardnamesFound)
 		#Determine the proper response
@@ -310,7 +309,6 @@ class Command(CommandTemplate):
 		replytext = replytext.format(card=card)
 		return replytext
 
-
 	def updateCardFile(self, forceUpdate=False):
 		starttime = time.time()
 		self.areCardfilesInUse = True
@@ -392,7 +390,7 @@ class Command(CommandTemplate):
 			for setcode in downloadedCardstore.keys():
 				setData = downloadedCardstore.pop(setcode)
 				#Again, pop off cards when we need them, to save on memory
-				for i in range(0, len(setData['cards'])):
+				for i in xrange(0, len(setData['cards'])):
 					card = setData['cards'].pop(0)
 					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
 					addCard = True
