@@ -117,11 +117,13 @@ class Command(CommandTemplate):
 			searchDict['type'] = u'legendary.*creature.*' + searchDict['type']
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
-		searchTermsToCorrect = {u"set": u"sets", u"color": u"colors", u"colour": u"colors", u"colours": u"colors", u"types": u"type", u"flavour": u"flavor"}
-		for searchTermToCorrect, correctTerm in searchTermsToCorrect.iteritems():
-			if searchTermToCorrect in searchDict and correctTerm not in searchDict:
-				searchDict[correctTerm] = searchDict[searchTermToCorrect]
-				searchDict.pop(searchTermToCorrect)
+		searchTermsToCorrect = {'set': ['sets'], 'colors': ['color', 'colour', 'colours'], 'type': ['types', 'supertypes', 'subtypes'], 'flavor': ['flavour']}
+		for correctTerm, listOfWrongterms in searchTermsToCorrect.iteritems():
+			for wrongTerm in listOfWrongterms:
+				if wrongTerm in searchDict:
+					if correctTerm not in searchDict:
+						searchDict[correctTerm] = searchDict[wrongTerm]
+					searchDict.pop(wrongTerm)
 
 		print u"[MtG] Search Dict: ", searchDict
 				
