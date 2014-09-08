@@ -95,12 +95,12 @@ class Command(CommandTemplate):
 		if searchType == 'search' or (searchType == 'random' and message.messagePartsLength > 1) or (searchType == 'randomcommander' and message.messagePartsLength > 1):
 			#Advanced search!
 			if message.messagePartsLength <= 1:
-				message.bot.say(message.source, u'Please provide an advanced search query too, in JSON format, so "key1: value1, key2:value2". Look at www.mtgjson.com for available fields')
+				message.bot.say(message.source, u"Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. Look on www.mtgjson.com for available fields")
 				return
 
 			searchDict = SharedFunctions.stringToDict(u" ".join(message.messageParts[1:]), False)
 			if len(searchDict) == 0:
-				message.bot.say(message.source, u"That is not a valid search query. It should be entered like JSON, so \"'key': 'value', 'key2': 'value2',...\"")
+				message.bot.say(message.source, u"That is not a valid search query. It should be entered like JSON, so 'key: value, key2: value2,...'")
 				return
 		#If the only parameter is 'random', just get all cards
 		elif searchType == 'random' and message.messagePartsLength == 1:
