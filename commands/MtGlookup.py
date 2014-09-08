@@ -98,7 +98,8 @@ class Command(CommandTemplate):
 				message.bot.say(message.source, u"Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. Look on www.mtgjson.com for available fields")
 				return
 
-			searchDict = SharedFunctions.stringToDict(u" ".join(message.messageParts[1:]), False)
+			#Turn the search string (not the argument) into a usable dictionary, case-insensitive,
+			searchDict = SharedFunctions.stringToDict(u" ".join(message.messageParts[1:]).lower(), True)
 			if len(searchDict) == 0:
 				message.bot.say(message.source, u"That is not a valid search query. It should be entered like JSON, so 'key: value, key2: value2,...'")
 				return
@@ -393,7 +394,7 @@ class Command(CommandTemplate):
 				#Again, pop off cards when we need them, to save on memory
 				for i in range(0, len(setData['cards'])):
 					card = setData['cards'].pop(0)
-					cardname = card['name']  #.encode('utf-8').lower()
+					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
 					addCard = True
 					if cardname not in newcardstore:
 						newcardstore[cardname] = []
