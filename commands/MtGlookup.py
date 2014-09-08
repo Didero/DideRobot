@@ -155,12 +155,12 @@ class Command(CommandTemplate):
 			message.bot.say(message.source, replytext)
 			return
 
-		print "Parsed search terms at {} seconds in".format(time.time() - starttime)
+		print "[MTG] Parsed search terms at {} seconds in".format(time.time() - starttime)
 
 		#All entered data is valid, look through the stored cards
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
 			cardstore = json.load(jsonfile)
-		print "Opened file at {} seconds in".format(time.time() - starttime)
+		print "[MTG] Opened file at {} seconds in".format(time.time() - starttime)
 		
 		#First do an initial name search, to limit the amount of cards we have to search through
 		cardNamesToSearchThrough = []
@@ -178,7 +178,7 @@ class Command(CommandTemplate):
 			regexDict.pop('name')
 		else:
 			cardNamesToSearchThrough = cardstore.keys()
-		print "Determined that we have to search through {} cards at {} seconds in".format(len(cardNamesToSearchThrough), time.time() - starttime)
+		print "[MTG] Determined that we have to search through {} cards at {} seconds in".format(len(cardNamesToSearchThrough), time.time() - starttime)
 
 		#The actual search!
 		regexAttribCount = len(regexDict)
@@ -199,7 +199,7 @@ class Command(CommandTemplate):
 						else:
 							matchingCards[cardname].append(card)
 
-		print "Searched through cards at {} seconds in".format(time.time() - starttime)
+		print "[MTG] Searched through cards at {} seconds in".format(time.time() - starttime)
 
 		cardnamesFound = len(matchingCards)
 		if cardnamesFound > 0:
@@ -210,8 +210,8 @@ class Command(CommandTemplate):
 				#Since there is the possibility there's multiple cards with the same name, pick a random card with the chosen name
 				matchingCards = {randomCardname: [random.choice(matchingCards[randomCardname])]}
 			cardnamesFound = 1
+			print "[MTG] Picked a random card at {} seconds in".format(time.time() - starttime)
 
-		print "Cleaned up found cards at {} seconds in, {} found cards left".format(time.time() - starttime, cardnamesFound)
 		#Determine the proper response
 		if cardnamesFound == 0:
 			replytext += u"Sorry, no card matching your query was found"
