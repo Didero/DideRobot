@@ -208,39 +208,45 @@ def durationSecondsToText(durationInSeconds):
 	replytext += u"{:,.0f} seconds".format(seconds)
 	return replytext
 
-def dictToString(dict):
+
+def dictToString(dictionary):
 	dictstring = u""
-	for key, value in dict.iteritems():
+	for key, value in dictionary.iteritems():
 		dictstring += u"{}: {}, ".format(key, value)
 	if len(dictstring) > 2:
 		dictstring = dictstring[:-2]
 	return dictstring
 
-def stringToDict(string, removeStartAndEndBrackets=True):
-	if removeStartAndEndBrackets:
-		if string.startswith('{'):
-			string = string[1:]
-		if string.endswith('}'):
-			string = string[:-1]
-	#If the user didn't add (enough) quotation marks, add them in
-	expectedQuoteCount = string.count(':') * 4
-	if string.count('"') < expectedQuoteCount and string.count("'") < expectedQuoteCount:
-		string = string.replace('"', '').replace("'", "")
-		#Add a quotation mark at the start and end of the sentence, and before and after each : and ,
-		string = '"' + re.sub('((?P<char>:|,) *)', '"\g<char>"', string) + '"'
-	if not string.startswith('{') or not string.endswith('}'):
-		string = '{' + string + '}'
 
-	#Prevent quote errors, because JSON requires " instead of '
-	string = string.replace("'", '"')
-	string = string.lower()
+def stringToDict(string, removeStartAndEndQuotes=True):
+	string = removeCharactersFromStringEnds(string, '{', '}')
 
-	dict = {}
-	try:
-		print "Trying to parse '{}'".format(string)
-		dict = json.loads(string)
-	except:
-		print u"Error while trying to parse '{}'".format(string)
-		print sys.exc_info()
-	finally:
-		return dict
+	dictionary = {}
+	#Split the string on commas that aren't followed by any other commas before encountering a colon
+	keyValuePairs = re.split(r",(?=[^,]+:)", string)
+
+	for pair in keyValuePairs:
+		parts = pair.split(':')
+		key = parts[0].strip()
+		item = parts[1].strip()
+		if removeStartAndEndQuotes:
+			key = removeCharactersFromStringEnds(key, '"', "'").strip()
+			item = removeCharactersFromStringEnds(item, '"', "'").strip()
+		dictionary[key] = item
+	return dictionary
+
+
+def removeCharactersFromStringEnds(string, *chars):
+	charRemoved = True
+	#Keep removing characters until there's nothing left to remove
+	while charRemoved:
+		charRemoved = False
+		for char in chars:
+			charLength = len(char)
+			while string.startswith(char):
+				charRemoved = True
+				string = string[charLength:]
+			while string.endswith(char):
+				charRemoved = True
+				string = string[:-charLength]
+	return string
