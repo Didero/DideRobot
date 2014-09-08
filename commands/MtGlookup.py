@@ -251,15 +251,16 @@ class Command(CommandTemplate):
 		print "[MtG] Execution time: {} seconds".format(time.time() - starttime)
 		message.bot.say(message.source, replytext)
 
-	def getFormattedCardInfo(self, card, addExtendedInfo=False):
+	@staticmethod
+	def getFormattedCardInfo(card, addExtendedInfo=False):
 		replytext = u"{card[name]} "
 		if 'type' in card and len(card['type']) > 0:
 			replytext += u"[{card[type]}]"
 		if 'manacost' in card:
-			replytext += u" ({card[manacost]} mana"
+			replytext += u" ({card[manacost]}"
 			#Only add the cumulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total'). Manacost is stored with parentheses('{3}'), remove those
 			if 'cmc' in card and (len(card['manacost']) <2 or card['cmc'] != card['manacost'][1:-1]):
-				replytext += u", {card[cmc]} total"
+				replytext += u", cmc {card[cmc]}"
 			replytext += u")"
 		if 'power' in card and 'toughness' in card:
 			replytext += u" ({card[power]}/{card[toughness]} P/T)"
