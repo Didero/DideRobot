@@ -36,7 +36,7 @@ class Command(CommandTemplate):
 			searchType = message.messageParts[0].lower()
 
 		if message.messagePartsLength == 0:
-			message.bot.say(message.source, u"Please provide a card name to search for")
+			message.bot.say(message.source, "This command " + self.helptext[0].lower() + self.helptext[1:])
 			return
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
 		elif searchType == 'update' or searchType == 'forceupdate':
