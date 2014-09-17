@@ -426,22 +426,14 @@ class Command(CommandTemplate):
 						keysToRemove = ['imageName', 'variations', 'types', 'supertypes', 'subtypes',
 										'foreignNames', 'originalText', 'originalType']  #Last three are from the database with extras
 						for keyToRemove in keysToRemove:
-							card.pop(keyToRemove, None)
+							if keyToRemove in card:
+								del card[keyToRemove]
 
-						#Make sure all keys are fully lowercase, to make matching them easy
-						keysToMakeLowerCase = ['manaCost']
-						for keyToMakeLowerCase in keysToMakeLowerCase:
-							if keyToMakeLowerCase in card:
-								card[keyToMakeLowerCase.lower()] = card[keyToMakeLowerCase]
-								card.pop(keyToMakeLowerCase)
+						#The 'Colors' field benefits from some ordering, for readability.
+						if 'colors' in card:
+							card['colors'] = sorted(card['colors'])
 
-						#Some keys, like colors, benefit from some ordering. So order them alphabetically
-						keysToSort = ['colors']
-						for keyToSort in keysToSort:
-							if keyToSort in card:
-								card[keyToSort] = sorted(card[keyToSort])
-
-						#make sure all stored values are strings, that makes searching later much easier
+						#Make sure all stored values are strings, that makes searching later much easier
 						for attrib in card:
 							#Re.search stumbles over numbers, convert them to strings first
 							if isinstance(card[attrib], (int, long, float)):
@@ -464,12 +456,15 @@ class Command(CommandTemplate):
 							elif isinstance(card[attrib], dict):
 								card[attrib] = SharedFunctions.dictToString(card[attrib])
 
-						#To make searching easier later, without all sorts of key checking, make sure these keys always exist
-						keysToEnsure = ['text']
-						for keyToEnsure in keysToEnsure:
-							if keyToEnsure not in card:
-								card[keyToEnsure] = u""
-						
+						#Make 'manaCost' lowercase, since we make the searchstring lowercase too, and we don't want to miss this
+						if 'manaCost' in card:
+							card['manacost'] = card['manaCost']
+							del card['manaCost']
+
+						#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
+						if 'text' not in card:
+							card['text'] = u""
+
 						card['sets'] = setData['name']
 						#Finally, put the card in the new storage
 						newcardstore[cardname].append(card)
@@ -490,7 +485,6 @@ class Command(CommandTemplate):
 							#Prevent double spaces
 							newText = newText.replace(u'  ', u' ').strip()
 							card[keyToFormat] = newText
-
 
 			#First delete the original file
 			if os.path.exists(cardsJsonFilename):
