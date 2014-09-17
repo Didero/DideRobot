@@ -32,20 +32,23 @@ class Command(CommandTemplate):
 			output = subprocess.check_output(['git', 'log', '--format=oneline'])
 			outputLines = output.splitlines()
 			commitMessages = []
-			for line in outputLines[:maxUpdatesToDisplay]:
+			linecount = 0
+			for line in outputLines:
 				lineparts = line.split(" ", 1)
 				#If we've reached a commit we've already mentioned, stop the whole thing
 				if lineparts[0] == self.lastCommitHash:
 					break
-				commitMessages.append(lineparts[1])
-			linecount = len(outputLines)
+				linecount += 1
+				#Only show the last few commit messages, but keep counting lines regardless
+				if len(commitMessages) < maxUpdatesToDisplay:
+					commitMessages.append(lineparts[1])
 			if linecount == 1:
 				replytext = u"One new commit: {}".format(commitMessages[0])
 			else:
 				commitMessages.reverse()  #Otherwise the messages are ordered new to old
 				replytext = u"{:,} new commits: {}".format(linecount, u"; ".join(commitMessages))
 				if linecount > maxUpdatesToDisplay:
-					replytext += u"; {:,} more".format(linecount - maxUpdatesToDisplay)
+					replytext += u"; {:,} older ones".format(linecount - maxUpdatesToDisplay)
 			#Set the last mentioned hash to the newest one
 			self.lastCommitHash = outputLines[0].split(" ", 1)[0]
 
