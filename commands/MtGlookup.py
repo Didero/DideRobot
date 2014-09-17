@@ -264,14 +264,16 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def getFormattedCardInfo(card, addExtendedInfo=False):
-		replytext = u"{card[name]} "
+		replytext = u"{card[name]}"
 		if 'type' in card and len(card['type']) > 0:
-			replytext += u"[{card[type]}]"
+			replytext += u" [{card[type]}]"
+		if addExtendedInfo and 'rarity' in card:
+			replytext += u" [{card[rarity]}]"
 		if 'manacost' in card:
 			replytext += u" ({card[manacost]}"
 			#Only add the cumulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total')
 			if 'cmc' in card and card['cmc'] != card['manacost']:
-				replytext += u", {card[cmc]} total"
+				replytext += u", CMC {card[cmc]}"
 			#If no cmc is shown, specify the number is the manacost
 			else:
 				replytext += u" mana"
