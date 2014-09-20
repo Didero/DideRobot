@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import gc, json, os, random, re, sys, time, urllib, zipfile
+import gc, json, os, random, re, time, urllib, zipfile
 
 import requests
+from bs4 import BeautifulSoup
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
@@ -38,17 +39,72 @@ class Command(CommandTemplate):
 		if message.messagePartsLength == 0:
 			message.bot.say(message.source, "This command " + self.helptext[0].lower() + self.helptext[1:])
 			return
+
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
 		elif searchType == 'update' or searchType == 'forceupdate':
+			shouldForceUpdate = True if message.message.lower() == 'forceupdate' else False
 			if self.areCardfilesInUse:
 				replytext = u"I'm already updating!"
 			elif not message.bot.factory.isUserAdmin(message.user):
 				replytext = u"Sorry, only admins can use my update function"
 			else:
-				replytext = self.updateCardFile(message.message.lower()=='forceupdate')
-				replytext += u" " + self.updateDefinitions(message.message.lower()=='forceupdate')
+				replytext = self.updateCardFile(shouldForceUpdate)
+				replytext += u" " + self.updateDefinitions()
 			message.bot.say(message.source, replytext)
 			return
+
+		#We can also search for definitions
+		elif searchType == 'define':
+			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')):
+				if self.areCardfilesInUse:
+					replytext = u"I'm sorry, but my definitions file seems to missing. Don't worry, I'm making up-I mean reading up on the rules as we speak. Try again in a bit!"
+				else:
+					message.bot.sendMessage(message.source, u"I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds")
+					replytext = self.updateDefinitions()
+			elif message.messagePartsLength < 2:
+				replytext = u"Please add a definition to search for"
+			else:
+				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
+					definitions = json.load(definitionsFile)
+				searchterm = u" ".join(message.messageParts[1:]).lower()
+				searchRegex = re.compile(searchterm)
+				possibleDefinitions = []
+				for keyword in definitions.keys():
+					if re.search(searchRegex, keyword):
+						possibleDefinitions.append(keyword)
+				possibleDefinitionsCount = len(possibleDefinitions)
+				if possibleDefinitionsCount == 0:
+					replytext = u"Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
+				elif possibleDefinitionsCount == 1:
+					keyword = possibleDefinitions[0]
+					replytext = u"{}: {}.".format(keyword, definitions[keyword]['short'])
+					currentReplyLength = len(replytext)
+					if message.trigger == 'mtgf' and 'extra' in definitions[keyword]:
+						replytext += u" " + definitions[keyword]['extra']
+						#MORE INFO
+						maxLength = 300
+						if not message.isPrivateMessage and currentReplyLength + len(definitions[keyword]['extra']) > maxLength:
+							textLeft = replytext[maxLength:]
+							replytext = replytext[:maxLength] + u" [continued in notices]"
+							counter = 2
+							while len(textLeft) > 0:
+								message.bot.sendMessage(message.userNickname, u"({}) {}".format(counter, textLeft[:maxLength]), 'notice')
+								textLeft = textLeft[maxLength:]
+								counter += 1
+				else:
+					if searchterm in possibleDefinitions:
+						possibleDefinitions.remove(searchterm)
+						possibleDefinitionsCount -= 1
+						replytext = u"{}: {}; {} more matching definitions found".format(searchterm, definitions[searchterm]['short'], possibleDefinitionsCount)
+					else:
+						replytext = u"Your search returned {} results, please be more specific".format(possibleDefinitionsCount)
+					if possibleDefinitionsCount < 10:
+						replytext += u": {}".format(u"; ".join(possibleDefinitions))
+					replytext += u"."
+
+			message.bot.say(message.source, replytext)
+			return
+
 		#Check if the data file even exists
 		elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')):
 			if self.areCardfilesInUse:
@@ -56,37 +112,6 @@ class Command(CommandTemplate):
 			else:
 				replytext = u"Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
 				GlobalStore.reactor.callInThread(self.updateCardFile, True)
-			message.bot.say(message.source, replytext)
-			return
-		#We can also search for definitions
-		elif searchType == 'define':
-			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')):
-				if self.areCardfilesInUse:
-					replytext = u"I'm sorry, but my definitions file seems to missing. Don't worry, I'm making up-I mean reading up on the rules as we speak. Try again in a bit!"
-				else:
-					replytext = u"I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
-				self.updateDefinitions(True)
-			elif message.messagePartsLength < 2:
-				replytext = u"Please add a definition to search for"
-			else:
-				searchDefinition = " ".join(message.messageParts[1:])
-				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
-					definitions = json.load(definitionsFile)
-				if searchDefinition.lower() in definitions:
-					replytext = u"'{}': {}".format(searchDefinition, definitions[searchDefinition.lower()]['short'])
-					if message.trigger == 'mtgf':
-						extendedDefinition = definitions[searchDefinition.lower()]['extended']
-						#Let's not spam channels with MtG definitions, shall we
-						if message.isPrivateMessage or len(replytext) + len(extendedDefinition) < 500:
-							replytext += " " + extendedDefinition
-						else:
-							message.bot.sendNotice(message.userNickname, replytext)
-							while len(extendedDefinition) > 0:
-								message.bot.sendNotice(message.userNickname, extendedDefinition[:800])
-								extendedDefinition = extendedDefinition[800:]
-							replytext += u" [definition too long, rest sent in notice]"
-				else:
-					replytext = u"I'm sorry, I'm not familiar with that term. Tell my owner, maybe they'll add it!"
 			message.bot.say(message.source, replytext)
 			return
 
@@ -256,7 +281,6 @@ class Command(CommandTemplate):
 			if numberOfCardsFound > cardlimit:
 				replytext += u"; and {:,} more".format(numberOfCardsFound - cardlimit)
 
-
 		re.purge()  #Clear the stored regexes, since we don't need them anymore
 		gc.collect()  #Make sure memory usage doesn't slowly creep up from loading in the data file (hopefully)
 		print "[MtG] Execution time: {} seconds".format(time.time() - starttime)
@@ -327,7 +351,6 @@ class Command(CommandTemplate):
 
 	def updateCardFile(self, forceUpdate=False):
 		starttime = time.time()
-		self.areCardfilesInUse = True
 		replytext = u""
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		updateNeeded = False
@@ -347,6 +370,7 @@ class Command(CommandTemplate):
 					print "[MtG] Unexpected content of stored version file:"
 					for key, value in oldversiondata.iteritems():
 						print "  {}: {}".format(key, value)
+						return u"Something went wrong when reading the stored version number."
 		#print "[MtG] Local version: '{}'".format(currentVersion)
 
 		#Download the latest version file
@@ -363,9 +387,10 @@ class Command(CommandTemplate):
 				print "[MtG] Unexpected contents of downloaded version file:"
 				for key, value in versiondata.iteritems():
 					print " {}: {}".format(key, value)
+					return u"Something went wrong when trying to read the downloaded version file"
 		#print "[MtG] Latest version: '{}'".format(latestVersion)
 		if latestVersion == "":
-			replytext = u"Something went wrong, the latest MtG database version number could not be retrieved."
+			return u"Something went wrong, the latest MtG database version number could not be retrieved."
 
 		if forceUpdate or latestVersion != currentVersion or not os.path.exists(cardsJsonFilename):
 			updateNeeded = True
@@ -376,6 +401,7 @@ class Command(CommandTemplate):
 			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
 			os.remove(newversionfilename)
 		else:
+			self.areCardfilesInUse = True
 			print "[MtG] Updating card database!"
 			url = "http://mtgjson.com/json/AllSets.json.zip"  #Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
 			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
@@ -506,81 +532,57 @@ class Command(CommandTemplate):
 				os.remove(versionFilename)
 			os.rename(newversionfilename, versionFilename)
 
-			replytext = u"MtG card database successfully updated to version {} (Changelog: http://mtgjson.com/#changeLog).".format(latestVersion)
+			replytext = u"MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/#changeLog).".format(currentVersion, latestVersion)
 
 		urllib.urlcleanup()
 		self.areCardfilesInUse = False
 		print "[MtG] updating database took {} seconds".format(time.time() - starttime)
 		return replytext
 
-	def updateDefinitions(self, forceUpdate=False):
+	def updateDefinitions(self):
 		starttime = time.time()
-		definitionsFileLocation = os.path.join(GlobalStore.scriptfolder, "data", "MTGdefinitions.json")
+		definitions = {}
+		textCutoffLength = 200
+		replytext = u"Nothing happened..."
 
-		#Check if a new rules file exists
-		rulespage = requests.get("http://www.wizards.com/Magic/TCG/Article.aspx?x=magic/rules")
-		textfileMatch = re.search('<a.*href="(?P<url>http://media.wizards.com/images/magic/tcg/resources/rules/MagicCompRules_(?P<date>\d+)\.txt)">TXT</a>', rulespage.text)
-		if not textfileMatch:
-			print "[MtG] [definitions update] Unable to locate the URL to the rules text file!"
-			return u"Definitions file not found."
+		self.areCardfilesInUse = True
+		definitionSources = [("http://en.m.wikipedia.orgsfew/wiki/List_of_Magic:_The_Gathering_keywords", "content", 4),
+			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-body", 6)]
+		try:
+			for url, section, charsToRemoveFromEnd in definitionSources:
+				headers = BeautifulSoup(requests.get(url).text.replace('\n', '')).find(class_=section).find_all(['h3', 'h4'])
+				for header in headers:
+					keyword = header.text[:-charsToRemoveFromEnd].lower()
+					if keyword in definitions:
+						print "[MTG] [DefinitionsUpdate] Duplicate definition: '{}'".format(keyword)
+						continue
+					#definitions[keyword] = u""
+					#Cycle through all the paragraphs following the header
+					currentParagraph = header.next_sibling
+					paragraphText = u""
+					#If there's no next_sibling, 'currentParagraph' is set to None. Check for that
+					while currentParagraph and currentParagraph.name == 'p':
+						paragraphText += u" " + currentParagraph.text
+						currentParagraph = currentParagraph.next_sibling
+					paragraphText = re.sub(" ?\[\d+?]", "", paragraphText).lstrip().rstrip(' .')  #Remove the reference links ('[1]')
+
+					#Split the found text into a short definition and a longer description
+					definitions[keyword] = {}
+					if len(paragraphText) < textCutoffLength:
+						definitions[keyword]['short'] = paragraphText
+					else:
+						splitIndex = paragraphText.rfind('.', 0, textCutoffLength)
+						definitions[keyword]['short'] = paragraphText[:splitIndex].lstrip()
+						definitions[keyword]['extra'] = paragraphText[splitIndex + 1:].lstrip()
+			print "[MTG] Updating definitions took {} seconds".format(time.time() - starttime)
+		except Exception as e:
+			print "[MTG] [DefinitionsUpdate] An error occured: ", e
+			replytext = u"Definitions file NOT updated, check log for errors"
 		else:
-			self.areCardfilesInUse = True
-			textfileLocation = textfileMatch.group('url')
-			date = textfileMatch.group('date')
-
-			oldDefinitionDate = ""
-			if not forceUpdate and os.path.exists(definitionsFileLocation):
-				with open(definitionsFileLocation, 'r') as definitionsFile:
-					definitions = json.load(definitionsFile)
-				if '_date' in definitions:
-					oldDefinitionDate = definitions['_date']
-
-			if forceUpdate or oldDefinitionDate != date:
-				rulesfilelocation = os.path.join(GlobalStore.scriptfolder, "data", "MtGrules.txt")
-				#Retrieve the rules document and parse the definitions
-				urllib.urlretrieve(textfileLocation, rulesfilelocation)
-
-				definitions = {}
-				#Keywords are defined in chapters 701 and 702, in the format '701.2. [keyword]' '701.2a [definition]' '701.2b [more definition]' etc.
-				keywordPattern = re.compile("70[12]\.(\d+)\. (.+)")
-				definitionPattern = re.compile("70[12]\.\d+[a-z] (.+)")
-				
-				with open(rulesfilelocation, 'r') as rulesfile:
-					for line in rulesfile:
-						#Decode to latin-1, because there's some weird quotes in the file for some reason
-						keywordMatch = re.search(keywordPattern, line)
-						if keywordMatch and keywordMatch.group(1) != '1': #Ignore the first entries, since that's just a description of the chapter
-							currentKeyword = keywordMatch.group(2).lower().decode('latin1')
-							definitions[currentKeyword] = {}
-						else:
-							definitionMatch = re.search(definitionPattern, line)
-							if definitionMatch:
-								definition =  definitionMatch.group(1).decode('latin1')
-								#Keep a short description for quick lookups
-								if "short" not in definitions[currentKeyword]:
-									definitions[currentKeyword]["short"] = definition
-								#But too short a description is pretty useless, extend it if it's too short
-								elif len(definitions[currentKeyword]['short']) < 100:
-									definitions[currentKeyword]['short'] += " " + definition
-								#Keep the rest of the definition for complete searches
-								elif "extended" not in definitions[currentKeyword]:
-									definitions[currentKeyword]["extended"] = definition
-								else:
-									definitions[currentKeyword]["extended"] += " " + definition
-
-				#Save the definitions to file
-				definitions['_date'] = date
-				with open(definitionsFileLocation, 'w') as definitionsFile:
-					definitionsFile.write(json.dumps(definitions))
-
-				#Clean up the rules file, we don't need it anymore
-				os.remove(rulesfilelocation)
-
-				self.areCardfilesInUse = False
-				print "[MtG] Updated definitions file to version {} in {} seconds".format(date, time.time() - starttime)
-				return u"Definitions successfully updated to the version from {}.".format(date)
-			else:
-				#No update necessary
-				self.areCardfilesInUse = False
-				print "[MtG] No need to update definitions file, {} is still newest. Check took {} seconds".format(date, time.time() - starttime)
-				return u"No definitions update needed, version {} is still up-to-date.".format(date)
+			#Save the data to disk
+			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGdefinitions.json"), 'w') as definitionsFile:
+				definitionsFile.write(json.dumps(definitions))
+			replytext = u"Definitions file successfully updated"
+		finally:
+			self.areCardfilesInUse = False
+		return replytext
