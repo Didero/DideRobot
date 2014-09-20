@@ -546,7 +546,7 @@ class Command(CommandTemplate):
 		replytext = u"Nothing happened..."
 
 		self.areCardfilesInUse = True
-		definitionSources = [("http://en.m.wikipedia.orgsfew/wiki/List_of_Magic:_The_Gathering_keywords", "content", 4),
+		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content", 4),
 			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-body", 6)]
 		try:
 			for url, section, charsToRemoveFromEnd in definitionSources:
