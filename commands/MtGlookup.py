@@ -86,9 +86,9 @@ class Command(CommandTemplate):
 						if not message.isPrivateMessage and currentReplyLength + len(definitions[keyword]['extra']) > maxLength:
 							textLeft = replytext[maxLength:]
 							replytext = replytext[:maxLength] + u" [continued in notices]"
-							counter = 2
+							counter = 1
 							while len(textLeft) > 0:
-								message.bot.sendMessage(message.userNickname, u"({}) {}".format(counter, textLeft[:maxLength]), 'notice')
+								GlobalStore.reactor.callLater(0.2 * counter, message.bot.sendMessage, message.userNickname, u"({}) {}".format(counter + 1, textLeft[:maxLength]), 'notice')
 								textLeft = textLeft[maxLength:]
 								counter += 1
 				else:
