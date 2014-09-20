@@ -219,7 +219,8 @@ def dictToString(dictionary):
 
 
 def stringToDict(string, removeStartAndEndQuotes=True):
-	string = removeCharactersFromStringEnds(string, '{', '}')
+	if string.startswith('{') and string.endswith('}'):
+		string = string[1:-1]
 
 	dictionary = {}
 	#Split the string on commas that aren't followed by any other commas before encountering a colon
