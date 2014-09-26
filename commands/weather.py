@@ -64,12 +64,11 @@ class Command(CommandTemplate):
 					def celsiusToFahrenheit(celsius):
 						return (celsius * 9 / 5) + 32
 
-
 					if message.trigger == 'weather':
 						dataAge = round((time.time() - data['dt']) / 60)
 						dataAgeDisplay = u""
 						if dataAge <= 0:
-							dataAge = u"brand new"
+							dataAgeDisplay = u"brand new"
 						else:
 							dataAgeDisplay = u"{dataAge:.0f} minute"
 							if dataAge > 1:
