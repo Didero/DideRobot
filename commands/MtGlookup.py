@@ -496,10 +496,9 @@ class Command(CommandTemplate):
 						#Finally, put the card in the new storage
 						newcardstore[cardname].append(card)
 
-			#Format the text after the main loop, so we can compare texts to prevent duplicates
+			#Clean up the text formatting, so we don't have to do that every time
 			for cardlist in newcardstore.values():
 				for card in cardlist:
-					#Clean up the text formatting, so we don't have to do that every time
 					keysToFormatNicer = ['manacost', 'text', 'flavor']
 					for keyToFormat in keysToFormatNicer:
 						if keyToFormat in card:
@@ -507,8 +506,8 @@ class Command(CommandTemplate):
 							#Remove brackets around mana cost
 							if '{' in newText:
 								newText = newText.replace('}{', ' ').replace('{', '').replace('}', '')
-							#Remove newlines but make sure sentences are separated by a period
-							newText = newText.replace('.\n', '\n').replace('\n\n', '\n').replace('\n', '. ')
+							#Replace newlines with spaces. If the sentence adds in a letter, add a period
+							newText = re.sub('(?<=\w)\n', '. ', newText).replace('\n', ' ')
 							#Prevent double spaces
 							newText = newText.replace(u'  ', u' ').strip()
 							card[keyToFormat] = newText
