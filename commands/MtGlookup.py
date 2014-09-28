@@ -395,7 +395,7 @@ class Command(CommandTemplate):
 		if forceUpdate or latestVersion != currentVersion or not os.path.exists(cardsJsonFilename):
 			updateNeeded = True
 
-		print "Done version-checking at {} seconds in".format(time.time() - starttime)
+		print "[MTG] Done version-checking at {} seconds in".format(time.time() - starttime)
 
 		if not updateNeeded:
 			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
@@ -407,7 +407,7 @@ class Command(CommandTemplate):
 			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 			urllib.urlretrieve(url, cardzipFilename)
 
-			print "Done with downloading card database at {} seconds in".format(time.time() - starttime)
+			print "[MTG] Done with downloading card database at {} seconds in".format(time.time() - starttime)
 
 			#Since it's a zip, extract it
 			zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
@@ -419,15 +419,14 @@ class Command(CommandTemplate):
 			#We don't need the zip anymore
 			os.remove(cardzipFilename)
 
-			print "Done unzipping downloaded card database at {} seconds in".format(time.time() - starttime)
+			print "[MTG] Done unzipping downloaded card database at {} seconds in".format(time.time() - starttime)
 
 			#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
 			downloadedCardstore = {}
 			with open(newcardfilename, 'r') as newcardfile:
 				downloadedCardstore = json.load(newcardfile)
-			print "Done loading the new cards into memory at {} seconds in".format(time.time() - starttime)
+			print "[MTG] Done loading the new cards into memory at {} seconds in".format(time.time() - starttime)
 			newcardstore = {}
-			print "Going through cards"
 			#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
 			for setcode in downloadedCardstore.keys():
 				setData = downloadedCardstore.pop(setcode)
@@ -518,11 +517,11 @@ class Command(CommandTemplate):
 			if os.path.exists(cardsJsonFilename):
 				os.remove(cardsJsonFilename)
 			#Save the new database to disk
-			print "Done parsing cards, saving file to disk"
+			print "[MTG] Done parsing cards at {} seconds in, saving file to disk".format(time.time() - starttime)
 			with open(cardsJsonFilename, 'w') as cardfile:
 				#json.dump(cards, cardfile) #This is dozens of seconds slower than below
 				cardfile.write(json.dumps(newcardstore))
-			print "Done saving file to disk"
+			print "[MTG] Done saving file to disk at {} seconds in".format(time.time() - starttime)
 
 			#Remove the file downloaded from MTGjson.com
 			os.remove(newcardfilename)
