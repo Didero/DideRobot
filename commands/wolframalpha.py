@@ -8,7 +8,7 @@ import GlobalStore
 
 
 class Command(CommandTemplate):
-	triggers = [ 'wolfram', 'wolframalpha','wa']
+	triggers = ['wolfram', 'wolframalpha', 'wa']
 	helptext = "Sends the provided query to Wolfram Alpha and shows the results, if any"
 	callInThread = True  #WolframAlpha can be a bit slow
 	
@@ -28,30 +28,25 @@ class Command(CommandTemplate):
 			try:
 				xmltext = unicode(xmltext.encode('latin-1'), encoding='unicode-escape')
 			except Exception as e:
-				print "[WolframAlpha] Error while turning unicode escapes into words with latin-1, using utf-8 ({})".format(str(e))
+				print "[Wolfram] Error while turning unicode escapes into words with latin-1, using utf-8 ({})".format(str(e))
 				xmltext = unicode(xmltext.encode('utf-8'), encoding='unicode-escape')
-			#print xmltext.encode('utf-8')
 			xml = ElementTree.fromstring(xmltext.encode('utf8'))
 			if xml.attrib['error'] != 'false':
 				replystring = u"An error occurred"
+				print "[Wolfram] An error occurred for the search query '{}'. Reply:".format(message.message)
 				print xmltext.encode('utf-8')
 			elif xml.attrib['success'] != 'true':
-				print xmltext.encode('utf-8')
+				replystring = u"No results found, sorry"
 				#Most likely no results were found. See if there are suggestions for search improvements
 				if xml.find('didyoumeans') is not None:
 					didyoumeans = xml.find('didyoumeans').findall('didyoumean')
 					suggestions = []
 					for didyoumean in didyoumeans:
-						print "WOLFRAMALPHA suggestion accuracy level: {}".format(didyoumean.attrib['level'])
 						if didyoumean.attrib['level'] != 'low':
 							suggestion = didyoumean.text.replace('\n','').strip()
 							if len(suggestion) > 0:
-								print "Adding suggestion: '{}'".format(suggestion)
 								suggestions.append(suggestion)
-					
-					replystring += u"No results found, sorry"
 					if len(suggestions) > 0:
-						print "Number of suggestions found: {}".format(len(suggestions))
 						replystring += u". Did you perhaps mean: {}".format(", ".join(suggestions))
 			else:
 				pods = xml.findall('pod')
@@ -59,21 +54,16 @@ class Command(CommandTemplate):
 				for pod in pods[1:]:
 					if pod.attrib['title'] == "Input":
 						continue
-					#print u"Pod '{}'".format(pod.attrib['title'])
 					for subpod in pod.findall('subpod'):
 						text = subpod.find('plaintext').text
 						if text is None:
-							print "No text found, skipping subpod"
 							continue
 						text = text.replace('\n', ' ').strip()
 						#If there's no text in this pod (for instance if it's just an image)
-						#  or if the result is useless (searching for '3 usd' for instance returns coin weight first, starts with an opening bracket), skip it
 						if len(text) == 0:
-							print "Text is empty, skipping subpod"
 							continue
+						#If the result is useless (searching for '3 usd' for instance returns coin weight first, starts with an opening bracket), skip it
 						elif text.startswith('('):
-							print "Assuming useless text, skipping"
-							print "  {}".format(text)
 							continue
 						replystring += text
 						resultFound = True
@@ -86,7 +76,6 @@ class Command(CommandTemplate):
 
 			replystring = replystring.replace('  ', ' ')
 			#Add the search url
-			if len(searchstring) < 50:
-				replystring += u" (http://www.wolframalpha.com/input/?i={})".format(searchstring.replace(" ", "+"))
+			replystring += u" (http://www.wolframalpha.com/input/?i={})".format(searchstring.replace(" ", "+"))
 			
 		message.bot.say(message.source, replystring)
