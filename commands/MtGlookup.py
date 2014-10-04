@@ -50,6 +50,8 @@ class Command(CommandTemplate):
 			else:
 				replytext = self.updateCardFile(shouldForceUpdate)
 				replytext += u" " + self.updateDefinitions()
+				#Since we're checking now, set the automatic check to start counting from now on
+				self.scheduledFunctionTimer.reset()
 			message.bot.say(message.source, replytext)
 			return
 
