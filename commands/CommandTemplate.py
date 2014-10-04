@@ -14,13 +14,23 @@ class CommandTemplate(object):
 	allowedMessageTypes = ['say']
 	
 	def __init__(self):
-		self.onStart()
 		if self.scheduledFunctionTime > 0.0:
 			print "Executing looping function every {} seconds".format(self.scheduledFunctionTime)
 			self.scheduledFunctionTimer = task.LoopingCall(self.executeScheduledFunction)
 			self.scheduledFunctionTimer.start(self.scheduledFunctionTime)
+		self.onLoad()
 
-	def onStart(self):
+	def onLoad(self):
+		pass
+
+	def unload(self):
+		if self.scheduledFunctionTime > 0.0:
+			print "Stopping looping function"
+			self.scheduledFunctionTimer.stop()
+			self.scheduledFunctionTimer = None
+		self.onUnload()
+
+	def onUnload(self):
 		pass
 
 	def getHelp(self, message):

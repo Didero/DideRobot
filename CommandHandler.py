@@ -5,6 +5,7 @@ from ConfigParser import ConfigParser
 import GlobalStore
 from IrcMessage import IrcMessage
 
+
 class CommandHandler:
 	commands = {}
 	apikeys = ConfigParser()
@@ -12,7 +13,6 @@ class CommandHandler:
 	def __init__(self):
 		GlobalStore.commandhandler = self
 		self.loadApiKeys()
-
 
 	def loadApiKeys(self):
 		self.apikeys = ConfigParser()
@@ -72,15 +72,15 @@ class CommandHandler:
 		success = True
 		for commandFile in os.listdir(commandFolder):
 			print("Loading commandfile '" + commandFile + "'")
-			if (not commandFile.endswith(".py")):
+			if not commandFile.endswith(".py"):
 				print(" Skipping " + commandFile + ", not a Python file")
 				continue
-			if (commandFile in modulesToIgnore or commandFile[:-3] in modulesToIgnore):
+			if commandFile in modulesToIgnore or commandFile[:-3] in modulesToIgnore:
 				print(" Skipping " + commandFile + " since it's in the ignore list")
 				continue
 			#GlobalStore.logger.log("Loading module '{}'".format(commandFile))
 			
-			if self.loadCommand(commandFile[:-3], folder) == False:
+			if not self.loadCommand(commandFile[:-3], folder):
 				success = False
 				#break
 				
@@ -105,9 +105,6 @@ class CommandHandler:
 		
 			command = module.Command()
 			print " commands: '{}'".format(", ".join(command.triggers))
-			#for trigger in command.triggers:
-			#	print("Connecting command word '" + trigger + "' to " + name)
-			#	self.commands[trigger] = command
 			self.commands[name] = command
 			return True
 		except:
@@ -115,7 +112,6 @@ class CommandHandler:
 			traceback.print_exc()
 			return False
 
-			
 	def unloadCommand(self, name, folder='commands'):
 		print "[unload command] scriptpath='{}'  folder='{}'  name='{}'".format(GlobalStore.scriptfolder, folder, name)
 		try:
@@ -123,6 +119,9 @@ class CommandHandler:
 			filename = os.path.join(GlobalStore.scriptfolder, folder, name + '.py')
 			print "[unload command] full filename: {}".format(filename)
 			if name in self.commands:
+				#Inform the module it's being unloaded
+				self.commands[name].unload()
+				#Then remove it from the loaded modules
 				print "[unload command] Removing '{}' from sys.modules".format(fullname)
 				if fullname in sys.modules:
 					del sys.modules[fullname]
@@ -138,10 +137,9 @@ class CommandHandler:
 				print "Module '{}' not in command list".format(name)
 			return False
 		except:
-			print "[unload command] An error occured trying to unload '{}'".format(name)
+			print "[unload command] An error occurred trying to unload '{}'".format(name)
 			traceback.print_exc()
 			return False
-			
 		
 	def reloadCommand(self, name, folder='commands'):
 		if name in self.commands:

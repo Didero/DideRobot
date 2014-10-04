@@ -11,7 +11,7 @@ class Command(CommandTemplate):
 
 	lastCommitHash = ""
 
-	def onStart(self):
+	def onLoad(self):
 		#Set the stored hash to the latest local one
 		output = subprocess.check_output(['git', 'log', '@{1}..', '--format=oneline'])
 		self.lastCommitHash = output.split(" ", 1)[0]

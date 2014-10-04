@@ -13,8 +13,8 @@ class Command(CommandTemplate):
 	generators = {}
 	filesLocation = os.path.join(GlobalStore.scriptfolder, "data", "generators")
 
-	def onStart(self):
-		# Set in 'onStart' so referencing the methods actually works
+	def onLoad(self):
+		# Set in 'onLoad' so referencing the methods actually works
 		self.generators = {"creature": self.generateCreature, "name": self.generateName, "samAndMax": self.generateSamAndMaxSentence,
 						   "superhero": self.generateSuperhero, "word": self.generateWord, "word2": self.generateWord2}
 		self.helptext += ", ".join(sorted(self.generators.keys()))

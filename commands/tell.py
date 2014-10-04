@@ -16,7 +16,7 @@ class Command(CommandTemplate):
 	storedTells = {}
 	maxTellsAtATime = 4
 
-	def onStart(self):
+	def onLoad(self):
 		if os.path.exists(self.tellsFileLocation):
 			with open(self.tellsFileLocation, 'r') as tellsfile:
 				self.storedTells = json.load(tellsfile)
