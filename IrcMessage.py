@@ -29,7 +29,7 @@ class IrcMessage(object):
 		#Handle the text component, including seeing if it starts with the bot's command character
 		self.rawText = rawText.strip()
 		#There isn't always text
-		if self.rawText == u"":
+		if self.rawText == "":
 			self.trigger = None
 			self.message = u""
 			self.messageParts = []
@@ -44,18 +44,18 @@ class IrcMessage(object):
 			#Collect information about the possible command in this message
 			if self.rawText.startswith(bot.factory.commandPrefix):
 				#Get the part from the end of the command prefix to the first space (the 'help' part of '!help say')
-				self.trigger = self.rawText[bot.factory.commandPrefixLength:].split(u" ")[0].strip()
+				self.trigger = self.rawText[bot.factory.commandPrefixLength:].split(" ", 1)[0].strip()
 				self.message = self.rawText[bot.factory.commandPrefixLength + len(self.trigger):].strip()
 			#Check if the text doesn't start with the nick of the bot, 'DideRobot: help'
 			elif self.rawText.startswith(bot.nickname + ": ") and len(self.rawText) > len(bot.nickname) + 2:
-				self.trigger = self.rawText.split(u" ")[1].strip()
+				self.trigger = self.rawText.split(u" ", 2)[1].strip()
 				self.message = self.rawText[len(bot.nickname) + len(self.trigger) + 3:].strip()
 			else:
 				self.trigger = None
 				self.message = self.rawText.strip()
 
 			if self.message != u"":
-				self.messageParts = self.message.split(u" ")
+				self.messageParts = self.message.split(" ")
 			else:
 				self.messageParts = []
 			self.messagePartsLength = len(self.messageParts)
