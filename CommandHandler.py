@@ -1,5 +1,4 @@
-import os, sys
-import traceback
+import importlib, os, traceback
 from ConfigParser import ConfigParser
 
 import GlobalStore
@@ -82,10 +81,8 @@ class CommandHandler:
 			
 			if not self.loadCommand(commandFile[:-3], folder):
 				success = False
-				#break
-				
+
 		print "commands loaded from '{}' folder: {}".format(folder, ", ".join(self.commands))
-		#print "registered modules: {}".format(", ".join(sys.modules))
 		return success
 		
 	def loadCommand(self, name, folder='commands'):
@@ -97,18 +94,15 @@ class CommandHandler:
 			return False
 
 		try:
-			module = __import__(folder + '.' + name, globals(), locals(), [])
+			module = importlib.import_module(folder + '.' + name)
+			#Since the module may already have been loaded in the past, make sure we have the latest version
 			reload(module)
-		
-			#'module' now has two modules, the command filename and 'py'. Only use the first one
-			module = getattr(module, name)
-		
 			command = module.Command()
 			print " commands: '{}'".format(", ".join(command.triggers))
 			self.commands[name] = command
 			return True
 		except:
-			print "An error occured loading command ''".format(name)
+			print "An error occurred loading command '{}'".format(name)
 			traceback.print_exc()
 			return False
 
@@ -121,15 +115,7 @@ class CommandHandler:
 			if name in self.commands:
 				#Inform the module it's being unloaded
 				self.commands[name].unload()
-				#Then remove it from the loaded modules
-				print "[unload command] Removing '{}' from sys.modules".format(fullname)
-				if fullname in sys.modules:
-					del sys.modules[fullname]
-				else:
-					print "[unload command] '{}' not in sys.modules".format(fullname)
-				#Remove the compiled Python file
-				if os.path.exists(filename + 'c'):
-					os.remove(filename + 'c')
+				#And remove the reference to it
 				del self.commands[name]
 				print "[unload command] Finished unloading module '{}'".format(fullname)
 				return True
