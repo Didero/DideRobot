@@ -10,6 +10,7 @@ class Command(CommandTemplate):
 	helptext = "(Re)loads a module from disk, updating it with any changes, or unloads one"
 	adminOnly = True
 	showInCommandList = False
+	stopAfterThisCommand = True
 	
 	def execute(self, message):
 		"""
@@ -17,14 +18,12 @@ class Command(CommandTemplate):
 		"""
 
 		reply = u""
-		modulename = ""
 		success = False
 
 		if message.messagePartsLength < 1:
 			reply = u"Please provide the name of a module to {}".format(message.trigger)
 		else:
 			modulename = message.messageParts[0]
-
 
 			#Check if the module name is valid, but only if we're not trying to load a module since of course an unloaded module isn't stored yet
 			if message.trigger != 'load' and not modulename in GlobalStore.commandhandler.commands:
