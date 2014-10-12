@@ -8,6 +8,7 @@ class CommandTemplate(object):
 	helptext = "This has not yet been filled in. Oops"
 	showInCommandList = True
 	claimCommandExecution = True  #If set to to 'True' it will stop other commands with it also set to True from running if this command is executed
+	stopAfterThisCommand = False  #Some modules might affect the command list, which leads to errors. If this is set to true and the command fires, no further commands are executed
 	adminOnly = False
 	scheduledFunctionTime = -1.0
 	callInThread = False

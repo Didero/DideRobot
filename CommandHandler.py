@@ -43,6 +43,8 @@ class CommandHandler:
 							GlobalStore.reactor.callInThread(self.executeCommand, commandname, message)
 						else:
 							self.executeCommand(commandname, message)
+						if command.stopAfterThisCommand:
+							break
 
 	def executeCommand(self, commandname, message):
 		try:
