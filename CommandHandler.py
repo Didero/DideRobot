@@ -128,6 +128,11 @@ class CommandHandler:
 			print "[unload command] An error occurred trying to unload '{}'".format(name)
 			traceback.print_exc()
 			return False
+
+	def unloadAllCommands(self):
+		#Take the keys instead of iteritems() to prevent size change errors
+		for commandname in self.commands.keys():
+			self.unloadCommand(commandname)
 		
 	def reloadCommand(self, name, folder='commands'):
 		if name in self.commands:

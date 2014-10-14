@@ -49,6 +49,9 @@ class BotHandler:
 			return True
 
 	def shutdown(self, quitmessage='Shutting down...'):
+		#Give all modules a chance to close properly
+		GlobalStore.commandhandler.unloadAllCommands()
+		#Give all bots the same quit message
 		quitmessage = quitmessage.encode('utf-8')
 		for serverfolder, botfactory in self.botfactories.iteritems():
 			if botfactory.bot:
