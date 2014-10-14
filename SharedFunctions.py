@@ -1,5 +1,4 @@
-import base64, json, os, random, re, sys
-from ConfigParser import ConfigParser
+import base64, json, os, random, re
 
 import requests
 
@@ -9,7 +8,7 @@ import GlobalStore
 #First some Twitter functions
 def updateTwitterToken():
 	if not GlobalStore.commandhandler.apikeys.has_section('twitter') or not GlobalStore.commandhandler.apikeys.has_option('twitter', 'key') or not GlobalStore.commandhandler.apikeys.has_option('twitter', 'secret'):
-		print "No Twitter API key and/or secret found !"
+		print "No Twitter API key and/or secret found!"
 		return False
 
 	credentials = base64.b64encode("{}:{}".format(GlobalStore.commandhandler.apikeys.get('twitter', 'key'), GlobalStore.commandhandler.apikeys.get('twitter', 'secret')))
@@ -17,7 +16,6 @@ def updateTwitterToken():
 	data = "grant_type=client_credentials"
 
 	req = requests.post("https://api.twitter.com/oauth2/token", data=data, headers=headers)
-	#print req.text
 	reply = json.loads(req.text)
 	if 'access_token' not in reply:
 		print "ERROR while retrieving token: " + json.dumps(reply)
@@ -34,15 +32,15 @@ def updateTwitterToken():
 
 def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=999999999999999999):
 	highestIdDownloaded = 0
-	storedInfo = ConfigParser()
-	storedInfo.optionxform = str  #Makes sure options preserve their case. Prolly breaks something down the line, but CASE!
-	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.dat')
+	storedInfo = {}
+	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.json')
 	if os.path.exists(twitterInfoFilename):
-		storedInfo.read(twitterInfoFilename)
-	if not storedInfo.has_section(username):
-		storedInfo.add_section(username)
-	if storedInfo.has_option(username, "highestIdDownloaded"):
-		highestIdDownloaded = int(storedInfo.get(username, "highestIdDownloaded"))
+		with open(twitterInfoFilename, 'r') as twitterInfoFile:
+			storedInfo = json.load(twitterInfoFile)
+	if username not in storedInfo:
+		storedInfo[username] = {}
+	elif "highestIdDownloaded" in storedInfo[username]:
+		highestIdDownloaded = storedInfo[username]['highestIdDownloaded']
 
 	headers = {"Authorization": "{} {}".format(GlobalStore.commandhandler.apikeys.get('twitter', 'tokentype'), GlobalStore.commandhandler.apikeys.get('twitter', 'token'))}
 	params = {"screen_name": username, "count": "200", "trim_user": "true", "exclude_replies": "true", "include_rts": "false"}
@@ -52,7 +50,6 @@ def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=9999999
 	tweets = {}
 	lowestIdFound = downloadOlderThanId
 	newTweetsFound = True
-
 	while newTweetsFound:
 		params["max_id"] = lowestIdFound
 
@@ -62,86 +59,41 @@ def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=9999999
 		newTweetsFound = False
 		for tweet in apireply:
 			tweettext = tweet["text"].replace("\n", " ").encode(encoding="utf-8", errors="replace")
-			#print "Tweet {}: {}".format(tweet["id"], tweettext)
 			if tweet["id"] not in tweets:
-				#print "  storing tweet"
 				newTweetsFound = True
 				tweets[tweet["id"]] = tweettext
 
 				tweetId = int(tweet["id"])
 				lowestIdFound = min(lowestIdFound, tweetId-1)
 				highestIdDownloaded = max(highestIdDownloaded, tweetId)
-			#else:
-			#	print "  skipping duplicate tweet"
 
 	#All tweets downloaded. Time to process them
 	tweetfile = open(os.path.join(GlobalStore.scriptfolder, 'data', "tweets-{}.txt".format(username)), "a")
 	#Sort the keys before saving, so we're writing from oldest to newest, so in the same order as the Twitter timeline (Not absolutely necessary, but it IS neat and tidy)
-	for id in sorted(tweets.keys()):
-		tweetfile.write(tweets[id] + "\n")
+	for tweetId in sorted(tweets.keys()):
+		tweetfile.write(tweets[tweetId] + "\n")
 	tweetfile.close()
 
-	storedInfo.set(username, "highestIdDownloaded", highestIdDownloaded)
-	linecount = 0
-	if storedInfo.has_option(username, "linecount"):
-		linecount = storedInfo.getint(username, "linecount")
-	linecount += len(tweets)
-	storedInfo.set(username, "linecount", linecount)
+	storedInfo[username]["highestIdDownloaded"] = highestIdDownloaded
+	linecount = len(tweets)
+	if "linecount" in storedInfo[username]:
+		linecount += storedInfo[username]["linecount"]
+	storedInfo[username]["linecount"] = linecount
 
-	storedInfoFile = open(twitterInfoFilename, "w")
-	storedInfo.write(storedInfoFile)
-	storedInfoFile.close()
+	#Save the stored info to disk too, for future lookups
+	with open(twitterInfoFilename, 'w') as twitterFile:
+		twitterFile.write(json.dumps(storedInfo))
 	return True
 
 def downloadNewTweets(username):
 	highestIdDownloaded = -1
 	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.dat')
 	if os.path.exists(twitterInfoFilename):
-		storedInfo = ConfigParser()
-		storedInfo.read(twitterInfoFilename)
-		if storedInfo.has_section(username) and storedInfo.has_option(username, "highestIdDownloaded"):
-			highestIdDownloaded = storedInfo.get(username, "highestIdDownloaded")
-
+		with open(twitterInfoFilename, 'r') as twitterInfoFile:
+			storedInfo = json.load(twitterInfoFile)
+		if username in storedInfo and 'highestIdDownloaded' in storedInfo[username]:
+			highestIdDownloaded = storedInfo[username]["highestIdDownloaded"]
 	return downloadTweets(username, highestIdDownloaded)
-
-def getLineFromTweetFile(username, linenumber):
-	linenumber = linenumber -1 #iteration function starts at 0
-
-	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.dat')
-	if not os.path.exists(twitterInfoFilename):
-		return "ERROR: No data file found!"
-	
-	storedInfo = ConfigParser()
-	storedInfo.read(twitterInfoFilename)
-	if not storedInfo.has_section(username):
-		return "ERROR: No info on '{}' found!".format(username)
-	if not storedInfo.has_option(username, "linecount"):
-		return "ERROR: Number of lines not stored!"
-	
-	if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', "tweets-{}.txt".format(username))):
-		return "ERROR: No tweets for '{}' stored!".format(username)
-
-	if linenumber > storedInfo.getint(username, 'linecount'):
-		return "ERROR: Requested line number {} while there are only {} lines".format(linenumber+1, storedInfo.getint(username, 'linecount'))
-
-	#print "Picking line {} out of {}".format(linenumber+1, storedInfo.getint(username, "linecount"))
-	with open(os.path.join(GlobalStore.scriptfolder, 'data', "tweets-{}.txt".format(username))) as linefile:
-		for filelinenumber, line in enumerate(linefile):
-			if filelinenumber == linenumber:
-				return unicode(line.replace("\n", ""))
-
-	return "That's weird, no line was found. That shouldn't happen (Tried to load line {} of {})".format(linenumber, storedInfo.getint(username, "linecount"))
-
-def getRandomLineFromTweetFile(username):
-	storedInfo = ConfigParser()
-	storedInfo.read(os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.dat'))
-	if not storedInfo.has_section(username):
-		return "ERROR: No info on '{}' found!".format(username)
-	if not storedInfo.has_option(username, "linecount"):
-		return "ERROR: Number of lines not stored!"
-	
-	randomlinenumber = random.randint(1, storedInfo.getint(username, "linecount"))
-	return getLineFromTweetFile(username, randomlinenumber)
 
 
 def getRandomLineFromFile(filename):
@@ -155,9 +107,9 @@ def getAllLinesFromFile(filename):
 	#Make sure it's an absolute filename
 	if GlobalStore.scriptfolder not in filename:
 		filename = os.path.join(GlobalStore.scriptfolder, filename)
-	file = open(filename, 'r')
-	lines = file.readlines()
-	file.close()
+	#Get all the lines!
+	with open(filename, 'r') as linesfile:
+		lines = linesfile.readlines()
 	return lines
 
 
