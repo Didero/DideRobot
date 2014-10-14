@@ -7,6 +7,7 @@ class Command(CommandTemplate):
 	triggers = ['quit', 'shutdown']
 	helptext = "Shuts down the bot. {commandPrefix}quit closes down just this bot, {commandPrefix}shutdown shuts down all instances of DideRobot on all servers it's connected to"
 	adminOnly = True
+	stopAfterThisCommand = True  #Since 'shutdown' unloads all the modules, prevent iteration errors, even though it shouldn't matter much
 	
 	def execute(self, message):
 		"""
