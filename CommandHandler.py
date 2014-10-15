@@ -105,6 +105,7 @@ class CommandHandler:
 			self.commands[name].unload()
 			#And remove the reference to it
 			del self.commands[name]
+			return True
 		except:
 			print "[CH] An error occurred trying to unload '{}'".format(name)
 			traceback.print_exc()
