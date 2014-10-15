@@ -87,7 +87,7 @@ def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=9999999
 
 def downloadNewTweets(username):
 	highestIdDownloaded = -1
-	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.dat')
+	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.json')
 	if os.path.exists(twitterInfoFilename):
 		with open(twitterInfoFilename, 'r') as twitterInfoFile:
 			storedInfo = json.load(twitterInfoFile)
