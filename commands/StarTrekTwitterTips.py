@@ -10,7 +10,7 @@ class Command(CommandTemplate):
 	triggers = ['startrektip', 'startrektips', 'sttip', 'sttips']
 	helptext = "Shows a randomly chosen tip from one of the Star Trek Tips accounts, or of a specific one if a name is provided. Add a regex search after the name to search for a specific tip"
 	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'laforge': 'LaForgeTips', 'locutus': 'LocutusTips', 'picard': 'PicardTips', 'quark': 'QuarkTips', 'riker': 'RikerTips', 'worf': 'WorfTips'}
-	scheduledFunctionTime = 18000.0  #Every 5 hours
+	scheduledFunctionTime = 21600.0  #Six hours in seconds
 
 	isUpdating = False
 
@@ -26,6 +26,11 @@ class Command(CommandTemplate):
 		name = ""
 		if message.messagePartsLength > 0:
 			name = message.messageParts[0].lower()
+		if name == 'update':
+			self.executeScheduledFunction()
+			self.scheduledFunctionTimer.reset()
+			message.bot.sendMessage(message.source, "Ok, I'll update my list of Star Trek Tips. But since they have to come from the future, it might take a while. Try again in, oh, half a minute or so, just to be sure")
+			return
 		if name == 'random':
 			name = random.choice(self.twitterUsernames.keys())
 
@@ -74,3 +79,4 @@ class Command(CommandTemplate):
 			SharedFunctions.downloadNewTweets(username)
 		self.isUpdating = False
 		print "[STtip] Updating tweets took {} seconds".format(time.time() - starttime)
+		return True
