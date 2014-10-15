@@ -25,13 +25,9 @@ class BotHandler:
 		if serverfolder in self.botfactories:
 			print "BotHandler got command to join server which I'm already on, '{}'".format(serverfolder)
 			return False
-
 		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'serverSettings', serverfolder)):
 			print "BotHandler got command to join server '{}', which I don't have settings for".format(serverfolder)
 			return False
-
-		print "Launching bot for server '{}'!".format(serverfolder)
-
 		#Start the bot, woo!
 		botfactory = DideRobotFactory(serverfolder)
 		self.botfactories[serverfolder] = botfactory

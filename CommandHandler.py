@@ -16,7 +16,7 @@ class CommandHandler:
 	def loadApiKeys(self):
 		self.apikeys = ConfigParser()
 		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini')):
-			print "ERROR: API key file not found!"
+			print "[CH] ERROR: API key file not found!"
 		else:
 			self.apikeys.read(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini'))
 
@@ -65,67 +65,48 @@ class CommandHandler:
 	
 	def loadCommands(self, folder='commands'):
 		modulesToIgnore = ['__init__.py', 'CommandTemplate.py']
-		#modulesToIgnore.extend(GlobalStore.settings.get("scripts", "moduleIgnoreList").split(","))
-		print "module ignore list: " + ", ".join(modulesToIgnore)
-		
-		commandFolder = os.path.join(GlobalStore.scriptfolder, folder)
-		
 		success = True
-		for commandFile in os.listdir(commandFolder):
-			print("Loading commandfile '" + commandFile + "'")
+		print "[CH] Loading commands from subfolder '{}'".format(folder)
+		for commandFile in os.listdir(os.path.join(GlobalStore.scriptfolder, folder)):
 			if not commandFile.endswith(".py"):
-				print(" Skipping " + commandFile + ", not a Python file")
 				continue
 			if commandFile in modulesToIgnore or commandFile[:-3] in modulesToIgnore:
-				print(" Skipping " + commandFile + " since it's in the ignore list")
 				continue
-			#GlobalStore.logger.log("Loading module '{}'".format(commandFile))
-			
 			if not self.loadCommand(commandFile[:-3], folder):
 				success = False
-
-		print "commands loaded from '{}' folder: {}".format(folder, ", ".join(self.commands))
 		return success
 		
 	def loadCommand(self, name, folder='commands'):
-		print "Loading command '{}.{}".format(folder, name)
-		
+		print "[CH] Loading command '{}.{}".format(folder, name)
 		commandFilename = os.path.join(GlobalStore.scriptfolder, folder, name + '.py')
 		if not os.path.exists(commandFilename):
-			print " File '{}' does not exist, aborting".format(commandFilename)
+			print "[CH] File '{}' does not exist, aborting".format(commandFilename)
 			return False
-
 		try:
 			module = importlib.import_module(folder + '.' + name)
 			#Since the module may already have been loaded in the past, make sure we have the latest version
 			reload(module)
 			command = module.Command()
-			print " commands: '{}'".format(", ".join(command.triggers))
 			self.commands[name] = command
 			return True
 		except:
-			print "An error occurred loading command '{}'".format(name)
+			print "[CH] An error occurred while trying to load command '{}'".format(name)
 			traceback.print_exc()
 			return False
 
 	def unloadCommand(self, name, folder='commands'):
-		print "[unload command] scriptpath='{}'  folder='{}'  name='{}'".format(GlobalStore.scriptfolder, folder, name)
-		try:
-			fullname = "{}.{}".format(folder, name)
-			filename = os.path.join(GlobalStore.scriptfolder, folder, name + '.py')
-			print "[unload command] full filename: {}".format(filename)
-			if name in self.commands:
-				#Inform the module it's being unloaded
-				self.commands[name].unload()
-				#And remove the reference to it
-				del self.commands[name]
-				print "[unload command] Finished unloading module '{}'".format(fullname)
-				return True
-			else:
-				print "Module '{}' not in command list".format(name)
+		fullname = "{}.{}".format(folder, name)
+		print "[CH] Unloading module '{}'".format(fullname)
+		if name not in self.commands:
+			print "[CH] Module '{}' not in command list".format(fullname)
 			return False
+		try:
+			#Inform the module it's being unloaded
+			self.commands[name].unload()
+			#And remove the reference to it
+			del self.commands[name]
 		except:
-			print "[unload command] An error occurred trying to unload '{}'".format(name)
+			print "[CH] An error occurred trying to unload '{}'".format(name)
 			traceback.print_exc()
 			return False
 
@@ -143,5 +124,5 @@ class CommandHandler:
 				success = False
 			return success
 		else:
-			print "{} not in command list: {}".format(name, ", ".join(self.commands))
+			print "[CH] Told to reload '{}' but it's not in command list: {}".format(name, ", ".join(self.commands))
 			return False

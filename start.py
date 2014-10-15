@@ -26,7 +26,6 @@ GlobalStore.commandhandler.loadCommands()
 
 #Get the config files we need to load from the argument parser
 serverfolderList = args.serverlist.split(',')
-print "Server folder list: '{}'".format(serverfolderList)
 #Start up the bots
 bothandler = BotHandler(serverfolderList)
 

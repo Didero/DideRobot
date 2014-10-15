@@ -1,6 +1,6 @@
 #Based on:
 # http://newcoder.io/~drafts/networks/intro/
-# https://github.com/MatthewCox/PyMoronBot
+# https://github.com/MatthewCox/PyMoronBot (and vice versa)
 
 import os, time
 from ConfigParser import ConfigParser
@@ -36,7 +36,6 @@ class DideRobot(irc.IRCClient):
 
 	def connectionLost(self, reason):
 		"""Called when a connection is lost."""
-		#self.factory.logger.log("Connection lost ({0})".format(reason))
 		irc.IRCClient.connectionLost(self, reason)
 		
 	def signedOn(self):
@@ -129,11 +128,8 @@ class DideRobot(irc.IRCClient):
 		GlobalStore.commandhandler.fireCommand(message)
 
 	#Misc. logging
-	#def topicUpdated(self, user, channel, newTopic):
-	#	self.factory.logger.log("Channel topic: '{}' (Set by {})".format(newTopic, user), channel)
 	def irc_TOPIC(self, prefix, params):
 		print "irc_TOPIC called, prefix is '{}', params is '{}'".format(prefix, params)
-
 	def irc_RPL_TOPIC(self, prefix, params):
 		print "irc_RPL_TOPIC called, prefix is '{}', params is '{}'".format(prefix, params)
 	def irc_RPL_NOTOPIC(self, prefix, params):
@@ -169,16 +165,13 @@ class DideRobot(irc.IRCClient):
 	def irc_RPL_WHOREPLY(self, prefix, params):
 		#'prefix' is the server, 'params' is a list, with meaning [own_nick, channel, other_username, other_address, other_server, other_nick, flags, hops realname]
 		# Flags can be H for active or G for away, and a * for oper, + for voiced
-		#print "WHOREPLY on '{}'. Prefix: '{}'. Params: '{}'".format(self.factory.serverfolder, prefix, params)
 		if params[1] not in self.channelsUserList:
 			self.channelsUserList[params[1]] = []
-		#print "[{}] adding user {} to userlist".format(self.factory.serverfolder, params[5])
 		self.channelsUserList[params[1]].append("{nick}!{username}@{address}".format(nick=params[5], username=params[2], address=params[3]))
 
 	def irc_RPL_ENDOFWHO(self, prefix, params):
-		#print "END WHOREPLY. Prefix: '{}'. Params: '{}'".format(prefix, params)
-		print "End of WHO. User list for {}, have users for channels {}".format(self.factory.serverfolder, ", ".join(self.channelsUserList.keys()))
-		#print self.channelsUserList
+		print "|{}| Userlist for channels {} collected".format(self.factory.serverfolder, ", ".join(self.channelsUserList.keys()))
+
 
 
 	def privmsg(self, user, channel, msg):
@@ -280,10 +273,7 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		return self.bot
 
 	def startedConnecting(self, connector):
-		maxRetries = self.maxRetries
-		if not self.maxRetries:
-			maxRetries = "not set"
-		self.logger.log("Started connecting, attempt {} (Max is {})".format(self.retries, maxRetries))
+		self.logger.log("Started connecting, attempt {} (Max is {})".format(self.retries, self.maxRetries if self.maxRetries else "not set"))
 		
 	def clientConnectionLost(self, connector, reason):
 		self.logger.log("Client connection lost (Reason: '{0}')".format(reason))
@@ -304,7 +294,6 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			self.logger.closelogs()
 			self.stopTrying()
 			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
-
 		
 	def updateSettings(self, updateLogger=True):
 		self.settings = ConfigParser()
@@ -369,11 +358,12 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 	def shouldUserBeIgnored(self, user, usernick=None):
 		return self.isUserInList(self.userIgnoreList, user, usernick)
 
-	def isUserInList(self, list, user, usernick=None):
+	@staticmethod
+	def isUserInList(userlist, user, usernick=None):
 		user = user.lower()
-		if user in list:
+		if user in userlist:
 			return True
 		#If a usernick is provided, use that, otherwise split the full user address ourselves
-		elif (usernick if usernick else user.split('!', 1)[0]) in list:
+		elif (usernick if usernick else user.split('!', 1)[0]) in userlist:
 			return True
 		return False
