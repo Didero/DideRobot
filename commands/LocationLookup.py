@@ -71,6 +71,8 @@ class Command(CommandTemplate):
 
 			if userIp == "":
 				replytext = u"I'm sorry, I couldn't determine the IP address of {username}".format(username=username)
+			elif userIp == "127.0.0.1":
+				replytext = u"That's on my server! And I'm right here"
 			else:
 				params = {'key': GlobalStore.commandhandler.apikeys.get('locatorhq', 'key'),
 						  'user': GlobalStore.commandhandler.apikeys.get('locatorhq', 'username'), 'ip': userIp, 'format': 'json'}
@@ -90,7 +92,7 @@ class Command(CommandTemplate):
 						#Unknown error, vague error report
 						replytext = u"Sorry, an error occurred. Tell my owner to check the debug output, the exact error is in there"
 				else:
-					if 'countryName' not in data or data['countryName'] == '-':
+					if 'countryName' not in data or data['countryName'] in ['-', 'None', None]:
 						replytext = u"I'm sorry, but I can't seem to determine which country {username} is from".format(username=username)
 					else:
 						if username == message.bot.nickname.lower():
