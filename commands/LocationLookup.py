@@ -72,7 +72,10 @@ class Command(CommandTemplate):
 			if userIp == "":
 				replytext = u"I'm sorry, I couldn't determine the IP address of {username}".format(username=username)
 			elif userIp == "127.0.0.1":
-				replytext = u"That's on my server! And I'm right here"
+				if username.lower() == message.bot.nickname.lower():
+					replytext = u"I'm right here for you!"
+				else:
+					replytext = u"That's on my server! And I'm right here"
 			else:
 				params = {'key': GlobalStore.commandhandler.apikeys.get('locatorhq', 'key'),
 						  'user': GlobalStore.commandhandler.apikeys.get('locatorhq', 'username'), 'ip': userIp, 'format': 'json'}
