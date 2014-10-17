@@ -17,6 +17,7 @@ class DideRobot(irc.IRCClient):
 	def __init__(self, factory):
 		self.factory = factory
 		self.channelsUserList = {}
+		self.isUpdatingChannelsUserList = False
 		self.connectedAt = 0.0
 		self.isMuted = False
 		if self.factory.settings.has_option("connection", "minSecondsBetweenMessages"):
@@ -73,8 +74,16 @@ class DideRobot(irc.IRCClient):
 		#'prefix' is the user, 'params' is a list with only the channel
 		message = IrcMessage('part', self, prefix, params[0])
 		self.factory.logger.log("PART: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
+		#If a user parts before we have a proper channellist built, catch that error
+		if params[0] not in self.channelsUserList:
+			print "|{}| Unexpected PART, user '{}' parted from channel '{}' but we had no record of them".format(self.factory.serverfolder, prefix, params[0])
+			#Schedule a rebuild of the userlist
+			if not self.isUpdatingChannelsUserList:
+				self.retrieveChannelUsers(params[0])
+			else:
+				GlobalStore.reactor.callLater(3.0, self.retrieveChannelUsers, params[0])
 		#Keep track of the channels we're in
-		if message.userNickname == self.nickname:
+		elif message.userNickname == self.nickname:
 			self.channelsUserList.pop(params[0])
 		#Keep track of channel users
 		elif prefix in self.channelsUserList[params[0]]:
@@ -157,6 +166,7 @@ class DideRobot(irc.IRCClient):
 
 	#Create a list of user addresses per channel
 	def retrieveChannelUsers(self, channel):
+		self.isUpdatingChannelsUserList = True
 		#Make sure we don't get duplicate data
 		if channel in self.channelsUserList:
 			self.channelsUserList.pop(channel)
@@ -170,8 +180,8 @@ class DideRobot(irc.IRCClient):
 		self.channelsUserList[params[1]].append("{nick}!{username}@{address}".format(nick=params[5], username=params[2], address=params[3]))
 
 	def irc_RPL_ENDOFWHO(self, prefix, params):
+		self.isUpdatingChannelsUserList = False
 		print "|{}| Userlist for channels {} collected".format(self.factory.serverfolder, ", ".join(self.channelsUserList.keys()))
-
 
 
 	def privmsg(self, user, channel, msg):
