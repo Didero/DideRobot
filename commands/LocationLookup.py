@@ -1,4 +1,4 @@
-import json, re, socket
+import json, socket
 
 import requests
 
@@ -35,7 +35,8 @@ class Command(CommandTemplate):
 			#Check if a channel name was provided as well
 			if message.messagePartsLength < 2 and message.isPrivateMessage:
 				#If no channel was specified, and we're not in a channel currently, we can't really do anything. Inform the user of that
-				replytext = u"If you use this script in a private message, you have to provide the channel to look in as the second parameter"
+				replytext = u"If you use this script in a private message, you have to provide the channel to look in as the second parameter, " \
+							u"otherwise I don't know where to look"
 			else:
 				channelname = message.source
 				#A channel name was provided, only search that channel
@@ -46,15 +47,14 @@ class Command(CommandTemplate):
 				if channelname not in message.bot.channelsUserList:
 					replytext = u"That is not a channel I'm familiar with, sorry"
 				else:
+					nickToMatch = message.messageParts[0].lower() + '!'  #Add an exclamation mark to make sure the match is the full nick, not just the start
+					replytext = u"I'm sorry, but I don't know who you're talking about..."  #Set it in advance, in case we don't find a match
 					for channelUserAddress in message.bot.channelsUserList[channelname]:
-						if channelUserAddress.startswith(message.messageParts[0]):
+						if channelUserAddress.lower().startswith(nickToMatch):
 							userAddress = channelUserAddress
 							break
-						else:
-							replytext = u"I'm sorry, but I don't know who you're talking about..."
 
 		if userAddress != u"":
-			print "[location] Using user address: '{}'".format(userAddress)
 			username = userAddress.split("!", 1)[0]
 			if username == userAddress:
 				username = u'that user'
@@ -64,7 +64,6 @@ class Command(CommandTemplate):
 			userHostname = userAddress.split('@', 1)[1]
 			userHostnameParts = userHostname.split('.')
 			while userIp == "" and len(userHostnameParts) > 1:
-				#print "[location] Trying to find IP for {}".format(".".join(userHostnameParts))
 				try:
 					userIp = socket.gethostbyname(".".join(userHostnameParts))
 				except socket.gaierror:
@@ -73,15 +72,15 @@ class Command(CommandTemplate):
 			if userIp == "":
 				replytext = u"I'm sorry, I couldn't determine the IP address of {username}".format(username=username)
 			else:
-				#print "[location] Using IP address: '{}'".format(userIp)
-				params = {'key': GlobalStore.commandhandler.apikeys.get('locatorhq', 'key'), 'user': GlobalStore.commandhandler.apikeys.get('locatorhq', 'username'), 'ip': userIp, 'format': 'json'}
+				params = {'key': GlobalStore.commandhandler.apikeys.get('locatorhq', 'key'),
+						  'user': GlobalStore.commandhandler.apikeys.get('locatorhq', 'username'), 'ip': userIp, 'format': 'json'}
 				apiReturn = requests.get("http://api.locatorhq.com", params=params)
 
 				try:
 					data = json.loads(apiReturn.text)
 				except ValueError:
 					#If there's an error message in the API output, it's not valid JSON. Check if we know what's wrong
-					print "[location] ERROR: '{}'".format(apiReturn.text)
+					print "[location] ERROR, API returned: '{}'".format(apiReturn.text)
 					error = apiReturn.text.lower()
 					if error == 'no data':
 						replytext = u"I'm sorry, I can't find any country data for {username}".format(username=username)
