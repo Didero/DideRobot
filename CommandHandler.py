@@ -7,6 +7,7 @@ from IrcMessage import IrcMessage
 
 class CommandHandler:
 	commands = {}
+	commandFunctions = {}
 	apikeys = ConfigParser()
 	
 	def __init__(self):
@@ -23,6 +24,44 @@ class CommandHandler:
 	def saveApiKeys(self):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini'), 'w') as apifile:
 			self.apikeys.write(apifile)
+
+	def addCommandFunction(self, module, name, function):
+		if name in self.commandFunctions:
+			print "[CH] ERROR: Trying to add a commandFuction called '{}' but it already exists".format(name)
+			return False
+		print "[CH] Adding command function '{}' from module '{}'".format(name, os.path.basename(module).split('.')[0])
+		self.commandFunctions[name.lower()] = {'module': os.path.basename(module).split('.')[0], 'function': function}
+		return True
+
+	def addCommandFunctions(self, module, *args):
+		"""
+		Convenience function for adding multiple actions in one go, through an argument list (name, function)
+		"""
+		success = True
+		#Assuming the provided arguments are in 'name, function' format, cycle through them
+		for i in xrange(0, len(args), 2):
+			if not self.addCommandFunction(module, args[i], args[i+1]):
+				success = False
+		return success
+
+	def removeCommandFunction(self, name):
+		name = name.lower()
+		if name not in self.commandFunctions:
+			print "[CH] ERROR: Trying to remove the commandFunction '{}' while it is not registered".format(name)
+			return False
+		print "[CH] Removing command function '{}' registered by module '{}'".format(name, self.commandFunctions[name]['module'])
+		del self.commandFunctions[name]
+		return True
+
+	def hasCommandFunction(self, name):
+		return name.lower() in self.commandFunctions
+
+	def runCommandFunction(self, name, defaultValue=None, *args, **kwargs):
+		name = name.lower()
+		if name not in self.commandFunctions:
+			print "[CH] ERROR: Unknown commandFunction '{}' called".format(name)
+			return defaultValue
+		return self.commandFunctions[name]['function'](*args, **kwargs)
 
 	def fireCommand(self, message):
 		"""
@@ -105,6 +144,15 @@ class CommandHandler:
 			self.commands[name].unload()
 			#And remove the reference to it
 			del self.commands[name]
+			#Check if any registered command functions belong to this module
+			functionsToRemove = []
+			for funcName in self.commandFunctions.keys():
+				if name == self.commandFunctions[funcName]['module']:
+					functionsToRemove.append(funcName)
+			if len(functionsToRemove) > 0:
+				print "[CH] Removing {} registered command functions".format(len(functionsToRemove))
+				for funcToRemove in functionsToRemove:
+					del self.commandFunctions[funcToRemove]
 			return True
 		except:
 			print "[CH] An error occurred trying to unload '{}'".format(name)
