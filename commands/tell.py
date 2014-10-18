@@ -49,7 +49,7 @@ class Command(CommandTemplate):
 			#If we haven't spammed the user enough, send them their private tells as well
 			if len(publicTells) < self.maxTellsAtATime:
 				for tell in self.retrieveTells(serverfolder, usernick, u"_private", self.maxTellsAtATime - len(publicTells)):
-					message.bot.sendMessage(message.source, self.formatTell(message.userNickname, tell), 'notice')
+					message.bot.sendMessage(message.userNickname, self.formatTell(message.userNickname, tell), 'notice')
 					sentTell = True
 			if sentTell:
 				if len(self.storedTells[serverfolder][usernick]) == 0:
