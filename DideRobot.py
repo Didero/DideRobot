@@ -30,10 +30,7 @@ class DideRobot(irc.IRCClient):
 		self.nickname = self.factory.settings.get("connection", "nickname")
 		self.realname = self.factory.settings.get("connection", "realname")
 		irc.IRCClient.connectionMade(self)
-		
 		self.factory.logger.log("Connection to server made")
-		#Let the factory know we've connected, needed because it's a reconnecting factory
-		self.factory.resetDelay()
 
 	def connectionLost(self, reason):
 		"""Called when a connection is lost."""
@@ -43,6 +40,8 @@ class DideRobot(irc.IRCClient):
 		"""Called when bot has successfully signed on to server."""
 		self.factory.logger.log("Signed on to server as {}".format(self.username))
 		self.connectedAt = time.time()
+		#Let the factory know we've connected, needed because it's a reconnecting factory
+		self.factory.resetDelay()
 		#Check if we have the nickname we should
 		if self.nickname != self.factory.settings.get("connection", "nickname"):
 			self.factory.logger.log("Nickname wasn't available, using nick '{0}'".format(self.nickname))
@@ -201,7 +200,7 @@ class DideRobot(irc.IRCClient):
 		usernick = user.split("!", 1)[0]
 
 		logsource = channel
-		if channel == self.nickname:
+		if channel == self.nickname or channel == '*':  #If a server wants to send a message to you before it knows your nick, it uses *
 			logsource = usernick
 		logtext = ""
 		if messageType == 'say':
@@ -245,7 +244,7 @@ class DideRobot(irc.IRCClient):
 
 	def sendNotice(self, target, msg):
 		self.sendMessage(target, msg, 'notice')
-			
+
 			
 class DideRobotFactory(protocol.ReconnectingClientFactory):
 	"""The factory creates the connection, that the bot itself handles and uses"""
