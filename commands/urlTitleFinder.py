@@ -98,13 +98,10 @@ class Command(CommandTemplate):
 									durationstring += u"{hour:02}:"
 								durationstring += u"{minute:02}:{second:02}"
 								durationstring = durationstring.format(**durationtimes)
-
 								#Check if there's a description
 								description = videoData['snippet']['description'].strip()
 								if description == u"":
 									description = u"<No description>"
-
-								#likePercentage = int(videoData['statistics']['likeCount']) / int(videoData['statistics']['dislikeCount'])
 
 								title = u"{title} [{duration}, {viewcount:,} views]: {description}".format(title=videoData['snippet']['title'].strip(), duration=durationstring, viewcount=int(videoData['statistics']['viewCount']), description=description)
 				elif 'imgur.com' in url:
@@ -175,7 +172,7 @@ class Command(CommandTemplate):
 								twitterdata = json.loads(twitterDataPage.text.encode('utf-8'))
 
 								title = u"{name} (@{screen_name}): {description} ({statuses_count:,} tweets posted, {followers_count:,} followers, following {friends_count:,})"
-								if 'verified' in twitterdata and twitterdata['verified'] == True:
+								if 'verified' in twitterdata and twitterdata['verified'] is True:
 									title += u". Verified account"
 								title = title.format(**twitterdata)
 				elif re.match('https?://.{2}(?:\.m)?\.wikipedia.org', url, re.IGNORECASE):
@@ -184,7 +181,7 @@ class Command(CommandTemplate):
 				#If nothing has been found so far, just display whatever is between the <title> tags
 				if title is None:
 					#Check here and not later because sites like Imgur can have .jpg URLs and we still want to check those
-					extensionsToIgnore = ['.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.zip', '.rar', '.7z', '.pdf']
+					extensionsToIgnore = ['.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.zip', '.rar', '.7z', '.pdf', '.swf']
 					for ext in extensionsToIgnore:
 						if url.endswith(ext):
 							return
