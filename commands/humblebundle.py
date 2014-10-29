@@ -47,9 +47,14 @@ class Command(CommandTemplate):
 		if not descriptionElement:
 			print "[Humble] No description element found!"
 		else:
-			titleElements = descriptionElement.find_all('em')
-			for titleElement in titleElements:
-				gamenames.append(titleElement.text)
+			for paragraph in descriptionElement.find_all('p'):
+				strongElement = paragraph.find('strong')
+				#If there is a strong element, and it's at the start of the paragraph, AND we've already found names, we're done
+				if strongElement and paragraph.text.startswith(strongElement.text) and gamenames != []:
+						break
+				#Otherwise, add all the titles listed to the collection
+				for titleElement in paragraph.find_all('em'):
+					gamenames.append(titleElement.text)
 
 		#Totals aren't shown on the site immediately, but are edited into the page with Javascript. Get info from there
 		totalMoney = -1.0
@@ -95,6 +100,6 @@ class Command(CommandTemplate):
 			if len(gamenames) > 0:
 				replytext += u" It contains {gamecount} titles: {gamelist}."
 			replytext = replytext.format(title=title, avgPrice=round(avgPrice, 2), totalMoney=round(totalMoney, 2),
-										 contributors=contributors, timeLeft=timeLeft, gamecount=len(gamenames), gamelist=u"; ".join(gamenames))
+										 contributors=contributors, timeLeft=timeLeft, gamecount=len(gamenames), gamelist=u" | ".join(gamenames))
 
 		message.bot.say(message.source, replytext)
