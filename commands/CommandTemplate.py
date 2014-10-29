@@ -46,7 +46,7 @@ class CommandTemplate(object):
 			return False
 		if message.messageType not in self.allowedMessageTypes:
 			return False
-		if message.trigger and message.trigger in self.triggers:
+		if message.trigger in self.triggers:
 			return True
 		return False
 	
