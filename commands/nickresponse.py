@@ -7,7 +7,7 @@ class Command(CommandTemplate):
 	"""A module that responds with basic info when just the bot's name is said"""
 	helptext = "SAY MY NAME- I mean, if you just say my name, I'll give you some basic info about myself"
 
-	def shouldExecute(self, message, commandExecutionClaimed):
+	def shouldExecute(self, message):
 		if message.messageType != 'say':
 			return False
 		botnick = message.bot.nickname.lower()

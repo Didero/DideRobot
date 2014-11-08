@@ -10,7 +10,6 @@ from IrcMessage import IrcMessage
 class Command(CommandTemplate):
 	triggers = ['tell']
 	helptext = "Stores messages you want to send to other users, and says them to that user when they speak. Add a tell in a PM to me, and I'll tell it privately. Usage: {commandPrefix}tell [username] [message]"
-	claimCommandExecution = False
 
 	tellsFileLocation = os.path.join(GlobalStore.scriptfolder, "data", "tells.json")
 	storedTells = {}
@@ -21,7 +20,7 @@ class Command(CommandTemplate):
 			with open(self.tellsFileLocation, 'r') as tellsfile:
 				self.storedTells = json.load(tellsfile)
 
-	def shouldExecute(self, message, commandExecutionClaimed):
+	def shouldExecute(self, message):
 		#Moved to the 'execute' function, since we have to check on every message if there's a tell for that person
 		return message.messageType in self.allowedMessageTypes
 

@@ -5,9 +5,8 @@ from IrcMessage import IrcMessage
 
 class CommandTemplate(object):
 	triggers = []
-	helptext = "This has not yet been filled in. Oops"
+	helptext = "This help text has not yet been filled in. Oops"
 	showInCommandList = True
-	claimCommandExecution = True  #If set to to 'True' it will stop other commands with it also set to True from running if this command is executed
 	stopAfterThisCommand = False  #Some modules might affect the command list, which leads to errors. If this is set to true and the command fires, no further commands are executed
 	adminOnly = False
 	scheduledFunctionTime = -1.0
@@ -37,23 +36,14 @@ class CommandTemplate(object):
 	def getHelp(self, message):
 		return self.helptext.format(commandPrefix=message.bot.factory.commandPrefix)
 		
-	def shouldExecute(self, message, commandExecutionClaimed):
-		"""
-		:type message: IrcMessage
-		"""
-		#If another command already claimed sole execution rights, and this one wants it too, don't run this command at all
-		if commandExecutionClaimed and self.claimCommandExecution:
-			return False
-		if message.messageType not in self.allowedMessageTypes:
-			return False
-		if message.trigger in self.triggers:
+	def shouldExecute(self, message):
+		#Check if we need to respond, ordered from cheapest to most expensive check
+		#  (the allowedMessageTypes list is usually short, most likely shorter than the triggers list)
+		if message.trigger and message.messageType in self.allowedMessageTypes and message.trigger in self.triggers:
 			return True
 		return False
-	
+
 	def execute(self, message):
-		"""
-		:type message: IrcMessage
-		"""
 		pass
 	
 	def executeScheduledFunction(self):

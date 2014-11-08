@@ -13,10 +13,9 @@ class Command(CommandTemplate):
 	triggers = ['http://', 'https://', 'www']
 	helptext = "Shows the title of the page somebody just posted a link to"
 	showInCommandList = False
-	claimCommandExecution = False
 	callInThread = True  #We can't know how slow sites are, so prevent the bot from locking up on slow sites
 
-	def shouldExecute(self, message, commandExecutionClaimed):
+	def shouldExecute(self, message):
 		for trigger in self.triggers:
 			if trigger in message.message:
 				return True
