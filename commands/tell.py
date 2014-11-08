@@ -58,7 +58,7 @@ class Command(CommandTemplate):
 				self.saveTellsToFile()
 
 		#Check if we need to add a new tell
-		if CommandTemplate.shouldExecute(self, message, False):
+		if message.trigger and message.trigger in self.triggers:
 			replytext = u""
 			if message.messagePartsLength == 0:
 				replytext = u"Add a username and a message as arguments, then we'll tell-I mean talk"
