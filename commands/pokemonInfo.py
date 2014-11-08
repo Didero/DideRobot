@@ -25,8 +25,6 @@ class Command(CommandTemplate):
 			elif not wolframReply[0]:
 				replytext = wolframReply[1]
 			else:
-				print "[pokemon] Data received:"
-				print wolframReply[1].encode('utf8')
 				pokemondata = {}
 				dataKeysToKeep = ['name', u'Pokédex number', 'type', 'generation', 'species', 'evolves from', 'evolves into', 'natural abilities',
 								  'hit points', 'attack', 'defense', 'special attack', 'special defense', 'speed']
@@ -38,8 +36,6 @@ class Command(CommandTemplate):
 				if len(pokemondata) == 0:
 					replytext = u"No data on that Pokemon was found, for some reason. Did you make a typo?"
 				else:
-					print "[pokemon] Collected data:"
-					print pokemondata
 					#Let's turn the collected data into something presentable!
 					replytext = u"{name} ({generation} nr {Pokédex number}) is a {species} of type '{type}'."
 					if 'evolves from' in pokemondata:
