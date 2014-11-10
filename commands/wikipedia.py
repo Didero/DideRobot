@@ -64,8 +64,8 @@ class Command(CommandTemplate):
 			articleContainer = articleContainer.find('div')  #For some reason it's nested in another div tag
 			replytext = articleContainer.find('p', recursive=False).text  #The article starts with a <p> tag in the root (ignore p-tags in tables)
 
-			#Check if we're on a disambiguation page
-			if replytext.endswith(u"may refer to:"):
+			#Check if we're on a disambiguation page or on an abbreviation page with multiple meanings
+			if replytext.endswith(u"may refer to:") or replytext.endswith(u"may stand for:"):
 				title = searchterm
 				if not title:
 					title = wikitext.find(id='section_0').text
