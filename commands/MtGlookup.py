@@ -348,12 +348,11 @@ class Command(CommandTemplate):
 				elif setCount <= maxSetsToDisplay:
 					replytext += u" [in sets {card[sets]}]"
 				else:
-					replytext += u" [in sets {shortSetList} and {setCount} more]".format(shortSetList=u"; ".join(sets[:maxSetsToDisplay]), setCount=setCount-maxSetsToDisplay)
-			else:
-				for illegalSet in ['Unglued', 'Unhinged', 'Happy Holidays']:
-					if illegalSet in sets:
-						replytext += u" [in illegal set '{illegalSet}'!]".format(illegalSet=illegalSet)
-						break
+					shortSetList = sorted(random.sample(sets, maxSetsToDisplay))
+					replytext += u" [in sets {shortSetList} and {setCount} more]".format(shortSetList=u"; ".join(shortSetList), setCount=setCount-maxSetsToDisplay)
+			#Cards in illegal sets only appear in that set, so there aren't multiple sets listed
+			elif setCount == 1 and sets[0] in ['Unglued', 'Unhinged', 'Happy Holidays']:
+				replytext += u" [in illegal set '{illegalSet}'!]".format(illegalSet=sets[0])
 		#FILL THAT SHIT IN
 		replytext = replytext.format(card=card)
 		return replytext
