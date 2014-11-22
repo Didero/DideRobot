@@ -42,8 +42,9 @@ class Command(CommandTemplate):
 						replytext += u" Evolves from {evolves from}."
 					if 'evolves into' in pokemondata:
 						replytext += u" Evolves into {evolves into}."
-					replytext += u" {hit points} HP, {attack} Atk, {defense} Def, "
-					replytext += u"{special attack} SAtk, {special defense} SDef, {speed} Spd."
+					replytext += u" {hit points} HP, {attack} Atk, {defense} Def, " \
+								 u"{special attack} SAtk, {special defense} SDef, {speed} Spd. " \
+								 u"More info: http://bulbapedia.bulbagarden.net/wiki/{name}"
 					replytext = replytext.format(**pokemondata)
 
 		message.bot.sendMessage(message.source, replytext)
