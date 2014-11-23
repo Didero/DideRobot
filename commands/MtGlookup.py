@@ -161,11 +161,11 @@ class Command(CommandTemplate):
 					searchDict.pop(wrongTerm)
 
 		print u"[MtG] Search Dict: ", searchDict
-				
+
 		#Turn the search strings into actual regexes
 		regexDict = {}
 		errors = []
-		for attrib, query in searchDict.iteritems():													
+		for attrib, query in searchDict.iteritems():
 			regex = None
 			try:
 				regex = re.compile(query, re.IGNORECASE | re.UNICODE)
@@ -195,7 +195,7 @@ class Command(CommandTemplate):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
 			cardstore = json.load(jsonfile)
 		print "[MTG] Opened file at {} seconds in".format(time.time() - starttime)
-		
+
 		#First do an initial name search, to limit the amount of cards we have to search through
 		cardNamesToSearchThrough = []
 		if 'name' in searchDict:
@@ -341,8 +341,8 @@ class Command(CommandTemplate):
 		if 'sets' in card:
 			sets = card['sets'].split(u'; ')
 			setCount = len(sets)
-			maxSetsToDisplay = 4
 			if addExtendedInfo:
+				maxSetsToDisplay = 4
 				if setCount == 1:
 					replytext += u" [in set {card[sets]}]"
 				elif setCount <= maxSetsToDisplay:
@@ -361,11 +361,13 @@ class Command(CommandTemplate):
 		starttime = time.time()
 		replytext = u""
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
-		updateNeeded = False
-		
-		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion-full.json')
-		currentVersion = "0.00"
-		latestVersion = ""			
+
+		latestFormatVersion = "2.12"
+
+		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
+		storedVersion = "0.00"
+		storedFormatVersion = "0.00"
+		latestVersion = ""
 		#Load in the currently stored version number
 		if not os.path.exists(versionFilename):
 			print "[MtG] No old card database version file found"
@@ -373,13 +375,16 @@ class Command(CommandTemplate):
 			with open(versionFilename) as oldversionfile:
 				oldversiondata = json.load(oldversionfile)
 				if 'version' in oldversiondata:
-					currentVersion = oldversiondata['version']
+					storedVersion = oldversiondata['version']
 				else:
 					print "[MtG] Unexpected content of stored version file:"
 					for key, value in oldversiondata.iteritems():
 						print "  {}: {}".format(key, value)
 						return u"Something went wrong when reading the stored version number."
-		#print "[MtG] Local version: '{}'".format(currentVersion)
+				if '_formatVersion' in oldversiondata:
+					storedFormatVersion = oldversiondata['_formatVersion']
+				else:
+					print "[MTG] No stored format version found"
 
 		#Download the latest version file
 		url = "http://mtgjson.com/json/version-full.json"
@@ -396,19 +401,13 @@ class Command(CommandTemplate):
 				for key, value in versiondata.iteritems():
 					print " {}: {}".format(key, value)
 					return u"Something went wrong when trying to read the downloaded version file"
-		#print "[MtG] Latest version: '{}'".format(latestVersion)
 		if latestVersion == "":
 			return u"Something went wrong, the latest MtG database version number could not be retrieved."
 
-		if forceUpdate or latestVersion != currentVersion or not os.path.exists(cardsJsonFilename):
-			updateNeeded = True
-
 		print "[MTG] Done version-checking at {} seconds in".format(time.time() - starttime)
 
-		if not updateNeeded:
-			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
-			os.remove(newversionfilename)
-		else:
+		#Now let's check if we need to update the cards
+		if forceUpdate or latestVersion != storedVersion or latestFormatVersion != storedFormatVersion or not os.path.exists(cardsJsonFilename):
 			self.areCardfilesInUse = True
 			print "[MtG] Updating card database!"
 			url = "http://mtgjson.com/json/AllSets.json.zip"  #Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
@@ -534,12 +533,16 @@ class Command(CommandTemplate):
 			os.remove(newcardfilename)
 
 			#Replace the old version file with the new one
-			if os.path.exists(versionFilename):
-				os.remove(versionFilename)
-			os.rename(newversionfilename, versionFilename)
+			versiondata['_formatVersion'] = latestFormatVersion
+			with open(versionFilename, 'w') as versionFile:
+				versionFile.write(json.dumps(versiondata))
 
-			replytext = u"MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/#changeLog).".format(currentVersion, latestVersion)
+			replytext = u"MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/#changeLog).".format(storedVersion, latestVersion)
+		#No update was necessary
+		else:
+			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
 
+		os.remove(newversionfilename)
 		urllib.urlcleanup()
 		self.areCardfilesInUse = False
 		print "[MtG] updating database took {} seconds".format(time.time() - starttime)
