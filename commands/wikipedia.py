@@ -62,7 +62,12 @@ class Command(CommandTemplate):
 		else:
 			articleContainer = wikitext.find(id="content")  #The actual article is in a div with id 'content'
 			articleContainer = articleContainer.find('div')  #For some reason it's nested in another div tag
-			replytext = articleContainer.find('p', recursive=False).text  #The article starts with a <p> tag in the root (ignore p-tags in tables)
+			paragraphs = articleContainer.find_all('p', recursive=False)  #The article starts with a <p> tag in the root (ignore p-tags in tables)
+			while len(paragraphs) > 0 and paragraphs[0].find(id='coordinates'):
+				paragraphs.pop(0)
+			if len(paragraphs) == 0:
+				return u"Sorry, that article doesn't appear to contain any text"
+			replytext = paragraphs[0].text
 
 			#Check if we're on a disambiguation page or on an abbreviation page with multiple meanings
 			if replytext.endswith(u"may refer to:") or replytext.endswith(u"may stand for:"):
