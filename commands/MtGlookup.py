@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import gc, json, os, random, re, time, urllib, zipfile
+import json, os, random, re, time, urllib, zipfile
 
 import requests
 from bs4 import BeautifulSoup
@@ -29,8 +29,8 @@ class Command(CommandTemplate):
 		"""
 		starttime = time.time()
 		replytext = u""
-		maxCardsToListInChannel = 10
-		maxCardsToListInPm = 20
+		maxCardsToList = 20 if message.isPrivateMessage else 10
+		addExtendedInfo = message.trigger == 'mtgf'
 
 		searchType = u""
 		if message.messagePartsLength > 0:
@@ -88,7 +88,7 @@ class Command(CommandTemplate):
 					keyword = possibleDefinitions[0]
 					replytext = u"{}: {}.".format(keyword, definitions[keyword]['short'])
 					currentReplyLength = len(replytext)
-					if message.trigger == 'mtgf' and 'extra' in definitions[keyword]:
+					if addExtendedInfo and 'extra' in definitions[keyword]:
 						replytext += u" " + definitions[keyword]['extra']
 						#MORE INFO
 						maxLength = 300
@@ -126,7 +126,7 @@ class Command(CommandTemplate):
 
 		#If we reached here, we're gonna search through the card store
 		searchDict = {}
-		if searchType == 'search' or (searchType == 'random' and message.messagePartsLength > 1) or (searchType == 'randomcommander' and message.messagePartsLength > 1):
+		if searchType == 'search' or (searchType in ['random', 'randomcommander'] and message.messagePartsLength > 1):
 			#Advanced search!
 			if message.messagePartsLength <= 1:
 				message.bot.say(message.source, u"Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. Look on www.mtgjson.com for available fields")
@@ -137,11 +137,9 @@ class Command(CommandTemplate):
 			if len(searchDict) == 0:
 				message.bot.say(message.source, u"That is not a valid search query. It should be entered like JSON, so 'key: value, key2: value2,...'")
 				return
-		#If the only parameter is 'random', just get all cards
-		elif searchType == 'random' and message.messagePartsLength == 1:
-			searchDict['name'] = u'.*'
-		#No fancy search string, just search for a matching name
-		elif searchType != 'randomcommander':
+		#If the searchtype is just 'random', don't set a 'name' field so we don't go through all the cards first
+		#  Otherwise, set the whole message as the 'name' search, since that's the default search
+		elif not searchType.startswith('random'):
 			searchDict['name'] = message.message.lower()
 
 		#Commander search. Regardless of everything else, it has to be a legendary creature
@@ -149,18 +147,16 @@ class Command(CommandTemplate):
 			if 'type' not in searchDict:
 				searchDict['type'] = u""
 			#Don't just search for 'legendary creature.*', because there are legendary artifact creatures too
-			searchDict['type'] = u'legendary.*creature.*' + searchDict['type']
+			searchDict['type'] = u'legendary.+creature.*' + searchDict['type']
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
-		searchTermsToCorrect = {'sets': ['set'], 'colors': ['color', 'colour', 'colours'], 'type': ['types', 'supertypes', 'subtypes'], 'flavor': ['flavour']}
+		searchTermsToCorrect = {'set': ['sets'], 'colors': ['color', 'colour', 'colours'], 'type': ['types', 'supertypes', 'subtypes'], 'flavor': ['flavour']}
 		for correctTerm, listOfWrongterms in searchTermsToCorrect.iteritems():
 			for wrongTerm in listOfWrongterms:
 				if wrongTerm in searchDict:
 					if correctTerm not in searchDict:
 						searchDict[correctTerm] = searchDict[wrongTerm]
 					searchDict.pop(wrongTerm)
-
-		print u"[MtG] Search Dict: ", searchDict
 
 		#Turn the search strings into actual regexes
 		regexDict = {}
@@ -184,124 +180,117 @@ class Command(CommandTemplate):
 				replytext = u"An error occurred while trying to parse the query for the '{}' field. Please check if it is a valid regular expression".format(errors[0])
 			#Multiple errors, list them all
 			else:
-				replytext = u"Errors occurred while parsing attributes: {}. Please check your regex for errors".format(u", ".join(errors))
-			print "[MtG] " + replytext
+				replytext = u"Errors occurred while parsing attributes: {}. Please check your search query for errors".format(u", ".join(errors))
+			print "[MtG] Regex errors: {}".format(" | ".join(errors))
 			message.bot.say(message.source, replytext)
 			return
-
-		print "[MTG] Parsed search terms at {} seconds in".format(time.time() - starttime)
 
 		#All entered data is valid, look through the stored cards
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
 			cardstore = json.load(jsonfile)
-		print "[MTG] Opened file at {} seconds in".format(time.time() - starttime)
 
-		#First do an initial name search, to limit the amount of cards we have to search through
-		cardNamesToSearchThrough = []
-		if 'name' in searchDict:
+		#First remove the cards with a non-matching name from the cardstore
+		if 'name' in regexDict:
 			for cardname in cardstore.keys():
-				if regexDict['name'].search(cardname):
-					cardNamesToSearchThrough.append(cardname)
-			#Remove the 'name' element from the regex dict to save on search time later
-			regexDict.pop('name')
-		#No name specified, search through all the cards
-		else:
-			cardNamesToSearchThrough = cardstore.keys()
-		print "[MTG] Determined that we have to search through {} cards at {} seconds in".format(len(cardNamesToSearchThrough), time.time() - starttime)
+				if not regexDict['name'].search(cardname):
+					del cardstore[cardname]
+			del regexDict['name']
 
-		regexAttribCount = len(regexDict)
-		matchingCards = {}
-		#If we only had to check for a name, copy the cards directly into the results dict
-		if regexAttribCount == 0:
-			for i in xrange(0, len(cardNamesToSearchThrough)):
-				cardname = cardNamesToSearchThrough.pop(0)
-				matchingCards[cardname] = cardstore[cardname]
-		#If there's more attributes we need to check, go through every card
-		else:
-			for i in xrange(0, len(cardNamesToSearchThrough)):
-				cardname = cardNamesToSearchThrough.pop(0)
-				for card in cardstore[cardname]:
-					matchingAttribsFound = 0
-					for attrib, regex in regexDict.iteritems():
-						if attrib in card and regex.search(card[attrib]):
-							matchingAttribsFound += 1
-					#Only store the card if all provided attributes match
-					if matchingAttribsFound == regexAttribCount:
-						if cardname not in matchingCards:
-							matchingCards[cardname] = [card]
-						else:
-							matchingCards[cardname].append(card)
+		#Get the 'setname' search separately, so we can iterate over the rest later
+		setRegex = regexDict.pop('set', None)
 
-		print "[MTG] Searched through cards at {} seconds in".format(time.time() - starttime)
+		setKeys = ['flavor', 'rarity']
+		for cardname in cardstore.keys():
+			carddata = cardstore[cardname]
 
-		numberOfCardsFound = len(matchingCards)
-		#If the user wants a random card, pick one from the matches
-		if numberOfCardsFound > 0 and searchType in ['random', 'randomcommander']:
-			#Pick a random name
-			randomCardname = random.choice(matchingCards.keys())
-			#Since there is the possibility there's multiple cards with the same name, pick a random card with the chosen name
-			matchingCards = {randomCardname: [random.choice(matchingCards[randomCardname])]}
+			#First check if we need to see if the sets match
+			if setRegex:
+				setMatchFound = False
+				for setname in carddata[1].keys():
+					if setRegex.search(setname):
+						setMatchFound = True
+						carddata[1]['_match'] = setname
+						break
+				if not setMatchFound:
+					del cardstore[cardname]
+					continue
+
+			#Then check if the rest of the attributes match
+			for attrib in regexDict:
+				#Some data is stored in the card data, some in the set data, because it differs per set (rarity e.d.)
+				if attrib in setKeys:
+					matchesFound = []
+					for setname, setdata in carddata[1].iteritems():
+						if attrib in setdata and regexDict[attrib].search(setdata[attrib]):
+							matchesFound.append(setname)
+					#No matches found, throw out the card and move on
+					if len(matchesFound) == 0:
+						del cardstore[cardname]
+						break
+					#Store the fact that we found a match in a particular set, for future lookup
+					else:
+						carddata[1]['_match'] = random.choice(matchesFound)
+				#Most data is stored as general card data
+				else:
+					if attrib not in carddata[0] or not regexDict[attrib].search(carddata[0][attrib]):
+						#If the wanted attribute is either not in the card, or it doesn't match, throw it out
+						del cardstore[cardname]
+						#No need to keep looking either
+						break
+
+		numberOfCardsFound = len(cardstore)
+		#Pick a random card if needed and possible
+		if searchType.startswith('random') and numberOfCardsFound > 0:
+			randomCardname = random.choice(cardstore.keys())
+			cardstore = {randomCardname: cardstore[randomCardname]}
 			numberOfCardsFound = 1
-			print "[MTG] Picked a random card at {} seconds in".format(time.time() - starttime)
 
-		#Determine the proper response
 		if numberOfCardsFound == 0:
 			replytext += u"Sorry, no card matching your query was found"
 		elif numberOfCardsFound == 1:
-			cardsFound = matchingCards[matchingCards.keys()[0]]
-			if len(cardsFound) == 1:
-				replytext += self.getFormattedCardInfo(cardsFound[0], message.trigger=='mtgf')
-			else:
-				replytext += u"Multiple cards with the same name were found: "
-				for cardFound in cardsFound:
-					setlist = u"'{}'".format(cardFound['sets'].split(u'; ',1)[0])
-					if cardFound['sets'].count(u';') > 0:
-						setlist += u" (and more)"
-					replytext += u"{} [set {}]; ".format(cardFound['name'], setlist)
-				replytext = replytext[:-2]
+			setname = cardstore[cardstore.keys()[0]][1].pop('_match', None)
+			replytext += self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedInfo, setname)
 		else:
-			#If the entered name is literally in the results, show the full info on that, after the normal list of results
-			nameMatchedCard = None
-			if 'name' in searchDict and searchDict['name'] in matchingCards and len(matchingCards[searchDict['name']]) == 1:
-				nameMatchedCard = matchingCards.pop(searchDict['name'])[0]
-				replytext = self.getFormattedCardInfo(nameMatchedCard, message.trigger=='mtgf')
+			nameMatchedCardFound = False
+			#If one of the cards we found is the literal name in the search, single that one out
+			if 'name' in searchDict and searchDict['name'] in cardstore:
+				#setname = None if '_match' not in cardstore[searchDict['name']][1] else cardstore[searchDict['name']][1]['_match']
+				setname = cardstore[searchDict['name']][1].pop('_match', None)
+				replytext += self.getFormattedCardInfo(cardstore[searchDict['name']], False, setname)
+				del cardstore[searchDict['name']]
 				numberOfCardsFound -= 1
-				print u"[MTG] Literal match found. Searched name: '{}', found card name: '{}'".format(searchDict['name'], nameMatchedCard['name'])
+				nameMatchedCardFound = True
 
-			cardlimit = maxCardsToListInPm if message.isPrivateMessage else maxCardsToListInChannel
-			cardnamelist = []
-			#If there's only a few cards found, show them sensibly sorted alphabetically
-			if numberOfCardsFound <= cardlimit:
-				cardnamelist = sorted(matchingCards.keys())
-			#If there are a lot of cards, have some fun and pick a few random ones, also sorted
+			#Pick some cards to show
+			cardnames = []
+			if numberOfCardsFound <= maxCardsToList:
+				cardnames = sorted(cardstore.keys())
 			else:
-				cardnamelist = sorted(random.sample(matchingCards.keys(), cardlimit))
+				cardnames = sorted(random.sample(cardstore.keys(), maxCardsToList))
+			cardnameText = u""
+			for cardname in cardnames:
+				cardnameText += cardstore[cardname][0]['name'] + u"; "
+			cardnameText = cardnameText[:-2]
 
-			#Replace each lower-cased card name with the proper stored one,
-			#  by taking the first name and putting the proper name at the end, until all cardnames are fixed
-			for i in xrange(0, len(cardnamelist)):
-				cardname = cardnamelist.pop(0)
-				cardnamelist.append(cardstore[cardname][0]['name'])
-			cardnamelist = u"; ".join(cardnamelist)
-			if nameMatchedCard:
-				replytext += u"\n{:,} more matching cards found: {}".format(numberOfCardsFound, cardnamelist)
+			if nameMatchedCardFound:
+				replytext += u"\n {:,} more matches found: ".format(numberOfCardsFound)
 			else:
-				replytext = u"Search returned {:,} cards: {}".format(numberOfCardsFound, cardnamelist)
-			if numberOfCardsFound > cardlimit:
-				replytext += u"; and {:,} more".format(numberOfCardsFound - cardlimit)
+				replytext += u"Your search returned {:,} cards: ".format(numberOfCardsFound)
+			replytext += cardnameText
+			if numberOfCardsFound > maxCardsToList:
+				replytext += u" and {:,} more".format(numberOfCardsFound - maxCardsToList)
 
 		re.purge()  #Clear the stored regexes, since we don't need them anymore
-		gc.collect()  #Make sure memory usage doesn't slowly creep up from loading in the data file (hopefully)
 		print "[MtG] Execution time: {} seconds".format(time.time() - starttime)
 		message.bot.say(message.source, replytext)
 
 	@staticmethod
-	def getFormattedCardInfo(card, addExtendedInfo=False):
-		replytext = u"{card[name]}"
+	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None):
+		card = carddata[0]
+		sets = carddata[1]
+		replytext = card['name']
 		if 'type' in card and len(card['type']) > 0:
 			replytext += u" [{card[type]}]"
-		if addExtendedInfo and 'rarity' in card:
-			replytext += u" [{card[rarity]}]"
 		if 'manacost' in card:
 			replytext += u" ({card[manacost]}"
 			#Only add the cumulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total')
@@ -334,25 +323,39 @@ class Command(CommandTemplate):
 				replytext += u", also contains {names}".format(names=names)
 			replytext += u")"
 		replytext += u"."
-		if 'text' in card and len(card['text']) > 0:
+		#All cards have a 'text' key set, it's just empty on ones that didn't have one
+		if len(card['text']) > 0:
 			replytext += u" {card[text]}"
-		if addExtendedInfo and 'flavor' in card:
-			replytext += u" Flavor: {card[flavor]}"
-		if 'sets' in card:
-			sets = card['sets'].split(u'; ')
-			setCount = len(sets)
-			if addExtendedInfo:
-				maxSetsToDisplay = 4
-				if setCount == 1:
-					replytext += u" [in set {card[sets]}]"
-				elif setCount <= maxSetsToDisplay:
-					replytext += u" [in sets {card[sets]}]"
-				else:
-					shortSetList = sorted(random.sample(sets, maxSetsToDisplay))
-					replytext += u" [in sets {shortSetList} and {setCount} more]".format(shortSetList=u"; ".join(shortSetList), setCount=setCount-maxSetsToDisplay)
-			#Cards in illegal sets only appear in that set, so there aren't multiple sets listed
-			elif setCount == 1 and sets[0] in ['Unglued', 'Unhinged', 'Happy Holidays']:
-				replytext += u" [in illegal set '{illegalSet}'!]".format(illegalSet=sets[0])
+		if addExtendedInfo:
+			if not setname or setname not in sets:
+				setname = random.choice(sets.keys())
+			if 'flavor' in sets[setname]:
+				replytext += u" Flavor: " + sets[setname]['flavor']
+			maxSetsToDisplay = 4
+			setcount = len(sets)
+			if setcount == 1:
+				replytext += u" [in set {}]".format(sets.keys()[0])
+			elif setcount <= maxSetsToDisplay:
+				replytext += u" [in sets {}]".format(u"; ".join(sorted(sets.keys())))
+			else:
+				shortSetList = random.sample(sets.keys(), maxSetsToDisplay)
+				#Make sure the selected set appears in the list
+				if setname not in shortSetList:
+					#Remove a random entry
+					shortSetList.pop(random.randint(1, maxSetsToDisplay) - 1)
+					#And put our set name in its place
+					shortSetList.append(setname)
+				shortSetList.sort()
+				shortSetListDisplay = u""
+				for setname in shortSetList:
+					#Make the display 'setname [first letter of rarity]', so 'Magic 2015 [R]'
+					shortSetListDisplay += u"{} [{}]; ".format(setname, sets[setname]['rarity'][0])
+				shortSetListDisplay = shortSetListDisplay[:-2]
+				replytext += u" [in sets {shortSetList} and {setCountLeft} more]".format(shortSetList=shortSetListDisplay, setCountLeft=setcount-maxSetsToDisplay)
+		#Cards in illegal sets only appear in that set, so there aren't multiple sets listed
+		elif sets.keys()[0] in ['Unglued', 'Unhinged', 'Happy Holidays']:
+			replytext += u" [in illegal set {}!]".format(sets.keys()[0])
+
 		#FILL THAT SHIT IN
 		replytext = replytext.format(card=card)
 		return replytext
@@ -362,7 +365,7 @@ class Command(CommandTemplate):
 		replytext = u""
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 
-		latestFormatVersion = "2.12"
+		latestFormatVersion = "3.0"
 
 		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
 		storedVersion = "0.00"
@@ -370,7 +373,7 @@ class Command(CommandTemplate):
 		latestVersion = ""
 		#Load in the currently stored version number
 		if not os.path.exists(versionFilename):
-			print "[MtG] No old card database version file found"
+			print "[MtG] No old card database version file found!"
 		else:
 			with open(versionFilename) as oldversionfile:
 				oldversiondata = json.load(oldversionfile)
@@ -414,8 +417,6 @@ class Command(CommandTemplate):
 			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 			urllib.urlretrieve(url, cardzipFilename)
 
-			print "[MTG] Done with downloading card database at {} seconds in".format(time.time() - starttime)
-
 			#Since it's a zip, extract it
 			zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
 			newcardfilename = os.path.join(GlobalStore.scriptfolder, 'data', zipWithJson.namelist()[0])
@@ -426,14 +427,16 @@ class Command(CommandTemplate):
 			#We don't need the zip anymore
 			os.remove(cardzipFilename)
 
-			print "[MTG] Done unzipping downloaded card database at {} seconds in".format(time.time() - starttime)
-
 			#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
 			downloadedCardstore = {}
 			with open(newcardfilename, 'r') as newcardfile:
 				downloadedCardstore = json.load(newcardfile)
-			print "[MTG] Done loading the new cards into memory at {} seconds in".format(time.time() - starttime)
 			newcardstore = {}
+			keysToChange = {'keysToRemove': ['imageName', 'variations', 'types', 'supertypes', 'subtypes', 'number',
+										'variations', 'watermark', 'border', 'timeshifted', 'reserved', 'releaseDate'],
+							'numberKeysToMakeString': ['cmc', 'loyalty', 'multiverseid', 'hand', 'life'],
+							'listKeysToMakeString': ['names', 'colors'],
+							'keysToFormatNicer': ['manacost', 'text', 'flavor']}
 			#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
 			for setcode in downloadedCardstore.keys():
 				setData = downloadedCardstore.pop(setcode)
@@ -441,25 +444,11 @@ class Command(CommandTemplate):
 				for i in xrange(0, len(setData['cards'])):
 					card = setData['cards'].pop(0)
 					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
-					addCard = True
-					if cardname not in newcardstore:
-						newcardstore[cardname] = []
-					else:
-						for sameNamedCard in newcardstore[cardname]:
-							#There are three possibilities: Both text, if the same they're duplicates; Neither text, they're duplicates; One text other not, not duplicates
-							#  Since we later ensure that all cards have a 'text' field, instead of checking for 'text in sameNameCard', we check whether 'text' is an empty string
-							if ('text' not in card and sameNamedCard['text'] == u"") or (sameNamedCard['text'] != u"" and 'text' in card and sameNamedCard['text'] == card['text']):
-								#Since it's a duplicate, update the original card with info on the set it's also in, if it's not in there already
-								if setData['name'] not in sameNamedCard['sets'].split(u'; '):
-									sameNamedCard['sets'] += u"; {}".format(setData['name'])
-								addCard = False
-								break
 
-					if addCard:
+					#If the card isn't in the store yet, parse its data
+					if cardname not in newcardstore:
 						#Remove some other useless data to save some space, memory and time
-						keysToRemove = ['imageName', 'variations', 'types', 'supertypes', 'subtypes',
-										'foreignNames', 'originalText', 'originalType']  #Last three are from the database with extras
-						for keyToRemove in keysToRemove:
+						for keyToRemove in keysToChange['keysToRemove']:
 							if keyToRemove in card:
 								del card[keyToRemove]
 
@@ -468,66 +457,50 @@ class Command(CommandTemplate):
 							card['colors'] = sorted(card['colors'])
 
 						#Make sure all stored values are strings, that makes searching later much easier
-						for attrib in card:
-							#Re.search stumbles over numbers, convert them to strings first
-							if isinstance(card[attrib], (int, long, float)):
+						for attrib in keysToChange['numberKeysToMakeString']:
+							if attrib in card:
 								card[attrib] = unicode(card[attrib])
-							#Regexes can't search lists either, make them strings too
-							elif isinstance(card[attrib], list):
-								oldlist = card[attrib]
-								newlist = []
-								for entry in oldlist:
-									#There's lists of strings and lists of ints, handle both
-									if isinstance(entry, (int, long, float)):
-										newlist.append(unicode(entry))
-									#There's even lists of dictionaries
-									elif isinstance(entry, dict):
-										newlist.append(SharedFunctions.dictToString(entry))
-									else:
-										newlist.append(entry)
-								card[attrib] = u"; ".join(newlist)
-							#If lists are hard for the re module, don't even mention dictionaries. A bit harder to convert, but not impossible
-							elif isinstance(card[attrib], dict):
-								card[attrib] = SharedFunctions.dictToString(card[attrib])
+						for attrib in keysToChange['listKeysToMakeString']:
+							if attrib in card:
+								card[attrib] = u"; ".join(card[attrib])
 
 						#Make 'manaCost' lowercase, since we make the searchstring lowercase too, and we don't want to miss this
 						if 'manaCost' in card:
 							card['manacost'] = card['manaCost']
 							del card['manaCost']
 
+						for keyToFormat in keysToChange['keysToFormatNicer']:
+							if keyToFormat in card:
+								newText = card[keyToFormat]
+								#Remove brackets around mana cost
+								if '{' in newText:
+									newText = newText.replace('}{', ' ').replace('{', '').replace('}', '')
+								#Replace newlines with spaces. If the sentence adds in a letter, add a period
+								newText = re.sub('(?<=\w)\n', '. ', newText).replace('\n', ' ')
+								#Prevent double spaces
+								newText = newText.replace(u'  ', u' ').strip()
+								card[keyToFormat] = newText
+
 						#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
 						if 'text' not in card:
 							card['text'] = u""
 
-						card['sets'] = setData['name']
-						#Finally, put the card in the new storage
-						newcardstore[cardname].append(card)
+						#Add the card as a new entry, as a tuple with the card data first and set data second
+						newcardstore[cardname] = (card, {})
 
-			#Clean up the text formatting, so we don't have to do that every time
-			for cardlist in newcardstore.values():
-				for card in cardlist:
-					keysToFormatNicer = ['manacost', 'text', 'flavor']
-					for keyToFormat in keysToFormatNicer:
-						if keyToFormat in card:
-							newText = card[keyToFormat]
-							#Remove brackets around mana cost
-							if '{' in newText:
-								newText = newText.replace('}{', ' ').replace('{', '').replace('}', '')
-							#Replace newlines with spaces. If the sentence adds in a letter, add a period
-							newText = re.sub('(?<=\w)\n', '. ', newText).replace('\n', ' ')
-							#Prevent double spaces
-							newText = newText.replace(u'  ', u' ').strip()
-							card[keyToFormat] = newText
+					#New and already listed cards need their set info stored
+					cardSetInfo = {'rarity': card.pop('rarity')}
+					if 'flavor' in card:
+						cardSetInfo['flavor'] = card.pop('flavor')
+					newcardstore[cardname][1][setData['name']] = cardSetInfo
 
 			#First delete the original file
 			if os.path.exists(cardsJsonFilename):
 				os.remove(cardsJsonFilename)
 			#Save the new database to disk
-			print "[MTG] Done parsing cards at {} seconds in, saving file to disk".format(time.time() - starttime)
 			with open(cardsJsonFilename, 'w') as cardfile:
 				#json.dump(cards, cardfile) #This is dozens of seconds slower than below
 				cardfile.write(json.dumps(newcardstore))
-			print "[MTG] Done saving file to disk at {} seconds in".format(time.time() - starttime)
 
 			#Remove the file downloaded from MTGjson.com
 			os.remove(newcardfilename)
