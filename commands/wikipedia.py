@@ -56,7 +56,7 @@ class Command(CommandTemplate):
 
 					resultinfo = wikitext.find(class_="results-info")
 					if resultinfo:
-						resultCount = int(resultinfo.find_all('b')[1].text.replace(',', ''))
+						resultCount = int(resultinfo.find_all('strong')[1].text.replace(',', ''))
 						resultCount -= len(searchresults)
 						replytext += u" ({:,} more possible results)".format(resultCount)
 		else:
