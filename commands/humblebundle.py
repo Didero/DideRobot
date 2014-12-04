@@ -43,7 +43,7 @@ class Command(CommandTemplate):
 
 		#The names of the games (or books) are listed in italics in the description section, get them from there
 		gamenames = []
-		descriptionElement = page.find(class_='bundle-info-text')
+		descriptionElement = page.find(class_='copy-text')
 		if not descriptionElement:
 			print "[Humble] No description element found!"
 		else:
