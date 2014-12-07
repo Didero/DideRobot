@@ -135,8 +135,8 @@ class Command(CommandTemplate):
 			#Turn the search string (not the argument) into a usable dictionary, case-insensitive,
 			searchDict = SharedFunctions.stringToDict(u" ".join(message.messageParts[1:]).lower(), True)
 			if len(searchDict) == 0:
-				message.bot.say(message.source, u"That is not a valid search query. It should be entered like JSON, so 'key: value, key2: value2,...'. "
-												u"For a list of valid keys, check http://mtgjson.com/#cards (though not all keys may be available)")
+				message.bot.say(message.source, u"That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
+												u"For a list of valid keys, see http://mtgjson.com/#cards (though not all keys may be available)")
 				return
 		#If the searchtype is just 'random', don't set a 'name' field so we don't go through all the cards first
 		#  Otherwise, set the whole message as the 'name' search, since that's the default search
