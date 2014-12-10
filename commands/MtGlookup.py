@@ -353,9 +353,12 @@ class Command(CommandTemplate):
 					shortSetListDisplay += u"{} [{}]; ".format(setname, sets[setname]['rarity'][0])
 				shortSetListDisplay = shortSetListDisplay[:-2]
 				replytext += u" [in sets {shortSetList} and {setCountLeft} more]".format(shortSetList=shortSetListDisplay, setCountLeft=setcount-maxSetsToDisplay)
-		#Cards in illegal sets only appear in that set, so there aren't multiple sets listed
-		elif sets.keys()[0] in ['Unglued', 'Unhinged', 'Happy Holidays']:
-			replytext += u" [in illegal set {}!]".format(sets.keys()[0])
+		#No extra set info, but still add a warning if it's in a non-legal set
+		else:
+			for illegalSet in ['Happy Holidays', 'Unglued', 'Unhinged']:
+				if illegalSet in sets:
+					replytext += u" [in illegal set {}!]".format(illegalSet)
+					break
 
 		#FILL THAT SHIT IN
 		replytext = replytext.format(card=card)
