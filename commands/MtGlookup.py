@@ -126,7 +126,8 @@ class Command(CommandTemplate):
 
 		#If we reached here, we're gonna search through the card store
 		searchDict = {}
-		if searchType == 'search' or (searchType in ['random', 'randomcommander'] and message.messagePartsLength > 1):
+		# If there is an actual search (with colon key-value separator OR a random card is requested with specific search requirements
+		if (searchType == 'search' and ':' in message.message) or (searchType in ['random', 'randomcommander'] and message.messagePartsLength > 1):
 			#Advanced search!
 			if message.messagePartsLength <= 1:
 				message.bot.say(message.source, u"Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. Look on www.mtgjson.com for available fields")
