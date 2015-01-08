@@ -129,6 +129,8 @@ class Command(CommandTemplate):
 						replacement = arguments[2]
 					else:
 						replacement = arguments[3]
+				elif fieldKey == u"_" or fieldKey == u"_dummy":
+					replacement = u""
 				else:
 					return u"Error: Unknown command '{}' found!".format(fieldKey)
 			#No command, so check if it's a valid key
