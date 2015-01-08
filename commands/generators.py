@@ -49,7 +49,8 @@ class Command(CommandTemplate):
 	def getRandomLine(self, filelocation, filename):
 		return SharedFunctions.getRandomLineFromFile(os.path.join(filelocation, filename))
 
-	def numberToText(self, number):
+	@staticmethod
+	def numberToText(number):
 		singleNumberNames = {0: u"zero", 1: u"one", 2: u"two", 3: u"three", 4: u"four", 5: u"five", 6: u"six", 7: u"seven",
 							 8: u"eight", 9: u"nine", 10: u"ten", 11: u"eleven", 12: u"twelve", 13: u"thirteen",
 							 14: u"fourteen", 15: u"fifteen", 16: u"sixteen", 17: u"seventeen", 18: u"eighteen", 19: u"nineteen"}
@@ -59,7 +60,8 @@ class Command(CommandTemplate):
 			#TODO: Handle numbers larger than 19 by combining words, like "twenty" and "two" for 22
 			return unicode(number)
 
-	def getBasicOrSpecialLetter(self, vowelOrConsonant, basicLetterChance):
+	@staticmethod
+	def getBasicOrSpecialLetter(vowelOrConsonant, basicLetterChance):
 		basicLetters = []
 		specialLetters = []
 
@@ -90,11 +92,11 @@ class Command(CommandTemplate):
 		optionSeparator = u"|"
 		tagFinderPattern = re.compile(r"<(.+?)>", re.UNICODE)
 		while True:
-			replacement = u""
 			tagmatch = tagFinderPattern.search(sentence)
 			if not tagmatch:
 				break
 			field = tagmatch.group(1)
+			replacement = u""
 
 			#Special commands start with an underscore
 			arguments = field.split(optionSeparator)
@@ -158,14 +160,26 @@ class Command(CommandTemplate):
 			elif 'camelcase' in arguments or 'titlecase' in arguments:
 				replacement = replacement.title()
 			elif 'firstletteruppercase' in arguments:
-				replacement = replacement[0].upper() + replacement[1:]
+				if len(replacement) > 1:
+					replacement = replacement[0].upper() + replacement[1:]
+				else:
+					replacement = replacement.upper()
+			for argument in arguments:
+				#<addvar:key=value>
+				if argument.startswith('addvar') and ':' in argument and '=' in argument:
+					key, value = argument.split(':')[1].split('=', 1)
+					if key in variableDict:
+						if isinstance(variableDict[key], list):
+							variableDict[key].append(value)
+						else:
+							variableDict[key] = value
 
 			sentence = sentence.replace(u"<{}>".format(field), replacement, 1).strip()
 		#Exited from loop, return the fully filled-in sentence
 		return sentence
 
 
-	def generateName(self, extraArgument):
+	def generateName(self, extraArgument=None):
 		# First get a last name
 		lastName = self.getRandomLine(self.filesLocation, "LastNames.txt")
 		firstName = None
@@ -192,11 +206,11 @@ class Command(CommandTemplate):
 			return u"{} {}".format(firstName, lastName)
 
 
-	def generateCreature(self, extraArgument):
+	def generateCreature(self, extraArgument=None):
 		return self.parseGrammarFile("CreatureGenerator.grammar")
 
 
-	def generateSamAndMaxSentence(self, extraArgument):
+	def generateSamAndMaxSentence(self, extraArgument=None):
 		# With a small chance, pick an existing saying
 		if extraArgument == u"original" or random.randint(1, 100) <= 5:
 			return self.getRandomLine(self.filesLocation, "SamsOriginalSentences.txt")
@@ -207,7 +221,7 @@ class Command(CommandTemplate):
 			return sentence
 
 
-	def generateWord(self, extraArgument):
+	def generateWord(self, extraArgument=None):
 		"""Generate a word by putting letters together in semi-random order. Based on an old mIRC script of mine"""
 		# Initial set-up
 		vowels = ['a', 'e', 'i', 'o', 'u']
@@ -260,7 +274,7 @@ class Command(CommandTemplate):
 		#Enough words generated, let's return the result
 		return u", ".join(words)
 
-	def generateWord2(self, extraArgument):
+	def generateWord2(self, extraArgument=None):
 		"""Another method to generate a word. Based on a slightly more advanced method, from an old project of mine that didn't go anywhere"""
 
 		##Initial set-up
@@ -323,7 +337,7 @@ class Command(CommandTemplate):
 
 		return u", ".join(words)
 
-	def generateSuperhero(self, extraArgument):
+	def generateSuperhero(self, extraArgument=None):
 		variableDict = {}
 
 		gender = "f"
