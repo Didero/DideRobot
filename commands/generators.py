@@ -16,7 +16,8 @@ class Command(CommandTemplate):
 	def onLoad(self):
 		# Set in 'onLoad' so referencing the methods actually works
 		self.generators = {"creature": self.generateCreature, "name": self.generateName, "samAndMax": self.generateSamAndMaxSentence,
-						   "superhero": self.generateSuperhero, "word": self.generateWord, "word2": self.generateWord2}
+						   "superhero": self.generateSuperhero, "videogame": self.generateVideogame,
+						   "word": self.generateWord, "word2": self.generateWord2}
 		self.helptext += ", ".join(sorted(self.generators.keys()))
 
 	def execute(self, message):
@@ -359,3 +360,32 @@ class Command(CommandTemplate):
 		variableDict["name"] = self.generateName(gender)
 
 		return self.parseGrammarFile("SuperheroGenerator.grammar", variableDict)
+
+	def generateVideogame(self, extraArgument=None):
+		#Both data and functioning completely stolen from http://videogamena.me/
+		subjectsPicked = []
+		gamenameparts = []
+		for partFilename in ("FirstPart", "SecondPart", "ThirdPart"):
+			repeatedSubjectFound = True
+			while repeatedSubjectFound:
+				repeatedSubjectFound = False
+				word = SharedFunctions.getRandomLineFromFile(os.path.join(self.filesLocation, "VideogameName{}.txt".format(partFilename)))
+				#Some words are followed by a subject list, to prevent repeats
+				subjects = []
+				if '^' in word:
+					parts = word.split('^')
+					word = parts[0]
+					subjects = parts[1].split('|')
+				if word in gamenameparts:
+					repeatedSubjectFound = True
+					continue
+				elif len(subjects) > 0:
+					for subject in subjects:
+						if subject in subjectsPicked:
+							repeatedSubjectFound = True
+							continue
+					#If it's not a repeated subject, add the current subjects to the list
+					subjectsPicked.extend(subjects)
+				gamenameparts.append(word)
+
+		return " ".join(gamenameparts)
