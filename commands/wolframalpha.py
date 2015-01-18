@@ -1,3 +1,4 @@
+import urllib
 import xml.etree.ElementTree as ElementTree
 
 import requests
@@ -110,6 +111,6 @@ class Command(CommandTemplate):
 			replystring = replystring.replace('  ', ' ')
 		#Add the search url
 		if includeUrl:
-			replystring += u" (http://www.wolframalpha.com/input/?i={})".format(query.replace(" ", "+"))
+			replystring += u" (http://www.wolframalpha.com/input/?i={})".format(urllib.quote_plus(query))
 			
 		return replystring
