@@ -41,20 +41,48 @@ class Command(CommandTemplate):
 		#Get the part of the title up to the first opening parenthesis, since that's where the 'Pay what you wan't message starts
 		title = page.title.string[:page.title.string.find('(') - 1]
 
+		#First (try to) get a list of all the games with price requirements
+		lockedGames = {'BTA': [], 'Fixed': []}
+		for lockedGameElement in page.find_all('i', class_='hb-lock'):
+			lockType = None
+			if 'green' in lockedGameElement.attrs['class']:
+				lockType = 'BTA'
+			elif 'blue' in lockedGameElement.attrs['class']:
+				lockType = 'Fixed'
+			else:
+				#print "[Humble] Unknown Lock type for game '{}': '{}'".format(" ".join(lockedGameElement.stripped_strings), lockedGameElement.attrs['class'])
+				continue
+			#If the game name consists of a single line (and it's not empty) store that
+			if lockedGameElement.string and len(lockedGameElement.string) > 0:
+				lockedGames[lockType].append(lockedGameElement.string.strip())
+			#Multiple lines. Add both the first line, and a combination of all the lines
+			else:
+				lockedGames[lockType].append(list(lockedGameElement.stripped_strings)[0].strip())
+				lockedGames[lockType].append(" ".join(lockedGameElement.stripped_strings))
+
 		#The names of the games (or books) are listed in italics in the description section, get them from there
-		gamenames = []
-		descriptionElement = page.find(class_='copy-text')
+		gamePriceCategories = {"PWYW": [], "BTA": [], "Fixed": [], "Unknown": []}
+		descriptionElement = page.find(class_='bundle-info-text')
+		gameFound = False
 		if not descriptionElement:
 			print "[Humble] No description element found!"
 		else:
 			for paragraph in descriptionElement.find_all('p'):
 				strongElement = paragraph.find('strong')
 				#If there is a strong element, and it's at the start of the paragraph, AND we've already found names, we're done
-				if strongElement and paragraph.text.startswith(strongElement.text) and gamenames != []:
+				if strongElement and paragraph.text.startswith(strongElement.text) and gameFound:
 						break
 				#Otherwise, add all the titles listed to the collection
 				for titleElement in paragraph.find_all('em'):
-					gamenames.append(titleElement.text)
+					gameFound = True
+					gamename = titleElement.text
+					#See if this title is in the locked-games lists we found earlier
+					if gamename in lockedGames['BTA']:
+						gamePriceCategories['BTA'].append(gamename)
+					elif gamename in lockedGames['Fixed']:
+						gamePriceCategories['Fixed'].append(gamename)
+					else:
+						gamePriceCategories['PWYW'].append(gamename)
 
 		#Totals aren't shown on the site immediately, but are edited into the page with Javascript. Get info from there
 		totalMoney = -1.0
@@ -85,21 +113,25 @@ class Command(CommandTemplate):
 					if totalMoney > -1.0 and contributors > -1:
 						avgPrice = totalMoney / contributors
 
-					timeLeftMatch = re.search('var timing = \{"end": (\d+)\};', script)
-					if timeLeftMatch:
-						timeLeft = SharedFunctions.durationSecondsToText(int(timeLeftMatch.group(1)) - time.time())
-					break
+			#The time variable is in a different script than the other data, search for it separately
+			timeLeftMatch = re.search('var timing = \{"start": \d+, "end": (\d+)\};', script)
+			if timeLeftMatch:
+				timeLeft = SharedFunctions.durationSecondsToText(int(timeLeftMatch.group(1)) - time.time(), 'm')
+
+			#If we found all the data we need, we can stop
+			if avgPrice > -1.0 and timeLeft != u"":
+				break
 
 		if totalMoney == -1.0 or contributors == -1 or avgPrice == -1.0:
 			replytext = u"Sorry, the data could not be retrieved. This is either because the site is down, or because of some weird bug. Please try again in a little while"
 		else:
-			replytext = u"{title} has an average price of ${avgPrice:.2f} and raised ${totalMoney:,} from {contributors:,} people."
+			replytext = u"{} has an average price of ${:.2f} and raised ${:,} from {:,} people.".format(title, round(avgPrice, 2), round(totalMoney, 2), contributors)
 			if timeLeft != u"":
-				replytext += u" It will end in {timeLeft}."
-			#If we didn't find any games, pretend like nothing's wrong
-			if len(gamenames) > 0:
-				replytext += u" It contains {gamecount} titles: {gamelist}."
-			replytext = replytext.format(title=title, avgPrice=round(avgPrice, 2), totalMoney=round(totalMoney, 2),
-										 contributors=contributors, timeLeft=timeLeft, gamecount=len(gamenames), gamelist=u" | ".join(gamenames))
+				replytext += u" It will end in {}.".format(timeLeft)
+			replytext += u" It contains {:,} titles. ".format(sum(len(v) for v in gamePriceCategories.itervalues()))
+			#Add a list of all the games found
+			for priceType in ['PWYW', 'BTA', 'Fixed', 'Unknown']:
+				if len(gamePriceCategories[priceType]) > 0:
+					replytext += u"{}: {}. ".format(priceType, u" | ".join(gamePriceCategories[priceType]))
 
 		message.bot.say(message.source, replytext)
