@@ -145,7 +145,7 @@ def parseInt(text, defaultValue=None, lowestValue=None, highestValue=None):
 		return defaultValue
 
 
-def durationSecondsToText(durationInSeconds):
+def durationSecondsToText(durationInSeconds, precision='s'):
 	minutes, seconds = divmod(durationInSeconds, 60)
 	hours, minutes = divmod(minutes, 60)
 	days, hours = divmod(hours, 24)
@@ -154,10 +154,15 @@ def durationSecondsToText(durationInSeconds):
 	if days > 0:
 		replytext += u"{:,.0f} days, ".format(days)
 	if hours > 0:
-		replytext += u"{:,.0f} hours, ".format(hours)
-	if minutes > 0:
-		replytext += u"{:,.0f} minutes, ".format(minutes)
-	replytext += u"{:,.0f} seconds".format(seconds)
+		replytext += u"{:,.0f} hours".format(hours)
+	if minutes > 0 and precision in ['s', 'm']:
+		if hours > 0:
+			replytext += u", "
+		replytext += u"{:,.0f} minutes".format(minutes)
+	if seconds > 0 and precision == 's':
+		if hours > 0 or minutes > 0:
+			replytext += u", "
+		replytext += u"{:,.0f} seconds".format(seconds)
 	return replytext
 
 
