@@ -46,12 +46,6 @@ class Command(CommandTemplate):
 			return (False, u"Sorry, Wolfram Alpha took too long to respond")
 		xmltext = apireturn.text
 		xmltext = xmltext.replace(r'\:', r'\u')  #weird WolframAlpha way of writing Unicode
-		#Replace '\u0440' and the like with the actual character (first encode with latin-1 and not utf-8, otherwise pound signs and stuff mess up with a weird accented A in front)
-		try:
-			xmltext = unicode(xmltext.encode('latin-1'), encoding='unicode-escape')
-		except Exception as e:
-			print "[Wolfram] Error while turning unicode escapes into words with latin-1, using utf-8 ({})".format(str(e))
-			xmltext = unicode(xmltext.encode('utf-8'), encoding='unicode-escape')
 		return (True, xmltext)
 
 	
@@ -94,9 +88,6 @@ class Command(CommandTemplate):
 						text = text.replace('\n', ' ').strip()
 					#If there's no text in this pod (for instance if it's just an image)
 					if len(text) == 0:
-						continue
-					#If the result is useless (searching for '3 usd' for instance returns coin weight first, starts with an opening bracket), skip it
-					elif text.startswith('('):
 						continue
 					replystring += text
 					resultFound = True
