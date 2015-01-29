@@ -26,7 +26,7 @@ class Command(CommandTemplate):
 			replystring = self.searchWolfram(message.message)
 		message.bot.sendMessage(message.source, replystring)
 
-	def fetchWolframData(self, query, podsToFetch=3):
+	def fetchWolframData(self, query, podsToFetch=5):
 		#First check if there is an API key
 		if not GlobalStore.commandhandler.apikeys.has_section('wolframalpha') or not GlobalStore.commandhandler.apikeys.has_option('wolframalpha', 'key'):
 			return (False, u"Error: No Wolfram Alpha API key found")
@@ -49,7 +49,7 @@ class Command(CommandTemplate):
 		return (True, xmltext)
 
 	
-	def searchWolfram(self, query, podsToParse=3, cleanUpText=True, includeUrl=True):
+	def searchWolfram(self, query, podsToParse=5, cleanUpText=True, includeUrl=True):
 		replystring = u""
 		wolframResult = self.fetchWolframData(query, podsToParse)
 		#First check if the query succeeded
