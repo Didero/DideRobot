@@ -83,7 +83,7 @@ class Command(CommandTemplate):
 				for subpod in pod.findall('subpod'):
 					text = subpod.find('plaintext').text
 					#If there's no text, or if it's a dumb result ('3 euros' returns coinweight, which is an image), skip this pod
-					if text is None or text.startswith(' ') or text.startswith('\n'):
+					if text is None or text.startswith('\n'):
 						continue
 					if cleanUpText:
 						text = text.replace('\n', ' ').strip()
