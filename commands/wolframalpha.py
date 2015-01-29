@@ -82,7 +82,8 @@ class Command(CommandTemplate):
 					continue
 				for subpod in pod.findall('subpod'):
 					text = subpod.find('plaintext').text
-					if text is None:
+					#If there's no text, or if it's a dumb result ('3 euros' returns coinweight, which is an image), skip this pod
+					if text is None or text.startswith(' ') or text.startswith('\n'):
 						continue
 					if cleanUpText:
 						text = text.replace('\n', ' ').strip()
@@ -96,7 +97,7 @@ class Command(CommandTemplate):
 					break
 
 			if not resultFound:
-				replystring += u"Sorry, results were either images or non-existent"
+				replystring += u"Sorry, results were either images, irrelevant or non-existent"
 
 		if cleanUpText:
 			replystring = replystring.replace('  ', ' ')
