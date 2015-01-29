@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import urllib
 import xml.etree.ElementTree as ElementTree
 
@@ -46,6 +48,8 @@ class Command(CommandTemplate):
 			return (False, u"Sorry, Wolfram Alpha took too long to respond")
 		xmltext = apireturn.text
 		xmltext = xmltext.replace(r'\:', r'\u')  #weird WolframAlpha way of writing Unicode
+		xmltext = unicode(xmltext.encode('utf-8'), 'unicode-escape')  #Turn all the '\u' into actual characters
+		xmltext = xmltext.replace(u'Â', u'')  #This is gross and hacky but screw character encoding
 		return (True, xmltext)
 
 	
