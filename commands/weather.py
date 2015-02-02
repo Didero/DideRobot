@@ -81,7 +81,7 @@ class Command(CommandTemplate):
 							replytext += u"{city} ({country}): "
 						elif 'country' in data['sys'] and len(data['sys']['country']) > 0:
 							replytext += u"Somewhere in {country}: "
-						replytext += u"{tempC:.2g}°C / {tempF:.3g}°F, {weatherType}. Wind: {windSpeed} m/s, {windDir}. Humidity of {humidity}% (Data is {dataAge})"
+						replytext += u"{tempC:.1f}°C / {tempF:.1f}°F, {weatherType}. Wind: {windSpeed:.1f} m/s, {windDir}. Humidity of {humidity}% (Data is {dataAge})"
 						replytext = replytext.format(city=data['name'], country=data['sys']['country'], tempC=data['main']['temp'], tempF=celsiusToFahrenheit(data['main']['temp']),
 													 weatherType=data['weather'][0]['description'], windSpeed=data['wind']['speed'], windDir=getWindDirection(data['wind']['deg']),
 													 humidity=data['main']['humidity'], dataAge=dataAgeDisplay)
@@ -97,7 +97,7 @@ class Command(CommandTemplate):
 						for day in data['list']:
 							dayname = datetime.datetime.utcfromtimestamp(day['dt']).strftime(u"%a").upper()
 
-							replytext += u"{dayname}: {minTempC:.2g}-{maxTempC:.2g}°C / {minTempF:.0f}-{maxTempF:.0f}°F, {weatherType}, {humidity}% hum., {windSpeed:.2g}m/s {windDir} wind.  "
+							replytext += u"{dayname}: {minTempC:.0f}-{maxTempC:.0f}°C / {minTempF:.0f}-{maxTempF:.0f}°F, {weatherType}, {humidity}% hum., {windSpeed:.0f}m/s {windDir} wind.  "
 							replytext = replytext.format(dayname=dayname, minTempC=day['temp']['min'], maxTempC=day['temp']['max'],
 													minTempF=celsiusToFahrenheit(day['temp']['min']), maxTempF=celsiusToFahrenheit(day['temp']['max']),
 													humidity=day['humidity'], windSpeed=day['speed'], windDir=getWindDirection(day['deg']), weatherType=day['weather'][0]['description'])
