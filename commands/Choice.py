@@ -27,5 +27,5 @@ class Command(CommandTemplate):
 								   "Let's go with... {}. No wait! No, yeah, that one", "I don't know! *rolls dice* Seems you should go for {}",
 								   "Pick {0}, pick {0}!", "Eh, {} will do", "Why not {}?", "The first one! The last one! {}!"]
 				#Pick a random reply sentence, and then add in a random choice from the provided list, enclosed in quotes
-				replytext = random.choice(possibleReplies).format("'" + random.choice(choices).strip() + "'")
+				replytext = random.choice(possibleReplies).format('"' + random.choice(choices).strip() + '"')
 		message.bot.sendMessage(message.source, replytext)
