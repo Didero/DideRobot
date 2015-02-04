@@ -30,7 +30,12 @@ class Command(CommandTemplate):
 			else:
 				url += urlSuffix
 
-		pageDownload = requests.get(url)
+		try:
+			pageDownload = requests.get(url)
+		except requests.ConnectionError:
+			message.bot.sendMessage(message.source, "Sorry, I couldn't connect to the Humble Bundle site. Try again in a little while!")
+			return
+
 		if pageDownload.status_code != 200:
 			print "[Humble] Page '{}' returned code {}".format(url, pageDownload.status_code)
 			message.bot.sendMessage(message.source, "Sorry, I can't retrieve that bundle page. Either their site is down, or that bundle doesn't exist")
