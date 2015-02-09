@@ -437,11 +437,11 @@ class Command(CommandTemplate):
 			with open(newcardfilename, 'r') as newcardfile:
 				downloadedCardstore = json.load(newcardfile)
 			newcardstore = {}
-			keysToChange = {'keysToRemove': ['imageName', 'variations', 'types', 'supertypes', 'subtypes', 'number',
-										'variations', 'watermark', 'border', 'timeshifted', 'reserved', 'releaseDate'],
-							'numberKeysToMakeString': ['cmc', 'loyalty', 'multiverseid', 'hand', 'life'],
-							'listKeysToMakeString': ['names', 'colors'],
-							'keysToFormatNicer': ['manacost', 'text', 'flavor']}
+			keysToChange = {'keysToRemove': ['border', 'imageName', 'number', 'releaseDate', 'reserved', 'subtypes',
+											 'supertypes', 'timeshifted', 'types', 'variations', 'watermark'],
+							'numberKeysToMakeString': ['cmc', 'hand', 'life', 'loyalty', 'multiverseid'],
+							'listKeysToMakeString': ['colors', 'names'],
+							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
 			#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
 			for setcode in downloadedCardstore.keys():
 				setData = downloadedCardstore.pop(setcode)
