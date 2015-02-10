@@ -37,5 +37,5 @@ class Command(CommandTemplate):
 				replytext = "Ooh, that's a tough one. I'd go with the first option, seeing as there is only one"
 			else:
 				#Pick a random reply sentence, and then add in a random choice from the provided list, enclosed in quotes
-				replytext = self.pickRandomReply().format('"' + random.choice(choices).strip() + '"')
+				replytext = self.pickRandomReply().next().format('"' + random.choice(choices).strip() + '"')
 		message.bot.sendMessage(message.source, replytext)
