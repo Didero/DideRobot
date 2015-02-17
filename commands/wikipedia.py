@@ -48,17 +48,21 @@ class Command(CommandTemplate):
 			else:
 				searchresultContainer = wikitext.find(class_="searchresults")
 				if searchresultContainer and not searchresultContainer.find(class_="mw-search-nonefound"):
-					searchresults = searchresultContainer.find(class_="mw-search-results").find_all('a', limit=maximumSearchResults)
+					#Find the headings first and then take the first link, to ignore 'Redirects to' suffixes
+					searchresults = searchresultContainer.find(class_="mw-search-results").find_all(class_='mw-search-result-heading', limit=maximumSearchResults)
 					replytext += u"Perhaps try: "
 					for result in searchresults:
-						replytext += result.text + u"; "
+						replytext += result.find('a').text + u"; "
 					replytext = replytext[:-2]
 
 					resultinfo = wikitext.find(class_="results-info")
 					if resultinfo:
 						resultCount = int(resultinfo.find_all('strong')[1].text.replace(',', ''))
 						resultCount -= len(searchresults)
-						replytext += u" ({:,} more possible results)".format(resultCount)
+						if resultCount > 0:
+							replytext += u" (One more possible result)"
+						elif resultCount > 1:
+							replytext += u" ({:,} more possible results)".format(resultCount)
 		else:
 			articleContainer = wikitext.find(id="content")  #The actual article is in a div with id 'content'
 			articleContainer = articleContainer.find('div')  #For some reason it's nested in another div tag
