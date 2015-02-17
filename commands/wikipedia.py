@@ -64,14 +64,22 @@ class Command(CommandTemplate):
 						elif resultCount > 1:
 							replytext += u" ({:,} more possible results)".format(resultCount)
 		else:
-			articleContainer = wikitext.find(id="content")  #The actual article is in a div with id 'content'
-			articleContainer = articleContainer.find('div')  #For some reason it's nested in another div tag
-			paragraphs = articleContainer.find_all('p', recursive=False)  #The article starts with a <p> tag in the root (ignore p-tags in tables)
-			while len(paragraphs) > 0 and paragraphs[0].find(id='coordinates'):
-				paragraphs.pop(0)
-			if len(paragraphs) == 0:
-				return u"Sorry, that article doesn't appear to contain any text"
-			replytext = paragraphs[0].text
+			contentContainer = wikitext.find(id="content")  #The actual article is in a div with id 'content'
+			paragraphFound = False
+			while not paragraphFound:
+				articleContainer = contentContainer.find('div')  #For some reason it's nested in another div tag
+				#If we didn't find anything, there's nothing left to check. Give up
+				if not articleContainer:
+					return u"Sorry, that article doesn't appear to contain any text"
+				paragraphs = articleContainer.find_all('p', recursive=False)  #The article starts with a <p> tag in the root (ignore p-tags in tables)
+				while len(paragraphs) > 0 and paragraphs[0].find(id='coordinates'):
+					paragraphs.pop(0)
+				if len(paragraphs) > 0:
+					replytext = paragraphs[0].text
+					paragraphFound = True
+				else:
+					#Nothing found. Remove this div, and try it with the next one
+					articleContainer.decompose()
 
 			#Check if we're on a disambiguation page or on an abbreviation page with multiple meanings
 			if replytext.endswith(u"may refer to:") or replytext.endswith(u"may stand for:"):
