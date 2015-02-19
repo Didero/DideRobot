@@ -116,16 +116,16 @@ class Command(CommandTemplate):
 				elif fieldKey == u"_variable" or fieldKey == u"_var":
 					#Variable, fill it in if it's in the variable dictionary
 					if arguments[1] not in variableDict:
-						return u"Error: Referenced undefined variable '{}' in field '{}'".format(arguments[1], fieldKey)
+						return u"Error: Referenced undefined variable '{}' in field '{}'".format(arguments[1], field)
 					else:
 						replacement = variableDict[arguments[1]]
 				elif fieldKey == u"_if":
 					#<_if|varname=string|stringIfTrue|stringIfFalse>
 					firstArgumentParts = arguments[1].split('=')
 					if len(arguments) < 4:
-						return u"Error: Not enough arguments in 'if' for field '{}'".format(fieldKey)
+						return u"Error: Not enough arguments in 'if' for field '{}'".format(field)
 					if firstArgumentParts[0] not in variableDict:
-						return u"Error: Referenced undefined variable '{}' in 'if' of field '{}'".format(firstArgumentParts[0], fieldKey)
+						return u"Error: Referenced undefined variable '{}' in 'if' of field '{}'".format(firstArgumentParts[0], field)
 					if variableDict[firstArgumentParts[0]] == firstArgumentParts[1]:
 						replacement = arguments[2]
 					else:
@@ -133,10 +133,10 @@ class Command(CommandTemplate):
 				elif fieldKey == u"_" or fieldKey == u"_dummy":
 					replacement = u""
 				else:
-					return u"Error: Unknown command '{}' found!".format(fieldKey)
+					return u"Error: Unknown command '{}' found!".format(field)
 			#No command, so check if it's a valid key
 			elif fieldKey not in grammar:
-				return u"Error: Field '{}' not found in grammar file!".format(fieldKey)
+				return u"Error: Field '{}' not found in grammar file!".format(field)
 			#All's well, fill it in
 			else:
 				if isinstance(grammar[fieldKey], list):
@@ -343,21 +343,36 @@ class Command(CommandTemplate):
 	def generateSuperhero(self, extraArgument=None):
 		variableDict = {}
 
-		gender = "f"
-		if extraArgument in ["f", "female", "woman", "girl"]:
+		if not extraArgument:
+			#No gender specified, pick one on our own
+			roll = random.randint(1, 100)
+			if roll <= 45:
+				gender = "f"
+			elif roll <= 90:
+				gender = "m"
+			else:
+				gender = "misc"
+		elif extraArgument in ["f", "female", "woman", "girl"]:
 			gender = "f"
 		elif extraArgument in ["m", "male", "man", "boy"]:
 			gender = "m"
-		elif random.randint(1, 100) <= 50:
-			gender = "m"
+		else:
+			gender = "misc"
+
+		variableDict["name"] = self.generateName(gender)
+		nameparts = variableDict["name"].split(" ")
+		variableDict["firstname"] = nameparts[0]
+		variableDict["lastname"] = nameparts[-1]
 
 		if gender == "f":
-			variableDict = {"gender": "f", "genderNoun": "Woman", "genderNounYoung": "Girl", "genderAdjective": "Female",
-							"pronoun": "she", "possessivePronoun": "her", "personalPronoun": "her"}
+			variableDict.update({"gender": "f", "genderNoun": "Woman", "genderNounYoung": "Girl", "pronoun": "she",
+							"possessivePronoun": "her", "personalPronoun": "her"})
+		elif gender == "m":
+			variableDict.update({"gender": "m", "genderNoun": "Man", "genderNounYoung": "Boy", "pronoun": "he",
+							"possessivePronoun": "his", "personalPronoun": "him"})
 		else:
-			variableDict = {"gender": "m", "genderNoun": "Man", "genderNounYoung": "Boy", "genderAdjective": "Male",
-							"pronoun": "he", "possessivePronoun": "his", "personalPronoun": "him"}
-		variableDict["name"] = self.generateName(gender)
+			variableDict.update({"gender": "misc", "genderNoun": "Person", "genderNounYoung": "Kid", "pronoun": "they",
+							"possessivePronoun": "their", "personalPronoun": "them"})
 
 		return self.parseGrammarFile("SuperheroGenerator.grammar", variableDict)
 
