@@ -26,7 +26,7 @@ class Command(CommandTemplate):
 				replytext = wolframReply[1]
 			else:
 				pokemondata = {}
-				dataKeysToKeep = ['name', u'Pokédex number', 'type', 'generation', 'species', 'evolves from', 'evolves into', 'natural abilities',
+				dataKeysToKeep = ['name', u'Pok\xc3\xa9dex number', 'type', 'generation', 'species', 'evolves from', 'evolves into', 'natural abilities',
 								  'hit points', 'attack', 'defense', 'special attack', 'special defense', 'speed']
 				tableAsDict = self.turnWolframTableIntoDict(wolframReply[1])
 				for key, value in tableAsDict.iteritems():
@@ -37,7 +37,7 @@ class Command(CommandTemplate):
 					replytext = u"No data on that Pokemon was found, for some reason. Did you make a typo?"
 				else:
 					#Let's turn the collected data into something presentable!
-					replytext = u"{name} ({generation} nr {Pokédex number}) is a {species} of type '{type}'."
+					replytext = u"{name} ({generation} nr {Pok\xc3\xa9dex number}) is a {species} of type '{type}'."
 					if 'evolves from' in pokemondata:
 						replytext += u" Evolves from {evolves from}."
 					if 'evolves into' in pokemondata:
@@ -46,6 +46,7 @@ class Command(CommandTemplate):
 								 u"{special attack} SAtk, {special defense} SDef, {speed} Spd. " \
 								 u"More info: http://bulbapedia.bulbagarden.net/wiki/{name}"
 					replytext = replytext.format(**pokemondata)
+					replytext = replytext.replace(u'Ã©', u'é')  # Because of some encoding bullshit, this is necessary. Ugly but fuck it
 
 		message.bot.sendMessage(message.source, replytext)
 
