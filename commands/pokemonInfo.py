@@ -26,9 +26,10 @@ class Command(CommandTemplate):
 				replytext = wolframReply[1]
 			else:
 				pokemondata = {}
-				dataKeysToKeep = ['name', u'Pok\xc3\xa9dex number', 'type', 'generation', 'species', 'evolves from', 'evolves into', 'natural abilities',
+				dataKeysToKeep = ['name', u'Pok\xe9dex number', 'type', 'generation', 'species', 'evolves from', 'evolves into', 'natural abilities',
 								  'hit points', 'attack', 'defense', 'special attack', 'special defense', 'speed']
 				tableAsDict = self.turnWolframTableIntoDict(wolframReply[1])
+				print tableAsDict
 				for key, value in tableAsDict.iteritems():
 					if key in dataKeysToKeep:
 						value = re.sub(' *\| *', ', ', value)  #'type' for instance is displayed as 'fire  |  flying' sometimes. Clean that up
@@ -37,7 +38,7 @@ class Command(CommandTemplate):
 					replytext = u"No data on that Pokemon was found, for some reason. Did you make a typo?"
 				else:
 					#Let's turn the collected data into something presentable!
-					replytext = u"{name} ({generation} nr {Pok\xc3\xa9dex number}) is a {species} of type '{type}'."
+					replytext = u"{name} ({generation} nr {Pok\xe9dex number}) is a {species} of type '{type}'."
 					if 'evolves from' in pokemondata:
 						replytext += u" Evolves from {evolves from}."
 					if 'evolves into' in pokemondata:
