@@ -48,8 +48,18 @@ class Command(CommandTemplate):
 			return (False, u"Sorry, Wolfram Alpha took too long to respond")
 		xmltext = apireturn.text
 		xmltext = xmltext.replace(r'\:', r'\u')  #weird WolframAlpha way of writing Unicode
-		xmltext = unicode(xmltext.encode('utf-8'), 'unicode-escape')  #Turn all the '\u' into actual characters
-		xmltext = xmltext.replace(u'Â', u'')  #This is gross and hacky but screw character encoding
+		# Most of the return is apparently Latin-1 (though it should be Unicode)
+		#  Stuff like Japanese characters are sent even in Unicode as \:XX characters. This makes sure accented e's AND Japanese are parsed properly
+		#   (The latter by the 'unicode-escape' later on)
+		# When making changes, always test a 'euro to gbp' conversion (euro for utf8, gbp for latin-1),
+		# power-of-ten conversion (e.g. minutes to millenia), and pokemon (accented e and Japanese characters)
+		try:
+			xmltext = xmltext.encode('latin-1')
+		except UnicodeEncodeError as e:
+			print "[Wolfram] WARNING: For query '{}', can't convert to Latin1:".format(query), e
+			xmltext = xmltext.encode('utf-8')
+			xmltext = xmltext.replace(u'Â'.encode('latin-1'), '')  #This is gross and hacky but screw character encoding (Fixes Â in front of pound sign)
+		xmltext = unicode(xmltext, 'unicode-escape')  #Turn all the '\u' into actual characters
 		return (True, xmltext)
 
 	
