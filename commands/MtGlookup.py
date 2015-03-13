@@ -533,13 +533,13 @@ class Command(CommandTemplate):
 		replytext = u"Nothing happened..."
 
 		self.areCardfilesInUse = True
-		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content", 4),
-			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-body", 6)]
+		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content"),
+			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-body")]
 		try:
-			for url, section, charsToRemoveFromEnd in definitionSources:
+			for url, section in definitionSources:
 				headers = BeautifulSoup(requests.get(url).text.replace('\n', '')).find(class_=section).find_all(['h3', 'h4'])
 				for header in headers:
-					keyword = header.text[:-charsToRemoveFromEnd].lower()
+					keyword = header.find(class_='mw-headline').text.lower()
 					if keyword in definitions:
 						print "[MTG] [DefinitionsUpdate] Duplicate definition: '{}'".format(keyword)
 						continue
@@ -563,7 +563,7 @@ class Command(CommandTemplate):
 						definitions[keyword]['extra'] = paragraphText[splitIndex + 1:].lstrip()
 			print "[MTG] Updating definitions took {} seconds".format(time.time() - starttime)
 		except Exception as e:
-			print "[MTG] [DefinitionsUpdate] An error occured: ", e
+			print "[MTG] [DefinitionsUpdate] An error occurred: ", e
 			replytext = u"Definitions file NOT updated, check log for errors"
 		else:
 			#Save the data to disk
