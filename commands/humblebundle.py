@@ -62,8 +62,13 @@ class Command(CommandTemplate):
 				lockedGames[lockType].append(lockedGameElement.string.strip())
 			#Multiple lines. Add both the first line, and a combination of all the lines
 			else:
-				lockedGames[lockType].append(list(lockedGameElement.stripped_strings)[0].strip())
-				lockedGames[lockType].append(" ".join(lockedGameElement.stripped_strings))
+				lines = list(lockedGameElement.stripped_strings)
+				lockedGames[lockType].append(lines[0].strip())
+				lockedGames[lockType].append(" ".join(lines))
+			# Sometimes the name consists of multiple elements (Like with 'Deluxe Editions' or something). Add those too if needed
+			fullname = " ".join(lockedGameElement.parent.stripped_strings).strip()
+			if fullname not in lockedGames[lockType]:
+				lockedGames[lockType].append(fullname)
 
 		#The names of the games (or books) are listed in italics in the description section, get them from there
 		gamePriceCategories = {"PWYW": [], "BTA": [], "Fixed": []}
