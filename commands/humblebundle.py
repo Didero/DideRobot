@@ -66,7 +66,7 @@ class Command(CommandTemplate):
 				lockedGames[lockType].append(" ".join(lockedGameElement.stripped_strings))
 
 		#The names of the games (or books) are listed in italics in the description section, get them from there
-		gamePriceCategories = {"PWYW": [], "BTA": [], "Fixed": [], "Unknown": []}
+		gamePriceCategories = {"PWYW": [], "BTA": [], "Fixed": []}
 		descriptionElement = page.find(class_='bundle-info-text')
 		gameFound = False
 		if not descriptionElement:
@@ -135,7 +135,7 @@ class Command(CommandTemplate):
 				replytext += u" It will end in {}.".format(timeLeft)
 			replytext += u" It contains {:,} titles. ".format(sum(len(v) for v in gamePriceCategories.itervalues()))
 			#Add a list of all the games found
-			for priceType in ['PWYW', 'BTA', 'Fixed', 'Unknown']:
+			for priceType in ['PWYW', 'BTA', 'Fixed']:
 				if len(gamePriceCategories[priceType]) > 0:
 					replytext += u"{}: {}. ".format(priceType, u" | ".join(gamePriceCategories[priceType]))
 
