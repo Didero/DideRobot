@@ -33,7 +33,11 @@ class Command(CommandTemplate):
 				choices = message.message.split(',')
 			else:
 				choices = message.messageParts
-			if len(choices) == 1:
+			#Remove all the empty choices from the list
+			choices = filter(bool, choices)
+			if len(choices) == 0:
+				replytext = "That's just an empty list of choices... I'll pick nothing then"
+			elif len(choices) == 1:
 				replytext = "Ooh, that's a tough one. I'd go with the first option, seeing as there is only one"
 			else:
 				#Pick a random reply sentence, and then add in a random choice from the provided list, enclosed in quotes
