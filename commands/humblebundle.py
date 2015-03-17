@@ -143,5 +143,8 @@ class Command(CommandTemplate):
 			for priceType in ['PWYW', 'BTA', 'Fixed']:
 				if len(gamePriceCategories[priceType]) > 0:
 					replytext += u"{}: {}. ".format(priceType, u" | ".join(gamePriceCategories[priceType]))
+			# If the lock-element search found much more items than described in the text, warn users the output may be inaccurate
+			if len(lockedGames['BTA']) + len(lockedGames['Fixed']) > len(gamePriceCategories['BTA']) + len(gamePriceCategories['Fixed']) + 5:
+				replytext += u"(itemlist may be wrong)"
 
 		message.bot.say(message.source, replytext)
