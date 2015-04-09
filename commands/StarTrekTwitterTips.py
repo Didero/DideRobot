@@ -11,6 +11,7 @@ class Command(CommandTemplate):
 	helptext = "Shows a randomly chosen tip from one of the Star Trek Tips accounts, or of a specific one if a name is provided. Add a regex search after the name to search for a specific tip"
 	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'laforge': 'LaForgeTips', 'locutus': 'LocutusTips',
 						'picard': 'PicardTips', 'quark': 'QuarkTips', 'riker': 'RikerTips', 'rikergoogling': 'RikerGoogling','worf': 'WorfTips'}
+	resultPrefix = {'rikergoogling': 'Riker searched'}  # Not all 'tips' are actually tips. This is a list of a replacement term to use if 'tip' is not accurate. It replaces the entire part before the colon
 	scheduledFunctionTime = 21600.0  #Six hours in seconds
 
 	isUpdating = False
@@ -36,11 +37,11 @@ class Command(CommandTemplate):
 			name = random.choice(self.twitterUsernames.keys())
 
 		replytext = ""
-		if not name in self.twitterUsernames:
+		if name not in self.twitterUsernames:
 			if name != "":
 				replytext = "I don't know anybody by the name of '{}', sorry. ".format(message.messageParts[0])
 			replytext += "Type '{}{} <name>' to hear one of <name>'s tips, or use 'random' to have me pick a name for you. ".format(message.bot.factory.commandPrefix, message.trigger)
-			replytext += "Available tip-givers: {}".format(", ".join(sorted(self.twitterUsernames.keys())))
+			replytext += "Available tip-givers: {}".format(", ".join(sorted(self.twitterUsernames)))
 		else:
 			tweets = SharedFunctions.getAllLinesFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'tweets-{}.txt'.format(self.twitterUsernames[name])))
 			if message.messagePartsLength > 1:
@@ -57,14 +58,14 @@ class Command(CommandTemplate):
 						tweets.append(tweet)
 			tweetCount = len(tweets)
 			if tweetCount == 0:
-				replytext = u"Sorry, no tweets matching your search were found"
+				replytext = "Sorry, no tweets matching your search were found"
 			else:
 				replytext = random.choice(tweets).strip()
 				if not replytext.lower().startswith(name):
-					replytext = u"{} tip: {}".format(name[0:1].upper() + name[1:], replytext)
+					replytext = u"{}: {}".format(self.resultPrefix.get(name, '{} tip'.format(name.capitalize())), replytext)
 				#Only add a tweet count if a search term was provided and there's more than one
 				if message.messagePartsLength > 1 and tweetCount > 1:
-					replytext += u" [{} more tweets]".format(tweetCount-1)
+					replytext += u" [{} more tweets]".format(tweetCount - 1)
 
 		replytext = replytext.encode('utf-8', 'replace')
 		message.bot.say(message.source, replytext)
