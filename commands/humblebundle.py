@@ -59,14 +59,14 @@ class Command(CommandTemplate):
 				continue
 			#If the game name consists of a single line (and it's not empty) store that
 			if lockedGameElement.string and len(lockedGameElement.string) > 0:
-				lockedGames[lockType].append(lockedGameElement.string.strip())
+				lockedGames[lockType].append(lockedGameElement.string.strip().lower())
 			#Multiple lines. Add both the first line, and a combination of all the lines
 			else:
 				lines = list(lockedGameElement.stripped_strings)
-				lockedGames[lockType].append(lines[0].strip())
-				lockedGames[lockType].append(" ".join(lines))
+				lockedGames[lockType].append(lines[0].strip().lower())
+				lockedGames[lockType].append(" ".join(lines).lower())
 			# Sometimes the name consists of multiple elements (Like with 'Deluxe Editions' or something). Add those too if needed
-			fullname = " ".join(lockedGameElement.parent.stripped_strings).strip()
+			fullname = " ".join(lockedGameElement.parent.stripped_strings).strip().lower()
 			if fullname not in lockedGames[lockType]:
 				lockedGames[lockType].append(fullname)
 
@@ -87,9 +87,9 @@ class Command(CommandTemplate):
 					gameFound = True
 					gamename = titleElement.text
 					#See if this title is in the locked-games lists we found earlier
-					if gamename in lockedGames['BTA']:
+					if gamename.lower() in lockedGames['BTA']:
 						gamePriceCategories['BTA'].append(gamename)
-					elif gamename in lockedGames['Fixed']:
+					elif gamename.lower() in lockedGames['Fixed']:
 						gamePriceCategories['Fixed'].append(gamename)
 					else:
 						gamePriceCategories['PWYW'].append(gamename)
