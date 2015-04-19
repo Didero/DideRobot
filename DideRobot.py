@@ -373,6 +373,6 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		if user in userlist:
 			return True
 		#If a usernick is provided, use that, otherwise split the full user address ourselves
-		elif (usernick if usernick else user.split('!', 1)[0]) in userlist:
+		elif (usernick.lower() if usernick else user.split('!', 1)[0]) in userlist:
 			return True
 		return False
