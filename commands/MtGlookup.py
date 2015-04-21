@@ -247,9 +247,9 @@ class Command(CommandTemplate):
 			replytext += self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedInfo, setname)
 		else:
 			nameMatchedCardFound = False
-			#If one of the cards we found is the literal name in the search, single that one out
+			#If there was a name search, check if the literal name is in the resulting cards
 			if 'name' in searchDict and searchDict['name'] in cardstore:
-				#setname = None if '_match' not in cardstore[searchDict['name']][1] else cardstore[searchDict['name']][1]['_match']
+				#If the search returned a setmatch, it's in a '_match' field, retrieve that
 				setname = cardstore[searchDict['name']][1].pop('_match', None)
 				replytext += self.getFormattedCardInfo(cardstore[searchDict['name']], False, setname)
 				del cardstore[searchDict['name']]
@@ -276,7 +276,6 @@ class Command(CommandTemplate):
 				replytext += u" and {:,} more".format(numberOfCardsFound - maxCardsToList)
 
 		re.purge()  #Clear the stored regexes, since we don't need them anymore
-		print "[MtG] Execution time: {} seconds".format(time.time() - starttime)
 		message.bot.say(message.source, replytext)
 
 	@staticmethod
@@ -436,16 +435,16 @@ class Command(CommandTemplate):
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
 			#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
-			for setcode in downloadedCardstore.keys():
-				setData = downloadedCardstore.pop(setcode)
+			for setcount in xrange(0, len(downloadedCardstore)):
+				setcode, setData = downloadedCardstore.popitem()
 				#Again, pop off cards when we need them, to save on memory
-				for i in xrange(0, len(setData['cards'])):
+				for cardcount in xrange(0, len(setData['cards'])):
 					card = setData['cards'].pop(0)
 					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
 
 					#If the card isn't in the store yet, parse its data
 					if cardname not in newcardstore:
-						#Remove some other useless data to save some space, memory and time
+						#Remove some useless data to save some space, memory and time
 						for keyToRemove in keysToChange['keysToRemove']:
 							if keyToRemove in card:
 								del card[keyToRemove]
