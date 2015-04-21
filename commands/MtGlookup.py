@@ -268,7 +268,7 @@ class Command(CommandTemplate):
 			cardnameText = cardnameText[:-2]
 
 			if nameMatchedCardFound:
-				replytext += u"\n {:,} more matches found: ".format(numberOfCardsFound)
+				replytext += u"\n{:,} more match{} found: ".format(numberOfCardsFound, 'es' if numberOfCardsFound > 1 else '')
 			else:
 				replytext += u"Your search returned {:,} cards: ".format(numberOfCardsFound)
 			replytext += cardnameText
