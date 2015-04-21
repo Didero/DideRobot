@@ -201,7 +201,7 @@ class Command(CommandTemplate):
 			#First check if we need to see if the sets match
 			if setRegex:
 				setMatchFound = False
-				for setname in carddata[1].keys():
+				for setname in carddata[1]:
 					if setRegex.search(setname):
 						setMatchFound = True
 						carddata[1]['_match'] = setname
