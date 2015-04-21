@@ -191,13 +191,6 @@ class Command(CommandTemplate):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
 			cardstore = json.load(jsonfile)
 
-		#First remove the cards with a non-matching name from the cardstore
-		if 'name' in regexDict:
-			for cardname in cardstore.keys():
-				if not regexDict['name'].search(cardname):
-					del cardstore[cardname]
-			del regexDict['name']
-
 		#Get the 'setname' search separately, so we can iterate over the rest later
 		setRegex = regexDict.pop('set', None)
 
