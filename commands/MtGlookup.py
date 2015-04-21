@@ -251,7 +251,7 @@ class Command(CommandTemplate):
 			if 'name' in searchDict and searchDict['name'] in cardstore:
 				#If the search returned a setmatch, it's in a '_match' field, retrieve that
 				setname = cardstore[searchDict['name']][1].pop('_match', None)
-				replytext += self.getFormattedCardInfo(cardstore[searchDict['name']], False, setname)
+				replytext += self.getFormattedCardInfo(cardstore[searchDict['name']], addExtendedInfo, setname)
 				del cardstore[searchDict['name']]
 				numberOfCardsFound -= 1
 				nameMatchedCardFound = True
@@ -268,12 +268,15 @@ class Command(CommandTemplate):
 			cardnameText = cardnameText[:-2]
 
 			if nameMatchedCardFound:
-				replytext += u"\n{:,} more match{} found: ".format(numberOfCardsFound, 'es' if numberOfCardsFound > 1 else '')
+				replytext += u" ({:,} more match{} found: ".format(numberOfCardsFound, 'es' if numberOfCardsFound > 1 else '')
 			else:
 				replytext += u"Your search returned {:,} cards: ".format(numberOfCardsFound)
 			replytext += cardnameText
 			if numberOfCardsFound > maxCardsToList:
 				replytext += u" and {:,} more".format(numberOfCardsFound - maxCardsToList)
+			#Since the extra results list is bracketed when a literal match was also found, it needs a closing bracket
+			if nameMatchedCardFound:
+				replytext += u")"
 
 		re.purge()  #Clear the stored regexes, since we don't need them anymore
 		message.bot.say(message.source, replytext)
