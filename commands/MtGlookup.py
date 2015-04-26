@@ -165,9 +165,14 @@ class Command(CommandTemplate):
 		for attrib, query in searchDict.iteritems():
 			regex = None
 			try:
-				regex = re.compile(query, re.IGNORECASE | re.UNICODE)
+				#Since the query is a string, and the card data is unicode, convert the query to unicode before turning it into a regex
+				# This fixes the module not finding a literal search for 'Ætherling', for instance
+				regex = re.compile(unicode(query, encoding='utf8'), re.IGNORECASE)
 			except (re.error, SyntaxError):
 				print "[MTG] Regex error when trying to parse '{}'".format(query)
+				errors.append(attrib)
+			except UnicodeDecodeError:
+				print "[MTG] Unicode error in key '{}'".format(attrib)
 				errors.append(attrib)
 			else:
 				regexDict[attrib] = regex
