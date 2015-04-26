@@ -1,9 +1,6 @@
-# -*- coding: latin-1 -*-
+# -*- coding: utf-8 -*-
 
 import re
-import xml.etree.ElementTree as ElementTree
-
-import requests
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
@@ -11,43 +8,41 @@ import GlobalStore
 
 class Command(CommandTemplate):
 	triggers = ['pokemon']
-	helptext = "Looks up info on the provided Pokemon"
+	helptext = "Looks up info on the provided Pokémon"
 	callInThread = True  #WolframAlpha can be a bit slow
 
 	def execute(self, message):
-		replytext = u""
+		replytext = ""
 		if message.messagePartsLength == 0:
-			replytext = u"Please provide the name of a Pokemon to search for"
+			replytext = "Please provide the name of a Pokémon to search for"
 		else:
 			wolframReply = GlobalStore.commandhandler.runCommandFunction('fetchWolframAlphaData', None, "pokemon " + message.message, -1)
 			if not wolframReply:
-				replytext = u"Sorry, no WolframAlpha module found"
+				replytext = "Sorry, no WolframAlpha module found"
 			elif not wolframReply[0]:
 				replytext = wolframReply[1]
 			else:
 				pokemondata = {}
-				dataKeysToKeep = ['name', u'Pok\xe9dex number', 'type', 'generation', 'species', 'evolves from', 'evolves into', 'natural abilities',
+				dataKeysToKeep = ['name', 'Pokédex number', 'type', 'generation', 'species', 'evolves from', 'evolves into', 'natural abilities',
 								  'hit points', 'attack', 'defense', 'special attack', 'special defense', 'speed']
 				tableAsDict = self.turnWolframTableIntoDict(wolframReply[1])
-				print tableAsDict
 				for key, value in tableAsDict.iteritems():
 					if key in dataKeysToKeep:
 						value = re.sub(' *\| *', ', ', value)  #'type' for instance is displayed as 'fire  |  flying' sometimes. Clean that up
 						pokemondata[key] = value
 				if len(pokemondata) == 0:
-					replytext = u"No data on that Pokemon was found, for some reason. Did you make a typo?"
+					replytext = "No data on that Pokémon was found, for some reason. Did you make a typo?"
 				else:
 					#Let's turn the collected data into something presentable!
-					replytext = u"{name} ({generation} nr {Pok\xe9dex number}) is a {species} of type '{type}'."
+					replytext = "{name} ({generation} nr {Pokédex number}) is a {species} of type '{type}'."
 					if 'evolves from' in pokemondata:
-						replytext += u" Evolves from {evolves from}."
+						replytext += " Evolves from {evolves from}."
 					if 'evolves into' in pokemondata:
-						replytext += u" Evolves into {evolves into}."
-					replytext += u" {hit points} HP, {attack} Atk, {defense} Def, " \
-								 u"{special attack} SAtk, {special defense} SDef, {speed} Spd. " \
-								 u"More info: http://bulbapedia.bulbagarden.net/wiki/{name}"
+						replytext += " Evolves into {evolves into}."
+					replytext += " {hit points} HP, {attack} Atk, {defense} Def, " \
+								 "{special attack} SAtk, {special defense} SDef, {speed} Spd. " \
+								 "More info: http://bulbapedia.bulbagarden.net/wiki/{name}"
 					replytext = replytext.format(**pokemondata)
-					replytext = replytext.replace(u'é', u'�')  # Because of some encoding bullshit, this is necessary. Ugly but fuck it
 
 		message.bot.sendMessage(message.source, replytext)
 
@@ -57,7 +52,6 @@ class Command(CommandTemplate):
 		lines = text.splitlines()
 		for line in lines:
 			parts = line.split(r'|', 1)
-			#print "turned '{}' into '{}'".format(line, ", ".join(parts))
 			if len(parts) > 1:
 				parts[0] = parts[0].strip()
 				parts[1] = parts[1].strip()
