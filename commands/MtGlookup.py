@@ -27,12 +27,11 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		starttime = time.time()
-		replytext = u""
+		replytext = ""
 		maxCardsToList = 20 if message.isPrivateMessage else 10
 		addExtendedInfo = message.trigger == 'mtgf'
 
-		searchType = u""
+		searchType = ""
 		if message.messagePartsLength > 0:
 			searchType = message.messageParts[0].lower()
 
@@ -44,12 +43,12 @@ class Command(CommandTemplate):
 		elif searchType == 'update' or searchType == 'forceupdate':
 			shouldForceUpdate = True if message.message.lower() == 'forceupdate' else False
 			if self.areCardfilesInUse:
-				replytext = u"I'm already updating!"
+				replytext = "I'm already updating!"
 			elif not message.bot.factory.isUserAdmin(message.user):
-				replytext = u"Sorry, only admins can use my update function"
+				replytext = "Sorry, only admins can use my update function"
 			else:
 				replytext = self.updateCardFile(shouldForceUpdate)
-				replytext += u" " + self.updateDefinitions()
+				replytext += " " + self.updateDefinitions()
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.scheduledFunctionTimer.reset()
 			message.bot.say(message.source, replytext)
@@ -59,16 +58,16 @@ class Command(CommandTemplate):
 		elif searchType == 'define':
 			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')):
 				if self.areCardfilesInUse:
-					replytext = u"I'm sorry, but my definitions file seems to missing. Don't worry, I'm making up-I mean reading up on the rules as we speak. Try again in a bit!"
+					replytext = "I'm sorry, but my definitions file seems to missing. Don't worry, I'm making up-I mean reading up on the rules as we speak. Try again in a bit!"
 				else:
-					message.bot.sendMessage(message.source, u"I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds")
+					message.bot.sendMessage(message.source, "I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds")
 					replytext = self.updateDefinitions()
 			elif message.messagePartsLength < 2:
-				replytext = u"Please add a definition to search for"
+				replytext = "Please add a definition to search for"
 			else:
 				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
 					definitions = json.load(definitionsFile)
-				searchterm = u" ".join(message.messageParts[1:]).lower()
+				searchterm = " ".join(message.messageParts[1:]).lower()
 				searchRegex = re.compile(searchterm)
 				possibleDefinitions = []
 				for keyword in definitions.keys():
@@ -83,18 +82,18 @@ class Command(CommandTemplate):
 							possibleDefinitions.append(keyword)
 				possibleDefinitionsCount = len(possibleDefinitions)
 				if possibleDefinitionsCount == 0:
-					replytext = u"Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
+					replytext = "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
 				elif possibleDefinitionsCount == 1:
 					keyword = possibleDefinitions[0]
-					replytext = u"{}: {}.".format(keyword, definitions[keyword]['short'])
+					replytext = "{}: {}.".format(keyword, definitions[keyword]['short'])
 					currentReplyLength = len(replytext)
 					if addExtendedInfo and 'extra' in definitions[keyword]:
-						replytext += u" " + definitions[keyword]['extra']
+						replytext += " " + definitions[keyword]['extra']
 						#MORE INFO
 						maxLength = 300
 						if not message.isPrivateMessage and currentReplyLength + len(definitions[keyword]['extra']) > maxLength:
 							textLeft = replytext[maxLength:]
-							replytext = replytext[:maxLength] + u" [continued in notices]"
+							replytext = replytext[:maxLength] + " [continued in notices]"
 							counter = 1
 							while len(textLeft) > 0:
 								GlobalStore.reactor.callLater(0.2 * counter, message.bot.sendMessage, message.userNickname, u"({}) {}".format(counter + 1, textLeft[:maxLength]), 'notice')
@@ -104,12 +103,12 @@ class Command(CommandTemplate):
 					if searchterm in possibleDefinitions:
 						possibleDefinitions.remove(searchterm)
 						possibleDefinitionsCount -= 1
-						replytext = u"{}: {}; {} more matching definitions found".format(searchterm, definitions[searchterm]['short'], possibleDefinitionsCount)
+						replytext = "{}: {}; {} more matching definitions found".format(searchterm, definitions[searchterm]['short'], possibleDefinitionsCount)
 					else:
-						replytext = u"Your search returned {} results, please be more specific".format(possibleDefinitionsCount)
+						replytext = "Your search returned {} results, please be more specific".format(possibleDefinitionsCount)
 					if possibleDefinitionsCount < 10:
-						replytext += u": {}".format(u"; ".join(possibleDefinitions))
-					replytext += u"."
+						replytext += ": {}".format(u"; ".join(possibleDefinitions))
+					replytext += "."
 
 			message.bot.say(message.source, replytext)
 			return
@@ -117,9 +116,9 @@ class Command(CommandTemplate):
 		#Check if the data file even exists
 		elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')):
 			if self.areCardfilesInUse:
-				replytext = u"I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
+				replytext = "I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
 			else:
-				replytext = u"Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
+				replytext = "Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
 				GlobalStore.reactor.callInThread(self.updateCardFile, True)
 			message.bot.say(message.source, replytext)
 			return
@@ -130,14 +129,14 @@ class Command(CommandTemplate):
 		if (searchType == 'search' and ':' in message.message) or (searchType in ['random', 'randomcommander'] and message.messagePartsLength > 1):
 			#Advanced search!
 			if message.messagePartsLength <= 1:
-				message.bot.say(message.source, u"Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. Look on www.mtgjson.com for available fields")
+				message.bot.say(message.source, "Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. Look on www.mtgjson.com for available fields")
 				return
 
 			#Turn the search string (not the argument) into a usable dictionary, case-insensitive,
-			searchDict = SharedFunctions.stringToDict(u" ".join(message.messageParts[1:]).lower(), True)
+			searchDict = SharedFunctions.stringToDict(" ".join(message.messageParts[1:]).lower(), True)
 			if len(searchDict) == 0:
-				message.bot.say(message.source, u"That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
-												u"For a list of valid keys, see http://mtgjson.com/#cards (though not all keys may be available)")
+				message.bot.say(message.source, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
+												"For a list of valid keys, see http://mtgjson.com/#cards (though not all keys may be available)")
 				return
 		#If the searchtype is just 'random', don't set a 'name' field so we don't go through all the cards first
 		#  Otherwise, set the whole message as the 'name' search, since that's the default search
@@ -149,7 +148,7 @@ class Command(CommandTemplate):
 			if 'type' not in searchDict:
 				searchDict['type'] = u""
 			#Don't just search for 'legendary creature.*', because there are legendary artifact creatures too
-			searchDict['type'] = u'legendary.+creature.*' + searchDict['type']
+			searchDict['type'] = 'legendary.+creature.*' + searchDict['type']
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
 		searchTermsToCorrect = {'set': ['sets'], 'colors': ['color', 'colour', 'colours'], 'type': ['types', 'supertypes', 'subtypes'], 'flavor': ['flavour']}
@@ -176,14 +175,13 @@ class Command(CommandTemplate):
 		if len(errors) > 0:
 			#If there was only one search element to begin with, there's no need to specify
 			if len(searchDict) == 1:
-				replytext = u"An error occurred when trying to parse your search query. Please check if it is a valid regular expression"
+				replytext = "An error occurred when trying to parse your search query. Please check if it is a valid regular expression, and that there are no non-UTF8 characters"
 			#If there were more elements but only one error, specify
 			elif len(errors) == 1:
-				replytext = u"An error occurred while trying to parse the query for the '{}' field. Please check if it is a valid regular expression".format(errors[0])
+				replytext = "An error occurred while trying to parse the query for the '{}' field. Please check if it is a valid regular expression without non-UTF8 characters".format(errors[0])
 			#Multiple errors, list them all
 			else:
-				replytext = u"Errors occurred while parsing attributes: {}. Please check your search query for errors".format(u", ".join(errors))
-			print "[MtG] Regex errors: {}".format(" | ".join(errors))
+				replytext = "Errors occurred while parsing attributes: {}. Please check your search query for errors".format(", ".join(errors))
 			message.bot.say(message.source, replytext)
 			return
 
@@ -241,7 +239,7 @@ class Command(CommandTemplate):
 			numberOfCardsFound = 1
 
 		if numberOfCardsFound == 0:
-			replytext += u"Sorry, no card matching your query was found"
+			replytext += "Sorry, no card matching your query was found"
 		elif numberOfCardsFound == 1:
 			setname = cardstore[cardstore.keys()[0]][1].pop('_match', None)
 			replytext += self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedInfo, setname)
@@ -262,21 +260,21 @@ class Command(CommandTemplate):
 				cardnames = sorted(cardstore.keys())
 			else:
 				cardnames = sorted(random.sample(cardstore.keys(), maxCardsToList))
-			cardnameText = u""
+			cardnameText = ""
 			for cardname in cardnames:
 				cardnameText += cardstore[cardname][0]['name'] + u"; "
 			cardnameText = cardnameText[:-2]
 
 			if nameMatchedCardFound:
-				replytext += u" ({:,} more match{} found: ".format(numberOfCardsFound, 'es' if numberOfCardsFound > 1 else '')
+				replytext += " ({:,} more match{} found: ".format(numberOfCardsFound, 'es' if numberOfCardsFound > 1 else '')
 			else:
-				replytext += u"Your search returned {:,} cards: ".format(numberOfCardsFound)
+				replytext += "Your search returned {:,} cards: ".format(numberOfCardsFound)
 			replytext += cardnameText
 			if numberOfCardsFound > maxCardsToList:
-				replytext += u" and {:,} more".format(numberOfCardsFound - maxCardsToList)
+				replytext += " and {:,} more".format(numberOfCardsFound - maxCardsToList)
 			#Since the extra results list is bracketed when a literal match was also found, it needs a closing bracket
 			if nameMatchedCardFound:
-				replytext += u")"
+				replytext += ")"
 
 		re.purge()  #Clear the stored regexes, since we don't need them anymore
 		message.bot.say(message.source, replytext)
@@ -287,53 +285,53 @@ class Command(CommandTemplate):
 		sets = carddata[1]
 		replytext = card['name']
 		if 'type' in card and len(card['type']) > 0:
-			replytext += u" [{card[type]}]"
+			replytext += " [{card[type]}]"
 		if 'manacost' in card:
-			replytext += u" ({card[manacost]}"
+			replytext += " ({card[manacost]}"
 			#Only add the cumulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total')
 			if 'cmc' in card and card['cmc'] != card['manacost']:
-				replytext += u", CMC {card[cmc]}"
+				replytext += ", CMC {card[cmc]}"
 			#If no cmc is shown, specify the number is the manacost
 			else:
-				replytext += u" mana"
-			replytext += u")"
+				replytext += " mana"
+			replytext += ")"
 		if 'power' in card and 'toughness' in card:
-			replytext += u" ({card[power]}/{card[toughness]} P/T)"
+			replytext += " ({card[power]}/{card[toughness]} P/T)"
 		if 'loyalty' in card:
-			replytext += u" ({card[loyalty]} loyalty)"
+			replytext += " ({card[loyalty]} loyalty)"
 		if 'hand' in card or 'life' in card:
-			replytext += u" ("
+			replytext += " ("
 			if 'hand' in card:
-				replytext += u"{card[hand]} handmod"
+				replytext += "{card[hand]} handmod"
 			if 'hand' in card and 'life' in card:
-				replytext += u", "
+				replytext += ", "
 			if 'life' in card:
-				replytext += u"{card[life]} lifemod"
-			replytext += u")"
+				replytext += "{card[life]} lifemod"
+			replytext += ")"
 		if 'layout' in card and card['layout'] != 'normal':
-			replytext += u" (Layout is '{card[layout]}'"
+			replytext += " (Layout is '{card[layout]}'"
 			if 'names' in card:
-				names = card['names'].split(u'; ')
+				names = card['names'].split('; ')
 				if card['name'] in names:
 					names.remove(card['name'])
-				names = u'; '.join(names)
-				replytext += u", also contains {names}".format(names=names)
-			replytext += u")"
-		replytext += u"."
+				names = '; '.join(names)
+				replytext += ", also contains {names}".format(names=names)
+			replytext += ")"
+		replytext += "."
 		#All cards have a 'text' key set, it's just empty on ones that didn't have one
 		if len(card['text']) > 0:
-			replytext += u" {card[text]}"
+			replytext += " {card[text]}"
 		if addExtendedInfo:
 			if not setname or setname not in sets:
 				setname = random.choice(sets.keys())
 			if 'flavor' in sets[setname]:
-				replytext += u" Flavor: " + sets[setname]['flavor']
+				replytext += " Flavor: " + sets[setname]['flavor']
 			maxSetsToDisplay = 4
 			setcount = len(sets)
 			if setcount == 1:
-				replytext += u" [in set {}]".format(sets.keys()[0])
+				replytext += " [in set {}]".format(sets.keys()[0])
 			elif setcount <= maxSetsToDisplay:
-				replytext += u" [in sets {}]".format(u"; ".join(sorted(sets.keys())))
+				replytext += " [in sets {}]".format(u"; ".join(sorted(sets.keys())))
 			else:
 				shortSetList = random.sample(sets.keys(), maxSetsToDisplay)
 				#Make sure the selected set appears in the list
@@ -343,17 +341,17 @@ class Command(CommandTemplate):
 					#And put our set name in its place
 					shortSetList.append(setname)
 				shortSetList.sort()
-				shortSetListDisplay = u""
+				shortSetListDisplay = ""
 				for setname in shortSetList:
 					#Make the display 'setname [first letter of rarity]', so 'Magic 2015 [R]'
-					shortSetListDisplay += u"{} [{}]; ".format(setname, sets[setname]['rarity'][0])
+					shortSetListDisplay += "{} [{}]; ".format(setname, sets[setname]['rarity'][0])
 				shortSetListDisplay = shortSetListDisplay[:-2]
-				replytext += u" [in sets {shortSetList} and {setCountLeft} more]".format(shortSetList=shortSetListDisplay, setCountLeft=setcount-maxSetsToDisplay)
+				replytext += " [in sets {shortSetList} and {setCountLeft} more]".format(shortSetList=shortSetListDisplay, setCountLeft=setcount-maxSetsToDisplay)
 		#No extra set info, but still add a warning if it's in a non-legal set
 		else:
 			for illegalSet in ['Happy Holidays', 'Unglued', 'Unhinged']:
 				if illegalSet in sets:
-					replytext += u" [in illegal set {}!]".format(illegalSet)
+					replytext += " [in illegal set {}!]".format(illegalSet)
 					break
 
 		#FILL THAT SHIT IN
@@ -383,7 +381,7 @@ class Command(CommandTemplate):
 					print "[MtG] Unexpected content of stored version file:"
 					for key, value in oldversiondata.iteritems():
 						print "  {}: {}".format(key, value)
-						return u"Something went wrong when reading the stored version number."
+						return "Something went wrong when reading the stored version number."
 				if '_formatVersion' in oldversiondata:
 					storedFormatVersion = oldversiondata['_formatVersion']
 				else:
@@ -403,9 +401,9 @@ class Command(CommandTemplate):
 				print "[MtG] Unexpected contents of downloaded version file:"
 				for key, value in versiondata.iteritems():
 					print " {}: {}".format(key, value)
-					return u"Something went wrong when trying to read the downloaded version file"
+					return "Something went wrong when trying to read the downloaded version file"
 		if latestVersion == "":
-			return u"Something went wrong, the latest MtG database version number could not be retrieved."
+			return "Something went wrong, the latest MtG database version number could not be retrieved."
 
 		print "[MTG] Done version-checking at {} seconds in".format(time.time() - starttime)
 
@@ -444,6 +442,7 @@ class Command(CommandTemplate):
 				for cardcount in xrange(0, len(setData['cards'])):
 					card = setData['cards'].pop(0)
 					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
+					print "[MTG] Type of cardname:", type(cardname)
 
 					#If the card isn't in the store yet, parse its data
 					if cardname not in newcardstore:
@@ -483,7 +482,7 @@ class Command(CommandTemplate):
 
 						#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
 						if 'text' not in card:
-							card['text'] = u""
+							card['text'] = ""
 
 						#Add the card as a new entry, as a tuple with the card data first and set data second
 						newcardstore[cardname] = (card, {})
@@ -510,10 +509,10 @@ class Command(CommandTemplate):
 			with open(versionFilename, 'w') as versionFile:
 				versionFile.write(json.dumps(versiondata))
 
-			replytext = u"MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/#changeLog).".format(storedVersion, latestVersion)
+			replytext = "MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/#changeLog).".format(storedVersion, latestVersion)
 		#No update was necessary
 		else:
-			replytext = u"No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
+			replytext = "No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
 
 		os.remove(newversionfilename)
 		urllib.urlcleanup()
