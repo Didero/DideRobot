@@ -39,18 +39,18 @@ class Command(CommandTemplate):
 		wikitext = BeautifulSoup(page.content)
 		if searchterm and len(page.history) == 0:
 			#We're still on the search page, so the search didn't lead to an article
-			replytext = u"Sorry, no article with that name was found. "
+			replytext = "Sorry, no article with that name was found. "
 			#If it's a simple typo, Wikipedia offers suggestions
 			suggestions = wikitext.find(class_="searchdidyoumean")
 			if suggestions:
-				replytext += suggestions.text + u"?"
+				replytext += suggestions.text + "?"
 			#Otherwise, list the first few search results, if there are any
 			else:
 				searchresultContainer = wikitext.find(class_="searchresults")
 				if searchresultContainer and not searchresultContainer.find(class_="mw-search-nonefound"):
 					#Find the headings first and then take the first link, to ignore 'Redirects to' suffixes
 					searchresults = searchresultContainer.find(class_="mw-search-results").find_all(class_='mw-search-result-heading', limit=maximumSearchResults)
-					replytext += u"Perhaps try: "
+					replytext += "Perhaps try: "
 					for result in searchresults:
 						replytext += result.find('a').text + u"; "
 					replytext = replytext[:-2]
@@ -60,9 +60,9 @@ class Command(CommandTemplate):
 						resultCount = int(resultinfo.find_all('strong')[1].text.replace(',', ''))
 						resultCount -= len(searchresults)
 						if resultCount > 0:
-							replytext += u" (One more possible result)"
+							replytext += " (One more possible result)"
 						elif resultCount > 1:
-							replytext += u" ({:,} more possible results)".format(resultCount)
+							replytext += " ({:,} more possible results)".format(resultCount)
 		else:
 			contentContainer = wikitext.find(id="content")  #The actual article is in a div with id 'content'
 			paragraphFound = False
@@ -70,7 +70,7 @@ class Command(CommandTemplate):
 				articleContainer = contentContainer.find('div')  #For some reason it's nested in another div tag
 				#If we didn't find anything, there's nothing left to check. Give up
 				if not articleContainer:
-					return u"Sorry, that article doesn't appear to contain any text"
+					return "Sorry, that article doesn't appear to contain any text"
 				paragraphs = articleContainer.find_all('p', recursive=False)  #The article starts with a <p> tag in the root (ignore p-tags in tables)
 				while len(paragraphs) > 0 and paragraphs[0].find(id='coordinates'):
 					paragraphs.pop(0)
@@ -82,11 +82,11 @@ class Command(CommandTemplate):
 					articleContainer.decompose()
 
 			#Check if we're on a disambiguation page or on an abbreviation page with multiple meanings
-			if replytext.endswith(u"may refer to:") or replytext.endswith(u"may stand for:"):
+			if replytext.endswith("may refer to:") or replytext.endswith("may stand for:"):
 				title = searchterm
 				if not title:
 					title = wikitext.find(id='section_0').text
-				replytext = u"'{}' has mutliple meanings: {}".format(title, page.url.replace('en.m', 'en', 1))
+				replytext = "'{}' has mutliple meanings: {}".format(title, page.url.replace('en.m', 'en', 1))
 			else:
 				#Remove the links to references ('[1]') from the text (Done before the shortening or linesplitting so it doesn't mess that up)
 				replytext = re.sub(r'\[.+?\]', u'', replytext)
@@ -97,10 +97,10 @@ class Command(CommandTemplate):
 					lines = re.split(r"\. (?=[A-Z])", replytext)  #use lookahead ('(?=...)') so the letter isn't cut off
 					replytext = lines.pop(0)
 					while len(replytext) < minimumSentenceLength and len(lines) > 0:
-						replytext += u". " + lines.pop(0)
+						replytext += ". " + lines.pop(0)
 					replytext = replytext.strip()
 					if not replytext.endswith(u'.'):
-						replytext += u"."
+						replytext += "."
 
 				#Shorten the reply if it's too long
 				if len(replytext) > replyLengthLimit:
@@ -111,10 +111,10 @@ class Command(CommandTemplate):
 					if lastSpaceIndex > -1:
 						replytext = replytext[:lastSpaceIndex]
 
-					replytext += u' [...]'
+					replytext += ' [...]'
 
-				if page.url.endswith(u"(disambiguation)"):
-					replytext += u" (multiple meanings)"
+				if page.url.endswith("(disambiguation)"):
+					replytext += " (multiple meanings)"
 				#Check if there is a link to a disambiguation page at the top
 				#Also check if the link to the disambiguation page doesn't refer to something that also redirects to this page
 				#  For instance, if you search for 'British Thermal Unit', it says that BTU redirects there but can also mean other things
@@ -124,16 +124,16 @@ class Command(CommandTemplate):
 					title = searchterm
 					if not title:
 						title = wikitext.find(id='section_0').text
-					disambiguationStringToCompare = u'{} (disambiguation)'.format(title.lower())
+					disambiguationStringToCompare = '{} (disambiguation)'.format(title.lower())
 					if len(notices) > 0:
 						for notice in notices:
 							if disambiguationStringToCompare in notice.text.lower():
-								replytext += u" (multiple meanings)"
+								replytext += " (multiple meanings)"
 								break
 
 				#Add the URL to the end of the reply, so you can easily click to the full article
 				# (On the full Wikipedia, not the mobile version we're using)
-				replytext += u" ({})".format(page.url.replace('m.wikipedia', 'wikipedia', 1))
+				replytext += " ({})".format(page.url.replace('m.wikipedia', 'wikipedia', 1))
 		return replytext
 
 	def execute(self, message):
@@ -142,7 +142,7 @@ class Command(CommandTemplate):
 		"""
 
 		if message.messagePartsLength == 0 and message.trigger != 'wikirandom':
-			replytext = u"Please provide a term to search for"
+			replytext = "Please provide a term to search for"
 		else:
 			wikiPage = None
 			if message.trigger == 'wikirandom':
