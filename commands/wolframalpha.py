@@ -47,19 +47,12 @@ class Command(CommandTemplate):
 		except requests.exceptions.Timeout:
 			return (False, u"Sorry, Wolfram Alpha took too long to respond")
 		xmltext = apireturn.text
-		xmltext = xmltext.replace(r'\:', r'\u')  #weird WolframAlpha way of writing Unicode
-		# Most of the return is apparently Latin-1 (though it should be Unicode)
-		#  Stuff like Japanese characters are sent even in Unicode as \:XX characters. This makes sure accented e's AND Japanese are parsed properly
-		#   (The latter by the 'unicode-escape' later on)
-		# When making changes, always test a 'euro to gbp' conversion (euro for utf8, gbp for latin-1),
+		#Since Wolfram apparently doesn't really understand unicode, fix '\:XXXX' characters by turning them into their proper '\uXXXX' characters
+		#  (Thanks, ekimekim!)
+		xmltext = re.sub(r"\\:[0-9a-f]{4}", lambda x: unichr(int(x.group(0)[2:], 16)), xmltext)
+		# When making changes to the encoding, always test a 'euro to gbp' conversion (euro for utf8, gbp for latin-1),
 		# power-of-ten conversion (e.g. minutes to millenia), and pokemon (accented e and Japanese characters)
-		try:
-			xmltext = xmltext.encode('latin-1')
-		except UnicodeEncodeError as e:
-			print "[Wolfram] WARNING: For query '{}', can't convert to Latin1:".format(query), e
-			xmltext = xmltext.encode('utf-8')
-			xmltext = xmltext.replace(u'Â'.encode('latin-1'), '')  #This is gross and hacky but screw character encoding (Fixes Â in front of pound sign)
-		xmltext = unicode(xmltext, 'unicode-escape')  #Turn all the '\u' into actual characters
+		xmltext = xmltext.encode('utf8')  #Return a string, not a Unicode object
 		return (True, xmltext)
 
 	
@@ -70,11 +63,11 @@ class Command(CommandTemplate):
 		if not wolframResult[0]:
 			return wolframResult[1]
 
-		xml = ElementTree.fromstring(wolframResult[1].encode('utf8'))
+		xml = ElementTree.fromstring(wolframResult[1])
 		if xml.attrib['error'] != 'false':
 			replystring = u"Sorry, an error occurred. Tell my owner(s) to check the error log"
 			print "[Wolfram] An error occurred for the search query '{}'. Reply:".format(query)
-			print wolframResult[1].encode('utf-8')
+			print wolframResult[1]
 		elif xml.attrib['success'] != 'true':
 			replystring = u"No results found, sorry"
 			#Most likely no results were found. See if there are suggestions for search improvements
