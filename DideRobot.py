@@ -219,10 +219,12 @@ class DideRobot(irc.IRCClient):
 	def sendMessage(self, target, msg, messageType='say'):
 		#Only say something if we're not muted, or if it's a private message or a notice
 		if not self.isMuted or not target.startswith('#') or messageType == 'notice':
-			try:
-				msg = msg.encode(encoding='utf-8', errors='replace')
-			except (UnicodeDecodeError, UnicodeEncodeError):
-				print "Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg)
+			#Twisted can only send str messages. Make sure we're not trying to send Unicode
+			if isinstance(msg, unicode):
+				try:
+					msg = msg.encode(encoding='utf-8', errors='replace')
+				except (UnicodeDecodeError, UnicodeEncodeError):
+					print "[sendMessage] Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg)
 			logtext = ""
 			if messageType == 'say':
 				logtext = "{user}: {message}"
