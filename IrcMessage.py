@@ -3,7 +3,7 @@ import time
 class IrcMessage(object):
 	"""Parses incoming messages into usable parts like the command trigger"""
 
-	def __init__(self, messageType, bot, user=None, source=None, rawText=u'', extraData={}):
+	def __init__(self, messageType, bot, user=None, source=None, rawText="", extraData={}):
 		self.createdAt = time.time()
 		#MessageType is what kind of message it is. A 'say', 'action' or 'quit', for instance
 		self.messageType = messageType
@@ -19,7 +19,7 @@ class IrcMessage(object):
 
 		#Info about the source the message came from, either a channel, or a PM from a user
 		#If there is no source provided, or the source isn't a channel, assume it's a PM
-		if not source or not source.startswith(u'#'):
+		if not source or not source.startswith('#'):
 			self.source = self.userNickname
 			self.isPrivateMessage = True
 		else:
@@ -31,16 +31,10 @@ class IrcMessage(object):
 		#There isn't always text
 		if self.rawText == "":
 			self.trigger = None
-			self.message = u""
+			self.message = ""
 			self.messageParts = []
 			self.messagePartsLength = 0
 		else:
-			#Make sure it's UTF-8
-			try:
-				self.rawText = self.rawText.decode('utf-8')
-			except (UnicodeDecodeError, UnicodeEncodeError):
-				print "[IrcMessage] |{}| Unable to turn message of type '{}' into unicode: '{}'".format(bot.factory.serverfolder, type(rawText), rawText)
-
 			#Collect information about the possible command in this message
 			if self.rawText.startswith(bot.factory.commandPrefix):
 				#Get the part from the end of the command prefix to the first space (the 'help' part of '!help say')
@@ -54,7 +48,7 @@ class IrcMessage(object):
 				self.trigger = None
 				self.message = self.rawText.strip()
 
-			if self.message != u"":
+			if self.message != "":
 				self.messageParts = self.message.split(" ")
 			else:
 				self.messageParts = []
