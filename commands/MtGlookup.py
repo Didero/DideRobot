@@ -288,55 +288,57 @@ class Command(CommandTemplate):
 	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None):
 		card = carddata[0]
 		sets = carddata[1]
+		#Since the 'name' field is Unicode, this is a Unicode object
+		# Keep it like that, since any field may have Unicode characters. Convert at the end to prevent encoding errors
 		replytext = card['name']
 		if 'type' in card and len(card['type']) > 0:
-			replytext += " [{card[type]}]"
+			replytext += u" [{card[type]}]"
 		if 'manacost' in card:
-			replytext += " ({card[manacost]}"
+			replytext += u" ({card[manacost]}"
 			#Only add the cumulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total')
 			if 'cmc' in card and card['cmc'] != card['manacost']:
-				replytext += ", CMC {card[cmc]}"
+				replytext += u", CMC {card[cmc]}"
 			#If no cmc is shown, specify the number is the manacost
 			else:
-				replytext += " mana"
-			replytext += ")"
+				replytext += u" mana"
+			replytext += u")"
 		if 'power' in card and 'toughness' in card:
-			replytext += " ({card[power]}/{card[toughness]} P/T)"
+			replytext += u" ({card[power]}/{card[toughness]} P/T)"
 		if 'loyalty' in card:
-			replytext += " ({card[loyalty]} loyalty)"
+			replytext += u" ({card[loyalty]} loyalty)"
 		if 'hand' in card or 'life' in card:
-			replytext += " ("
+			replytext += u" ("
 			if 'hand' in card:
-				replytext += "{card[hand]} handmod"
+				replytext += u"{card[hand]} handmod"
 			if 'hand' in card and 'life' in card:
-				replytext += ", "
+				replytext += u", "
 			if 'life' in card:
-				replytext += "{card[life]} lifemod"
-			replytext += ")"
+				replytext += u"{card[life]} lifemod"
+			replytext += u")"
 		if 'layout' in card and card['layout'] != 'normal':
-			replytext += " (Layout is '{card[layout]}'"
+			replytext += u" (Layout is '{card[layout]}'"
 			if 'names' in card:
-				names = card['names'].split('; ')
+				names = card['names'].split(u'; ')
 				if card['name'] in names:
 					names.remove(card['name'])
-				names = '; '.join(names)
-				replytext += ", also contains {names}".format(names=names)
-			replytext += ")"
-		replytext += "."
+				names = u'; '.join(names)
+				replytext += u", also contains {names}".format(names=names)
+			replytext += u")"
+		replytext += u"."
 		#All cards have a 'text' key set, it's just empty on ones that didn't have one
 		if len(card['text']) > 0:
-			replytext += " {card[text]}"
+			replytext += u" {card[text]}"
 		if addExtendedInfo:
 			if not setname or setname not in sets:
 				setname = random.choice(sets.keys())
 			if 'flavor' in sets[setname]:
-				replytext += " Flavor: " + sets[setname]['flavor']
+				replytext += u" Flavor: " + sets[setname]['flavor']
 			maxSetsToDisplay = 4
 			setcount = len(sets)
 			if setcount == 1:
-				replytext += " [in set {}]".format(sets.keys()[0])
+				replytext += u" [in set {}]".format(sets.keys()[0])
 			elif setcount <= maxSetsToDisplay:
-				replytext += " [in sets {}]".format(u"; ".join(sorted(sets.keys())))
+				replytext += u" [in sets {}]".format("; ".join(sorted(sets.keys())))
 			else:
 				shortSetList = random.sample(sets.keys(), maxSetsToDisplay)
 				#Make sure the selected set appears in the list
@@ -349,18 +351,18 @@ class Command(CommandTemplate):
 				shortSetListDisplay = ""
 				for setname in shortSetList:
 					#Make the display 'setname [first letter of rarity]', so 'Magic 2015 [R]'
-					shortSetListDisplay += "{} [{}]; ".format(setname, sets[setname]['rarity'][0])
+					shortSetListDisplay += u"{} [{}]; ".format(setname, sets[setname]['rarity'][0])
 				shortSetListDisplay = shortSetListDisplay[:-2]
-				replytext += " [in sets {shortSetList} and {setCountLeft} more]".format(shortSetList=shortSetListDisplay, setCountLeft=setcount-maxSetsToDisplay)
+				replytext += u" [in sets {shortSetList} and {setCountLeft} more]".format(shortSetList=shortSetListDisplay, setCountLeft=setcount-maxSetsToDisplay)
 		#No extra set info, but still add a warning if it's in a non-legal set
 		else:
 			for illegalSet in ['Happy Holidays', 'Unglued', 'Unhinged']:
 				if illegalSet in sets:
-					replytext += " [in illegal set {}!]".format(illegalSet)
+					replytext += u" [in illegal set {}!]".format(illegalSet)
 					break
 
-		#FILL THAT SHIT IN
-		replytext = replytext.format(card=card)
+		#FILL THAT SHIT IN (encoded properly)
+		replytext = replytext.format(card=card).encode('utf-8')
 		return replytext
 
 	def updateCardFile(self, forceUpdate=False):
