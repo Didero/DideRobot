@@ -442,6 +442,18 @@ class Command(CommandTemplate):
 							'numberKeysToMakeString': ['cmc', 'hand', 'life', 'loyalty', 'multiverseid'],
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
+			# This function will be called on the 'keysToFormatNicer' keys
+			#  Made into a function, because it's used in two places
+			def formatNicer(text):
+				#Remove brackets around mana cost
+				if '{' in text:
+					text = text.replace('}{', ' ').replace('{', '').replace('}', '')
+				#Replace newlines with spaces. If the sentence adds in a letter, add a period
+				text = re.sub('(?<=\w)\n', '. ', text).replace('\n', ' ')
+				#Prevent double spaces
+				text = text.replace('  ', ' ').strip()
+				return text
+
 			#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
 			for setcount in xrange(0, len(downloadedCardstore)):
 				setcode, setData = downloadedCardstore.popitem()
@@ -449,7 +461,6 @@ class Command(CommandTemplate):
 				for cardcount in xrange(0, len(setData['cards'])):
 					card = setData['cards'].pop(0)
 					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
-					print "[MTG] Type of cardname:", type(cardname)
 
 					#If the card isn't in the store yet, parse its data
 					if cardname not in newcardstore:
@@ -477,19 +488,10 @@ class Command(CommandTemplate):
 
 						for keyToFormat in keysToChange['keysToFormatNicer']:
 							if keyToFormat in card:
-								newText = card[keyToFormat]
-								#Remove brackets around mana cost
-								if '{' in newText:
-									newText = newText.replace('}{', ' ').replace('{', '').replace('}', '')
-								#Replace newlines with spaces. If the sentence adds in a letter, add a period
-								newText = re.sub('(?<=\w)\n', '. ', newText).replace('\n', ' ')
-								#Prevent double spaces
-								newText = newText.replace(u'  ', u' ').strip()
-								card[keyToFormat] = newText
-
+								card[keyToFormat] = formatNicer(card[keyToFormat])
 						#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
 						if 'text' not in card:
-							card['text'] = ""
+							card['text'] = u""
 
 						#Add the card as a new entry, as a tuple with the card data first and set data second
 						newcardstore[cardname] = (card, {})
@@ -497,7 +499,7 @@ class Command(CommandTemplate):
 					#New and already listed cards need their set info stored
 					cardSetInfo = {'rarity': card.pop('rarity')}
 					if 'flavor' in card:
-						cardSetInfo['flavor'] = card.pop('flavor')
+						cardSetInfo['flavor'] = formatNicer(card.pop('flavor'))
 					newcardstore[cardname][1][setData['name']] = cardSetInfo
 
 			#First delete the original file
