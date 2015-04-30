@@ -75,6 +75,10 @@ class Command(CommandTemplate):
 				while len(paragraphs) > 0 and paragraphs[0].find(id='coordinates'):
 					paragraphs.pop(0)
 				if len(paragraphs) > 0:
+					#Sometimes there's little superscript ?'s links to help. We don't need those
+					questionmarkLinks = paragraphs[0].find_all('a', text='?')
+					for l in questionmarkLinks:
+						l.clear()
 					replytext = paragraphs[0].text
 					paragraphFound = True
 				else:
@@ -89,12 +93,13 @@ class Command(CommandTemplate):
 				replytext = "'{}' has mutliple meanings: {}".format(title, page.url.replace('en.m', 'en', 1))
 			else:
 				#Remove the links to references ('[1]') from the text (Done before the shortening or linesplitting so it doesn't mess that up)
-				replytext = re.sub(r'\[.+?\]', u'', replytext)
+				# '.' instead of '\d', since sometimes multiple references are linked in one block ('[2,5]')
+				replytext = re.sub(r'\[.+?\]', '', replytext)
 
 				if not addExtendedText:
 					#Short reply, just the first sentence
 					#If it's too short, add more (Fixes f.i. articles about court cases, 'defendant v. accuser'
-					lines = re.split(r"\. (?=[A-Z])", replytext)  #use lookahead ('(?=...)') so the letter isn't cut off
+					lines = re.split(r"\. (?=\w{2,})", replytext)  #use lookahead ('(?=...)') so the letter isn't cut off
 					replytext = lines.pop(0)
 					while len(replytext) < minimumSentenceLength and len(lines) > 0:
 						replytext += ". " + lines.pop(0)
