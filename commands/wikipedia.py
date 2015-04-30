@@ -36,7 +36,7 @@ class Command(CommandTemplate):
 		minimumSentenceLength = 50
 		maximumSearchResults = 3
 
-		wikitext = BeautifulSoup(page.content)
+		wikitext = BeautifulSoup(page.text)
 		if searchterm and len(page.history) == 0:
 			#We're still on the search page, so the search didn't lead to an article
 			replytext = "Sorry, no article with that name was found. "
@@ -52,7 +52,7 @@ class Command(CommandTemplate):
 					searchresults = searchresultContainer.find(class_="mw-search-results").find_all(class_='mw-search-result-heading', limit=maximumSearchResults)
 					replytext += "Perhaps try: "
 					for result in searchresults:
-						replytext += result.find('a').text + u"; "
+						replytext += result.find('a').text + "; "
 					replytext = replytext[:-2]
 
 					resultinfo = wikitext.find(class_="results-info")
@@ -99,7 +99,7 @@ class Command(CommandTemplate):
 					while len(replytext) < minimumSentenceLength and len(lines) > 0:
 						replytext += ". " + lines.pop(0)
 					replytext = replytext.strip()
-					if not replytext.endswith(u'.'):
+					if not replytext.endswith('.'):
 						replytext += "."
 
 				#Shorten the reply if it's too long
@@ -107,7 +107,7 @@ class Command(CommandTemplate):
 					replytext = replytext[:replyLengthLimit]
 
 					#Try not to chop up words
-					lastSpaceIndex = replytext.rfind(u' ')
+					lastSpaceIndex = replytext.rfind(' ')
 					if lastSpaceIndex > -1:
 						replytext = replytext[:lastSpaceIndex]
 
@@ -118,7 +118,7 @@ class Command(CommandTemplate):
 				#Check if there is a link to a disambiguation page at the top
 				#Also check if the link to the disambiguation page doesn't refer to something that also redirects to this page
 				#  For instance, if you search for 'British Thermal Unit', it says that BTU redirects there but can also mean other things
-				#  If we got there by searching 'British Thermal Unit', don't add 'multiple meanings', if we got there with 'BTU', do
+				#  If we got there by searching 'British Thermal Unit', don't add 'multiple meanings', if we got there with 'BTU'
 				else:
 					notices = articleContainer.find_all("div", class_="hatnote")
 					title = searchterm
@@ -144,7 +144,6 @@ class Command(CommandTemplate):
 		if message.messagePartsLength == 0 and message.trigger != 'wikirandom':
 			replytext = "Please provide a term to search for"
 		else:
-			wikiPage = None
 			if message.trigger == 'wikirandom':
 				replytext = self.getRandomWikipediaArticle()
 			else:
