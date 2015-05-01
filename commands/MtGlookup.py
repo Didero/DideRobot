@@ -540,15 +540,14 @@ class Command(CommandTemplate):
 			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-body")]
 		try:
 			for url, section in definitionSources:
-				headers = BeautifulSoup(requests.get(url).text.replace('\n', '')).find(class_=section).find_all(['h3', 'h4'])
-				for header in headers:
-					keyword = header.find(class_='mw-headline').text.lower()
+				defHeaders = BeautifulSoup(requests.get(url).text.replace('\n', '')).find(class_=section).find_all(['h3', 'h4'])
+				for defHeader in defHeaders:
+					keyword = defHeader.find(class_='mw-headline').text.lower()
 					if keyword in definitions:
 						print "[MTG] [DefinitionsUpdate] Duplicate definition: '{}'".format(keyword)
 						continue
-					#definitions[keyword] = u""
 					#Cycle through all the paragraphs following the header
-					currentParagraph = header.next_sibling
+					currentParagraph = defHeader.next_sibling
 					paragraphText = u""
 					#If there's no next_sibling, 'currentParagraph' is set to None. Check for that
 					while currentParagraph and currentParagraph.name in ['p', 'ul', 'dl']:
