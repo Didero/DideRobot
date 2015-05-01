@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json, os, random, re, time, urllib, zipfile
+import traceback
 
 import requests
 from bs4 import BeautifulSoup
@@ -565,8 +566,14 @@ class Command(CommandTemplate):
 						definitions[keyword]['extra'] = paragraphText[splitIndex + 1:].lstrip()
 			print "[MTG] Updating definitions took {} seconds".format(time.time() - starttime)
 		except Exception as e:
-			print "[MTG] [DefinitionsUpdate] An error occurred: ", e
-			replytext = u"Definitions file NOT updated, check log for errors"
+			print "[MTG] [DefinitionsUpdate] An error ({}) occurred:".format(type(e)), e.message
+			traceback.print_exc()
+			try:
+				print "[MTG] request url:", e.request.url
+				print "[MTG] request headers:", e.request.headers
+			except AttributeError:
+				print " no request attribute found"
+			replytext = "Definitions file NOT updated, check log for errors"
 		else:
 			#Save the data to disk
 			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGdefinitions.json"), 'w') as definitionsFile:
