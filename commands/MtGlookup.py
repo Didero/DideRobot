@@ -533,7 +533,7 @@ class Command(CommandTemplate):
 		starttime = time.time()
 		definitions = {}
 		textCutoffLength = 200
-		replytext = u"Nothing happened..."
+		replytext = "Nothing happened..."
 
 		self.areCardfilesInUse = True
 		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content"),
@@ -572,7 +572,7 @@ class Command(CommandTemplate):
 			#Save the data to disk
 			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGdefinitions.json"), 'w') as definitionsFile:
 				definitionsFile.write(json.dumps(definitions))
-			replytext = u"Definitions file successfully updated"
+			replytext = "Definitions file successfully updated"
 		finally:
 			self.areCardfilesInUse = False
 		return replytext
