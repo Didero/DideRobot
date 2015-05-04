@@ -1,6 +1,3 @@
-#Based on:
-# http://newcoder.io/~drafts/networks/intro/
-# https://github.com/MatthewCox/PyMoronBot (and vice versa)
 
 import os, time
 from ConfigParser import ConfigParser
