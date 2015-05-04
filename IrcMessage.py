@@ -3,7 +3,7 @@ import time
 class IrcMessage(object):
 	"""Parses incoming messages into usable parts like the command trigger"""
 
-	def __init__(self, messageType, bot, user=None, source=None, rawText="", extraData={}):
+	def __init__(self, messageType, bot, user=None, source=None, rawText=""):
 		self.createdAt = time.time()
 		#MessageType is what kind of message it is. A 'say', 'action' or 'quit', for instance
 		self.messageType = messageType
@@ -53,6 +53,3 @@ class IrcMessage(object):
 			else:
 				self.messageParts = []
 			self.messagePartsLength = len(self.messageParts)
-
-		#Store any arbitrary data that got passed too
-		self.extraData = extraData
