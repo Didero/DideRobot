@@ -1,0 +1,22 @@
+{
+	"connection": {
+		"server": "",
+		"port": 6667,
+		"nickname": "DideRobot",
+		"realname": "DideRobot",
+		"maxConnectionRetries": 5,
+		"minSecondsBetweenMessages": 0.0,
+		"keepChannelLogs": true,
+		"keepPrivateLogs": true,
+		"keepSystemLogs": true
+	},
+	"commands": {
+		"commandPrefix": "!",
+		"joinChannels": [],
+		"allowedChannels": [],
+		"admins": [],
+		"userIgnoreList": [],
+		"commandWhitelist": [],
+		"commandBlacklist": []
+	}
+}

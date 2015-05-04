@@ -14,6 +14,6 @@ class Command(CommandTemplate):
 		"""
 		if message.messagePartsLength == 0:
 			#Change nick back to the default
-			message.bot.setNick(message.bot.factory.settings.get("connection", "nickname"))
+			message.bot.setNick(message.bot.factory.settings['connection']['nickname'])
 		else:
 			message.bot.setNick(message.messageParts[0])

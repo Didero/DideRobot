@@ -11,20 +11,15 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 
-		replytext = u""
+		replytext = ""
 		if message.messagePartsLength < 1:
-			replytext = u"Please provide a channel for me to join"
+			replytext = "Please provide a channel for me to join"
 		else:
-			allowedChannels = message.bot.factory.settings.get('connection', 'allowedChannels').split(',')
-			
-			channel = message.messageParts[0].encode('utf8')  #Make sure it's a str and not unicode, otherwise Twisted chokes on it
-			if channel.startswith('#'):
-				channel = channel[1:]
-			if channel not in allowedChannels and not message.bot.factory.isUserAdmin(message.user):
-				replytext = u"I'm sorry, I'm not allowed to go there. Please ask my admin(s) for permission"
+			channel = message.messageParts[0]
+			if channel.replace('#', '') not in message.bot.factory.settings['connection']['allowedChannels'] and not message.bot.factory.isUserAdmin(message.user, message.userNickname):
+				replytext = "I'm sorry, I'm not allowed to go there. Please ask my admin(s) for permission"
 			else:
-				channel = '#' + channel
-				replytext = u"All right, I'll go to {}. See you there!".format(channel)
+				replytext = "All right, I'll go to {}. See you there!".format(channel)
 				message.bot.join(channel)
 				
 		message.bot.say(message.source, replytext)

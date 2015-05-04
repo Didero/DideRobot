@@ -49,7 +49,7 @@ ToDo.txt
 commands/debug.py
 
 #The example settings file should be in the repo
-!serverSettings/globalsettings.ini.example
+!serverSettings/globalsettings.json.example
 
 #My local quickstart script doesn't belong in the repo
 botstart.bat

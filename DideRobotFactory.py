@@ -1,5 +1,5 @@
+import json
 import os
-from ConfigParser import ConfigParser
 
 from twisted.internet import protocol
 
@@ -22,22 +22,21 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		self.bot = None
 		self.logger = None
 		#Bot settings, with a few lifted out because they're frequently needed
-		self.settings = None
-		self.commandPrefix = u""
+		self.settings = {}
+		self.commandPrefix = ""
 		self.commandPrefixLength = 0
-		self.userIgnoreList = []
-		self.admins = []
-		self.commandWhitelist = None
-		self.commandBlacklist = None
 
+		#This is toggled to 'False' on a Quit command, to bypass automatic reconnection
 		self.shouldReconnect = True
 
+		#If something goes wrong with updating the settings, it returns False. Don't continue then
+		#Also don't update the logger settings, since we don't have a logger yet
 		if not self.updateSettings(False):
 			print "ERROR while loading settings for bot '{}', aborting launch!".format(self.serverfolder)
 			GlobalStore.reactor.callLater(2.0, GlobalStore.bothandler.unregisterFactory, serverfolder)
 		else:
 			self.logger = Logger.Logger(self)
-			GlobalStore.reactor.connectTCP(self.settings.get("connection", "server"), self.settings.getint("connection", "port"), self)
+			GlobalStore.reactor.connectTCP(self.settings["connection"]["server"], self.settings["connection"]["port"], self)
 
 	def buildProtocol(self, addr):
 		self.bot = DideRobot(self)
@@ -67,67 +66,74 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
 
 	def updateSettings(self, updateLogger=True):
-		self.settings = ConfigParser()
-		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", "globalsettings.ini")):
-			print "ERROR: globalsettings.ini not found!"
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", "globalsettings.json")):
+			print "ERROR: globalsettings.json not found!"
 			return False
-		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", self.serverfolder, "settings.ini")):
-			print "ERROR: no settings.ini file in '{}' server folder!".format(self.serverfolder)
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", self.serverfolder, "settings.json")):
+			print "ERROR: no settings.json file in '{}' server folder!".format(self.serverfolder)
 			return False
 
-		self.settings.read([os.path.join(GlobalStore.scriptfolder, 'serverSettings', "globalsettings.ini"), os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, "settings.ini")])
+		#First load in the default settings
+		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', "globalsettings.json"), 'r') as globalSettingsFile:
+			self.settings = json.load(globalSettingsFile)
+		#Then update the defaults with the server-specific ones
+		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, "settings.json"), 'r') as serverSettingsFile:
+			serverSettings = json.load(serverSettingsFile)
+			for section in ('connection', 'commands'):
+				if section not in serverSettings:
+					continue
+				if section not in self.settings:
+					self.settings[section] = serverSettings[section]
+				else:
+					self.settings[section].update(serverSettings[section])
+
 		#First make sure the required settings are in there
-		settingsToEnsure = {"connection": ["server", "port", "nickname", "realname"], "scripts": ["commandPrefix", "admins", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs"]}
+		settingsToEnsure = {"connection": ["server", "port", "nickname", "realname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs"], "commands": ["commandPrefix", "admins"]}
 		for section, optionlist in settingsToEnsure.iteritems():
-			if not self.settings.has_section(section):
+			if section not in self.settings:
 				print "ERROR: Required section '{}' not found in settings.ini file for server '{}'".format(section, self.serverfolder)
 				return False
 			for optionToEnsure in optionlist:
-				if not self.settings.has_option(section, optionToEnsure):
-					print "ERROR: Required option '{}' not found in section '{}' of settings.ini file for server '{}'".format(optionToEnsure, section, self.serverfolder)
+				if optionToEnsure not in self.settings[section]:
+					print "ERROR: Required option '{}' not found in section '{}' of settings.json file for server '{}'".format(optionToEnsure, section, self.serverfolder)
 					return False
+				elif isinstance(self.settings[section][optionToEnsure], (list, unicode)) and len(self.settings[section][optionToEnsure]) == 0:
+					print "ERROR: Option '{}' in section '{}' in settings.json for server '{}' is empty".format(optionToEnsure, section, self.serverfolder)
 
-		#If we reached this far, then all required options have to be in there
-		#Put some commonly-used settings in variables, for easy access
-		self.commandPrefix = self.settings.get("scripts", "commandPrefix")
+		#All the strings should be strings and not unicode, which makes it a lot easier to use later
+		for section in ('connection', 'commands'):
+			for key, value in self.settings[section].iteritems():
+				if isinstance(value, unicode):
+					self.settings[section][key] = value.encode('utf-8')
+
+		#The command prefix is going to be needed often, as will its length. Put that in an easy-to-reach place
+		self.commandPrefix = self.settings['commands']['commandPrefix']
 		self.commandPrefixLength = len(self.commandPrefix)
-		self.admins = self.settings.get('scripts', 'admins').lower().split(',')
 
-		if self.settings.has_option('scripts', 'userIgnoreList'):
-			self.userIgnoreList = self.settings.get("scripts", "userIgnoreList").lower().split(',')
-		else:
-			self.userIgnoreList = []
-
-		self.commandWhitelist = None
-		self.commandBlacklist = None
-		if self.settings.has_option('scripts', 'commandWhitelist'):
-			self.commandWhitelist = self.settings.get('scripts', 'commandWhitelist').lower().split(',')
-		elif self.settings.has_option('scripts', 'commandBlacklist'):
-			self.commandBlacklist = self.settings.get('scripts', 'commandBlacklist').lower().split(',')
+		# If the command whitelist or blacklist is empty, set that to 'None' so you can easily check if they're filled
+		for l in ('commandWhitelist', 'commandBlacklist'):
+			print "{} is set to {}".format(l, self.settings['commands'].get(l, 'nothing'))
+			if self.settings['commands'][l] is not None and len(self.settings['commands'][l]) == 0:
+				print "Setting {} to None".format(l)
+				self.settings['commands'][l] = None
+			else:
+				print "Keeping {} as {}".format(l, self.settings['commands'][l])
 
 		#Load in the maximum connection settings to try, if there is any
-		if not self.settings.has_option('connection', 'maxConnectionRetries'):
+		self.maxRetries = self.settings['connection'].get('maxConnectionRetries', -1)
+		#Assume values smaller than zero mean endless retries
+		if self.maxRetries < 0:
 			self.maxRetries = None
-		else:
-			try:
-				self.maxRetries = self.settings.getint('connection', 'maxConnectionRetries')
-			except ValueError:
-				print "|{}| Invalid value in settings file for 'maxConnectionRetries'. Expected integer, got '{}'".format(self.serverfolder, self.settings.get("connection", "maxConnectionRetries"))
-				self.maxRetries = None
-			#Assume values smaller than zero mean endless retries
-			else:
-				if self.maxRetries < 0:
-					self.maxRetries = None
 
 		if updateLogger:
 			self.logger.updateLogSettings()
 		return True
 
 	def isUserAdmin(self, user, usernick=None):
-		return self.isUserInList(self.admins, user, usernick)
+		return self.isUserInList(self.settings['commands']['admins'], user, usernick)
 
 	def shouldUserBeIgnored(self, user, usernick=None):
-		return self.isUserInList(self.userIgnoreList, user, usernick)
+		return self.isUserInList(self.settings['commands']['userIgnoreList'], user, usernick)
 
 	@staticmethod
 	def isUserInList(userlist, user, usernick=None):

@@ -95,9 +95,9 @@ class CommandHandler:
 	@staticmethod
 	def isCommandAllowedForBot(bot, commandname):
 		commandname = commandname.lower()
-		if bot.factory.commandWhitelist is not None and commandname not in bot.factory.commandWhitelist:
+		if bot.factory.settings['commands']['commandWhitelist'] is not None and commandname not in bot.factory.settings['commands']['commandWhitelist']:
 			return False
-		elif bot.factory.commandBlacklist is not None and commandname in bot.factory.commandBlacklist:
+		elif bot.factory.settings['commands']['commandBlacklist'] is not None and commandname in bot.factory.settings['commands']['commandBlacklist']:
 			return False
 		return True
 	

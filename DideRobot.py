@@ -13,15 +13,15 @@ class DideRobot(irc.IRCClient):
 		self.isUpdatingChannelsUserList = False
 		self.connectedAt = 0.0
 		self.isMuted = False
-		if self.factory.settings.has_option("connection", "minSecondsBetweenMessages"):
-			self.lineRate = self.factory.settings.getfloat("connection", "minSecondsBetweenMessages")
-			if self.lineRate <= 0.0:
-				self.lineRate = None
+		#Limit the speed at which we send messages, if necessary
+		self.lineRate = self.factory.settings['connection'].get('minSecondsBetweenMessages', -1.0)
+		if not isinstance(self.lineRate, float) or self.lineRate <= 0.0:
+			self.lineRate = None
 	
 	def connectionMade(self):
 		"""Called when a connection is made."""
-		self.nickname = self.factory.settings.get("connection", "nickname")
-		self.realname = self.factory.settings.get("connection", "realname")
+		self.nickname = self.factory.settings['connection']['nickname'].encode('utf-8')
+		self.realname = self.factory.settings['connection']['realname'].encode('utf-8')
 		irc.IRCClient.connectionMade(self)
 		self.factory.logger.log("Connection to server made")
 
@@ -36,16 +36,14 @@ class DideRobot(irc.IRCClient):
 		#Let the factory know we've connected, needed because it's a reconnecting factory
 		self.factory.resetDelay()
 		#Check if we have the nickname we should
-		if self.nickname != self.factory.settings.get("connection", "nickname"):
-			self.factory.logger.log("Nickname wasn't available, using nick '{0}'".format(self.nickname))
+		if self.nickname != self.factory.settings['connection']['nickname']:
+			self.factory.logger.log("Specified nickname '{}' wasn't available, using nick '{}'".format(self.factory.settings['connection']['nickname'], self.nickname))
 		#Join channels
-		if not self.factory.settings.has_option('connection', 'joinChannels'):
+		if len(self.factory.settings['connection']['joinChannels']) == 0:
 			print "|{}| No join channels specified, idling".format(self.factory.serverfolder)
 		else:
-			joinChannels = self.factory.settings.get("connection", "joinChannels")
-			if len(joinChannels) > 0:
-				for channel in joinChannels.split(","):
-					self.join(channel)
+			for channel in self.factory.settings['connection']['joinChannels']:
+				self.join(channel.encode('utf-8'))
 	
 	def irc_JOIN(self, prefix, params):
 		"""Called when a user or the bot joins a channel"""
@@ -155,7 +153,6 @@ class DideRobot(irc.IRCClient):
 		#Since the Message Of The Day can consist of multiple lines, print them all
 		self.factory.logger.log("Server message of the day:\n {}".format("\n ".join(motd)))
 
-
 	#Create a list of user addresses per channel
 	def retrieveChannelUsers(self, channel):
 		self.isUpdatingChannelsUserList = True
@@ -239,135 +236,3 @@ class DideRobot(irc.IRCClient):
 
 	def sendNotice(self, target, msg):
 		self.sendMessage(target, msg, 'notice')
-
-			
-class DideRobotFactory(protocol.ReconnectingClientFactory):
-	"""The factory creates the connection, that the bot itself handles and uses"""
-	
-	#Set the connection handler
-	protocol = DideRobot
-
-	def __init__(self, serverfolder):
-		print "New botfactory for server '{}' started".format(serverfolder)
-		self.serverfolder = serverfolder
-
-		#Initialize some variables (in init() instead of outside it to prevent object sharing between instances)
-		self.bot = None
-		self.logger = None
-		#Bot settings, with a few lifted out because they're frequently needed
-		self.settings = None
-		self.commandPrefix = u""
-		self.commandPrefixLength = 0
-		self.userIgnoreList = []
-		self.admins = []
-		self.commandWhitelist = None
-		self.commandBlacklist = None
-
-		self.shouldReconnect = True
-
-		if not self.updateSettings(False):
-			print "ERROR while loading settings for bot '{}', aborting launch!".format(self.serverfolder)
-			GlobalStore.reactor.callLater(2.0, GlobalStore.bothandler.unregisterFactory, serverfolder)
-		else:
-			self.logger = Logger.Logger(self)
-			GlobalStore.reactor.connectTCP(self.settings.get("connection", "server"), self.settings.getint("connection", "port"), self)				
-		
-	def buildProtocol(self, addr):
-		self.bot = DideRobot(self)
-		return self.bot
-
-	def startedConnecting(self, connector):
-		self.logger.log("Started connecting, attempt {} (Max is {})".format(self.retries, self.maxRetries if self.maxRetries else "not set"))
-		
-	def clientConnectionLost(self, connector, reason):
-		self.logger.log("Client connection lost (Reason: '{0}')".format(reason))
-		if self.shouldReconnect:
-			self.logger.log(" Restarting")
-			protocol.ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
-		else:
-			self.logger.log(" Quitting")
-			self.logger.closelogs()
-			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
-
-	def clientConnectionFailed(self, connector, reason):
-		self.logger.log("Client connection failed (Reason: '{}')".format(reason))
-		protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
-		#If there is a maximum number of retries set, and that maximum is exceeded, stop trying
-		if self.maxRetries and self.retries > self.maxRetries:
-			self.logger.log("Max amount of connection retries reached, removing bot factory")
-			self.logger.closelogs()
-			self.stopTrying()
-			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
-		
-	def updateSettings(self, updateLogger=True):
-		self.settings = ConfigParser()
-		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", "globalsettings.ini")):
-			print "ERROR: globalsettings.ini not found!"
-			return False
-		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", self.serverfolder, "settings.ini")):
-			print "ERROR: no settings.ini file in '{}' server folder!".format(self.serverfolder)
-			return False
-
-		self.settings.read([os.path.join(GlobalStore.scriptfolder, 'serverSettings', "globalsettings.ini"), os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, "settings.ini")])
-		#First make sure the required settings are in there
-		settingsToEnsure = {"connection": ["server", "port", "nickname", "realname"], "scripts": ["commandPrefix", "admins", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs"]}
-		for section, optionlist in settingsToEnsure.iteritems():
-			if not self.settings.has_section(section):
-				print "ERROR: Required section '{}' not found in settings.ini file for server '{}'".format(section, self.serverfolder)
-				return False
-			for optionToEnsure in optionlist:
-				if not self.settings.has_option(section, optionToEnsure):
-					print "ERROR: Required option '{}' not found in section '{}' of settings.ini file for server '{}'".format(optionToEnsure, section, self.serverfolder)
-					return False
-
-		#If we reached this far, then all required options have to be in there
-		#Put some commonly-used settings in variables, for easy access
-		self.commandPrefix = self.settings.get("scripts", "commandPrefix")
-		self.commandPrefixLength = len(self.commandPrefix)
-		self.admins = self.settings.get('scripts', 'admins').lower().split(',')
-
-		if self.settings.has_option('scripts', 'userIgnoreList'):
-			self.userIgnoreList = self.settings.get("scripts", "userIgnoreList").lower().split(',')
-		else:
-			self.userIgnoreList = []
-
-		self.commandWhitelist = None
-		self.commandBlacklist = None
-		if self.settings.has_option('scripts', 'commandWhitelist'):
-			self.commandWhitelist = self.settings.get('scripts', 'commandWhitelist').lower().split(',')
-		elif self.settings.has_option('scripts', 'commandBlacklist'):
-			self.commandBlacklist = self.settings.get('scripts', 'commandBlacklist').lower().split(',')
-
-		#Load in the maximum connection settings to try, if there is any
-		if not self.settings.has_option('connection', 'maxConnectionRetries'):
-			self.maxRetries = None
-		else:
-			try:
-				self.maxRetries = self.settings.getint('connection', 'maxConnectionRetries')
-			except ValueError:
-				print "|{}| Invalid value in settings file for 'maxConnectionRetries'. Expected integer, got '{}'".format(self.serverfolder, self.settings.get("connection", "maxConnectionRetries"))
-				self.maxRetries = None
-			#Assume values smaller than zero mean endless retries
-			else:
-				if self.maxRetries < 0:
-					self.maxRetries = None
-
-		if updateLogger:
-			self.logger.updateLogSettings()
-		return True
-
-	def isUserAdmin(self, user, usernick=None):
-		return self.isUserInList(self.admins, user, usernick)
-
-	def shouldUserBeIgnored(self, user, usernick=None):
-		return self.isUserInList(self.userIgnoreList, user, usernick)
-
-	@staticmethod
-	def isUserInList(userlist, user, usernick=None):
-		user = user.lower()
-		if user in userlist:
-			return True
-		#If a usernick is provided, use that, otherwise split the full user address ourselves
-		elif (usernick.lower() if usernick else user.split('!', 1)[0]) in userlist:
-			return True
-		return False
