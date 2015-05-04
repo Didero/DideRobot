@@ -112,12 +112,8 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 
 		# If the command whitelist or blacklist is empty, set that to 'None' so you can easily check if they're filled
 		for l in ('commandWhitelist', 'commandBlacklist'):
-			print "{} is set to {}".format(l, self.settings['commands'].get(l, 'nothing'))
 			if self.settings['commands'][l] is not None and len(self.settings['commands'][l]) == 0:
-				print "Setting {} to None".format(l)
 				self.settings['commands'][l] = None
-			else:
-				print "Keeping {} as {}".format(l, self.settings['commands'][l])
 
 		#Load in the maximum connection settings to try, if there is any
 		self.maxRetries = self.settings['connection'].get('maxConnectionRetries', -1)
