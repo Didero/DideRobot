@@ -1,6 +1,6 @@
 ﻿import os
 
-from DideRobot import DideRobotFactory
+from DideRobotFactory import DideRobotFactory
 import GlobalStore
 
 

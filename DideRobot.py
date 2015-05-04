@@ -1,12 +1,8 @@
+import time
 
-import os, time
-from ConfigParser import ConfigParser
-
-from twisted.internet import protocol
 from twisted.words.protocols import irc
 
 import GlobalStore
-import Logger
 from IrcMessage import IrcMessage
 
 
