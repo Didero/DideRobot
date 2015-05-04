@@ -14,8 +14,8 @@ class BotHandler:
 		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data')):
 			os.mkdir(os.path.join(GlobalStore.scriptfolder, 'data'))
 
-		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'serverSettings', 'globalsettings.ini')):
-			print "ERROR: 'globalsettings.ini' file not found in 'serverSettings' folder! Shutting down"
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'serverSettings', 'globalsettings.json')):
+			print "ERROR: 'globalsettings.json' file not found in 'serverSettings' folder! Shutting down"
 			self.shutdown()
 		else:		
 			for serverfolder in serverfolderList:
