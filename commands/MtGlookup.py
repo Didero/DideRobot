@@ -268,7 +268,7 @@ class Command(CommandTemplate):
 				cardnames = sorted(random.sample(cardstore.keys(), maxCardsToList))
 			cardnameText = ""
 			for cardname in cardnames:
-				cardnameText += cardstore[cardname][0]['name'] + u"; "
+				cardnameText += cardstore[cardname][0]['name'].encode('utf-8') + "; "
 			cardnameText = cardnameText[:-2]
 
 			if nameMatchedCardFound:
