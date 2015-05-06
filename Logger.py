@@ -23,9 +23,9 @@ class Logger(object):
 	def updateLogSettings(self):
 		print "[Logger] |{}| Reloading settings".format(self.botfactory.serverfolder)
 		#Set local boolean values only to 'True' if they're 'true' in the ini file
-		self.shouldKeepSystemLogs = self.botfactory.settings["connection"]["keepSystemLogs"]
-		self.shouldKeepChannelLogs = self.botfactory.settings["connection"]["keepChannelLogs"]
-		self.shouldKeepPrivateLogs = self.botfactory.settings["connection"]["keepPrivateLogs"]
+		self.shouldKeepSystemLogs = self.botfactory.settings["keepSystemLogs"]
+		self.shouldKeepChannelLogs = self.botfactory.settings["keepChannelLogs"]
+		self.shouldKeepPrivateLogs = self.botfactory.settings["keepPrivateLogs"]
 		#Let's not let any file handlers linger about, in case logging settings were changed
 		self.closelogs()
 

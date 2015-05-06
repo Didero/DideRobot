@@ -14,14 +14,14 @@ class DideRobot(irc.IRCClient):
 		self.connectedAt = 0.0
 		self.isMuted = False
 		#Limit the speed at which we send messages, if necessary
-		self.lineRate = self.factory.settings['connection'].get('minSecondsBetweenMessages', -1.0)
+		self.lineRate = self.factory.settings.get('minSecondsBetweenMessages', -1.0)
 		if not isinstance(self.lineRate, float) or self.lineRate <= 0.0:
 			self.lineRate = None
 	
 	def connectionMade(self):
 		"""Called when a connection is made."""
-		self.nickname = self.factory.settings['connection']['nickname'].encode('utf-8')
-		self.realname = self.factory.settings['connection']['realname'].encode('utf-8')
+		self.nickname = self.factory.settings['nickname'].encode('utf-8')
+		self.realname = self.factory.settings['realname'].encode('utf-8')
 		irc.IRCClient.connectionMade(self)
 		self.factory.logger.log("Connection to server made")
 
@@ -36,13 +36,13 @@ class DideRobot(irc.IRCClient):
 		#Let the factory know we've connected, needed because it's a reconnecting factory
 		self.factory.resetDelay()
 		#Check if we have the nickname we should
-		if self.nickname != self.factory.settings['connection']['nickname']:
-			self.factory.logger.log("Specified nickname '{}' wasn't available, using nick '{}'".format(self.factory.settings['connection']['nickname'], self.nickname))
+		if self.nickname != self.factory.settings['nickname']:
+			self.factory.logger.log("Specified nickname '{}' wasn't available, using nick '{}'".format(self.factory.settings['nickname'], self.nickname))
 		#Join channels
-		if len(self.factory.settings['connection']['joinChannels']) == 0:
+		if len(self.factory.settings['joinChannels']) == 0:
 			print "|{}| No join channels specified, idling".format(self.factory.serverfolder)
 		else:
-			for channel in self.factory.settings['connection']['joinChannels']:
+			for channel in self.factory.settings['joinChannels']:
 				self.join(channel.encode('utf-8'))
 	
 	def irc_JOIN(self, prefix, params):

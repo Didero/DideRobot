@@ -16,7 +16,7 @@ class Command(CommandTemplate):
 			replytext = "Please provide a channel for me to join"
 		else:
 			channel = message.messageParts[0]
-			if channel.replace('#', '') not in message.bot.factory.settings['connection']['allowedChannels'] and not message.bot.factory.isUserAdmin(message.user, message.userNickname):
+			if channel.replace('#', '') not in message.bot.factory.settings['allowedChannels'] and not message.bot.factory.isUserAdmin(message.user, message.userNickname):
 				replytext = "I'm sorry, I'm not allowed to go there. Please ask my admin(s) for permission"
 			else:
 				replytext = "All right, I'll go to {}. See you there!".format(channel)

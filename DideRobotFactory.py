@@ -36,7 +36,7 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			GlobalStore.reactor.callLater(2.0, GlobalStore.bothandler.unregisterFactory, serverfolder)
 		else:
 			self.logger = Logger.Logger(self)
-			GlobalStore.reactor.connectTCP(self.settings["connection"]["server"], self.settings["connection"]["port"], self)
+			GlobalStore.reactor.connectTCP(self.settings["server"], self.settings["port"], self)
 
 	def buildProtocol(self, addr):
 		self.bot = DideRobot(self)
@@ -79,44 +79,34 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		#Then update the defaults with the server-specific ones
 		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, "settings.json"), 'r') as serverSettingsFile:
 			serverSettings = json.load(serverSettingsFile)
-			for section in ('connection', 'commands'):
-				if section not in serverSettings:
-					continue
-				if section not in self.settings:
-					self.settings[section] = serverSettings[section]
-				else:
-					self.settings[section].update(serverSettings[section])
+			self.settings.update(serverSettings)
 
 		#First make sure the required settings are in there
-		settingsToEnsure = {"connection": ["server", "port", "nickname", "realname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs"], "commands": ["commandPrefix", "admins"]}
-		for section, optionlist in settingsToEnsure.iteritems():
-			if section not in self.settings:
-				print "ERROR: Required section '{}' not found in settings.ini file for server '{}'".format(section, self.serverfolder)
+		settingsToEnsure = ["server", "port", "nickname", "realname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"]
+		for settingToEnsure in settingsToEnsure:
+			if settingToEnsure not in self.settings:
+				print "ERROR: Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder)
 				return False
-			for optionToEnsure in optionlist:
-				if optionToEnsure not in self.settings[section]:
-					print "ERROR: Required option '{}' not found in section '{}' of settings.json file for server '{}'".format(optionToEnsure, section, self.serverfolder)
-					return False
-				elif isinstance(self.settings[section][optionToEnsure], (list, unicode)) and len(self.settings[section][optionToEnsure]) == 0:
-					print "ERROR: Option '{}' in section '{}' in settings.json for server '{}' is empty".format(optionToEnsure, section, self.serverfolder)
+			elif isinstance(self.settings[settingToEnsure], (list, unicode)) and len(self.settings[settingToEnsure]) == 0:
+				print "ERROR: Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder)
+				return False
 
 		#All the strings should be strings and not unicode, which makes it a lot easier to use later
-		for section in ('connection', 'commands'):
-			for key, value in self.settings[section].iteritems():
-				if isinstance(value, unicode):
-					self.settings[section][key] = value.encode('utf-8')
+		for key, value in self.settings.iteritems():
+			if isinstance(value, unicode):
+				self.settings[key] = value.encode('utf-8')
 
 		#The command prefix is going to be needed often, as will its length. Put that in an easy-to-reach place
-		self.commandPrefix = self.settings['commands']['commandPrefix']
+		self.commandPrefix = self.settings['commandPrefix']
 		self.commandPrefixLength = len(self.commandPrefix)
 
 		# If the command whitelist or blacklist is empty, set that to 'None' so you can easily check if they're filled
 		for l in ('commandWhitelist', 'commandBlacklist'):
-			if self.settings['commands'][l] is not None and len(self.settings['commands'][l]) == 0:
-				self.settings['commands'][l] = None
+			if self.settings[l] is not None and len(self.settings[l]) == 0:
+				self.settings[l] = None
 
 		#Load in the maximum connection settings to try, if there is any
-		self.maxRetries = self.settings['connection'].get('maxConnectionRetries', -1)
+		self.maxRetries = self.settings.get('maxConnectionRetries', -1)
 		#Assume values smaller than zero mean endless retries
 		if self.maxRetries < 0:
 			self.maxRetries = None
@@ -126,10 +116,10 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		return True
 
 	def isUserAdmin(self, user, usernick=None):
-		return self.isUserInList(self.settings['commands']['admins'], user, usernick)
+		return self.isUserInList(self.settings['admins'], user, usernick)
 
 	def shouldUserBeIgnored(self, user, usernick=None):
-		return self.isUserInList(self.settings['commands']['userIgnoreList'], user, usernick)
+		return self.isUserInList(self.settings['userIgnoreList'], user, usernick)
 
 	@staticmethod
 	def isUserInList(userlist, user, usernick=None):
