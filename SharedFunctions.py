@@ -1,6 +1,7 @@
 import base64, json, os, random, re
 
 import requests
+from twisted.words.protocols.irc import assembleFormattedText, attributes
 
 import GlobalStore
 
@@ -212,3 +213,8 @@ def removeCharactersFromStringEnds(string, *chars):
 				charRemoved = True
 				string = string[:-charLength]
 	return string
+
+def addSeparatorsToString(listOfStrings, separator='|'):
+	formattedSeparator = assembleFormattedText(attributes.normal[' ', attributes.fg.gray[separator], ' '])
+	return formattedSeparator.join(listOfStrings)
+
