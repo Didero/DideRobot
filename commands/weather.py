@@ -7,6 +7,7 @@ import requests
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 import GlobalStore
+import SharedFunctions
 
 
 class Command(CommandTemplate):
@@ -94,14 +95,16 @@ class Command(CommandTemplate):
 						else:
 							replytext += u"{country}. "
 						replytext = replytext.format(city=data['city']['name'], country=data['city']['country'])
+						forecasts = []
 						for day in data['list']:
 							dayname = datetime.datetime.utcfromtimestamp(day['dt']).strftime(u"%a").upper()
 
-							replytext += u"{dayname}: {minTempC:.0f}-{maxTempC:.0f}°C / {minTempF:.0f}-{maxTempF:.0f}°F, {weatherType}, {humidity}% hum., {windSpeed:.0f}m/s {windDir} wind.  "
-							replytext = replytext.format(dayname=dayname, minTempC=day['temp']['min'], maxTempC=day['temp']['max'],
+							forecast = u"{dayname}: {minTempC:.0f}-{maxTempC:.0f}°C / {minTempF:.0f}-{maxTempF:.0f}°F, {weatherType}, {humidity}% hum., {windSpeed:.0f}m/s {windDir} wind."
+							forecast = forecast.format(dayname=dayname, minTempC=day['temp']['min'], maxTempC=day['temp']['max'],
 													minTempF=celsiusToFahrenheit(day['temp']['min']), maxTempF=celsiusToFahrenheit(day['temp']['max']),
 													humidity=day['humidity'], windSpeed=day['speed'], windDir=getWindDirection(day['deg']), weatherType=day['weather'][0]['description'])
+							forecasts.append(forecast)
+						replytext += SharedFunctions.addSeparatorsToString(forecasts)
 
 
 		message.bot.sendMessage(message.source, replytext)
-
