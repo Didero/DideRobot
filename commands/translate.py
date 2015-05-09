@@ -39,7 +39,7 @@ class Command(CommandTemplate):
 				error = result.get('responseDetails', "Unknown error").lower()
 				#An invalid language code gives an error message that's too long and a bit confusing. Correct that
 				if 'is an invalid target language' in error:
-					error = error[:error.index(' . example')] + '.'
+					error = error[:error.index(' . example')] + '. Look for the right ISO 639-1 code here: http://www.loc.gov/standards/iso639-2/php/code_list.php'
 				replytext = "Something went wrong with your query: " + error
 			else:
 				translation = result['responseData']['translatedText'].encode('utf-8')
