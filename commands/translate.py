@@ -42,6 +42,10 @@ class Command(CommandTemplate):
 					error = error[:error.index(' . example')] + '.'
 				replytext = "Something went wrong with your query: " + error
 			else:
-				replytext = "Translation: " + result['responseData']['translatedText'].encode('utf-8')
+				translation = result['responseData']['translatedText'].encode('utf-8')
+				if len(translation) == 0:
+					replytext = "Translation is empty, sorry. Are you sure you entered something? If so, sorry!"
+				else:
+					replytext = "Translation: " + translation
 
 		message.bot.sendMessage(message.source, replytext)
