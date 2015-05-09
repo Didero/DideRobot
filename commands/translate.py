@@ -36,7 +36,10 @@ class Command(CommandTemplate):
 			if result['responseStatus'] != 200:
 				#Something went wrong, the error is in 'responseDetails' (though sometimes that field is not there)
 				#  It's in all-caps though, so reduce the shouting a bit
-				error = result.get('responseDetails', "Unknown error").lower()
+				error = result.get('responseDetails')
+				if not error:
+					error = "Unknown Error"
+				error = error.lower()
 				#An invalid language code gives an error message that's too long and a bit confusing. Correct that
 				if 'is an invalid target language' in error:
 					error = error[:error.index(' . example')] + '. Look for the right ISO 639-1 code here: http://www.loc.gov/standards/iso639-2/php/code_list.php'
