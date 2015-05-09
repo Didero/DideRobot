@@ -43,6 +43,21 @@ class Command(CommandTemplate):
 				replytext = "Something went wrong with your query: " + error
 			else:
 				translation = result['responseData']['translatedText'].encode('utf-8')
+				if result['responseData']['match'] != 1:
+					#If the main result isn't perfect, see if we can manually find a better one
+					translationQuality = -1
+					translation = ""
+					for match in result['matches']:
+						#Stored quality can either be an integer or a string
+						currentQuality = match['quality']
+						if not isinstance(currentQuality, int):
+							try:
+								currentQuality = int(currentQuality)
+							except ValueError:
+								continue
+						if currentQuality > translationQuality:
+							translationQuality = currentQuality
+							translation = match['translation'].encode('utf-8')
 				if len(translation) == 0:
 					replytext = "Translation is empty, sorry. Are you sure you entered something? If so, sorry!"
 				else:
