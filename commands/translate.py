@@ -34,8 +34,13 @@ class Command(CommandTemplate):
 			params = {'q': ' '.join(message.messageParts[1:]), 'langpair': lang, 'of': 'json'}
 			result = json.loads(requests.get('http://api.mymemory.translated.net/get', params=params).text)
 			if result['responseStatus'] != 200:
-				#Something went wrong, the error is in 'responseDetails'. It's in all-caps though, so reduce the shouting a bit
-				replytext = "Something went wrong with your query: " + result['responseDetails'].lower()
+				#Something went wrong, the error is in 'responseDetails' (though sometimes that field is not there)
+				#  It's in all-caps though, so reduce the shouting a bit
+				error = result.get('responseDetails', "Unknown error").lower()
+				#An invalid language code gives an error message that's too long and a bit confusing. Correct that
+				if 'is an invalid target language' in error:
+					error = error[:error.index(' . example')] + '.'
+				replytext = "Something went wrong with your query: " + error
 			else:
 				replytext = "Translation: " + result['responseData']['translatedText'].encode('utf-8')
 
