@@ -383,10 +383,11 @@ class Command(CommandTemplate):
 
 	def updateCardFile(self, forceUpdate=False):
 		starttime = time.time()
-		replytext = u""
+		replytext = ""
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
+		setsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
-		latestFormatVersion = "3.0"
+		latestFormatVersion = "3.1"
 
 		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
 		storedVersion = "0.00"
@@ -431,7 +432,7 @@ class Command(CommandTemplate):
 		print "[MTG] Done version-checking at {} seconds in".format(time.time() - starttime)
 
 		#Now let's check if we need to update the cards
-		if forceUpdate or latestVersion != storedVersion or latestFormatVersion != storedFormatVersion or not os.path.exists(cardsJsonFilename):
+		if forceUpdate or latestVersion != storedVersion or latestFormatVersion != storedFormatVersion or not os.path.exists(cardsJsonFilename) or not os.path.exists(setsJsonFilename):
 			self.areCardfilesInUse = True
 			print "[MtG] Updating card database!"
 			url = "http://mtgjson.com/json/AllSets.json.zip"  #Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
@@ -452,12 +453,17 @@ class Command(CommandTemplate):
 			downloadedCardstore = {}
 			with open(newcardfilename, 'r') as newcardfile:
 				downloadedCardstore = json.load(newcardfile)
+			#Remove the file downloaded from MTGjson.com, since we've got the data in memory now
+			os.remove(newcardfilename)
+
 			newcardstore = {}
+			setstore = {}
 			keysToChange = {'keysToRemove': ['border', 'imageName', 'number', 'releaseDate', 'reserved', 'subtypes',
 											 'supertypes', 'timeshifted', 'types', 'variations', 'watermark'],
 							'numberKeysToMakeString': ['cmc', 'hand', 'life', 'loyalty', 'multiverseid'],
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
+			raritiesToRemove = ('marketing', 'checklist')
 			# This function will be called on the 'keysToFormatNicer' keys
 			#  Made into a function, because it's used in two places
 			def formatNicer(text):
@@ -473,9 +479,35 @@ class Command(CommandTemplate):
 			#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
 			for setcount in xrange(0, len(downloadedCardstore)):
 				setcode, setData = downloadedCardstore.popitem()
+				#Put the cardlist in a separate variable, so we can store all the set information easily
+				cardlist = setData.pop('cards')
+				#The 'booster' set field is a bit verbose, make that shorter and easier to use
+				if 'booster' in setData:
+					originalBoosterList = setData.pop('booster')
+					countedBoosterData = {}
+					for rarity in originalBoosterList:
+						#Some keys are dumb and useless ('marketing'). Ignore those
+						if rarity in raritiesToRemove:
+							continue
+						#Here the rarity for a basic land is called 'land', while in the cards themselves it's 'basic land'. Correct that
+						if rarity == 'land':
+							rarity = 'basic land'
+						#If the entry is a list, it's a list of possible choices for that card
+						#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
+						if isinstance(rarity, list):
+							if '_choice' not in countedBoosterData:
+								countedBoosterData['_choice'] = []
+							countedBoosterData['_choice'].append(rarity)
+						elif rarity not in countedBoosterData:
+							countedBoosterData[rarity] = 1
+						else:
+							countedBoosterData[rarity] += 1
+					setData['booster'] = countedBoosterData
+				setstore[setData['name'].lower()] = setData
+
 				#Again, pop off cards when we need them, to save on memory
-				for cardcount in xrange(0, len(setData['cards'])):
-					card = setData['cards'].pop(0)
+				for cardcount in xrange(0, len(cardlist)):
+					card = cardlist.pop(0)
 					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
 
 					#If the card isn't in the store yet, parse its data
@@ -518,16 +550,17 @@ class Command(CommandTemplate):
 						cardSetInfo['flavor'] = formatNicer(card.pop('flavor'))
 					newcardstore[cardname][1][setData['name']] = cardSetInfo
 
-			#First delete the original file
+			#First delete the original files
 			if os.path.exists(cardsJsonFilename):
 				os.remove(cardsJsonFilename)
-			#Save the new database to disk
+			if os.path.exists(setsJsonFilename):
+				os.remove(setsJsonFilename)
+			#Save the new databases to disk
 			with open(cardsJsonFilename, 'w') as cardfile:
 				#json.dump(cards, cardfile) #This is dozens of seconds slower than below
 				cardfile.write(json.dumps(newcardstore))
-
-			#Remove the file downloaded from MTGjson.com
-			os.remove(newcardfilename)
+			with open(setsJsonFilename, 'w') as setsfile:
+				setsfile.write(json.dumps(setstore))
 
 			#Replace the old version file with the new one
 			versiondata['_formatVersion'] = latestFormatVersion
