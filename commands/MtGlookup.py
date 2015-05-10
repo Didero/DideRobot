@@ -55,6 +55,21 @@ class Command(CommandTemplate):
 			message.bot.say(message.source, replytext)
 			return
 
+		#Allow checking of card database version
+		elif searchType == 'version':
+			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')):
+				#If we don't have a version file, something's weird. Force an update to recreate all files properly
+				message.bot.sendMessage(message.source, "I don't have a version file, for some reason. I'll make sure I have one by updating the card database, give me a minute")
+				self.executeScheduledFunction()
+				self.scheduledFunctionTimer.reset()
+			else:
+				#Version file's there, show the version number
+				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'r') as versionfile:
+					versions = json.load(versionfile)
+				message.bot.sendMessage(message.source, "My card database is based on version {} from www.mtgjson.com".format(versions['version']))
+			#Regardless, we don't need to continue
+			return
+
 		#We can also search for definitions
 		elif searchType == 'define':
 			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')):
