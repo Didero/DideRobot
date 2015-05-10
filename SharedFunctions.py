@@ -218,3 +218,12 @@ def addSeparatorsToString(listOfStrings, separator='|'):
 	formattedSeparator = assembleFormattedText(attributes.normal[' ', attributes.fg.gray[separator], ' '])
 	return formattedSeparator.join(listOfStrings)
 
+def makeTextBold(s):
+	if isinstance(s, unicode):
+		try:
+			s = s.encode('utf-8')
+		except UnicodeDecodeError:
+			print "[SharedFunctions] Error converting unicode to string"
+			return s
+	return assembleFormattedText(attributes.normal['', attributes.bold[s], ''])
+
