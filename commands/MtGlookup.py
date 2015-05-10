@@ -139,6 +139,79 @@ class Command(CommandTemplate):
 			message.bot.say(message.source, replytext)
 			return
 
+		elif searchType == 'booster':
+			if message.messagePartsLength == 1:
+				message.bot.sendMessage(message.source, "Please provide a set name, so I can open a boosterpack from that set")
+				return
+			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
+				message.bot.sendMessage(message.source, "I'm sorry, I don't seem to have my set file. I'll retrieve it, give me a minute and try again")
+				self.executeScheduledFunction()
+				self.scheduledFunctionTimer.reset()
+				return
+			askedSetname = ' '.join(message.messageParts[1:]).lower()
+			#First check if the message is a valid setname
+			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
+				setdata = json.load(setsfile)
+			if askedSetname not in setdata:
+				message.bot.sendMessage(message.source, "I'm sorry, I don't know the set '{}'. Did you make a typo?".format(askedSetname))
+				return
+			#Some sets don't have booster packs, check for that too
+			if 'booster' not in setdata[askedSetname]:
+				message.bot.sendMessage(message.source, "That set didn't have booster packs, according to my data. Sorry")
+				return
+			boosterRarities = setdata[askedSetname]['booster']
+
+			#Resolve any random choices (in the '_choice' field)
+			if '_choice' in boosterRarities:
+				for rarityOptions in boosterRarities['_choice']:
+					#This is a list of cards
+					#TODO: Make it a weighted choice ('mythic rare' should happen far less often than 'rare', for instance)
+					rarityPick = random.choice(rarityOptions)
+					if rarityPick not in boosterRarities:
+						boosterRarities[rarityPick] = 1
+					else:
+						boosterRarities[rarityPick] += 1
+				del boosterRarities['_choice']
+
+			#Name exist, get the proper spelling, since in other places setnames aren't lower-case
+			askedSetname = setdata[askedSetname]['name']
+
+			#Get all cards from that set
+			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), 'r') as jsonfile:
+				cardstore = json.load(jsonfile)
+			#A dictionary with the found cards, sorted by rarity
+			possibleCards = {}
+			for i in xrange(0, len(cardstore)):
+				cardname, carddata = cardstore.popitem()
+				for setname, setdata in carddata[1].iteritems():
+					if setname == askedSetname:
+						rarity = setdata['rarity'].lower()
+						if rarity not in possibleCards:
+							possibleCards[rarity] = []
+						possibleCards[rarity].append(carddata[0]['name'])
+						break
+
+			#Check if we found enough cards
+			for rarity, count in boosterRarities.iteritems():
+				if rarity == '_choice':
+					continue
+				if rarity not in possibleCards:
+					message.bot.sendMessage(message.source, "No cards with rarity '{}' found, and I can't make a booster pack without it!".format(rarity))
+					return
+				elif possibleCards[rarity] < count:
+					message.bot.sendMessage(message.source, "That set doesn't contain enough {} cards for a boosterpack. "
+															"I need {}, but I only found {}".format(rarity, boosterRarities[rarity], len(possibleCards[rarity])))
+					return
+
+			#Draw the cards!
+			replytext = u"Boosterpack contents: "
+			for rarity, count in boosterRarities.iteritems():
+				replytext += u"{}: {}. ".format(SharedFunctions.makeTextBold(rarity.capitalize()), u"; ".join(random.sample(possibleCards[rarity], count)))
+			replytext = replytext.encode('utf-8')
+
+			message.bot.sendMessage(message.source, replytext)
+			return
+
 		#If we reached here, we're gonna search through the card store
 		searchDict = {}
 		# If there is an actual search (with colon key-value separator OR a random card is requested with specific search requirements
