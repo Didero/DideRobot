@@ -149,17 +149,39 @@ class Command(CommandTemplate):
 				self.scheduledFunctionTimer.reset()
 				return
 			askedSetname = ' '.join(message.messageParts[1:]).lower()
+			properSetname = u''
 			#First check if the message is a valid setname
 			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
 				setdata = json.load(setsfile)
-			if askedSetname not in setdata:
+			if askedSetname in setdata:
+				properSetname = askedSetname
+			else:
+				#Setname not found literally. Try and find the closest match
+				try:
+					askedSetnameRegex = re.compile(askedSetname, re.IGNORECASE)
+				except re.error:
+					askedSetnameRegex = re.compile(re.escape(askedSetname), re.IGNORECASE)
+				for setname in setdata:
+					#Match found!
+					if askedSetnameRegex.search(setname):
+						#If we hadn't found a match previously, store this name
+						if properSetname == u'':
+							properSetname = setname
+						else:
+							#A match has been found previously. We can't make a boosterpack from two sets, so show an error
+							message.bot.sendMessage(message.source, "That setname matches at least two sets, '{}' and '{}'. "
+																	"I can't make a boosterpack from more than one set. "
+																	"Please be a bit more specific".format(setname, properSetname))
+							return
+			#Check if we have a setname match
+			if properSetname == u'':
 				message.bot.sendMessage(message.source, "I'm sorry, I don't know the set '{}'. Did you make a typo?".format(askedSetname))
 				return
 			#Some sets don't have booster packs, check for that too
-			if 'booster' not in setdata[askedSetname]:
+			if 'booster' not in setdata[properSetname]:
 				message.bot.sendMessage(message.source, "That set didn't have booster packs, according to my data. Sorry")
 				return
-			boosterRarities = setdata[askedSetname]['booster']
+			boosterRarities = setdata[properSetname]['booster']
 
 			#Resolve any random choices (in the '_choice' field)
 			if '_choice' in boosterRarities:
@@ -174,7 +196,7 @@ class Command(CommandTemplate):
 				del boosterRarities['_choice']
 
 			#Name exist, get the proper spelling, since in other places setnames aren't lower-case
-			askedSetname = setdata[askedSetname]['name']
+			properSetname = setdata[properSetname]['name']
 
 			#Get all cards from that set
 			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), 'r') as jsonfile:
@@ -184,7 +206,7 @@ class Command(CommandTemplate):
 			for i in xrange(0, len(cardstore)):
 				cardname, carddata = cardstore.popitem()
 				for setname, setdata in carddata[1].iteritems():
-					if setname == askedSetname:
+					if setname == properSetname:
 						rarity = setdata['rarity'].lower()
 						if rarity not in possibleCards:
 							possibleCards[rarity] = []
@@ -204,7 +226,7 @@ class Command(CommandTemplate):
 					return
 
 			#Draw the cards!
-			replytext = u"Boosterpack contents: "
+			replytext = u"Boosterpack for '{}' contains: ".format(properSetname)
 			for rarity, count in boosterRarities.iteritems():
 				replytext += u"{}: {}. ".format(SharedFunctions.makeTextBold(rarity.capitalize()), u"; ".join(random.sample(possibleCards[rarity], count)))
 			replytext = replytext.encode('utf-8')
