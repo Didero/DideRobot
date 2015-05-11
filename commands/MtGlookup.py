@@ -460,7 +460,7 @@ class Command(CommandTemplate):
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		setsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
-		latestFormatVersion = "3.1"
+		latestFormatVersion = "3.2"
 
 		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
 		storedVersion = "0.00"
@@ -536,7 +536,9 @@ class Command(CommandTemplate):
 							'numberKeysToMakeString': ['cmc', 'hand', 'life', 'loyalty', 'multiverseid'],
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
-			raritiesToRemove = ('marketing', 'checklist')
+			raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
+			raritiesToRename = {'land': 'basic land', 'urza land': 'basic land'}
+			rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}
 			# This function will be called on the 'keysToFormatNicer' keys
 			#  Made into a function, because it's used in two places
 			def formatNicer(text):
@@ -559,19 +561,49 @@ class Command(CommandTemplate):
 					originalBoosterList = setData.pop('booster')
 					countedBoosterData = {}
 					for rarity in originalBoosterList:
+						#If the entry is a list, it's a list of possible choices for that card
+						#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
+						if isinstance(rarity, list):
+							#Remove useless options here too
+							for rarityToRemove in raritiesToRemove:
+								if rarityToRemove in rarity:
+									rarity.remove(rarityToRemove)
+							#Rename 'wrongly' named rarites
+							for r in raritiesToRename:
+								if r in rarity:
+									rarity.remove(r)
+									rarity.append(raritiesToRename[r])
+							#Check if any of the choices have a prefix that needs to be removed (use a copy so we can delete elements in the loop)
+							for choice in rarity[:]:
+								for rp in rarityPrefixesToRemove:
+									if choice.startswith(rp):
+										#Remove the original choice...
+										rarity.remove(choice)
+										#...and put in the choice without the prefix
+										rarity.append(choice[rarityPrefixesToRemove[rp]:])
+							#If we've removed all but one option, it's not a choice anymore, so treat it like a 'normal' rarity
+							if len(rarity) == 1:
+								rarity = rarity[0]
+							else:
+								#If it's still a list, keep it like that
+								if '_choice' not in countedBoosterData:
+									countedBoosterData['_choice'] = []
+								countedBoosterData['_choice'].append(rarity)
+								#...but don't do any of the other stuff
+								continue
 						#Some keys are dumb and useless ('marketing'). Ignore those
 						if rarity in raritiesToRemove:
 							continue
 						#Here the rarity for a basic land is called 'land', while in the cards themselves it's 'basic land'. Correct that
-						if rarity == 'land':
-							rarity = 'basic land'
-						#If the entry is a list, it's a list of possible choices for that card
-						#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
-						if isinstance(rarity, list):
-							if '_choice' not in countedBoosterData:
-								countedBoosterData['_choice'] = []
-							countedBoosterData['_choice'].append(rarity)
-						elif rarity not in countedBoosterData:
+						for rarityToRename in raritiesToRename:
+							if rarity == rarityToRename:
+								rarity = raritiesToRename[rarity]
+						#Remove any useless prefixes like 'foil'
+						for rp in rarityPrefixesToRemove:
+							if rarity.startswith(rp):
+								rarity = rarity[rarityPrefixesToRemove[rp]:]
+						#Finally, count the rarity
+						if rarity not in countedBoosterData:
 							countedBoosterData[rarity] = 1
 						else:
 							countedBoosterData[rarity] += 1
