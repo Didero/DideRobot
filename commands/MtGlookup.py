@@ -448,25 +448,22 @@ class Command(CommandTemplate):
 				replytext += u" Flavor: " + sets[setname]['flavor']
 			maxSetsToDisplay = 4
 			setcount = len(sets)
-			if setcount == 1:
-				replytext += u" [in set {}]".format(sets.keys()[0])
-			elif setcount <= maxSetsToDisplay:
-				replytext += u" [in sets {}]".format("; ".join(sorted(sets.keys())))
-			else:
-				shortSetList = random.sample(sets.keys(), maxSetsToDisplay)
-				#Make sure the selected set appears in the list
-				if setname not in shortSetList:
-					#Remove a random entry
-					shortSetList.pop(random.randint(1, maxSetsToDisplay) - 1)
-					#And put our set name in its place
-					shortSetList.append(setname)
-				shortSetList.sort()
-				shortSetListDisplay = ""
-				for setname in shortSetList:
-					#Make the display 'setname [first letter of rarity]', so 'Magic 2015 [R]'
-					shortSetListDisplay += u"{} [{}]; ".format(setname, sets[setname]['rarity'][0])
-				shortSetListDisplay = shortSetListDisplay[:-2]
-				replytext += u" [in sets {shortSetList} and {setCountLeft} more]".format(shortSetList=shortSetListDisplay, setCountLeft=setcount-maxSetsToDisplay)
+			setlist = sets.keys()
+			if setcount > maxSetsToDisplay:
+				setlist = random.sample(setlist, maxSetsToDisplay)
+			replytext += u" [in set{} ".format('s' if setcount > 1 else '')
+			for setname in setlist:
+				#Make the display 'setname [first letter of rarity]', so 'Magic 2015 [R]'
+				rarity = sets[setname]['rarity']
+				if rarity == 'Basic Land':
+					rarity = 'L'
+				else:
+					rarity = rarity[0]
+				replytext += u"{} [{}]; ".format(setname, rarity)
+			replytext = replytext[:-2]  #Remove the last ': '
+			if setcount > maxSetsToDisplay:
+				replytext += u" and {:,} more".format(setcount - maxSetsToDisplay)
+			replytext += u"]"
 		#No extra set info, but still add a warning if it's in a non-legal set
 		else:
 			for illegalSet in ['Happy Holidays', 'Unglued', 'Unhinged']:
