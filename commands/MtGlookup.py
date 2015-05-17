@@ -141,7 +141,7 @@ class Command(CommandTemplate):
 
 		elif searchType == 'booster':
 			if message.messagePartsLength == 1:
-				message.bot.sendMessage(message.source, "Please provide a set name, so I can open a boosterpack from that set")
+				message.bot.sendMessage(message.source, "Please provide a set name, so I can open a boosterpack from that set. Or use 'random' to have me pick one")
 				return
 			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
 				message.bot.sendMessage(message.source, "I'm sorry, I don't seem to have my set file. I'll retrieve it, give me a minute and try again")
@@ -153,7 +153,9 @@ class Command(CommandTemplate):
 			#First check if the message is a valid setname
 			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
 				setdata = json.load(setsfile)
-			if askedSetname in setdata:
+			if askedSetname == 'random':
+				askedSetname = random.choice(setdata.keys())
+			elif askedSetname in setdata:
 				properSetname = askedSetname
 			else:
 				#Setname not found literally. Try and find the closest match
