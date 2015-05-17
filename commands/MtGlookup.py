@@ -154,7 +154,7 @@ class Command(CommandTemplate):
 			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
 				setdata = json.load(setsfile)
 			if askedSetname == 'random':
-				properSetname = random.choice(setdata.keys())
+				properSetname = random.choice(setdata['_setsWithBoosterpacks'])
 			elif askedSetname in setdata:
 				properSetname = askedSetname
 			else:
