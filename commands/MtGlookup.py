@@ -481,7 +481,7 @@ class Command(CommandTemplate):
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		setsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
-		latestFormatVersion = "3.2"
+		latestFormatVersion = "3.3"
 
 		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
 		storedVersion = "0.00"
@@ -551,7 +551,7 @@ class Command(CommandTemplate):
 			os.remove(newcardfilename)
 
 			newcardstore = {}
-			setstore = {}
+			setstore = {'_setsWithBoosterpacks': []}
 			keysToChange = {'keysToRemove': ['border', 'imageName', 'number', 'releaseDate', 'reserved', 'subtypes',
 											 'supertypes', 'timeshifted', 'types', 'variations', 'watermark'],
 							'numberKeysToMakeString': ['cmc', 'hand', 'life', 'loyalty', 'multiverseid'],
@@ -579,6 +579,8 @@ class Command(CommandTemplate):
 				cardlist = setData.pop('cards')
 				#The 'booster' set field is a bit verbose, make that shorter and easier to use
 				if 'booster' in setData:
+					#Keep a list of sets that have booster packs
+					setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
 					originalBoosterList = setData.pop('booster')
 					countedBoosterData = {}
 					for rarity in originalBoosterList:
