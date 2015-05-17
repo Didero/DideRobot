@@ -19,24 +19,25 @@ class Command(CommandTemplate):
 		
 
 			quitmessage = "{0} told me to quit, so here I go..."
-			if message.message and message.message != u"":
+			if message.messagePartsLength > 0:
 				quitmessage = message.message
+
+			#Replace the first argument with the caller's name, for fun possibilities
+			quitmessage = quitmessage.format(nick=message.userNickname)
 
 			#You don't see quit messages in PMs, inform the user anyway
 			if message.isPrivateMessage:
-				message.bot.say(message.source, quitmessage)
+				message.bot.say(message.source, "Quitting! Reason: " + quitmessage)
 
-			#Replace the first argument with the caller's name, for fun possibilities
-			quitmessage = quitmessage.format(message.userNickname)
 			GlobalStore.bothandler.stopBotfactory(message.bot.factory.serverfolder, quitmessage)
 
 		elif message.trigger == 'shutdown':
 			#SHUT DOWN EVERYTHING
 			quitmessage = "Total shutdown initiated. Bye..."
-			if message.message and message.message != u"":
-				quitmessage = message.message.format(message.userNickname)
+			if message.messagePartsLength > 0:
+				quitmessage = message.message.format(nick=message.userNickname)
 
 			if message.isPrivateMessage:
 				#If we've been told to shut down in a PM, inform the user that we're complying
-				message.bot.say(message.source, quitmessage)
+				message.bot.say(message.source, "Shutting down! Reason: " + quitmessage)
 			GlobalStore.bothandler.shutdown(quitmessage)
