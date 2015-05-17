@@ -181,7 +181,7 @@ class Command(CommandTemplate):
 				return
 			#Some sets don't have booster packs, check for that too
 			if 'booster' not in setdata[properSetname]:
-				message.bot.sendMessage(message.source, "That set didn't have booster packs, according to my data. Sorry")
+				message.bot.sendMessage(message.source, "The set '{}' didn't have booster packs, according to my data. Sorry".format(properSetname))
 				return
 			boosterRarities = setdata[properSetname]['booster']
 
