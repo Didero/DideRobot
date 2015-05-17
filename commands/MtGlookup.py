@@ -481,7 +481,7 @@ class Command(CommandTemplate):
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		setsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
-		latestFormatVersion = "3.3"
+		latestFormatVersion = "3.3.1"
 
 		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
 		storedVersion = "0.00"
@@ -604,14 +604,18 @@ class Command(CommandTemplate):
 										rarity.remove(choice)
 										#...and put in the choice without the prefix
 										rarity.append(choice[rarityPrefixesToRemove[rp]:])
+							#If we removed all options and just have an empty list now, replace it with a rare
+							if len(rarity) == 0:
+								rarity = 'rare'
 							#If we've removed all but one option, it's not a choice anymore, so treat it like a 'normal' rarity
-							if len(rarity) == 1:
+							elif len(rarity) == 1:
 								rarity = rarity[0]
 							else:
 								#If it's still a list, keep it like that
 								if '_choice' not in countedBoosterData:
-									countedBoosterData['_choice'] = []
-								countedBoosterData['_choice'].append(rarity)
+									countedBoosterData['_choice'] = [rarity]
+								else:
+									countedBoosterData['_choice'].append(rarity)
 								#...but don't do any of the other stuff
 								continue
 						#Some keys are dumb and useless ('marketing'). Ignore those
