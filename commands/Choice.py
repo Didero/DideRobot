@@ -7,7 +7,7 @@ class Command(CommandTemplate):
 	triggers = ['choice', 'choose']
 	helptext = "Helps you make a choice between options in a comma-separated list"
 
-	possibleReplies = ["{}", "Hmm, I'd go with {}", "Out of those, {} sounds the least bad", "{}, obviously",
+	possibleReplies = ["Hmm, I'd go with {}", "Out of those, {} sounds the least bad", "{}, obviously",
 					   "Let's go with... {}. No wait! No, yeah, that one", "I don't know! *rolls dice* Seems you should go for {}",
 					   "Pick {0}, pick {0}!", "Eh, {} will do", "Why not {}?", "The first one! The last one! {}!", "Just pick {}"]
 
