@@ -37,7 +37,7 @@ class Command(CommandTemplate):
 					break
 		# If no generator was found, use a random one
 		if not generator:
-			generator = random.choice(self.generators)
+			generator = random.choice(self.generators.keys())
 			messagePrefix = '({}) '.format(generator)
 			if message.messagePartsLength > 0:
 				extraArgument = message.messageParts[-1].lower()
