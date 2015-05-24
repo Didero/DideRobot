@@ -160,18 +160,7 @@ class Command(CommandTemplate):
 					return u"Error: No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey)
 
 			#Process the possible arguments that can be provided
-			if 'lowercase' in arguments:
-				replacement = replacement.lower()
-			elif 'uppercase' in arguments:
-				replacement = replacement.upper()
-			elif 'camelcase' in arguments or 'titlecase' in arguments:
-				replacement = replacement.title()
-			elif 'firstletteruppercase' in arguments:
-				if len(replacement) > 1:
-					replacement = replacement[0].upper() + replacement[1:]
-				else:
-					replacement = replacement.upper()
-			for argument in arguments:
+			for argument in arguments[1:]:
 				#<addvar:key=value>
 				if argument.startswith('addvar') and ':' in argument and '=' in argument:
 					key, value = argument.split(':')[1].split('=', 1)
@@ -180,6 +169,17 @@ class Command(CommandTemplate):
 							variableDict[key].append(value)
 						else:
 							variableDict[key] = value
+				elif argument == 'lowercase':
+					replacement = replacement.lower()
+				elif argument == 'uppercase':
+					replacement = replacement.upper()
+				elif argument == 'camelcase' or argument == 'titlecase':
+					replacement = replacement.title()
+				elif argument == 'firstletteruppercase':
+					if len(replacement) > 1:
+						replacement = replacement[0].upper() + replacement[1:]
+					else:
+						replacement = replacement.upper()
 
 			sentence = sentence.replace(u"<{}>".format(field), replacement, 1).strip()
 		#Exited from loop, return the fully filled-in sentence
