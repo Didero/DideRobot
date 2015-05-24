@@ -190,18 +190,18 @@ class Command(CommandTemplate):
 		# First get a last name
 		lastName = self.getRandomLine(self.filesLocation, "LastNames.txt")
 		firstName = None
-		gender = u"f"
+		gender = "f"
 		#Pick between a male and female first name
 		if extraArgument in ["female", "f", "woman", "girl"]:
-			gender = u"f"
+			gender = "f"
 		elif extraArgument in ["male", "m", "man", "boy"]:
-			gender = u"m"
+			gender = "m"
 		elif random.randint(1, 100) <= 50:
-			gender = u"f"
+			gender = "f"
 		else:
-			gender = u"m"
+			gender = "m"
 
-		if gender == u"f":
+		if gender == "f":
 			firstName = self.getRandomLine(self.filesLocation, "FirstNamesFemale.txt")
 		else:
 			firstName = self.getRandomLine(self.filesLocation, "FirstNamesMale.txt")
