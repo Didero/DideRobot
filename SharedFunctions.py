@@ -1,4 +1,4 @@
-import base64, json, os, random, re
+import base64, codecs, json, os, random, re
 
 import requests
 from twisted.words.protocols.irc import assembleFormattedText, attributes
@@ -99,7 +99,7 @@ def downloadNewTweets(username):
 
 def getRandomLineFromFile(filename):
 	lines = getAllLinesFromFile(filename)
-	return random.choice(lines).strip()
+	return random.choice(lines).rstrip()
 
 def getAllLinesFromFile(filename):
 	if not os.path.exists(filename):
@@ -109,7 +109,7 @@ def getAllLinesFromFile(filename):
 	if GlobalStore.scriptfolder not in filename:
 		filename = os.path.join(GlobalStore.scriptfolder, filename)
 	#Get all the lines!
-	with open(filename, 'r') as linesfile:
+	with codecs.open(filename, 'r', 'utf-8') as linesfile:
 		lines = linesfile.readlines()
 	return lines
 
