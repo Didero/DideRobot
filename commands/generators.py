@@ -88,7 +88,9 @@ class Command(CommandTemplate):
 			return random.choice(specialLetters)
 
 
-	def parseGrammarFile(self, grammarFilename, variableDict={}):
+	def parseGrammarFile(self, grammarFilename, variableDict=None):
+		if not variableDict:
+			variableDict = {}
 		with open(os.path.join(self.filesLocation, grammarFilename), "r") as grammarfile:
 			grammar = json.load(grammarfile)
 		sentence = grammar["_start"]
