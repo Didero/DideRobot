@@ -181,6 +181,13 @@ class Command(CommandTemplate):
 					else:
 						replacement = replacement.upper()
 
+			#Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
+			if len(arguments) > 1 and not fieldKey.startswith('_') and replacement.startswith('<'):
+				closingBracketIndex = replacement.find('>')
+				if closingBracketIndex > -1:
+					orgReplacement = replacement
+					replacement = replacement[:closingBracketIndex] + optionSeparator + optionSeparator.join(arguments[1:]) + replacement[closingBracketIndex:]
+					print u"[Gen] Replaced '{}' with '{}'".format(orgReplacement, replacement)
 			sentence = sentence.replace(u"<{}>".format(field), replacement, 1).strip()
 		#Exited from loop, return the fully filled-in sentence
 		return sentence
