@@ -215,6 +215,11 @@ class Command(CommandTemplate):
 						possibleCards[rarity].append(carddata[0]['name'])
 						break
 
+			#Some sets don't have basic lands, but need them in their boosterpacks (Gatecrash f.i.) Fix that
+			if 'basic land' in boosterRarities and 'basic land' not in possibleCards:
+				print "[MTG] Booster needs basic lands, but set doesn't have any! Adding manually"
+				possibleCards['basic land'] = ['Forest', 'Island', 'Mountain', 'Plains', 'Swamp']
+
 			#Check if we found enough cards
 			for rarity, count in boosterRarities.iteritems():
 				if rarity == '_choice':
