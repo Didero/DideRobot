@@ -37,7 +37,7 @@ class Command(CommandTemplate):
 			searchType = message.messageParts[0].lower()
 
 		if message.messagePartsLength == 0:
-			message.bot.say(message.source, "This command " + self.helptext[0].lower() + self.helptext[1:])
+			message.bot.say(message.source, "This command " + self.helptext[0].lower() + self.helptext[1:].format(commandPrefix=message.bot.factory.commandPrefix))
 			return
 
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
