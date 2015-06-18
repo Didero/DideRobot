@@ -13,9 +13,10 @@ from IrcMessage import IrcMessage
 
 
 class Command(CommandTemplate):
-	triggers = ['mtg', 'mtgf']
-	helptext = "Looks up info on 'Magic The Gathering' cards. Provide a card name or a regex match to search for. Or search for 'random', and see what comes up. "
-	helptext += "With the parameter 'search', you can enter JSON-style data to search for other attributes, see http://mtgjson.com/ for what's available. {commandPrefix}mtgf adds the flavor text to the result"
+	triggers = ['mtg', 'mtgf', 'mtgb']
+	helptext = "Looks up info on Magic The Gathering cards. Provide a card name or a regex match to search for,  'random'for a surprise. "
+	helptext += "With the parameter 'search', you can enter JSON-style data to search for attributes, see http://mtgjson.com/ for what's available. "
+	helptext += "{commandPrefix}mtgf adds the flavor text to the result. {commandPrefix}mtgb is shorthand for '{commandPrefix}mtg booster'"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 
 	areCardfilesInUse = False
@@ -139,8 +140,8 @@ class Command(CommandTemplate):
 			message.bot.say(message.source, replytext)
 			return
 
-		elif searchType == 'booster':
-			if message.messagePartsLength == 1:
+		elif searchType == 'booster' or message.trigger == 'mtgb':
+			if (searchType == 'booster' and message.messagePartsLength == 1) or (message.trigger == 'mtgb' and message.messagePartsLength == 0):
 				message.bot.sendMessage(message.source, "Please provide a set name, so I can open a boosterpack from that set. Or use 'random' to have me pick one")
 				return
 			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
@@ -148,98 +149,10 @@ class Command(CommandTemplate):
 				self.executeScheduledFunction()
 				self.scheduledFunctionTimer.reset()
 				return
-			askedSetname = ' '.join(message.messageParts[1:]).lower()
-			properSetname = u''
-			#First check if the message is a valid setname
-			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
-				setdata = json.load(setsfile)
-			if askedSetname == 'random':
-				properSetname = random.choice(setdata['_setsWithBoosterpacks'])
-			elif askedSetname in setdata:
-				properSetname = askedSetname
-			else:
-				#Setname not found literally. Try and find the closest match
-				try:
-					askedSetnameRegex = re.compile(askedSetname, re.IGNORECASE)
-				except re.error:
-					askedSetnameRegex = re.compile(re.escape(askedSetname), re.IGNORECASE)
-				for setname in setdata:
-					#Match found!
-					if askedSetnameRegex.search(setname):
-						#If we hadn't found a match previously, store this name
-						if properSetname == u'':
-							properSetname = setname
-						else:
-							#A match has been found previously. We can't make a boosterpack from two sets, so show an error
-							message.bot.sendMessage(message.source, "That setname matches at least two sets, '{}' and '{}'. "
-																	"I can't make a boosterpack from more than one set. "
-																	"Please be a bit more specific".format(setname, properSetname))
-							return
-			#Check if we have a setname match
-			if properSetname == u'':
-				message.bot.sendMessage(message.source, "I'm sorry, I don't know the set '{}'. Did you make a typo?".format(askedSetname))
-				return
-			#Some sets don't have booster packs, check for that too
-			if 'booster' not in setdata[properSetname]:
-				message.bot.sendMessage(message.source, "The set '{}' didn't have booster packs, according to my data. Sorry".format(properSetname))
-				return
-			boosterRarities = setdata[properSetname]['booster']
-
-			#Resolve any random choices (in the '_choice' field)
-			if '_choice' in boosterRarities:
-				for rarityOptions in boosterRarities['_choice']:
-					#This is a list of cards
-					#TODO: Make it a weighted choice ('mythic rare' should happen far less often than 'rare', for instance)
-					rarityPick = random.choice(rarityOptions)
-					if rarityPick not in boosterRarities:
-						boosterRarities[rarityPick] = 1
-					else:
-						boosterRarities[rarityPick] += 1
-				del boosterRarities['_choice']
-
-			#Name exist, get the proper spelling, since in other places setnames aren't lower-case
-			properSetname = setdata[properSetname]['name']
-
-			#Get all cards from that set
-			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), 'r') as jsonfile:
-				cardstore = json.load(jsonfile)
-			#A dictionary with the found cards, sorted by rarity
-			possibleCards = {}
-			for i in xrange(0, len(cardstore)):
-				cardname, carddata = cardstore.popitem()
-				for setname, setdata in carddata[1].iteritems():
-					if setname == properSetname:
-						rarity = setdata['rarity'].lower()
-						if rarity not in possibleCards:
-							possibleCards[rarity] = []
-						possibleCards[rarity].append(carddata[0]['name'])
-						break
-
-			#Some sets don't have basic lands, but need them in their boosterpacks (Gatecrash f.i.) Fix that
-			if 'basic land' in boosterRarities and 'basic land' not in possibleCards:
-				print "[MTG] Booster needs basic lands, but set doesn't have any! Adding manually"
-				possibleCards['basic land'] = ['Forest', 'Island', 'Mountain', 'Plains', 'Swamp']
-
-			#Check if we found enough cards
-			for rarity, count in boosterRarities.iteritems():
-				if rarity == '_choice':
-					continue
-				if rarity not in possibleCards:
-					message.bot.sendMessage(message.source, "No cards with rarity '{}' found, and I can't make a booster pack without it!".format(rarity))
-					return
-				elif possibleCards[rarity] < count:
-					message.bot.sendMessage(message.source, "That set doesn't contain enough {} cards for a boosterpack. "
-															"I need {}, but I only found {}".format(rarity, boosterRarities[rarity], len(possibleCards[rarity])))
-					return
-
-			#Draw the cards!
-			replytext = u"Boosterpack for '{}' contains: ".format(properSetname)
-			for rarity, count in boosterRarities.iteritems():
-				replytext += u"{}: {}. ".format(SharedFunctions.makeTextBold(rarity.capitalize()), u"; ".join(random.sample(possibleCards[rarity], count)))
-			replytext = replytext.encode('utf-8')
-
-			message.bot.sendMessage(message.source, replytext)
+			setname = ' '.join(message.messageParts[1:]).lower() if searchType == 'booster' else message.message.lower()
+			message.bot.sendMessage(message.source, self.openBoosterpack(setname)[1])
 			return
+
 
 		#If we reached here, we're gonna search through the card store
 		searchDict = {}
@@ -479,6 +392,93 @@ class Command(CommandTemplate):
 		#FILL THAT SHIT IN (encoded properly)
 		replytext = replytext.format(card=card).encode('utf-8')
 		return replytext
+
+	def openBoosterpack(self, askedSetname):
+		properSetname = u''
+		#First check if the message is a valid setname
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
+			setdata = json.load(setsfile)
+		if askedSetname == 'random':
+			properSetname = random.choice(setdata['_setsWithBoosterpacks'])
+		elif askedSetname in setdata:
+			properSetname = askedSetname
+		else:
+			#Setname not found literally. Try and find the closest match
+			try:
+				askedSetnameRegex = re.compile(askedSetname, re.IGNORECASE)
+			except re.error:
+				askedSetnameRegex = re.compile(re.escape(askedSetname), re.IGNORECASE)
+			for setname in setdata:
+				#Match found!
+				if askedSetnameRegex.search(setname):
+					#If we hadn't found a match previously, store this name
+					if properSetname == u'':
+						properSetname = setname
+					else:
+						#A match has been found previously. We can't make a boosterpack from two sets, so show an error
+						return (False, "That setname matches at least two sets, '{}' and '{}'. I can't make a boosterpack from more than one set. "
+									   "Please be a bit more specific".format(setname, properSetname))
+		#Check if we have a setname match
+		if properSetname == u'':
+			return (False, "I'm sorry, I don't know the set '{}'. Did you make a typo?".format(askedSetname))
+		#Some sets don't have booster packs, check for that too
+		if 'booster' not in setdata[properSetname]:
+			return (False, "The set '{}' doesn't have booster packs, according to my data. Sorry".format(properSetname))
+		boosterRarities = setdata[properSetname]['booster']
+
+		#Resolve any random choices (in the '_choice' field)
+		if '_choice' in boosterRarities:
+			for rarityOptions in boosterRarities['_choice']:
+				#This is a list of cards
+				#TODO: Make it a weighted choice ('mythic rare' should happen far less often than 'rare', for instance)
+				rarityPick = random.choice(rarityOptions)
+				if rarityPick not in boosterRarities:
+					boosterRarities[rarityPick] = 1
+				else:
+					boosterRarities[rarityPick] += 1
+			del boosterRarities['_choice']
+
+		#Name exist, get the proper spelling, since in other places setnames aren't lower-case
+		properSetname = setdata[properSetname]['name']
+
+		#Get all cards from that set
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), 'r') as jsonfile:
+			cardstore = json.load(jsonfile)
+		#A dictionary with the found cards, sorted by rarity
+		possibleCards = {}
+		for i in xrange(0, len(cardstore)):
+			cardname, carddata = cardstore.popitem()
+			for setname, setdata in carddata[1].iteritems():
+				if setname == properSetname:
+					rarity = setdata['rarity'].lower()
+					if rarity not in possibleCards:
+						possibleCards[rarity] = []
+					possibleCards[rarity].append(carddata[0]['name'])
+					break
+
+		#Some sets don't have basic lands, but need them in their boosterpacks (Gatecrash f.i.) Fix that
+		#TODO: Handle rarities properly, a 'land' shouldn't be a 'basic land' but a land from that set
+		if 'basic land' in boosterRarities and 'basic land' not in possibleCards:
+			print u"[MTG] Booster for set '{}' needs basic lands, but set doesn't have any! Adding manually".format(properSetname)
+			possibleCards['basic land'] = ['Forest', 'Island', 'Mountain', 'Plains', 'Swamp']
+
+		#Check if we found enough cards
+		for rarity, count in boosterRarities.iteritems():
+			if rarity == '_choice':
+				continue
+			if rarity not in possibleCards:
+				return (False, "No cards with rarity '{}' found, and I can't make a booster pack without it!".format(rarity))
+			elif possibleCards[rarity] < count:
+				return (False, "That set doesn't contain enough '{}'-rarity cards for a boosterpack. "
+							   "I need {:,}, but I only found {:,}".format(rarity, boosterRarities[rarity], len(possibleCards[rarity])))
+
+		#Draw the cards!
+		replytext = u"Boosterpack for '{}' contains: ".format(properSetname)
+		for rarity, count in boosterRarities.iteritems():
+			replytext += u"{}: {}. ".format(SharedFunctions.makeTextBold(rarity.capitalize()), u"; ".join(random.sample(possibleCards[rarity], count)))
+		replytext = replytext.encode('utf-8')
+		return (True, replytext)
+
 
 	def updateCardFile(self, forceUpdate=False):
 		starttime = time.time()
