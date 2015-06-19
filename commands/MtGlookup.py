@@ -177,7 +177,7 @@ class Command(CommandTemplate):
 		#Commander search. Regardless of everything else, it has to be a legendary creature
 		if searchType == 'randomcommander':
 			if 'type' not in searchDict:
-				searchDict['type'] = u""
+				searchDict['type'] = ""
 			#Don't just search for 'legendary creature.*', because there are legendary artifact creatures too
 			searchDict['type'] = 'legendary.+creature.*' + searchDict['type']
 
