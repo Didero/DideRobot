@@ -393,7 +393,8 @@ class Command(CommandTemplate):
 		replytext = replytext.format(card=card).encode('utf-8')
 		return replytext
 
-	def openBoosterpack(self, askedSetname):
+	@staticmethod
+	def openBoosterpack(askedSetname):
 		properSetname = u''
 		#First check if the message is a valid setname
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
@@ -426,12 +427,19 @@ class Command(CommandTemplate):
 			return (False, "The set '{}' doesn't have booster packs, according to my data. Sorry".format(properSetname))
 		boosterRarities = setdata[properSetname]['booster']
 
-		#Resolve any random choices (in the '_choice' field)
+		#Resolve any random choices (in the '_choice' field). It's a list of lists, since there can be multiple cards with choices
 		if '_choice' in boosterRarities:
 			for rarityOptions in boosterRarities['_choice']:
-				#This is a list of cards
-				#TODO: Make it a weighted choice ('mythic rare' should happen far less often than 'rare', for instance)
-				rarityPick = random.choice(rarityOptions)
+				#Make it a weighted choice ('mythic rare' should happen far less often than 'rare', for instance)
+				if 'mythic rare' in rarityOptions:
+					if random.randint(0, 1000) <= 125:  #Chance of 1 in 8, which is supposedly the real-world chance
+						rarityPick = 'mythic rare'
+					else:
+						rarityOptions.remove('mythic rare')
+						rarityPick = random.choice(rarityOptions)
+				else:
+					rarityPick = random.choice(rarityOptions)
+				#Add the rarity we picked to the list of rarities we already have
 				if rarityPick not in boosterRarities:
 					boosterRarities[rarityPick] = 1
 				else:
