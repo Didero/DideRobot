@@ -13,9 +13,10 @@ class IrcMessage(object):
 		#Info about the user that sent the message
 		self.user = user
 		if self.user:
-			self.userNickname = self.user.split("!", 1)[0]
+			self.userNickname, self.userAddress = self.user.split("!", 1)
 		else:
 			self.userNickname = None
+			self.userAddress = None
 
 		#Info about the source the message came from, either a channel, or a PM from a user
 		#If there is no source provided, or the source isn't a channel, assume it's a PM
