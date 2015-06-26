@@ -67,13 +67,13 @@ class CommandHandler:
 		"""
 		:type message: IrcMessage
 		"""
-		if not message.bot.factory.shouldUserBeIgnored(message.user, message.userNickname):
+		if not message.bot.factory.shouldUserBeIgnored(message.user, message.userNickname, message.userAddress):
 			for commandname, command in self.commands.iteritems():
 				if not self.isCommandAllowedForBot(message.bot, commandname):
 					continue
 
 				if command.shouldExecute(message):
-					if command.adminOnly and not message.bot.factory.isUserAdmin(message.user, message.userNickname):
+					if command.adminOnly and not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
 						message.bot.say(message.source, "Sorry, this command is admin-only")
 					else:
 						if command.callInThread:

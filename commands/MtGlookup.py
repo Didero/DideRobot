@@ -46,7 +46,7 @@ class Command(CommandTemplate):
 			shouldForceUpdate = True if message.message.lower() == 'forceupdate' else False
 			if self.areCardfilesInUse:
 				replytext = "I'm already updating!"
-			elif not message.bot.factory.isUserAdmin(message.user):
+			elif not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				replytext = "Sorry, only admins can use my update function"
 			else:
 				replytext = self.updateCardFile(shouldForceUpdate)
