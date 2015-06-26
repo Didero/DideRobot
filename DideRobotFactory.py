@@ -125,9 +125,9 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 	def isUserInList(userlist, user, usernick=None):
 		if user in userlist or user.lower() in userlist:
 			return True
+		#If a usernick is provided, use that, otherwise split the full user address ourselves
 		if usernick is None:
 			usernick = user.split('!', 1)[0]
-		#If a usernick is provided, use that, otherwise split the full user address ourselves
-		elif usernick in userlist or usernick.lower() in userlist:
+		if usernick in userlist or usernick.lower() in userlist:
 			return True
 		return False
