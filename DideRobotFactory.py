@@ -115,19 +115,19 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			self.logger.updateLogSettings()
 		return True
 
-	def isUserAdmin(self, user, usernick=None):
-		return self.isUserInList(self.settings['admins'], user, usernick)
+	def isUserAdmin(self, user, userNick=None, userAddress=None):
+		return self.isUserInList(self.settings['admins'], user, userNick, userAddress)
 
-	def shouldUserBeIgnored(self, user, usernick=None):
-		return self.isUserInList(self.settings['userIgnoreList'], user, usernick)
+	def shouldUserBeIgnored(self, user, userNick=None, userAddress=None):
+		return self.isUserInList(self.settings['userIgnoreList'], user, userNick, userAddress)
 
 	@staticmethod
-	def isUserInList(userlist, user, usernick=None):
+	def isUserInList(userlist, user, userNick=None, userAddress=None):
 		if user in userlist or user.lower() in userlist:
 			return True
 		#If a usernick is provided, use that, otherwise split the full user address ourselves
-		if usernick is None:
-			usernick = user.split('!', 1)[0]
-		if usernick in userlist or usernick.lower() in userlist:
+		if userNick is None or userAddress is None:
+			userNick, userAddress = user.split('!', 1)
+		if userNick in userlist or userNick.lower() in userlist or userAddress in userlist or userAddress.lower() in userlist:
 			return True
 		return False
