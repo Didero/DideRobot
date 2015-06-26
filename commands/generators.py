@@ -253,7 +253,7 @@ class Command(CommandTemplate):
 			repeats = SharedFunctions.parseInt(extraArgument, 1, 1, 25)
 
 		words = []
-		for i in range(0, repeats):
+		for i in xrange(0, repeats):
 			word = u""
 			currentVowelChance = vowelChance
 			currentNewLetterFraction = newLetterFraction
@@ -317,7 +317,7 @@ class Command(CommandTemplate):
 			repeats = SharedFunctions.parseInt(extraArgument, 1, 1, 25)
 
 		words = []
-		for i in range(0, repeats):
+		for i in xrange(0, repeats):
 			syllableCount = 2
 			if random.randint(1, 100) <= 50:
 				syllableCount -= 1
