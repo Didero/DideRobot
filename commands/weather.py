@@ -77,6 +77,9 @@ class Command(CommandTemplate):
 							dataAgeDisplay += u" old"
 							dataAgeDisplay = dataAgeDisplay.format(dataAge=dataAge)
 
+						#Sometimes the wind direction is missing, catch that
+						windDirection = getWindDirection(data['wind']['deg']) if 'deg' in data['wind'] else 'Unknown'
+
 						#Not all replies include a placename
 						if 'name' in data and len(data['name']) > 0:
 							replytext += u"{city} ({country}): "
@@ -84,7 +87,7 @@ class Command(CommandTemplate):
 							replytext += u"Somewhere in {country}: "
 						replytext += u"{tempC:.1f}°C / {tempF:.1f}°F, {weatherType}. Wind: {windSpeed:.1f} m/s, {windDir}. Humidity of {humidity}% (Data is {dataAge})"
 						replytext = replytext.format(city=data['name'], country=data['sys']['country'], tempC=data['main']['temp'], tempF=celsiusToFahrenheit(data['main']['temp']),
-													 weatherType=data['weather'][0]['description'], windSpeed=data['wind']['speed'], windDir=getWindDirection(data['wind']['deg']),
+													 weatherType=data['weather'][0]['description'], windSpeed=data['wind']['speed'], windDir=windDirection,
 													 humidity=data['main']['humidity'], dataAge=dataAgeDisplay)
 
 					else:
