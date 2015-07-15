@@ -12,7 +12,7 @@ class IrcMessage(object):
 
 		#Info about the user that sent the message
 		self.user = user
-		if self.user:
+		if self.user and '!' in self.user:
 			self.userNickname, self.userAddress = self.user.split("!", 1)
 		else:
 			self.userNickname = None
