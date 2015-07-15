@@ -18,7 +18,7 @@ class Command(CommandTemplate):
 		"""
 
 		reply = u""
-		success = False
+		result = False
 
 		if message.messagePartsLength < 1:
 			reply = u"Please provide the name of a module to {}".format(message.trigger)
@@ -42,17 +42,17 @@ class Command(CommandTemplate):
 					reply = "Yeah, let's not mess with the module loader, shall we? It's probably gonna break, and then we don't have a module loader to fix it"
 				else:				
 					if message.trigger == 'unload':
-						success = GlobalStore.commandhandler.unloadCommand(modulename)
+						result = GlobalStore.commandhandler.unloadCommand(modulename)
 					elif message.trigger == 'reload':
-						success = GlobalStore.commandhandler.reloadCommand(modulename)
+						result = GlobalStore.commandhandler.reloadCommand(modulename)
 					elif message.trigger == 'load':
-						success = GlobalStore.commandhandler.loadCommand(modulename)
+						result = GlobalStore.commandhandler.loadCommand(modulename)
 					else:
 						print "Unknown command '{}' given to moduleLoader module".format(message.trigger)
 
-					if (success):
-						reply = u"Module '{}' successfully {}ed".format(modulename, message.trigger)
+					if not result[0]:
+						reply = u"There was an error {}ing module '{}': {}".format(message.trigger, modulename, result[1])
 					else:
-						reply = u"There was an error {}ing module '{}'. There's probably something about it in the log".format(message.trigger, modulename)
-			
+						reply = u"Module '{}' successfully {}ed".format(modulename, message.trigger)
+
 		message.bot.say(message.source, reply)

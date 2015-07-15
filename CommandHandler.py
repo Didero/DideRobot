@@ -101,42 +101,45 @@ class CommandHandler:
 		return True
 	
 	def loadCommands(self, folder='commands'):
-		modulesToIgnore = ['__init__.py', 'CommandTemplate.py']
+		modulesToIgnore = ('__init__.py', 'CommandTemplate.py')
 		success = True
+		errors = []
 		print "[CH] Loading commands from subfolder '{}'".format(folder)
 		for commandFile in os.listdir(os.path.join(GlobalStore.scriptfolder, folder)):
 			if not commandFile.endswith(".py"):
 				continue
 			if commandFile in modulesToIgnore or commandFile[:-3] in modulesToIgnore:
 				continue
-			if not self.loadCommand(commandFile[:-3], folder):
+			loadResult = self.loadCommand(commandFile[:-3], folder)
+			if not loadResult[0]:
 				success = False
-		return success
+				errors.append(loadResult[1])
+		return (success, errors)
 		
 	def loadCommand(self, name, folder='commands'):
 		print "[CH] Loading command '{}.{}".format(folder, name)
 		commandFilename = os.path.join(GlobalStore.scriptfolder, folder, name + '.py')
 		if not os.path.exists(commandFilename):
 			print "[CH] File '{}' does not exist, aborting".format(commandFilename)
-			return False
+			return (False, "File '{}' does not exist".format(name))
 		try:
 			module = importlib.import_module(folder + '.' + name)
 			#Since the module may already have been loaded in the past, make sure we have the latest version
 			reload(module)
 			command = module.Command()
 			self.commands[name] = command
-			return True
-		except:
+			return (True, "Successfully loaded file '{}'".format(name))
+		except Exception as e:
 			print "[CH] An error occurred while trying to load command '{}'".format(name)
 			traceback.print_exc()
-			return False
+			return (False, e)
 
 	def unloadCommand(self, name, folder='commands'):
 		fullname = "{}.{}".format(folder, name)
 		print "[CH] Unloading module '{}'".format(fullname)
 		if name not in self.commands:
 			print "[CH] Module '{}' not in command list".format(fullname)
-			return False
+			return (False, "Module '{}' not in command list".format(name))
 		try:
 			#Inform the module it's being unloaded
 			self.commands[name].unload()
@@ -151,11 +154,11 @@ class CommandHandler:
 				print "[CH] Removing {} registered command functions".format(len(functionsToRemove))
 				for funcToRemove in functionsToRemove:
 					del self.commandFunctions[funcToRemove]
-			return True
-		except:
+			return (True, "Module '{}' successfully unloaded".format(name))
+		except Exception as e:
 			print "[CH] An error occurred trying to unload '{}'".format(name)
 			traceback.print_exc()
-			return False
+			return (False, e)
 
 	def unloadAllCommands(self):
 		#Take the keys instead of iteritems() to prevent size change errors
@@ -164,12 +167,13 @@ class CommandHandler:
 		
 	def reloadCommand(self, name, folder='commands'):
 		if name in self.commands:
-			success = True
-			if not self.unloadCommand(name, folder):
-				success = False
-			if not self.loadCommand(name, folder):
-				success = False
-			return success
+			result = self.unloadCommand(name, folder)
+			if not result[0]:
+				return (False, result[1])
+			result = self.loadCommand(name, folder)
+			if not result[0]:
+				return (False, result[1])
+			return (True, "Successfully reloaded command '{}'".format(name))
 		else:
-			print "[CH] Told to reload '{}' but it's not in command list: {}".format(name, ", ".join(self.commands))
-			return False
+			print "[CH] Told to reload '{}' but it's not in command list".format(name)
+			return (False, "Unknown command '{}'".format(name))
