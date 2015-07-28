@@ -180,7 +180,7 @@ class Command(CommandTemplate):
 				#If nothing has been found so far, just display whatever is between the <title> tags
 				if title is None:
 					#Check here and not later because sites like Imgur can have .jpg URLs and we still want to check those
-					extensionsToIgnore = ['.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.zip', '.rar', '.7z', '.pdf', '.swf']
+					extensionsToIgnore = ['.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf']
 					for ext in extensionsToIgnore:
 						if url.endswith(ext):
 							return
