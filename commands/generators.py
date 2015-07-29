@@ -420,6 +420,6 @@ class Command(CommandTemplate):
 						subjectsPicked.extend(subjects)
 					gamenameparts.append(word)
 
-				gamenames.append(" ".join(gamenameparts))
+			gamenames.append(" ".join(gamenameparts))
 
 		return "; ".join(gamenames)
