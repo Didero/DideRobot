@@ -129,16 +129,16 @@ class Command(CommandTemplate):
 					title = searchterm
 					if not title:
 						title = wikitext.find(id='section_0').text
-					disambiguationStringToCompare = '{} (disambiguation)'.format(title.lower())
+					disambiguationStringToCompare = u'{} (disambiguation)'.format(title.lower())
 					if len(notices) > 0:
 						for notice in notices:
 							if disambiguationStringToCompare in notice.text.lower():
-								replytext += " (multiple meanings)"
+								replytext += u" (multiple meanings)"
 								break
 
 				#Add the URL to the end of the reply, so you can easily click to the full article
 				# (On the full Wikipedia, not the mobile version we're using)
-				replytext += " ({})".format(page.url.replace('m.wikipedia', 'wikipedia', 1))
+				replytext += u" ({})".format(page.url.replace('m.wikipedia', 'wikipedia', 1))
 		return replytext
 
 	def execute(self, message):
