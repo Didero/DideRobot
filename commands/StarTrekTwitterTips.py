@@ -80,5 +80,5 @@ class Command(CommandTemplate):
 		for name, username in self.twitterUsernames.iteritems():
 			SharedFunctions.downloadNewTweets(username)
 		self.isUpdating = False
-		print "[STtip] Updating tweets took {} seconds".format(time.time() - starttime)
+		self.logInfo("[STtip] Updating tweets took {} seconds".format(time.time() - starttime))
 		return True

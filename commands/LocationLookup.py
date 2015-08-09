@@ -85,7 +85,7 @@ class Command(CommandTemplate):
 					data = json.loads(apiReturn.text)
 				except ValueError:
 					#If there's an error message in the API output, it's not valid JSON. Check if we know what's wrong
-					print "[location] ERROR, API returned: '{}'".format(apiReturn.text)
+					self.logError("[location] Invalid API reply: '{}'".format(apiReturn.text))
 					error = apiReturn.text.lower()
 					if error == 'no data':
 						replytext = u"I'm sorry, I can't find any country data for {username}".format(username=username)

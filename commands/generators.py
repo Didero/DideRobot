@@ -187,7 +187,7 @@ class Command(CommandTemplate):
 				if closingBracketIndex > -1:
 					orgReplacement = replacement
 					replacement = replacement[:closingBracketIndex] + optionSeparator + optionSeparator.join(arguments[1:]) + replacement[closingBracketIndex:]
-					print u"[Gen] Replaced '{}' with '{}'".format(orgReplacement, replacement)
+					self.logDebug(u"[Gen] Replaced '{}' with '{}'".format(orgReplacement, replacement))
 			sentence = sentence.replace(u"<{}>".format(field), replacement, 1).strip()
 		#Exited from loop, return the fully filled-in sentence
 		return sentence

@@ -37,8 +37,8 @@ class Command(CommandTemplate):
 			return
 
 		if pageDownload.status_code != 200:
-			print "[Humble] Page '{}' returned code {}".format(url, pageDownload.status_code)
-			message.bot.sendMessage(message.source, "Sorry, I can't retrieve that bundle page. Either their site is down, or that bundle doesn't exist")
+			self.logWarning("[Humble] Page '{}' returned code {} instead of 200 (OK)".format(url, pageDownload.status_code))
+			message.bot.sendMessage(message.source, "Sorry, I can't retrieve that bundle page. Either their site is down, or that bundle doesn't exist (Code {})".format(pageDownload.status_code))
 			return
 
 		page = BeautifulSoup(pageDownload.content)
@@ -75,7 +75,7 @@ class Command(CommandTemplate):
 		descriptionElement = page.find(class_='bundle-info-text')
 		gameFound = False
 		if not descriptionElement:
-			print "[Humble] No description element found!"
+			self.logError("[Humble] No description element found!")
 		else:
 			for paragraph in descriptionElement.find_all('p'):
 				strongElement = paragraph.find('strong')
@@ -105,20 +105,20 @@ class Command(CommandTemplate):
 				#This script element contains data like the average price and the time left
 				match = re.search("'initial_stats_data':(.+),", script)
 				if not match:
-					print "[Humble] Expected to find initial values, but failed:"
-					print script
+					self.logWarning("[Humble] Expected to find initial values, but failed:")
+					self.logWarning(script)
 				else:
 					data = json.loads(match.group(1))
 					if 'rawtotal' in data:
 						totalMoney = data['rawtotal']
 					else:
-						print "[Humble] Sales data found, but total amount is missing!"
-						print data
+						self.logWarning("[Humble] Sales data found, but total amount is missing!")
+						self.logWarning(json.dumps(data))
 					if 'numberofcontributions' in data and 'total' in data['numberofcontributions']:
 						contributors = int(data['numberofcontributions']['total'])
 					else:
-						print "[Humble] Contributor data not found!"
-						print data
+						self.logWarning("[Humble] Contributor data not found!")
+						self.logWarning(json.dumps(data))
 
 					if totalMoney > -1.0 and contributors > -1:
 						avgPrice = totalMoney / contributors

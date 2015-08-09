@@ -67,8 +67,7 @@ class Command(CommandTemplate):
 		xml = ElementTree.fromstring(wolframResult[1])
 		if xml.attrib['error'] != 'false':
 			replystring = "Sorry, an error occurred. Tell my owner(s) to check the error log"
-			print "[Wolfram] An error occurred for the search query '{}'. Reply:".format(query)
-			print wolframResult[1]
+			self.logError("[Wolfram] An error occurred for the search query '{}'. Reply:".format(query, wolframResult[1]))
 		elif xml.attrib['success'] != 'true':
 			replystring = "No results found, sorry"
 			#Most likely no results were found. See if there are suggestions for search improvements

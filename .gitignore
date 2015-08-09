@@ -44,6 +44,8 @@ serverSettings/**
 data/*
 !data/generators/
 ToDo.txt
+Program.log
+Program.log.*
 
 #The debug module is only for testing, don't include it
 commands/debug.py

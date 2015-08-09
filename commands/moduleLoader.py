@@ -48,7 +48,7 @@ class Command(CommandTemplate):
 					elif message.trigger == 'load':
 						result = GlobalStore.commandhandler.loadCommand(modulename)
 					else:
-						print "Unknown command '{}' given to moduleLoader module".format(message.trigger)
+						self.logError("[ModuleLoader] Unknown command '{}' given".format(message.trigger))
 
 					if not result[0]:
 						reply = u"There was an error {}ing module '{}': {}".format(message.trigger, modulename, result[1])

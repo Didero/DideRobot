@@ -43,5 +43,5 @@ class Command(CommandTemplate):
 			#First shut down all bots to make sure the logs are saved properly
 			GlobalStore.bothandler.shutdown(quitmessage)
 			#Replace the running process
-			print "Setting '{}' as the commandline arguments".format(*sys.argv)
+			self.logInfo("[Restart] Setting '{}' as the commandline arguments".format(*sys.argv))
 			GlobalStore.reactor.callLater(2.0, os.execl, sys.executable, sys.executable, *sys.argv)

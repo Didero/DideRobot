@@ -200,10 +200,10 @@ class Command(CommandTemplate):
 				# This fixes the module not finding a literal search for 'Ætherling', for instance
 				regex = re.compile(unicode(query, encoding='utf8'), re.IGNORECASE)
 			except (re.error, SyntaxError) as e:
-				print "[MTG] Regex error when trying to parse '{}':".format(query), e
+				self.logError("[MTG] Regex error when trying to parse '{}': {}".format(query, e))
 				errors.append(attrib)
 			except UnicodeDecodeError as e:
-				print "[MTG] Unicode error in key '{}':".format(attrib), e
+				self.logError("[MTG] Unicode error in key '{}': {}".format(attrib, e))
 				errors.append(attrib)
 			else:
 				regexDict[attrib] = regex
@@ -467,7 +467,7 @@ class Command(CommandTemplate):
 		#Some sets don't have basic lands, but need them in their boosterpacks (Gatecrash f.i.) Fix that
 		#TODO: Handle rarities properly, a 'land' shouldn't be a 'basic land' but a land from that set
 		if 'basic land' in boosterRarities and 'basic land' not in possibleCards:
-			print u"[MTG] Booster for set '{}' needs basic lands, but set doesn't have any! Adding manually".format(properSetname)
+			CommandTemplate.logWarning(u"[MTG] Booster for set '{}' needs basic lands, but set doesn't have any! Adding manually".format(properSetname))
 			possibleCards['basic land'] = ['Forest', 'Island', 'Mountain', 'Plains', 'Swamp']
 
 		#Check if we found enough cards
@@ -502,21 +502,21 @@ class Command(CommandTemplate):
 		latestVersion = ""
 		#Load in the currently stored version number
 		if not os.path.exists(versionFilename):
-			print "[MtG] No old card database version file found!"
+			self.logWarning("[MtG] No old card database version file found!")
 		else:
 			with open(versionFilename) as oldversionfile:
 				oldversiondata = json.load(oldversionfile)
 				if 'version' in oldversiondata:
 					storedVersion = oldversiondata['version']
 				else:
-					print "[MtG] Unexpected content of stored version file:"
+					self.logError("[MtG] Unexpected content of stored version file:")
 					for key, value in oldversiondata.iteritems():
-						print "  {}: {}".format(key, value)
-						return "Something went wrong when reading the stored version number."
+						self.logError("  {}: {}".format(key, value))
+					return "Something went wrong when reading the stored version number."
 				if '_formatVersion' in oldversiondata:
 					storedFormatVersion = oldversiondata['_formatVersion']
 				else:
-					print "[MTG] No stored format version found"
+					self.logWarning("[MTG] No stored format version found")
 
 		#Download the latest version file
 		url = "http://mtgjson.com/json/version-full.json"
@@ -529,19 +529,19 @@ class Command(CommandTemplate):
 			if 'version' in versiondata:
 				latestVersion = versiondata['version']
 			else:
-				print "[MtG] Unexpected contents of downloaded version file:"
+				self.logWarning("[MtG] Unexpected contents of downloaded version file:")
 				for key, value in versiondata.iteritems():
-					print " {}: {}".format(key, value)
-					return "Something went wrong when trying to read the downloaded version file"
+					self.logWarning(" {}: {}".format(key, value))
+				return "Something went wrong when trying to read the downloaded version file"
 		if latestVersion == "":
 			return "Something went wrong, the latest MtG database version number could not be retrieved."
 
-		print "[MTG] Done version-checking at {} seconds in".format(time.time() - starttime)
+		self.logInfo("[MTG] Done version-checking at {} seconds in".format(time.time() - starttime))
 
 		#Now let's check if we need to update the cards
 		if forceUpdate or latestVersion != storedVersion or latestFormatVersion != storedFormatVersion or not os.path.exists(cardsJsonFilename) or not os.path.exists(setsJsonFilename):
 			self.areCardfilesInUse = True
-			print "[MtG] Updating card database!"
+			self.logInfo("[MtG] Updating card database!")
 			url = "http://mtgjson.com/json/AllSets.json.zip"  #Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
 			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 			urllib.urlretrieve(url, cardzipFilename)
@@ -720,7 +720,7 @@ class Command(CommandTemplate):
 		os.remove(newversionfilename)
 		urllib.urlcleanup()
 		self.areCardfilesInUse = False
-		print "[MtG] updating database took {} seconds".format(time.time() - starttime)
+		self.logInfo("[MtG] updating database took {} seconds".format(time.time() - starttime))
 		return replytext
 
 	def updateDefinitions(self):
@@ -738,7 +738,7 @@ class Command(CommandTemplate):
 				for defHeader in defHeaders:
 					keyword = defHeader.find(class_='mw-headline').text.lower()
 					if keyword in definitions:
-						print "[MTG] [DefinitionsUpdate] Duplicate definition: '{}'".format(keyword)
+						self.logWarning("[MTG] [DefinitionsUpdate] Duplicate definition: '{}'".format(keyword))
 						continue
 					#Cycle through all the paragraphs following the header
 					currentParagraph = defHeader.next_sibling
@@ -757,15 +757,15 @@ class Command(CommandTemplate):
 						splitIndex = paragraphText.rfind('.', 0, textCutoffLength)
 						definitions[keyword]['short'] = paragraphText[:splitIndex].lstrip()
 						definitions[keyword]['extra'] = paragraphText[splitIndex + 1:].lstrip()
-			print "[MTG] Updating definitions took {} seconds".format(time.time() - starttime)
+			self.logInfo("[MTG] Updating definitions took {} seconds".format(time.time() - starttime))
 		except Exception as e:
-			print "[MTG] [DefinitionsUpdate] An error ({}) occurred:".format(type(e)), e.message
+			self.logError("[MTG] [DefinitionsUpdate] An error ({}) occurred: {}".format(type(e), e.message))
 			traceback.print_exc()
 			try:
-				print "[MTG] request url:", e.request.url
-				print "[MTG] request headers:", e.request.headers
+				self.logError("[MTG] request url:", e.request.url)
+				self.logError("[MTG] request headers:", e.request.headers)
 			except AttributeError:
-				print " no request attribute found"
+				self.logError(" no request attribute found")
 			replytext = "Definitions file NOT updated, check log for errors"
 		else:
 			#Save the data to disk

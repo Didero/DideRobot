@@ -1,4 +1,4 @@
-import importlib, os, traceback
+import importlib, logging, os, traceback
 from ConfigParser import ConfigParser
 
 import GlobalStore
@@ -9,15 +9,17 @@ class CommandHandler:
 	commands = {}
 	commandFunctions = {}
 	apikeys = ConfigParser()
-	
+
+
 	def __init__(self):
+		self.logger = logging.getLogger("DideRobot")
 		GlobalStore.commandhandler = self
 		self.loadApiKeys()
 
 	def loadApiKeys(self):
 		self.apikeys = ConfigParser()
 		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini')):
-			print "[CH] ERROR: API key file not found!"
+			self.logger.error("API key file not found!")
 		else:
 			self.apikeys.read(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini'))
 
@@ -27,9 +29,9 @@ class CommandHandler:
 
 	def addCommandFunction(self, module, name, function):
 		if name in self.commandFunctions:
-			print "[CH] ERROR: Trying to add a commandFuction called '{}' but it already exists".format(name)
+			self.logger.warning("Trying to add a commandFuction called '{}' but it already exists".format(name))
 			return False
-		print "[CH] Adding command function '{}' from module '{}'".format(name, os.path.basename(module).split('.')[0])
+		self.logger.info("Adding command function '{}' from module '{}'".format(name, os.path.basename(module).split('.')[0]))
 		self.commandFunctions[name.lower()] = {'module': os.path.basename(module).split('.')[0], 'function': function}
 		return True
 
@@ -47,9 +49,9 @@ class CommandHandler:
 	def removeCommandFunction(self, name):
 		name = name.lower()
 		if name not in self.commandFunctions:
-			print "[CH] ERROR: Trying to remove the commandFunction '{}' while it is not registered".format(name)
+			self.logger.warning("Trying to remove the commandFunction '{}' while it is not registered".format(name))
 			return False
-		print "[CH] Removing command function '{}' registered by module '{}'".format(name, self.commandFunctions[name]['module'])
+		self.logger.info("Removing command function '{}' registered by module '{}'".format(name, self.commandFunctions[name]['module']))
 		del self.commandFunctions[name]
 		return True
 
@@ -59,7 +61,7 @@ class CommandHandler:
 	def runCommandFunction(self, name, defaultValue=None, *args, **kwargs):
 		name = name.lower()
 		if name not in self.commandFunctions:
-			print "[CH] ERROR: Unknown commandFunction '{}' called".format(name)
+			self.logger.warning("Unknown commandFunction '{}' called".format(name))
 			return defaultValue
 		return self.commandFunctions[name]['function'](*args, **kwargs)
 
@@ -90,6 +92,7 @@ class CommandHandler:
 		except Exception as e:
 			message.bot.say(message.source, "Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it")
 			message.bot.factory.logger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
+			self.logger.error("Exception thrown while handling command '{}' and message '{}'".format(commandname, message), exc_info=True)
 			traceback.print_exc()
 
 	@staticmethod
@@ -104,7 +107,7 @@ class CommandHandler:
 		modulesToIgnore = ('__init__.py', 'CommandTemplate.py')
 		success = True
 		errors = []
-		print "[CH] Loading commands from subfolder '{}'".format(folder)
+		self.logger.info("Loading commands from subfolder '{}'".format(folder))
 		for commandFile in os.listdir(os.path.join(GlobalStore.scriptfolder, folder)):
 			if not commandFile.endswith(".py"):
 				continue
@@ -117,10 +120,10 @@ class CommandHandler:
 		return (success, errors)
 		
 	def loadCommand(self, name, folder='commands'):
-		print "[CH] Loading command '{}.{}".format(folder, name)
+		self.logger.info("Loading command '{}.{}".format(folder, name))
 		commandFilename = os.path.join(GlobalStore.scriptfolder, folder, name + '.py')
 		if not os.path.exists(commandFilename):
-			print "[CH] File '{}' does not exist, aborting".format(commandFilename)
+			self.logger.warning("File '{}' does not exist, aborting".format(commandFilename))
 			return (False, "File '{}' does not exist".format(name))
 		try:
 			module = importlib.import_module(folder + '.' + name)
@@ -130,15 +133,15 @@ class CommandHandler:
 			self.commands[name] = command
 			return (True, "Successfully loaded file '{}'".format(name))
 		except Exception as e:
-			print "[CH] An error occurred while trying to load command '{}'".format(name)
+			self.logger.error("An error occurred while trying to load command '{}'".format(name), exc_info=True)
 			traceback.print_exc()
 			return (False, e)
 
 	def unloadCommand(self, name, folder='commands'):
 		fullname = "{}.{}".format(folder, name)
-		print "[CH] Unloading module '{}'".format(fullname)
+		self.logger.info("Unloading module '{}'".format(fullname))
 		if name not in self.commands:
-			print "[CH] Module '{}' not in command list".format(fullname)
+			self.logger.warning("Asked to unload module '{}', but it was not found in command list".format(fullname))
 			return (False, "Module '{}' not in command list".format(name))
 		try:
 			#Inform the module it's being unloaded
@@ -151,16 +154,17 @@ class CommandHandler:
 				if name == self.commandFunctions[funcName]['module']:
 					functionsToRemove.append(funcName)
 			if len(functionsToRemove) > 0:
-				print "[CH] Removing {} registered command functions".format(len(functionsToRemove))
+				self.logger.info("Removing {} registered command functions".format(len(functionsToRemove)))
 				for funcToRemove in functionsToRemove:
 					del self.commandFunctions[funcToRemove]
 			return (True, "Module '{}' successfully unloaded".format(name))
 		except Exception as e:
-			print "[CH] An error occurred trying to unload '{}'".format(name)
+			self.logger.error("An error occurred while trying to unload '{}'".format(name), exc_info=True)
 			traceback.print_exc()
 			return (False, e)
 
 	def unloadAllCommands(self):
+		self.logger.info("Unloading all commands")
 		#Take the keys instead of iteritems() to prevent size change errors
 		for commandname in self.commands.keys():
 			self.unloadCommand(commandname)
@@ -175,5 +179,5 @@ class CommandHandler:
 				return (False, result[1])
 			return (True, "Successfully reloaded command '{}'".format(name))
 		else:
-			print "[CH] Told to reload '{}' but it's not in command list".format(name)
+			self.logger.warning("Told to reload '{}' but it's not in command list".format(name))
 			return (False, "Unknown command '{}'".format(name))

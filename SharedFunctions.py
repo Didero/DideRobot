@@ -1,4 +1,4 @@
-import base64, codecs, json, os, random, re
+import base64, codecs, json, logging, os, random, re
 
 import requests
 from twisted.words.protocols.irc import assembleFormattedText, attributes
@@ -9,7 +9,7 @@ import GlobalStore
 #First some Twitter functions
 def updateTwitterToken():
 	if not GlobalStore.commandhandler.apikeys.has_section('twitter') or not GlobalStore.commandhandler.apikeys.has_option('twitter', 'key') or not GlobalStore.commandhandler.apikeys.has_option('twitter', 'secret'):
-		print "No Twitter API key and/or secret found!"
+		logging.getLogger('DideRobot').error("No Twitter API key and/or secret found!")
 		return False
 
 	credentials = base64.b64encode("{}:{}".format(GlobalStore.commandhandler.apikeys.get('twitter', 'key'), GlobalStore.commandhandler.apikeys.get('twitter', 'secret')))
@@ -19,7 +19,7 @@ def updateTwitterToken():
 	req = requests.post("https://api.twitter.com/oauth2/token", data=data, headers=headers)
 	reply = json.loads(req.text)
 	if 'access_token' not in reply:
-		print "ERROR while retrieving token: " + json.dumps(reply)
+		logging.getLogger('DideRobot').error("An error occurred while retrieving Twitter token: " + json.dumps(reply))
 		return False
 
 	if not GlobalStore.commandhandler.apikeys.has_section('twitter'):
@@ -103,7 +103,7 @@ def getRandomLineFromFile(filename):
 
 def getAllLinesFromFile(filename):
 	if not os.path.exists(filename):
-		print u"LINE READ ERROR: File '{}' does not exist".format(filename)
+		logging.getLogger('DideRobot').error(u"Can't read lines from file '{}'; it does not exist".format(filename))
 		return None
 	#Make sure it's an absolute filename
 	if GlobalStore.scriptfolder not in filename:
@@ -122,7 +122,7 @@ def parseIsoDate(isoString, formatstring=""):
 	regex = 'P(?:(?P<year>\d+)Y)?(?:(?P<month>\d+)M)?(?:(?P<week>\d+)W)?(?:(?P<day>\d+)D)?T?(?:(?P<hour>\d+)H)?(?:(?P<minute>\d+)M)?(?:(?P<second>\d+)S)?'
 	result = re.search(regex, isoString)
 	if result is None:
-		print "No results found"
+		logging.getLogger('DideRobot').warning("No date results found")
 	else:
 		for group, value in result.groupdict().iteritems():
 			if value is not None:
@@ -188,7 +188,7 @@ def stringToDict(string, removeStartAndEndQuotes=True):
 	for pair in keyValuePairs:
 		parts = pair.split(':')
 		if len(parts) != 2:
-			print "ERROR in stringToDict when trying to parse pair '{}'. Expected 2 parts, found {}".format(pair, len(parts))
+			logging.getLogger('DideRobot').error("ERROR in stringToDict when trying to parse pair '{}'. Expected 2 parts, found {}".format(pair, len(parts)))
 			continue
 		key = parts[0].strip()
 		item = parts[1].strip()
@@ -223,7 +223,7 @@ def makeTextBold(s):
 		try:
 			s = s.encode('utf-8')
 		except UnicodeDecodeError:
-			print "[SharedFunctions] Error converting unicode to string"
+			logging.getLogger('DideRobot').error("[SharedFunctions] Error while trying to make string bold when converting unicode to string")
 			return s
 	return assembleFormattedText(attributes.normal['', attributes.bold[s], ''])
 

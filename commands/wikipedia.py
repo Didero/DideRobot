@@ -27,7 +27,7 @@ class Command(CommandTemplate):
 
 	def getRandomWikipediaArticle(self, addExtendedText=False):
 		page = requests.get('http://en.m.wikipedia.org/wiki/Special:Random/#/random')
-		print "[wiki] Random page url: {}".format(page.url)
+		self.logDebug("[wiki] Random page url: {}".format(page.url))
 		return self.parseWikipediaArticle(page, addExtendedText)
 
 	def parseWikipediaArticle(self, page, addExtendedText=False, searchterm=None):

@@ -37,16 +37,16 @@ class Command(CommandTemplate):
 				replytext = u"Sorry, the weather API took too long to respond. Please try again in a little while"
 			except ValueError:
 				replytext = u"Sorry, I couldn't retrieve that data. Try again in a little while, maybe it'll work then"
-				print "[weather] JSON load error. Data received:"
-				print req.text
+				self.logError("[weather] JSON load error. Data received:")
+				self.logError(req.text)
 			else:
 				if data['cod'] != 200 and data['cod'] != "200":
 					if data['cod'] == 404 or data['cod'] == '404':
 						replytext = u"I'm sorry, I don't know where that is"
 					else:
 						replytext = u"An error occurred, please tell my owner to look at the debug output, or try again in a little while ({}: {})".format(data['cod'], data['message'])
-						print "[weather] ERROR in API lookup:"
-						print data
+						self.logError("[weather] ERROR in API lookup:")
+						self.logError(data)
 				else:
 					#We've got data! Parse it
 					def getWindDirection(angle):

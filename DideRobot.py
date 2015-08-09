@@ -1,3 +1,4 @@
+import logging
 import time
 
 from twisted.words.protocols import irc
@@ -8,6 +9,7 @@ from IrcMessage import IrcMessage
 
 class DideRobot(irc.IRCClient):
 	def __init__(self, factory):
+		self.logger = logging.getLogger('DideRobot')
 		self.factory = factory
 		self.channelsUserList = {}
 		self.isUpdatingChannelsUserList = False
@@ -23,7 +25,7 @@ class DideRobot(irc.IRCClient):
 		self.nickname = self.factory.settings['nickname'].encode('utf-8')
 		self.realname = self.factory.settings['realname'].encode('utf-8')
 		irc.IRCClient.connectionMade(self)
-		self.factory.logger.log("Connection to server made")
+		self.factory.messageLogger.log("Connection to server made")
 
 	def connectionLost(self, reason):
 		"""Called when a connection is lost."""
@@ -31,16 +33,16 @@ class DideRobot(irc.IRCClient):
 		
 	def signedOn(self):
 		"""Called when bot has successfully signed on to server."""
-		self.factory.logger.log("Signed on to server as {}".format(self.username))
+		self.factory.messageLogger.log("Signed on to server as {}".format(self.username))
 		self.connectedAt = time.time()
 		#Let the factory know we've connected, needed because it's a reconnecting factory
 		self.factory.resetDelay()
 		#Check if we have the nickname we should
 		if self.nickname != self.factory.settings['nickname']:
-			self.factory.logger.log("Specified nickname '{}' wasn't available, using nick '{}'".format(self.factory.settings['nickname'], self.nickname))
+			self.factory.messageLogger.log("Specified nickname '{}' wasn't available, using nick '{}'".format(self.factory.settings['nickname'], self.nickname))
 		#Join channels
 		if len(self.factory.settings['joinChannels']) == 0:
-			print "|{}| No join channels specified, idling".format(self.factory.serverfolder)
+			self.logger.info("|{}| No join channels specified, idling".format(self.factory.serverfolder))
 		else:
 			for channel in self.factory.settings['joinChannels']:
 				self.join(channel.encode('utf-8'))
@@ -49,7 +51,7 @@ class DideRobot(irc.IRCClient):
 		"""Called when a user or the bot joins a channel"""
 		#'prefix' is the user, 'params' is a list with apparently just one entry, the channel
 		message = IrcMessage('join', self, prefix, params[0])
-		self.factory.logger.log("JOIN: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
+		self.factory.messageLogger.log("JOIN: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
 		#If we just joined a channel, or if don't have a record of this channel yet, get all the users in it
 		if message.userNickname == self.nickname or params[0] not in self.channelsUserList:
 			self.retrieveChannelUsers(params[0])
@@ -63,10 +65,10 @@ class DideRobot(irc.IRCClient):
 		"""Called when a user or the bot leaves a channel"""
 		#'prefix' is the user, 'params' is a list with only the channel
 		message = IrcMessage('part', self, prefix, params[0])
-		self.factory.logger.log("PART: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
+		self.factory.messageLogger.log("PART: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
 		#If a user parts before we have a proper channellist built, catch that error
 		if params[0] not in self.channelsUserList:
-			print "|{}| Unexpected PART, user '{}' parted from channel '{}' but we had no record of them".format(self.factory.serverfolder, prefix, params[0])
+			self.logger.warning("|{}| Unexpected PART, user '{}' parted from channel '{}' but we had no record of them".format(self.factory.serverfolder, prefix, params[0]))
 			#Schedule a rebuild of the userlist
 			if not self.isUpdatingChannelsUserList:
 				self.retrieveChannelUsers(params[0])
@@ -87,7 +89,7 @@ class DideRobot(irc.IRCClient):
 		message = IrcMessage('quit', self, prefix, None, params[0])
 		for channel, userlist in self.channelsUserList.iteritems():
 			if prefix in userlist:
-				self.factory.logger.log("QUIT: {nick} ({address}): '{quitmessage}' ".format(nick=message.userNickname, address=prefix, quitmessage=params[0]), channel)
+				self.factory.messageLogger.log("QUIT: {nick} ({address}): '{quitmessage}' ".format(nick=message.userNickname, address=prefix, quitmessage=params[0]), channel)
 				userlist.remove(prefix)
 		GlobalStore.commandhandler.fireCommand(message)
 
@@ -95,7 +97,7 @@ class DideRobot(irc.IRCClient):
 		"""Called when a user is kicked"""
 		#'prefix' is the kicker, params[0] is the channel, params[1] is the kicked, params[-1] is the message
 		message = IrcMessage('kick', self, prefix, params[0], params[-1])
-		self.factory.logger.log("KICK: {kicked} was kicked by {kicker}, reason: '{reason}'".format(kicked=params[1].split("!", 1)[0], kicker=message.userNickname, reason=params[-1]), params[0])
+		self.factory.messageLogger.log("KICK: {kicked} was kicked by {kicker}, reason: '{reason}'".format(kicked=params[1].split("!", 1)[0], kicker=message.userNickname, reason=params[-1]), params[0])
 		#Keep track of the channels we're in
 		if message.userNickname == self.nickname:
 			if params[0] in self.channelsUserList:
@@ -123,35 +125,35 @@ class DideRobot(irc.IRCClient):
 				#New nick plus old address
 				userlist.append(newaddress)
 				userlist.remove(prefix)
-				self.factory.logger.log("NICK CHANGE: {oldnick} changed their nick to {newnick}".format(oldnick=oldnick, newnick=newnick), channel)
+				self.factory.messageLogger.log("NICK CHANGE: {oldnick} changed their nick to {newnick}".format(oldnick=oldnick, newnick=newnick), channel)
 		GlobalStore.commandhandler.fireCommand(message)
 
 	#Misc. logging
 	def irc_TOPIC(self, prefix, params):
-		print "irc_TOPIC called, prefix is '{}', params is '{}'".format(prefix, params)
+		self.logger.debug("irc_TOPIC called, prefix is '{}', params is '{}'".format(prefix, params))
 	def irc_RPL_TOPIC(self, prefix, params):
-		print "irc_RPL_TOPIC called, prefix is '{}', params is '{}'".format(prefix, params)
+		self.logger.debug("irc_RPL_TOPIC called, prefix is '{}', params is '{}'".format(prefix, params))
 	def irc_RPL_NOTOPIC(self, prefix, params):
-		print "irc_RPL_NOTOPIC called, prefix is '{}', params is '{}'".format(prefix, params)
+		self.logger.debug("irc_RPL_NOTOPIC called, prefix is '{}', params is '{}'".format(prefix, params))
 
 	def irc_unknown(self, prefix, command, params):
 		commandsToIgnore = ['PONG', 'RPL_NAMREPLY', 'RPL_ENDOFNAMES']
 		#265 is rpl_localusers, 266 is globalusers. The last parameter is a string text saying how many users there are and the max.
 		#  Sometimes previous parameters are these numbers separately
 		if command == '265':
-			print "|{}| rpl_localusers: '{}'".format(self.factory.serverfolder, params[-1])
+			self.logger.debug("|{}| rpl_localusers: '{}'".format(self.factory.serverfolder, params[-1]))
 		elif command == '266':
-			print "|{}| rpl_globalusers: '{}'".format(self.factory.serverfolder, params[-1])
+			self.logger.debug("|{}| rpl_globalusers: '{}'".format(self.factory.serverfolder, params[-1]))
 		#Sometimes there's no Message Of The Day
 		elif command == 'ERR_NOMOTD':
-			print "|{}| No MOTD".format(self.factory.serverfolder)
+			self.logger.debug("|{}| No MOTD".format(self.factory.serverfolder))
 		elif command not in commandsToIgnore:
-			print "|{}| UNKNOWN COMMAND (command is '{}', prefix is '{}', params are '{}'".format(self.factory.serverfolder, command, prefix, params)
+			self.logger.debug("|{}| UNKNOWN COMMAND (command is '{}', prefix is '{}', params are '{}'".format(self.factory.serverfolder, command, prefix, params))
 
 
 	def receivedMOTD(self, motd):
 		#Since the Message Of The Day can consist of multiple lines, print them all
-		self.factory.logger.log("Server message of the day:\n {}".format("\n ".join(motd)))
+		self.factory.messageLogger.log("Server message of the day:\n {}".format("\n ".join(motd)))
 
 	#Create a list of user addresses per channel
 	def retrieveChannelUsers(self, channel):
@@ -170,7 +172,7 @@ class DideRobot(irc.IRCClient):
 
 	def irc_RPL_ENDOFWHO(self, prefix, params):
 		self.isUpdatingChannelsUserList = False
-		print "|{}| Userlist for channels {} collected".format(self.factory.serverfolder, ", ".join(self.channelsUserList.keys()))
+		self.logger.info("|{}| Userlist for channels {} collected".format(self.factory.serverfolder, ", ".join(self.channelsUserList.keys())))
 
 
 	def privmsg(self, user, channel, msg):
@@ -200,7 +202,7 @@ class DideRobot(irc.IRCClient):
 		elif messageType == 'notice':
 			logtext = "[notice] {user}: {message}"
 
-		self.factory.logger.log(logtext.format(user=usernick, message=messageText), logsource)
+		self.factory.messageLogger.log(logtext.format(user=usernick, message=messageText), logsource)
 
 		message = IrcMessage(messageType, self, user, channel, irc.stripFormatting(messageText))
 		#Let the CommandHandler see if something needs to be said
@@ -214,7 +216,7 @@ class DideRobot(irc.IRCClient):
 				try:
 					msg = msg.encode(encoding='utf-8', errors='replace')
 				except (UnicodeDecodeError, UnicodeEncodeError):
-					print "[sendMessage] Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg)
+					self.logger.warning("[sendMessage] Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg))
 			logtext = ""
 			if messageType == 'say':
 				logtext = "{user}: {message}"
@@ -226,7 +228,7 @@ class DideRobot(irc.IRCClient):
 				logtext = "[notice] {user}: {message}"
 				self.notice(target, msg)
 
-			self.factory.logger.log(logtext.format(user=self.nickname, message=msg), target)
+			self.factory.messageLogger.log(logtext.format(user=self.nickname, message=msg), target)
 
 	def say(self, target, msg):
 		self.sendMessage(target, msg, 'say')

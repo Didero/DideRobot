@@ -1,6 +1,6 @@
-from twisted.internet import task
+import logging
 
-from IrcMessage import IrcMessage
+from twisted.internet import task
 
 
 class CommandTemplate(object):
@@ -15,7 +15,7 @@ class CommandTemplate(object):
 	
 	def __init__(self):
 		if self.scheduledFunctionTime > 0.0:
-			print "Executing looping function every {} seconds".format(self.scheduledFunctionTime)
+			self.logInfo("Executing looping function every {} seconds".format(self.scheduledFunctionTime))
 			self.scheduledFunctionTimer = task.LoopingCall(self.executeScheduledFunction)
 			self.scheduledFunctionTimer.start(self.scheduledFunctionTime)
 		self.onLoad()
@@ -25,7 +25,7 @@ class CommandTemplate(object):
 
 	def unload(self):
 		if self.scheduledFunctionTime > 0.0:
-			print "Stopping looping function"
+			self.logInfo("Stopping looping function")
 			self.scheduledFunctionTimer.stop()
 			self.scheduledFunctionTimer = None
 		self.onUnload()
@@ -48,3 +48,27 @@ class CommandTemplate(object):
 	
 	def executeScheduledFunction(self):
 		pass
+
+	@staticmethod
+	def log(level, message, *args, **kwargs):
+		logging.getLogger('DideRobot').log(level, message, *args, **kwargs)
+
+	@staticmethod
+	def logDebug(message, *args, **kwargs):
+		CommandTemplate.log(logging.DEBUG, message, *args, **kwargs)
+
+	@staticmethod
+	def logInfo(message, *args, **kwargs):
+		CommandTemplate.log(logging.INFO, message, *args, **kwargs)
+
+	@staticmethod
+	def logWarning(message, *args, **kwargs):
+		CommandTemplate.log(logging.WARNING, message, *args, **kwargs)
+
+	@staticmethod
+	def logError(message, *args, **kwargs):
+		CommandTemplate.log(logging.ERROR, message, *args, **kwargs)
+
+	@staticmethod
+	def logCritical(message, *args, **kwargs):
+		CommandTemplate.log(logging.CRITICAL, message, *args, **kwargs)

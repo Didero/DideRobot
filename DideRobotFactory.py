@@ -1,10 +1,11 @@
 import json
+import logging
 import os
 
 from twisted.internet import protocol
 
 import GlobalStore
-import Logger
+import MessageLogger
 from DideRobot import DideRobot
 
 
@@ -15,12 +16,13 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 	protocol = DideRobot
 
 	def __init__(self, serverfolder):
-		print "New botfactory for server '{}' started".format(serverfolder)
+		self.logger = logging.getLogger('DideRobot')
+		self.logger.info("New botfactory for server '{}' started".format(serverfolder))
 		self.serverfolder = serverfolder
 
 		#Initialize some variables (in init() instead of outside it to prevent object sharing between instances)
 		self.bot = None
-		self.logger = None
+		self.messageLogger = None
 		#Bot settings, with a few lifted out because they're frequently needed
 		self.settings = {}
 		self.commandPrefix = ""
@@ -32,10 +34,10 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		#If something goes wrong with updating the settings, it returns False. Don't continue then
 		#Also don't update the logger settings, since we don't have a logger yet
 		if not self.updateSettings(False):
-			print "ERROR while loading settings for bot '{}', aborting launch!".format(self.serverfolder)
+			self.logger.critical("ERROR while loading settings for bot '{}', aborting launch!".format(self.serverfolder))
 			GlobalStore.reactor.callLater(2.0, GlobalStore.bothandler.unregisterFactory, serverfolder)
 		else:
-			self.logger = Logger.Logger(self)
+			self.messageLogger = MessageLogger.MessageLogger(self)
 			GlobalStore.reactor.connectTCP(self.settings["server"], self.settings["port"], self)
 
 	def buildProtocol(self, addr):
@@ -43,34 +45,34 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		return self.bot
 
 	def startedConnecting(self, connector):
-		self.logger.log("Started connecting, attempt {} (Max is {})".format(self.retries, self.maxRetries if self.maxRetries else "not set"))
+		self.messageLogger.log("Started connecting, attempt {} (Max is {})".format(self.retries, self.maxRetries if self.maxRetries else "not set"))
 
 	def clientConnectionLost(self, connector, reason):
-		self.logger.log("Client connection lost (Reason: '{0}')".format(reason))
+		self.messageLogger.log("Client connection lost (Reason: '{0}')".format(reason))
 		if self.shouldReconnect:
-			self.logger.log(" Restarting")
+			self.messageLogger.log(" Restarting")
 			protocol.ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 		else:
-			self.logger.log(" Quitting")
-			self.logger.closelogs()
+			self.messageLogger.log(" Quitting")
+			self.messageLogger.closelogs()
 			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
 
 	def clientConnectionFailed(self, connector, reason):
-		self.logger.log("Client connection failed (Reason: '{}')".format(reason))
+		self.messageLogger.log("Client connection failed (Reason: '{}')".format(reason))
 		protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 		#If there is a maximum number of retries set, and that maximum is exceeded, stop trying
 		if self.maxRetries and self.retries > self.maxRetries:
-			self.logger.log("Max amount of connection retries reached, removing bot factory")
-			self.logger.closelogs()
+			self.messageLogger.log("Max amount of connection retries reached, removing bot factory")
+			self.messageLogger.closelogs()
 			self.stopTrying()
 			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
 
 	def updateSettings(self, updateLogger=True):
 		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", "globalsettings.json")):
-			print "ERROR: globalsettings.json not found!"
+			self.logger.error("globalsettings.json not found!")
 			return False
 		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", self.serverfolder, "settings.json")):
-			print "ERROR: no settings.json file in '{}' server folder!".format(self.serverfolder)
+			self.logger.error("No settings.json file in '{}' server folder!".format(self.serverfolder))
 			return False
 
 		#First load in the default settings
@@ -85,10 +87,10 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		settingsToEnsure = ["server", "port", "nickname", "realname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"]
 		for settingToEnsure in settingsToEnsure:
 			if settingToEnsure not in self.settings:
-				print "ERROR: Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder)
+				self.logger.error("Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
 				return False
 			elif isinstance(self.settings[settingToEnsure], (list, unicode)) and len(self.settings[settingToEnsure]) == 0:
-				print "ERROR: Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder)
+				self.logger.error("Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder))
 				return False
 
 		#All the strings should be strings and not unicode, which makes it a lot easier to use later
@@ -112,7 +114,7 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			self.maxRetries = None
 
 		if updateLogger:
-			self.logger.updateLogSettings()
+			self.messageLogger.updateLogSettings()
 		return True
 
 	def isUserAdmin(self, user, userNick=None, userAddress=None):
