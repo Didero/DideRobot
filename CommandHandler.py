@@ -95,7 +95,7 @@ class CommandHandler:
 		except Exception as e:
 			message.bot.say(message.source, "Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it")
 			message.bot.factory.messageLogger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
-			self.logger.error("Exception thrown while handling command '{}' and message '{}'".format(commandname, message), exc_info=True)
+			self.logger.error("Exception thrown while handling command '{}' and message '{}'".format(commandname, message.rawText), exc_info=True)
 			traceback.print_exc()
 
 	@staticmethod
