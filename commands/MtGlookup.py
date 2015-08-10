@@ -13,7 +13,7 @@ from IrcMessage import IrcMessage
 
 
 class Command(CommandTemplate):
-	triggers = ['mtg', 'mtgf', 'mtgb']
+	triggers = ['mtg', 'mtgf', 'mtgb', 'magic']
 	helptext = "Looks up info on Magic The Gathering cards. Provide a card name or a regex match to search for,  'random'for a surprise. "
 	helptext += "With the parameter 'search', you can enter JSON-style data to search for attributes, see http://mtgjson.com/ for what's available. "
 	helptext += "{commandPrefix}mtgf adds the flavor text to the result. {commandPrefix}mtgb is shorthand for '{commandPrefix}mtg booster'"
@@ -29,20 +29,18 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		replytext = ""
-		maxCardsToList = 20 if message.isPrivateMessage else 10
-		addExtendedInfo = message.trigger == 'mtgf'
-
-		searchType = ""
-		if message.messagePartsLength > 0:
-			searchType = message.messageParts[0].lower()
-
+		#Immediately check if there's any parameters, to prevent useless work
 		if message.messagePartsLength == 0:
 			message.bot.say(message.source, "This command " + self.helptext[0].lower() + self.helptext[1:].format(commandPrefix=message.bot.factory.commandPrefix))
 			return
 
+		replytext = ""
+		maxCardsToList = 20 if message.isPrivateMessage else 10
+		addExtendedInfo = message.trigger == 'mtgf'
+		searchType = message.messageParts[0].lower()
+
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
-		elif searchType == 'update' or searchType == 'forceupdate':
+		if searchType == 'update' or searchType == 'forceupdate':
 			shouldForceUpdate = True if message.message.lower() == 'forceupdate' else False
 			if self.areCardfilesInUse:
 				replytext = "I'm already updating!"
@@ -73,61 +71,7 @@ class Command(CommandTemplate):
 
 		#We can also search for definitions
 		elif searchType == 'define':
-			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')):
-				if self.areCardfilesInUse:
-					replytext = "I'm sorry, but my definitions file seems to missing. Don't worry, I'm making up-I mean reading up on the rules as we speak. Try again in a bit!"
-				else:
-					message.bot.sendMessage(message.source, "I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds")
-					replytext = self.updateDefinitions()
-			elif message.messagePartsLength < 2:
-				replytext = "Please add a definition to search for"
-			else:
-				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
-					definitions = json.load(definitionsFile)
-				searchterm = " ".join(message.messageParts[1:]).lower()
-				searchRegex = re.compile(searchterm)
-				possibleDefinitions = []
-				for keyword in definitions.keys():
-					if re.search(searchRegex, keyword):
-						possibleDefinitions.append(keyword)
-				if len(possibleDefinitions) == 0:
-					#If nothing was found, search again, but this time check the definitions themselves
-					for keyword, defdict in definitions.iteritems():
-						if re.search(searchRegex, defdict['short']):
-							possibleDefinitions.append(keyword)
-						elif 'extra' in defdict and re.search(searchRegex, defdict['extra']):
-							possibleDefinitions.append(keyword)
-				possibleDefinitionsCount = len(possibleDefinitions)
-				if possibleDefinitionsCount == 0:
-					replytext = "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
-				elif possibleDefinitionsCount == 1:
-					keyword = possibleDefinitions[0]
-					replytext = "{}: {}.".format(keyword, definitions[keyword]['short'])
-					currentReplyLength = len(replytext)
-					if addExtendedInfo and 'extra' in definitions[keyword]:
-						replytext += " " + definitions[keyword]['extra']
-						#MORE INFO
-						maxLength = 300
-						if not message.isPrivateMessage and currentReplyLength + len(definitions[keyword]['extra']) > maxLength:
-							textLeft = replytext[maxLength:]
-							replytext = replytext[:maxLength] + " [continued in notices]"
-							counter = 1
-							while len(textLeft) > 0:
-								GlobalStore.reactor.callLater(0.2 * counter, message.bot.sendMessage, message.userNickname, u"({}) {}".format(counter + 1, textLeft[:maxLength]), 'notice')
-								textLeft = textLeft[maxLength:]
-								counter += 1
-				else:
-					if searchterm in possibleDefinitions:
-						possibleDefinitions.remove(searchterm)
-						possibleDefinitionsCount -= 1
-						replytext = "{}: {}; {} more matching definitions found".format(searchterm, definitions[searchterm]['short'], possibleDefinitionsCount)
-					else:
-						replytext = "Your search returned {} results, please be more specific".format(possibleDefinitionsCount)
-					if possibleDefinitionsCount < 10:
-						replytext += ": {}".format(u"; ".join(possibleDefinitions))
-					replytext += "."
-
-			message.bot.say(message.source, replytext)
+			message.bot.say(message.source, self.getDefinition(message, addExtendedInfo))
 			return
 
 		#Check if the data file even exists
@@ -393,6 +337,64 @@ class Command(CommandTemplate):
 		replytext = replytext.format(card=card).encode('utf-8')
 		return replytext
 
+	def getDefinition(self, message, addExtendedInfo=False):
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')):
+			if self.areCardfilesInUse:
+				return "I'm sorry, but my definitions file seems to missing. Don't worry, I'm making up-I mean reading up on the rules as we speak. Try again in a bit!"
+			else:
+				GlobalStore.reactor.callInThread(self.updateDefinitions)
+				return "I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
+			definitions = json.load(definitionsFile)
+		searchterm = " ".join(message.messageParts[1:]).lower()
+		try:
+			searchRegex = re.compile(searchterm)
+		except re.error:
+			return "That is not valid regex. Please check for typos, and try again"
+		possibleDefinitions = []
+		for keyword in definitions:
+			if re.search(searchRegex, keyword):
+				possibleDefinitions.append(keyword)
+		if len(possibleDefinitions) == 0:
+			#If nothing was found, search again, but this time check the definitions themselves
+			for keyword, defdict in definitions.iteritems():
+				if re.search(searchRegex, defdict['short']):
+					possibleDefinitions.append(keyword)
+				elif 'extra' in defdict and re.search(searchRegex, defdict['extra']):
+					possibleDefinitions.append(keyword)
+		possibleDefinitionsCount = len(possibleDefinitions)
+		if possibleDefinitionsCount == 0:
+			return "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
+		elif possibleDefinitionsCount == 1:
+			keyword = possibleDefinitions[0]
+			replytext = "{}: {}.".format(keyword, definitions[keyword]['short'])
+			currentReplyLength = len(replytext)
+			if addExtendedInfo and 'extra' in definitions[keyword]:
+				replytext += " " + definitions[keyword]['extra']
+				#MORE INFO
+				maxLength = 300
+				if not message.isPrivateMessage and currentReplyLength + len(definitions[keyword]['extra']) > maxLength:
+					textLeft = replytext[maxLength:]
+					replytext = replytext[:maxLength] + " [continued in notices]"
+					counter = 1
+					while len(textLeft) > 0:
+						GlobalStore.reactor.callLater(0.2 * counter, message.bot.sendMessage, message.userNickname, u"({}) {}".format(counter + 1, textLeft[:maxLength]), 'notice')
+						textLeft = textLeft[maxLength:]
+						counter += 1
+			return replytext
+		else:
+			if searchterm in possibleDefinitions:
+				possibleDefinitions.remove(searchterm)
+				possibleDefinitionsCount -= 1
+				replytext = "{}: {}; {:,} more matching definitions found".format(searchterm, definitions[searchterm]['short'], possibleDefinitionsCount)
+			else:
+				replytext = "Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
+			if possibleDefinitionsCount < 10:
+				replytext += ": {}".format(u"; ".join(possibleDefinitions))
+			replytext += "."
+			return replytext
+
+
 	@staticmethod
 	def openBoosterpack(askedSetname):
 		properSetname = u''
@@ -571,7 +573,8 @@ class Command(CommandTemplate):
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
 			raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
-			raritiesToRename = {'land': 'basic land', 'urza land': 'basic land'}
+			#raritiesToRename = {'land': 'basic land', 'urza land': 'basic land'}
+			raritiesToRename = {'urza land': 'Land — Urza’s'}
 			rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}
 			# This function will be called on the 'keysToFormatNicer' keys
 			#  Made into a function, because it's used in two places
