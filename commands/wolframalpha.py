@@ -31,11 +31,11 @@ class Command(CommandTemplate):
 
 	def fetchWolframData(self, query, podsToFetch=5):
 		#First check if there is an API key
-		if not GlobalStore.commandhandler.apikeys.has_section('wolframalpha') or not GlobalStore.commandhandler.apikeys.has_option('wolframalpha', 'key'):
+		if 'wolframalpha' not in GlobalStore.commandhandler.apikeys:
 			return (False, "No Wolfram Alpha API key found")
 
 		replystring = ""
-		params = {'appid': GlobalStore.commandhandler.apikeys.get('wolframalpha', 'key'), 'input': query}
+		params = {'appid': GlobalStore.commandhandler.apikeys['wolframalpha'], 'input': query}
 		if podsToFetch > 0:
 			podIndexParam = ""
 			for i in xrange(1, podsToFetch):

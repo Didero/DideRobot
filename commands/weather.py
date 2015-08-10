@@ -20,12 +20,12 @@ class Command(CommandTemplate):
 		"""
 
 		replytext = u""
-		if not GlobalStore.commandhandler.apikeys.has_section("openweathermap") or not GlobalStore.commandhandler.apikeys.has_option("openweathermap", "key"):
+		if 'openweathermap' not in GlobalStore.commandhandler.apikeys:
 			replytext = u"No API key for OpenWeatherMap found, please tell my owner so they can fix this"
 		elif message.messagePartsLength == 0:
 			replytext = u"Please enter the name of a city"
 		else:
-			params = {"APPID": GlobalStore.commandhandler.apikeys.get("openweathermap", "key"), "q": message.message, "units": "metric"}
+			params = {"APPID": GlobalStore.commandhandler.apikeys['openweathermap'], "q": message.message, "units": "metric"}
 			requestType = 'weather'
 			if message.trigger == 'forecast':
 				requestType = 'forecast/daily'

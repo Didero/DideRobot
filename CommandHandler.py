@@ -1,5 +1,4 @@
-import importlib, logging, os, traceback
-from ConfigParser import ConfigParser
+import importlib, json, logging, os, traceback
 
 import GlobalStore
 from IrcMessage import IrcMessage
@@ -8,7 +7,7 @@ from IrcMessage import IrcMessage
 class CommandHandler:
 	commands = {}
 	commandFunctions = {}
-	apikeys = ConfigParser()
+	apikeys = {}
 
 
 	def __init__(self):
@@ -17,15 +16,19 @@ class CommandHandler:
 		self.loadApiKeys()
 
 	def loadApiKeys(self):
-		self.apikeys = ConfigParser()
-		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini')):
-			self.logger.error("API key file not found!")
+		self.apikeys = {}
+		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json')):
+			self.logger.error("API key file at not found! It should be in the 'data' subfolder and called 'apikeys.json'")
 		else:
-			self.apikeys.read(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini'))
+			try:
+				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json')) as apikeysFile:
+					self.apikeys = json.load(apikeysFile)
+			except ValueError:
+				self.logger.error("API key file is invalid JSON!")
 
 	def saveApiKeys(self):
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.ini'), 'w') as apifile:
-			self.apikeys.write(apifile)
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json'), 'w') as apifile:
+			apifile.write(json.dumps(self.apikeys, sort_keys=True, indent=4))
 
 	def addCommandFunction(self, module, name, function):
 		if name in self.commandFunctions:

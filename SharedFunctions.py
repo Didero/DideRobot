@@ -8,11 +8,12 @@ import GlobalStore
 
 #First some Twitter functions
 def updateTwitterToken():
-	if not GlobalStore.commandhandler.apikeys.has_section('twitter') or not GlobalStore.commandhandler.apikeys.has_option('twitter', 'key') or not GlobalStore.commandhandler.apikeys.has_option('twitter', 'secret'):
+	apikeys = GlobalStore.commandhandler.apikeys
+	if 'twitter' not in apikeys or 'key' not in apikeys['twitter']or 'secret' not in apikeys['twitter']:
 		logging.getLogger('DideRobot').error("No Twitter API key and/or secret found!")
 		return False
 
-	credentials = base64.b64encode("{}:{}".format(GlobalStore.commandhandler.apikeys.get('twitter', 'key'), GlobalStore.commandhandler.apikeys.get('twitter', 'secret')))
+	credentials = base64.b64encode("{}:{}".format(apikeys['twitter']['key'], apikeys['twitter']['secret']))
 	headers = {"Authorization": "Basic {}".format(credentials), "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"}
 	data = "grant_type=client_credentials"
 
@@ -22,13 +23,12 @@ def updateTwitterToken():
 		logging.getLogger('DideRobot').error("An error occurred while retrieving Twitter token: " + json.dumps(reply))
 		return False
 
-	if not GlobalStore.commandhandler.apikeys.has_section('twitter'):
-		GlobalStore.commandhandler.apikeys.add_section('twitter')
-	GlobalStore.commandhandler.apikeys.set('twitter', 'token', reply['access_token'])
-	GlobalStore.commandhandler.apikeys.set('twitter', 'tokentype', reply['token_type'])
+	if 'twitter' not in apikeys:
+		apikeys['twitter'] = {}
+	apikeys['twitter']['token'] = reply['access_token']
+	apikeys['twitter']['tokentype'] = reply['token_type']
 
 	GlobalStore.commandhandler.saveApiKeys()
-
 	return True
 
 def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=999999999999999999):
@@ -43,7 +43,8 @@ def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=9999999
 	elif "highestIdDownloaded" in storedInfo[username]:
 		highestIdDownloaded = storedInfo[username]['highestIdDownloaded']
 
-	headers = {"Authorization": "{} {}".format(GlobalStore.commandhandler.apikeys.get('twitter', 'tokentype'), GlobalStore.commandhandler.apikeys.get('twitter', 'token'))}
+
+	headers = {"Authorization": "{} {}".format(GlobalStore.commandhandler.apikeys['twitter']['tokentype'], GlobalStore.commandhandler.apikeys['twitter']['token'])}
 	params = {"screen_name": username, "count": "200", "trim_user": "true", "exclude_replies": "true", "include_rts": "false"}
 	if downloadNewerThanId > -1:
 		params["since_id"] = downloadNewerThanId

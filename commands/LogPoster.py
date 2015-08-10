@@ -20,7 +20,7 @@ class Command(CommandTemplate):
 		"""
 
 		replytext = u""
-		if not GlobalStore.commandhandler.apikeys.has_section("paste.ee") or not GlobalStore.commandhandler.apikeys.has_option('paste.ee', 'key'):
+		if 'paste.ee' not in GlobalStore.commandhandler.apikeys:
 			replytext = u"The Paste.ee API key was not found. Please tell my owner so they can fix this"
 		elif not message.source.startswith('#'):
 			replytext = u"A log of a private conversation? That could lead to all kinds of privacy concerns..."
@@ -58,7 +58,7 @@ class Command(CommandTemplate):
 				if not os.path.exists(logfilename):
 					replytext = u"Sorry, no log for that day was found"
 				else:
-					pasteData = {"key": GlobalStore.commandhandler.apikeys.get("paste.ee", "key"),
+					pasteData = {"key": GlobalStore.commandhandler.apikeys["paste.ee"],
 								 "description": "Log for {} from {}".format(message.source, date.strftime("%Y-%m-%d")),
 								 "format": "json", "paste": u"", "expire": 600}  #Expire value is in supposedly in minutes, but apparently it's in seconds
 

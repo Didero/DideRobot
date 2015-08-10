@@ -110,7 +110,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveYoutubetitle(url, timeout=5.0):
-		if not GlobalStore.commandhandler.apikeys.has_section('google') or not GlobalStore.commandhandler.apikeys.has_option('google', 'apikey'):
+		if 'google' not in GlobalStore.commandhandler.apikeys.has_section('google'):
 			CommandTemplate.logError("[url] Google API key not found!")
 			return None
 		#First we need to determine the video ID from something like this: http://www.youtube.com/watch?v=jmAKXADLcxY or http://youtu.be/jmAKXADLcxY
@@ -126,7 +126,7 @@ class Command(CommandTemplate):
 			CommandTemplate.logError(u"[url] No Youtube videoId found in '{}'".format(url))
 			return None
 		googleUrl = "https://www.googleapis.com/youtube/v3/videos"
-		params = {'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': GlobalStore.commandhandler.apikeys.get('google', 'apikey'),
+		params = {'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': GlobalStore.commandhandler.apikeys['google'],
 				  'fields': 'items/snippet(title,description),items/contentDetails/duration,items/statistics(viewCount,likeCount,dislikeCount)'}
 		googleJson = json.loads(requests.get(googleUrl, params=params, timeout=timeout).text.encode('utf-8'))
 
@@ -159,7 +159,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveImgurTitle(url, timeout=5.0):
-		if not GlobalStore.commandhandler.apikeys.has_section('imgur') or not GlobalStore.commandhandler.apikeys.has_option('imgur', 'clientid'):
+		if 'imgur' not in GlobalStore.commandhandler.apikeys or 'clientid' not in GlobalStore.commandhandler.apikeys['imgur']:
 			CommandTemplate.logError("[url] Imgur API key not found!")
 			return None
 		imageIdMatches = re.search('imgur\.com/([^.]+)', url, re.IGNORECASE)
@@ -174,7 +174,7 @@ class Command(CommandTemplate):
 				imageType = 'gallery/album'
 				isGallery = True
 			imageId = imageId[imageId.rfind('/')+1:]
-		headers = {"Authorization": "Client-ID " + GlobalStore.commandhandler.apikeys.get('imgur','clientid')}
+		headers = {"Authorization": "Client-ID " + GlobalStore.commandhandler.apikeys['imgur']['clientid']}
 		imgurUrl = "https://api.imgur.com/3/{type}/{id}".format(type=imageType, id=imageId)
 		imgurDataPage = requests.get(imgurUrl, headers=headers, timeout=timeout)
 		imgdata = json.loads(imgurDataPage.text.encode('utf-8'))
@@ -208,10 +208,10 @@ class Command(CommandTemplate):
 			CommandTemplate.logWarning("[url] No twitter matches found in '{}'".format(url))
 			return None
 		apikeys = GlobalStore.commandhandler.apikeys
-		if not apikeys.has_section('twitter') or not apikeys.has_option('twitter', 'tokentype') or not apikeys.has_option('twitter', 'token'):
+		if 'twitter' not in apikeys or 'tokentype' not in apikeys['twitter'] or 'token' not in apikeys['twitter']:
 			CommandTemplate.logError("[url] Twitter API token info not found!")
 			return None
-		headers = {"Authorization": "{} {}".format(apikeys.get('twitter', 'tokentype'), apikeys.get('twitter', 'token'))}
+		headers = {"Authorization": "{} {}".format(apikeys['twitter']['tokentype'], apikeys['twitter']['token'])}
 		if 'id' in tweetMatches.groupdict() and tweetMatches.group('id') is not None:
 			#Specific tweet
 			twitterUrl = "https://api.twitter.com/1.1/statuses/show.json?id={id}".format(id=tweetMatches.group('id'))

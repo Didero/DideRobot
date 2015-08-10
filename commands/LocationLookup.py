@@ -17,7 +17,7 @@ class Command(CommandTemplate):
 		"""
 
 		#First check for the presence of the API key
-		if not GlobalStore.commandhandler.apikeys.has_section('locatorhq') or not GlobalStore.commandhandler.apikeys.has_option('locatorhq', 'key') or not GlobalStore.commandhandler.apikeys.has_option('locatorhq', 'username'):
+		if 'locatorhq' not in GlobalStore.commandhandler.apikeys or 'key' not in GlobalStore.commandhandler.apikeys['locatorhq'] or 'username' not in GlobalStore.commandhandler.apikeys['locatorhq']:
 			message.bot.say(message.source, u"I'm sorry, my owner hasn't filled in the required API key for this module. Please poke them to add it")
 			return
 
@@ -77,8 +77,8 @@ class Command(CommandTemplate):
 				else:
 					replytext = u"That's on my server! And I'm right here"
 			else:
-				params = {'key': GlobalStore.commandhandler.apikeys.get('locatorhq', 'key'),
-						  'user': GlobalStore.commandhandler.apikeys.get('locatorhq', 'username'), 'ip': userIp, 'format': 'json'}
+				params = {'key': GlobalStore.commandhandler.apikeys['locatorhq']['key'],
+						  'user': GlobalStore.commandhandler.apikeys['locatorhq']['username'], 'ip': userIp, 'format': 'json'}
 				apiReturn = requests.get("http://api.locatorhq.com", params=params)
 
 				try:

@@ -1,0 +1,20 @@
+{
+	"google": "your key here",
+	"imgur": {
+		"clientid": "your key here",
+		"clientsecret": "your secret here"
+	},
+	"locatorhq": {
+		"key": "your key here",
+		"username": "your username here"
+	},
+	"paste.ee": "your key here",
+	"openweathermap": "your key here",
+	"twitter": {
+		"key": "your key here",
+		"secret": "your secret here",
+		"token": "your token will be generated here",
+		"tokentype": "your token type will be generated here"
+	},
+	"wolframalpha": "your key here"
+}

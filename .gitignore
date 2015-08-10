@@ -43,6 +43,7 @@ libraries/
 serverSettings/**
 data/*
 !data/generators/
+!data/apikeys.json.example
 ToDo.txt
 Program.log
 Program.log.*
