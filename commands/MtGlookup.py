@@ -469,18 +469,16 @@ class Command(CommandTemplate):
 			possibleCards[rarity.lower()] = []
 		for i in xrange(0, len(cardstore)):
 			cardname, carddata = cardstore.popitem()
-			for setname, setdata in carddata[1].iteritems():
-				if setname == properSetname:
-					if collectTypes:
-						for typeName, typeRegex in typesToCollect:
-							if typeRegex.search(carddata[0]['type']):
-								possibleCards[typeName].append(carddata[0]['name'])
-								continue
-					rarity = setdata['rarity'].lower()
-					if rarity not in boosterRarities:
+			if properSetname not in carddata[1]:
+				continue
+			if collectTypes:
+				for typeName, typeRegex in typesToCollect:
+					if typeRegex.search(carddata[0]['type']):
+						possibleCards[typeName].append(carddata[0]['name'])
 						continue
-					possibleCards[rarity].append(carddata[0]['name'])
-					break
+			rarity = carddata[1][properSetname]['rarity'].lower()
+			if rarity in boosterRarities:
+				possibleCards[rarity].append(carddata[0]['name'])
 
 		#Some sets don't have basic lands, but need them in their boosterpacks (Gatecrash f.i.) Fix that
 		#TODO: Handle rarities properly, a 'land' shouldn't be a 'basic land' but a land from that set
