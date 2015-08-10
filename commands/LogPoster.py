@@ -24,7 +24,7 @@ class Command(CommandTemplate):
 			replytext = u"The Paste.ee API key was not found. Please tell my owner so they can fix this"
 		elif not message.source.startswith('#'):
 			replytext = u"A log of a private conversation? That could lead to all kinds of privacy concerns..."
-		elif not message.bot.factory.logger.shouldKeepChannelLogs:
+		elif not message.bot.factory.messageLogger.shouldKeepChannelLogs:
 			replytext = u"I'm sorry, I was told not to keep logs for this channel"
 		else:
 			date = None

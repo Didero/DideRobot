@@ -15,7 +15,7 @@ class Command(CommandTemplate):
 		"""
 		if message.trigger == 'quit':
 			#Just quit this server
-			message.bot.factory.logger.log("{0} told me to quit in channel {1}, obliging".format(message.user, message.source))
+			message.bot.factory.messageLogger.log("{0} told me to quit in channel {1}, obliging".format(message.user, message.source))
 		
 
 			quitmessage = "{0} told me to quit, so here I go..."
