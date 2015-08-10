@@ -32,6 +32,11 @@ def updateTwitterToken():
 	return True
 
 def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=999999999999999999):
+	apikeys = GlobalStore.commandhandler.apikeys
+	if 'twitter' not in apikeys or 'token' not in apikeys['twitter'] or 'tokentype' not in apikeys['twitter']:
+		logging.getLogger('DideRobot').info('No twitter token found, retrieving a new one')
+		updateTwitterToken()
+
 	highestIdDownloaded = 0
 	storedInfo = {}
 	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.json')
