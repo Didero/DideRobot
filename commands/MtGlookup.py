@@ -573,8 +573,7 @@ class Command(CommandTemplate):
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
 			raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
-			#raritiesToRename = {'land': 'basic land', 'urza land': 'basic land'}
-			raritiesToRename = {'urza land': 'Land — Urza’s'}
+			raritiesToRename = {'land': 'basic land', 'urza land': 'basic land'}
 			rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}
 			# This function will be called on the 'keysToFormatNicer' keys
 			#  Made into a function, because it's used in two places
