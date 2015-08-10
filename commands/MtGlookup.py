@@ -448,21 +448,37 @@ class Command(CommandTemplate):
 					boosterRarities[rarityPick] += 1
 			del boosterRarities['_choice']
 
-		#Name exist, get the proper spelling, since in other places setnames aren't lower-case
+		#Name exists, get the proper spelling, since in other places setnames aren't lower-case
 		properSetname = setdata[properSetname]['name']
+
+		#Check if we need to collect some special-case types too instead of just rarities
+		typesToCollect = []  #This will become a tuple with the first entry being the type in text and the second entry the compiled regex
+		defaultRarities = ('common', 'uncommon', 'rare', 'mythic rare', '_choice')
+		for rarity in boosterRarities:
+			if rarity not in defaultRarities:
+				typesToCollect.append((rarity, re.compile(rarity, re.IGNORECASE)))
+		collectTypes = True if len(typesToCollect) > 0 else False
 
 		#Get all cards from that set
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), 'r') as jsonfile:
 			cardstore = json.load(jsonfile)
 		#A dictionary with the found cards, sorted by rarity
 		possibleCards = {}
+		#First fill in the required rarities
+		for rarity in boosterRarities:
+			possibleCards[rarity.lower()] = []
 		for i in xrange(0, len(cardstore)):
 			cardname, carddata = cardstore.popitem()
 			for setname, setdata in carddata[1].iteritems():
 				if setname == properSetname:
+					if collectTypes:
+						for typeName, typeRegex in typesToCollect:
+							if typeRegex.search(carddata[0]['type']):
+								possibleCards[typeName].append(carddata[0]['name'])
+								continue
 					rarity = setdata['rarity'].lower()
-					if rarity not in possibleCards:
-						possibleCards[rarity] = []
+					if rarity not in boosterRarities:
+						continue
 					possibleCards[rarity].append(carddata[0]['name'])
 					break
 
@@ -477,16 +493,17 @@ class Command(CommandTemplate):
 			if rarity == '_choice':
 				continue
 			if rarity not in possibleCards:
-				return (False, "No cards with rarity '{}' found, and I can't make a booster pack without it!".format(rarity))
+				return (False, u"No cards with rarity '{}' found, and I can't make a booster pack without it!".format(rarity))
 			elif possibleCards[rarity] < count:
-				return (False, "That set doesn't contain enough '{}'-rarity cards for a boosterpack. "
-							   "I need {:,}, but I only found {:,}".format(rarity, boosterRarities[rarity], len(possibleCards[rarity])))
+				return (False, u"That set doesn't contain enough '{}'-rarity cards for a boosterpack. "
+							   u"I need {:,}, but I only found {:,}".format(rarity, boosterRarities[rarity], len(possibleCards[rarity])))
 
 		#Draw the cards!
-		replytext = u"Boosterpack for '{}' contains: ".format(properSetname)
+		replytext = "Boosterpack for '{}' contains: ".format(properSetname.encode('utf-8'))
 		for rarity, count in boosterRarities.iteritems():
-			replytext += u"{}: {}. ".format(SharedFunctions.makeTextBold(rarity.capitalize()), u"; ".join(random.sample(possibleCards[rarity], count)))
-		replytext = replytext.encode('utf-8')
+			rarityText = SharedFunctions.makeTextBold(rarity.capitalize())
+			cardlist = "; ".join(random.sample(possibleCards[rarity], count))
+			replytext += "{}: {}. ".format(rarityText, cardlist)
 		return (True, replytext)
 
 
@@ -573,7 +590,7 @@ class Command(CommandTemplate):
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
 			raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
-			raritiesToRename = {'land': 'basic land', 'urza land': 'basic land'}
+			raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s'}  #Non-standard rarities are interpreted as regexes for type
 			rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}
 			# This function will be called on the 'keysToFormatNicer' keys
 			#  Made into a function, because it's used in two places
