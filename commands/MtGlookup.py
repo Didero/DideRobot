@@ -360,8 +360,6 @@ class Command(CommandTemplate):
 			for keyword, defdict in definitions.iteritems():
 				if re.search(searchRegex, defdict['short']):
 					possibleDefinitions.append(keyword)
-				elif 'extra' in defdict and re.search(searchRegex, defdict['extra']):
-					possibleDefinitions.append(keyword)
 		possibleDefinitionsCount = len(possibleDefinitions)
 		if possibleDefinitionsCount == 0:
 			return "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
