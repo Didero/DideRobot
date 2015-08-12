@@ -500,7 +500,7 @@ class Command(CommandTemplate):
 		replytext = "Boosterpack for '{}' contains: ".format(properSetname.encode('utf-8'))
 		for rarity, count in boosterRarities.iteritems():
 			rarityText = SharedFunctions.makeTextBold(rarity.capitalize())
-			cardlist = "; ".join(random.sample(possibleCards[rarity], count))
+			cardlist = "; ".join(random.sample(possibleCards[rarity], count)).encode('utf-8')
 			replytext += "{}: {}. ".format(rarityText, cardlist)
 		return (True, replytext)
 
