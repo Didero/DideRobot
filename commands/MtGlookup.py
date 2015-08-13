@@ -480,8 +480,8 @@ class Command(CommandTemplate):
 
 		#Some sets don't have basic lands, but need them in their boosterpacks (Gatecrash f.i.) Fix that
 		#TODO: Handle rarities properly, a 'land' shouldn't be a 'basic land' but a land from that set
-		if 'basic land' in boosterRarities and 'basic land' not in possibleCards:
-			CommandTemplate.logWarning(u"[MTG] Booster for set '{}' needs basic lands, but set doesn't have any! Adding manually".format(properSetname))
+		if 'basic land' in boosterRarities and len(possibleCards['basic land']) == 0:
+			CommandTemplate.logWarning(u"[MTG] Booster for set '{}' needs {:,} basic lands, but set doesn't have any! Adding manually".format(properSetname, boosterRarities['basic land']))
 			possibleCards['basic land'] = ['Forest', 'Island', 'Mountain', 'Plains', 'Swamp']
 
 		#Check if we found enough cards
