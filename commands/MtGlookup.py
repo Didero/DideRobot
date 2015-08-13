@@ -490,7 +490,7 @@ class Command(CommandTemplate):
 				continue
 			if rarity not in possibleCards:
 				return (False, u"No cards with rarity '{}' found, and I can't make a booster pack without it!".format(rarity))
-			elif possibleCards[rarity] < count:
+			elif len(possibleCards[rarity]) < count:
 				return (False, u"That set doesn't contain enough '{}'-rarity cards for a boosterpack. "
 							   u"I need {:,}, but I only found {:,}".format(rarity, boosterRarities[rarity], len(possibleCards[rarity])))
 
