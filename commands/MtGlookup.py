@@ -763,7 +763,7 @@ class Command(CommandTemplate):
 					currentParagraph = defHeader.next_sibling
 					paragraphText = u""
 					#If there's no next_sibling, 'currentParagraph' is set to None. Check for that
-					while currentParagraph and currentParagraph.name in ['p', 'ul', 'dl']:
+					while currentParagraph and currentParagraph.name in ['p', 'ul', 'dl', 'ol']:
 						paragraphText += u" " + currentParagraph.text
 						currentParagraph = currentParagraph.next_sibling
 					paragraphText = re.sub(" ?\[\d+?]", "", paragraphText).lstrip().rstrip(' .')  #Remove the reference links ('[1]')
