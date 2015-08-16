@@ -752,6 +752,10 @@ class Command(CommandTemplate):
 				defHeaders = BeautifulSoup(requests.get(url).text.replace('\n', '')).find(class_=section).find_all(['h3', 'h4'])
 				for defHeader in defHeaders:
 					keyword = defHeader.find(class_='mw-headline').text.lower()
+					#On MTGSalvation, sections are sorted into alphabetized subsections. Ignore the letter headers
+					if len(keyword) <= 1:
+						continue
+					#Report duplicate definitions, and keep the original
 					if keyword in definitions:
 						self.logWarning("[MTG] [DefinitionsUpdate] Duplicate definition: '{}'".format(keyword))
 						continue
@@ -763,6 +767,9 @@ class Command(CommandTemplate):
 						paragraphText += u" " + currentParagraph.text
 						currentParagraph = currentParagraph.next_sibling
 					paragraphText = re.sub(" ?\[\d+?]", "", paragraphText).lstrip().rstrip(' .')  #Remove the reference links ('[1]')
+					if len(paragraphText) == 0:
+						self.logWarning("[MTG] Definition for '{}' is empty, skipping".format(keyword))
+						continue
 
 					#Split the found text into a short definition and a longer description
 					definitions[keyword] = {}
