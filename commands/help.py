@@ -31,25 +31,25 @@ class Command(CommandTemplate):
 		#check if the provided argument exists
 		if command in triggerlist:
 			#'!help, !helpfull: '
-			replytext = u"{commandPrefix}" + u", {commandPrefix}".join(triggerlist[command].triggers)
+			replytext = "{commandPrefix}" + ", {commandPrefix}".join(triggerlist[command].triggers)
 			#Since some modules have '{commandPrefix}' in their helptext, turn that into the actual command prefix
 			replytext = replytext.format(commandPrefix=message.bot.factory.commandPrefix)
 			#some commands can only be used by people in the admins list. Inform users of that
 			if triggerlist[command].adminOnly:
-				replytext += u" [admin-only]"			
-			replytext += u": {helptext}".format(helptext=triggerlist[command].getHelp(message))
+				replytext += " [admin-only]"
+			replytext += ": {helptext}".format(helptext=triggerlist[command].getHelp(message))
 		#If the provided command can't be found (either because of misspelling or because they didn't provide one),
 		# show a list of available commands
 		else:
 			#If a command was provided but not found, apologize even though it's not our fault
-			if command != u"":
-				replytext = u"I don't know that command, sorry. "
+			if command != "":
+				replytext = "I don't know that command, sorry. "
 			commandslist = ""
-			if message.trigger == u'helpfull':
-				commandslist = u", ".join(sorted(triggerlist.keys()))
+			if message.trigger == 'helpfull':
+				commandslist = ", ".join(sorted(triggerlist.keys()))
 			else:
 				commandslist = ", ".join(sorted(shortTriggerlist.keys()))
-			replytext += u"Commands loaded: {commandslist}. Type '{prefix}help [commandname]' for info on how to use that command"\
+			replytext += "Commands loaded: {commandslist}. Type '{prefix}help [commandname]' for info on how to use that command"\
 				.format(commandslist=commandslist, prefix=message.bot.factory.commandPrefix)
 		
 		message.bot.sendMessage(message.source, replytext, 'say')
