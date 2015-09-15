@@ -10,7 +10,8 @@ from IrcMessage import IrcMessage
 
 class Command(CommandTemplate):
 	triggers = ['humble', 'humblebundle']
-	helptext = "Displays information about the latest Humble Bundle. Add the 'weekly' parameter to get info on their Weekly sale"
+	helptext = "Displays information about the latest Humble Bundle. Add the 'weekly' parameter to get info on their Weekly sale. " \
+			   "Use '{commandPrefix}humblebundle' to see the games in the bundle (can be both wrong and spammy)"
 	#callInThread = True
 
 	def execute(self, message):
@@ -30,10 +31,15 @@ class Command(CommandTemplate):
 			else:
 				url += urlSuffix
 
+		addGameList = message.trigger == 'humblebundle'
+
 		try:
-			pageDownload = requests.get(url)
+			pageDownload = requests.get(url, timeout=10.0)
 		except requests.ConnectionError:
 			message.bot.sendMessage(message.source, "Sorry, I couldn't connect to the Humble Bundle site. Try again in a little while!")
+			return
+		except requests.exceptions.Timeout:
+			message.bot.sendMessage(message.source, "Sorry, the Humble Bundle site took too long to respond. Try again in a bit!")
 			return
 
 		if pageDownload.status_code != 200:
@@ -47,31 +53,35 @@ class Command(CommandTemplate):
 		title = page.title.string[:page.title.string.find('(') - 1]
 
 		#First (try to) get a list of all the games with price requirements
-		lockedGames = {'BTA': [], 'Fixed': []}
-		for lockedGameElement in page.find_all('i', class_='hb-lock'):
-			lockType = None
-			if 'green' in lockedGameElement.attrs['class']:
-				lockType = 'BTA'
-			elif 'blue' in lockedGameElement.attrs['class']:
-				lockType = 'Fixed'
-			else:
-				#print "[Humble] Unknown Lock type for game '{}': '{}'".format(" ".join(lockedGameElement.stripped_strings), lockedGameElement.attrs['class'])
-				continue
-			#If the game name consists of a single line (and it's not empty) store that
-			if lockedGameElement.string and len(lockedGameElement.string) > 0:
-				lockedGames[lockType].append(lockedGameElement.string.strip().lower())
-			#Multiple lines. Add both the first line, and a combination of all the lines
-			else:
-				lines = list(lockedGameElement.stripped_strings)
-				lockedGames[lockType].append(lines[0].strip().lower())
-				lockedGames[lockType].append(" ".join(lines).lower())
-			# Sometimes the name consists of multiple elements (Like with 'Deluxe Editions' or something). Add those too if needed
-			fullname = " ".join(lockedGameElement.parent.stripped_strings).strip().lower()
-			if fullname not in lockedGames[lockType]:
-				lockedGames[lockType].append(fullname)
+		#Only if we actually need to show all the games
+		if addGameList:
+			lockedGames = {'BTA': [], 'Fixed': []}
+			for lockedGameElement in page.find_all('i', class_='hb-lock'):
+				lockType = None
+				if 'green' in lockedGameElement.attrs['class']:
+					lockType = 'BTA'
+				elif 'blue' in lockedGameElement.attrs['class']:
+					lockType = 'Fixed'
+				else:
+					#print "[Humble] Unknown Lock type for game '{}': '{}'".format(" ".join(lockedGameElement.stripped_strings), lockedGameElement.attrs['class'])
+					continue
+				#If the game name consists of a single line (and it's not empty) store that
+				if lockedGameElement.string and len(lockedGameElement.string) > 0:
+					lockedGames[lockType].append(lockedGameElement.string.strip().lower())
+				#Multiple lines. Add both the first line, and a combination of all the lines
+				else:
+					lines = list(lockedGameElement.stripped_strings)
+					lockedGames[lockType].append(lines[0].strip().lower())
+					lockedGames[lockType].append(" ".join(lines).lower())
+				# Sometimes the name consists of multiple elements (Like with 'Deluxe Editions' or something). Add those too if needed
+				fullname = " ".join(lockedGameElement.parent.stripped_strings).strip().lower()
+				if fullname not in lockedGames[lockType]:
+					lockedGames[lockType].append(fullname)
 
 		#The names of the games (or books) are listed in italics in the description section, get them from there
+		#Also do this if we don't need to list the games, since we do need a game count
 		gamePriceCategories = {"PWYW": [], "BTA": [], "Fixed": []}
+		gamecount = 0
 		descriptionElement = page.find(class_='bundle-info-text')
 		gameFound = False
 		if not descriptionElement:
@@ -86,13 +96,15 @@ class Command(CommandTemplate):
 				for titleElement in paragraph.find_all('em'):
 					gameFound = True
 					gamename = titleElement.text
-					#See if this title is in the locked-games lists we found earlier
-					if gamename.lower() in lockedGames['BTA']:
-						gamePriceCategories['BTA'].append(gamename)
-					elif gamename.lower() in lockedGames['Fixed']:
-						gamePriceCategories['Fixed'].append(gamename)
-					else:
-						gamePriceCategories['PWYW'].append(gamename)
+					gamecount += 1
+					if addGameList:
+						#See if this title is in the locked-games lists we found earlier
+						if gamename.lower() in lockedGames['BTA']:
+							gamePriceCategories['BTA'].append(gamename)
+						elif gamename.lower() in lockedGames['Fixed']:
+							gamePriceCategories['Fixed'].append(gamename)
+						else:
+							gamePriceCategories['PWYW'].append(gamename)
 
 		#Totals aren't shown on the site immediately, but are edited into the page with Javascript. Get info from there
 		totalMoney = -1.0
@@ -138,13 +150,14 @@ class Command(CommandTemplate):
 			replytext = u"{} has an average price of ${:.2f} and raised ${:,} from {:,} people.".format(title, round(avgPrice, 2), round(totalMoney, 2), contributors)
 			if timeLeft != u"":
 				replytext += u" It will end in {}.".format(timeLeft)
-			replytext += u" It contains {:,} titles. ".format(sum(len(v) for v in gamePriceCategories.itervalues()))
-			#Add a list of all the games found
-			for priceType in ['PWYW', 'BTA', 'Fixed']:
-				if len(gamePriceCategories[priceType]) > 0:
-					replytext += u"{}: {}. ".format(priceType, u" | ".join(gamePriceCategories[priceType]))
-			# If the lock-element search found much more items than described in the text, warn users the output may be inaccurate
-			if len(lockedGames['BTA']) + len(lockedGames['Fixed']) > len(gamePriceCategories['BTA']) + len(gamePriceCategories['Fixed']) + 5:
-				replytext += u"(itemlist may be wrong)"
+			replytext += u" It contains {:,} titles. ".format(gamecount)
+			if addGameList:
+				#Add a list of all the games found
+				for priceType in ['PWYW', 'BTA', 'Fixed']:
+					if len(gamePriceCategories[priceType]) > 0:
+						replytext += u"{}: {}. ".format(priceType, u" | ".join(gamePriceCategories[priceType]))
+				# If the lock-element search found much more items than described in the text, warn users the output may be inaccurate
+				if len(lockedGames['BTA']) + len(lockedGames['Fixed']) > len(gamePriceCategories['BTA']) + len(gamePriceCategories['Fixed']) + 5:
+					replytext += u"(itemlist may be wrong)"
 
 		message.bot.say(message.source, replytext)
