@@ -21,7 +21,7 @@ class Command(CommandTemplate):
 		return self.parseWikipediaArticle(page, addExtendedText, searchterm)
 
 	def getWikipediaArticle(self, url, addExtendedText=False):
-		if not 'm.wikipedia' in url:
+		if 'm.wikipedia' not in url:
 			url = url.replace('wikipedia', 'm.wikipedia')
 		return self.parseWikipediaArticle(requests.get(url), addExtendedText)
 
@@ -64,7 +64,7 @@ class Command(CommandTemplate):
 						elif resultCount > 1:
 							replytext += " ({:,} more possible results)".format(resultCount)
 		else:
-			contentContainer = wikitext.find(id="content")  #The actual article is in a div with id 'content'
+			contentContainer = wikitext.find(id="bodyContent")  #The actual article is in a div with id 'content'
 			paragraphFound = False
 			while not paragraphFound:
 				articleContainer = contentContainer.find('div')  #For some reason it's nested in another div tag
@@ -146,11 +146,10 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 
-		if message.messagePartsLength == 0 and message.trigger != 'wikirandom':
+		if message.trigger == 'wikirandom':
+			replytext = self.getRandomWikipediaArticle()
+		elif message.messagePartsLength == 0:
 			replytext = "Please provide a term to search for"
 		else:
-			if message.trigger == 'wikirandom':
-				replytext = self.getRandomWikipediaArticle()
-			else:
-				replytext = self.searchWikipedia(message.message, message.trigger=='wikipedia')
+			replytext = self.searchWikipedia(message.message, message.trigger=='wikipedia')
 		message.bot.say(message.source, replytext)
