@@ -14,9 +14,9 @@ from IrcMessage import IrcMessage
 
 class Command(CommandTemplate):
 	triggers = ['mtg', 'mtgf', 'mtgb', 'magic']
-	helptext = "Looks up info on Magic The Gathering cards. Provide a card name or a regex match to search for,  'random'for a surprise. "
-	helptext += "With the parameter 'search', you can enter JSON-style data to search for attributes, see http://mtgjson.com/ for what's available. "
-	helptext += "{commandPrefix}mtgf adds the flavor text to the result. {commandPrefix}mtgb is shorthand for '{commandPrefix}mtg booster'"
+	helptext = "Looks up info on Magic: The Gathering cards. Provide a card name or regex to search for, or 'random' for a surprise. "
+	helptext += "Or use 'search' with key-value attribute pairs for more control, see http://mtgjson.com/ for available attributes. "
+	helptext += "{commandPrefix}mtgf adds the flavor text and sets to the output. {commandPrefix}mtgb or '{commandPrefix}mtg booster' opens a boosterpack"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 
 	areCardfilesInUse = False
