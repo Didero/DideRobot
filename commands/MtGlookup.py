@@ -673,6 +673,10 @@ class Command(CommandTemplate):
 							if keyToRemove in card:
 								del card[keyToRemove]
 
+						#No need to store there's nothing special about the card's layout
+						if 'layout' in card and card['layout'] == 'normal':
+							del card['layout']
+
 						#The 'Colors' field benefits from some ordering, for readability.
 						if 'colors' in card:
 							card['colors'] = sorted(card['colors'])
