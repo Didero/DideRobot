@@ -576,14 +576,14 @@ class Command(CommandTemplate):
 
 			newcardstore = {}
 			setstore = {'_setsWithBoosterpacks': []}
-			keysToChange = {'keysToRemove': ['border', 'imageName', 'number', 'releaseDate', 'reserved', 'subtypes',
-											 'supertypes', 'timeshifted', 'types', 'variations', 'watermark'],
+			keysToChange = {'keysToRemove': ['border', 'id', 'imageName', 'number', 'releaseDate', 'reserved', 'starter',
+											 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations'],
 							'numberKeysToMakeString': ['cmc', 'hand', 'life', 'loyalty', 'multiverseid'],
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
 			raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
 			raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s'}  #Non-standard rarities are interpreted as regexes for type
-			rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}
+			rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls
 			# This function will be called on the 'keysToFormatNicer' keys
 			#  Made into a function, because it's used in two places
 			def formatNicer(text):
