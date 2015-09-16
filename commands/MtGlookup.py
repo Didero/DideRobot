@@ -293,11 +293,7 @@ class Command(CommandTemplate):
 		if 'layout' in card and card['layout'] != 'normal':
 			replytext += u" (Layout is '{card[layout]}'"
 			if 'names' in card:
-				names = card['names'].split(u'; ')
-				if card['name'] in names:
-					names.remove(card['name'])
-				names = u'; '.join(names)
-				replytext += u", also contains {names}".format(names=names)
+				replytext += u", also contains {names}".format(names=card['names'])
 			replytext += u")"
 		replytext += u"."
 		#All cards have a 'text' key set, it's just empty on ones that didn't have one
@@ -680,6 +676,11 @@ class Command(CommandTemplate):
 						#The 'Colors' field benefits from some ordering, for readability.
 						if 'colors' in card:
 							card['colors'] = sorted(card['colors'])
+
+						#Remove the current card from the list of names this card also contains (for flip cards)
+						# (Saves on having to remove it later, and the presence of this field shows it's in there too)
+						if 'names' in card:
+							card['names'].remove(card['name'])
 
 						#Make sure all stored values are strings, that makes searching later much easier
 						for attrib in keysToChange['numberKeysToMakeString']:
