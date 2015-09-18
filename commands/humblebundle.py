@@ -31,6 +31,7 @@ class Command(CommandTemplate):
 			else:
 				url += urlSuffix
 
+		#Only add all the games if the full trigger is used
 		addGameList = message.trigger == 'humblebundle'
 
 		try:
@@ -44,7 +45,7 @@ class Command(CommandTemplate):
 
 		if pageDownload.status_code != 200:
 			self.logWarning("[Humble] Page '{}' returned code {} instead of 200 (OK)".format(url, pageDownload.status_code))
-			message.bot.sendMessage(message.source, "Sorry, I can't retrieve that bundle page. Either their site is down, or that bundle doesn't exist (Code {})".format(pageDownload.status_code))
+			message.bot.sendMessage(message.source, "Sorry, I can't retrieve that bundle page. Either their site is down, or that bundle doesn't exist")
 			return
 
 		page = BeautifulSoup(pageDownload.content)
@@ -159,5 +160,7 @@ class Command(CommandTemplate):
 				# If the lock-element search found much more items than described in the text, warn users the output may be inaccurate
 				if len(lockedGames['BTA']) + len(lockedGames['Fixed']) > len(gamePriceCategories['BTA']) + len(gamePriceCategories['Fixed']) + 5:
 					replytext += u"(itemlist may be wrong)"
+			#Add the url too, so people can go see the bundle easily
+			replytext += u" ({})".format(url)
 
 		message.bot.say(message.source, replytext)
