@@ -9,12 +9,15 @@ from IrcMessage import IrcMessage
 class Command(CommandTemplate):
 	triggers = ['startrektip', 'startrektips', 'sttip', 'sttips']
 	helptext = "Shows a randomly chosen tip from one of the Star Trek Tips accounts, or of a specific one if a name is provided. Add a regex search after the name to search for a specific tip"
+	scheduledFunctionTime = 21600.0  #Six hours in seconds
+
 	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'laforge': 'LaForgeTips', 'locutus': 'LocutusTips',
 						'picard': 'PicardTips', 'quark': 'QuarkTips', 'riker': 'RikerTips', 'rikergoogling': 'RikerGoogling','worf': 'WorfTips'}
 	resultPrefix = {'rikergoogling': 'Riker searched'}  # Not all 'tips' are actually tips. This is a list of a replacement term to use if 'tip' is not accurate. It replaces the entire part before the colon
-	scheduledFunctionTime = 21600.0  #Six hours in seconds
-
 	isUpdating = False
+
+	def executeScheduledFunction(self):
+		GlobalStore.reactor.callInThread(self.updateTwitterMessages)
 
 	def execute(self, message):
 		"""
@@ -25,7 +28,7 @@ class Command(CommandTemplate):
 			message.bot.sendMessage(message.source, "Sorry, but I'm updating my data (hah) at the moment. Try again in a bit!")
 			return
 
-		name = ""
+		name = "random"
 		if message.messagePartsLength > 0:
 			name = message.messageParts[0].lower()
 		if name == 'update':
@@ -33,46 +36,59 @@ class Command(CommandTemplate):
 			self.scheduledFunctionTimer.reset()
 			message.bot.sendMessage(message.source, "Ok, I'll update my list of Star Trek Tips. But since they have to come from the future, it might take a while. Try again in, oh, half a minute or so, just to be sure")
 			return
+		searchterm = None if message.messagePartsLength <= 1 else " ".join(message.messageParts[1:])
+		message.bot.say(message.source, self.getTip(name, searchterm))
+
+	def getTweets(self, name='random', searchterm=None):
+		name = name.lower()
 		if name == 'random':
 			name = random.choice(self.twitterUsernames.keys())
-
-		replytext = ""
 		if name not in self.twitterUsernames:
-			if name != "":
-				replytext = "I don't know anybody by the name of '{}', sorry. ".format(message.messageParts[0])
-			replytext += "Type '{}{} <name>' to hear one of <name>'s tips, or use 'random' to have me pick a name for you. ".format(message.bot.factory.commandPrefix, message.trigger)
-			replytext += "Available tip-givers: {}".format(", ".join(sorted(self.twitterUsernames)))
+			return (False, "I don't know anybody by the name of '{}', sorry. ".format(name))
+		tweetFileName = os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', '{}.txt'.format(self.twitterUsernames[name]))
+		if not os.path.exists(tweetFileName):
+			self.executeScheduledFunction()
+			return (False, "I don't seem to have the tweets for '{}', sorry! I'll retrieve them right away, try again in a bit".format(name))
+		tweets = SharedFunctions.getAllLinesFromFile(tweetFileName)
+		if searchterm is not None:
+			#Search terms provided! Go through all the tweets to find matches
+			regex = None
+			try:
+				regex = re.compile(searchterm, re.IGNORECASE)
+			except (re.error, SyntaxError):
+				self.logWarning("[STtip] '{}' is an invalid regular expression. Using it literally".format(searchterm))
+			for i in xrange(0, len(tweets)):
+				#Take a tweet from the start, and only put it back at the end if it matches the regex
+				tweet = tweets.pop(0)
+				if regex and regex.search(tweet) or searchterm in tweet:
+					tweets.append(tweet)
+		if len(tweets) == 0:
+			return (False, "Sorry, no tweets matching your search were found")
 		else:
-			tweets = SharedFunctions.getAllLinesFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'tweets-{}.txt'.format(self.twitterUsernames[name])))
-			if message.messagePartsLength > 1:
-				#Search terms provided! Go through all the tweets to find matches
-				try:
-					regex = re.compile(" ".join(message.messageParts[1:]), re.IGNORECASE)
-				except (re.error, SyntaxError):
-					message.bot.sendMessage(message.source, "That is an invalid regular expression, sorry. Please check for typos, and try again", 'say')
-					return
-				for i in xrange(0, len(tweets)):
-					#Take a tweet from the start, and only put it back at the end if it matches the regex
-					tweet = tweets.pop(0)
-					if regex.search(tweet):
-						tweets.append(tweet)
+			return (True, tweets)
+
+	def getTip(self, name='random', searchterm=None):
+		name = name.lower()
+		if name == 'random':
+			name = random.choice(self.twitterUsernames.keys())
+		getTweetsReply = self.getTweets(name, searchterm)
+		if not getTweetsReply[0]:
+			return getTweetsReply[1]
+		else:
+			tweets = getTweetsReply[1]
 			tweetCount = len(tweets)
-			if tweetCount == 0:
-				replytext = "Sorry, no tweets matching your search were found"
-			else:
-				replytext = random.choice(tweets).strip()
-				if not replytext.lower().startswith(name):
-					replytext = u"{}: {}".format(self.resultPrefix.get(name, '{} tip'.format(name.capitalize())), replytext)
-				#Only add a tweet count if a search term was provided and there's more than one
-				if message.messagePartsLength > 1 and tweetCount > 1:
-					replytext += u" [{} more tweets]".format(tweetCount - 1)
+			replytext = random.choice(tweets).strip()
+			#Always make sure the result starts with "[name] tip: "
+			if replytext.lower().startswith(name):
+				#Get the special prefix, if any. Otherwise, just do the default "[name] tip: "
+				tipPrefix = self.resultPrefix.get(name, u"{} tip".format(name.capitalize()))
+				replytext = u"{}: {}".format(tipPrefix, replytext)
+			#Only add a tweet count if a search term was provided and there's more than one
+			if searchterm is not None and tweetCount > 1:
+				replytext += u" [{:,} more matching tweet{}]".format(tweetCount - 1, u's' if tweetCount > 2 else u'')
+			replytext = replytext.encode('utf-8', 'replace')
+			return replytext
 
-		replytext = replytext.encode('utf-8', 'replace')
-		message.bot.say(message.source, replytext)
-
-
-	def executeScheduledFunction(self):
-		GlobalStore.reactor.callInThread(self.updateTwitterMessages)
 
 	def updateTwitterMessages(self):
 		starttime = time.time()
