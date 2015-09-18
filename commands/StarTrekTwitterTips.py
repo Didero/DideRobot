@@ -79,7 +79,7 @@ class Command(CommandTemplate):
 			tweetCount = len(tweets)
 			replytext = random.choice(tweets).strip()
 			#Always make sure the result starts with "[name] tip: "
-			if replytext.lower().startswith(name):
+			if not replytext.lower().startswith(name):
 				#Get the special prefix, if any. Otherwise, just do the default "[name] tip: "
 				tipPrefix = self.resultPrefix.get(name, u"{} tip".format(name.capitalize()))
 				replytext = u"{}: {}".format(tipPrefix, replytext)
