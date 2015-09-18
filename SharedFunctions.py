@@ -39,7 +39,7 @@ def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=9999999
 
 	highestIdDownloaded = 0
 	storedInfo = {}
-	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.json')
+	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', 'metadata.json')
 	if os.path.exists(twitterInfoFilename):
 		with open(twitterInfoFilename, 'r') as twitterInfoFile:
 			storedInfo = json.load(twitterInfoFile)
@@ -75,7 +75,7 @@ def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=9999999
 				highestIdDownloaded = max(highestIdDownloaded, tweetId)
 
 	#All tweets downloaded. Time to process them
-	tweetfile = open(os.path.join(GlobalStore.scriptfolder, 'data', "tweets-{}.txt".format(username)), "a")
+	tweetfile = open(os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', "{}.txt".format(username)), "a")
 	#Sort the keys before saving, so we're writing from oldest to newest, so in the same order as the Twitter timeline (Not absolutely necessary, but it IS neat and tidy)
 	for tweetId in sorted(tweets.keys()):
 		tweetfile.write(tweets[tweetId] + "\n")
@@ -94,7 +94,7 @@ def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=9999999
 
 def downloadNewTweets(username):
 	highestIdDownloaded = -1
-	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitterInfo.json')
+	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', 'metadata.json')
 	if os.path.exists(twitterInfoFilename):
 		with open(twitterInfoFilename, 'r') as twitterInfoFile:
 			storedInfo = json.load(twitterInfoFile)
