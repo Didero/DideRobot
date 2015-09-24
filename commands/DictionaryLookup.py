@@ -21,7 +21,7 @@ class Command(CommandTemplate):
 			message.bot.sendMessage(message.source, "Sorry, I don't seem to have the key required to be able to use this module. Inform my owner, they'll fix it!")
 			return
 
-		MAX_MSG_LENGTH = 320
+		MAX_MSG_LENGTH = 310
 
 		if message.messagePartsLength == 0:
 			message.bot.sendMessage(message.source, "Look up which word? I'm not just going to pick a random one")
