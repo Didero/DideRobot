@@ -391,6 +391,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def openBoosterpack(askedSetname):
+		askedSetname = askedSetname.lower()
 		properSetname = u''
 		#First check if the message is a valid setname
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
@@ -399,13 +400,26 @@ class Command(CommandTemplate):
 			properSetname = random.choice(setdata['_setsWithBoosterpacks'])
 		elif askedSetname in setdata:
 			properSetname = askedSetname
-		else:
+		#If we haven't found a name match, check if we can find a set code match
+		elif len(askedSetname) == 3:
+			askedSetcode = askedSetname.upper()  #Setcodes are all upper case, adjust for that
+			for setname in setdata:
+				#Skip the list with the sets that have boosterpacks
+				if setname == '_setsWithBoosterpacks':
+					continue
+				if askedSetcode == setdata[setname]['code']:
+					properSetname = setname
+					#Since setcodes are unique, no need to keep looking
+					break
+		if properSetname == u'':
 			#Setname not found literally. Try and find the closest match
 			try:
 				askedSetnameRegex = re.compile(askedSetname, re.IGNORECASE)
 			except re.error:
 				askedSetnameRegex = re.compile(re.escape(askedSetname), re.IGNORECASE)
 			for setname in setdata:
+				if setname == '_setsWithBoosterpacks':
+					continue
 				#Match found!
 				if askedSetnameRegex.search(setname):
 					#If we hadn't found a match previously, store this name
@@ -415,7 +429,7 @@ class Command(CommandTemplate):
 						#A match has been found previously. We can't make a boosterpack from two sets, so show an error
 						return (False, "That setname matches at least two sets, '{}' and '{}'. I can't make a boosterpack from more than one set. "
 									   "Please be a bit more specific".format(setname, properSetname))
-		#Check if we have a setname match
+		#If we still haven't found anything, give up
 		if properSetname == u'':
 			return (False, "I'm sorry, I don't know the set '{}'. Did you make a typo?".format(askedSetname))
 		#Some sets don't have booster packs, check for that too
