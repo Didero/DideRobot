@@ -8,7 +8,7 @@ import SharedFunctions
 
 
 class Command(CommandTemplate):
-	triggers = ['dictionary', 'dict', 'word']
+	triggers = ['dictionary', 'dict', 'word', 'define']
 	helptext = "Looks up the definition of the provided word"
 
 	def execute(self, message):
