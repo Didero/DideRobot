@@ -18,6 +18,7 @@ class Command(CommandTemplate):
 	helptext += "Or use 'search' with key-value attribute pairs for more control, see http://mtgjson.com/ for available attributes. "
 	helptext += "{commandPrefix}mtgf adds the flavor text and sets to the output. {commandPrefix}mtgb or '{commandPrefix}mtg booster' opens a boosterpack"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
+	callInThread = True
 
 	areCardfilesInUse = False
 
