@@ -219,17 +219,17 @@ class Command(CommandTemplate):
 			numberOfCardsFound = 1
 
 		if numberOfCardsFound == 0:
-			replytext += "Sorry, no card matching your query was found"
+			replytext = "Sorry, no card matching your query was found"
 		elif numberOfCardsFound == 1:
 			setname = cardstore[cardstore.keys()[0]][1].pop('_match', None)
-			replytext += self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedInfo, setname)
+			replytext = self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedInfo, setname)
 		else:
 			nameMatchedCardFound = False
 			#If there was a name search, check if the literal name is in the resulting cards
 			if 'name' in searchDict and searchDict['name'] in cardstore:
 				#If the search returned a setmatch, it's in a '_match' field, retrieve that
 				setname = cardstore[searchDict['name']][1].pop('_match', None)
-				replytext += self.getFormattedCardInfo(cardstore[searchDict['name']], addExtendedInfo, setname)
+				replytext = self.getFormattedCardInfo(cardstore[searchDict['name']], addExtendedInfo, setname)
 				del cardstore[searchDict['name']]
 				numberOfCardsFound -= 1
 				nameMatchedCardFound = True
