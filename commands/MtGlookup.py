@@ -264,74 +264,97 @@ class Command(CommandTemplate):
 	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None):
 		card = carddata[0]
 		sets = carddata[1]
-		#Since the 'name' field is Unicode, this is a Unicode object
-		# Keep it like that, since any field may have Unicode characters. Convert at the end to prevent encoding errors
-		replytext = card['name']
+		cardInfoList = [SharedFunctions.makeTextBold(card['name'])]
 		if 'type' in card and len(card['type']) > 0:
-			replytext += u" [{card[type]}]"
+			cardInfoList.append(card['type'])
 		if 'manacost' in card:
-			replytext += u" ({card[manacost]}"
+			manacost = card['manacost']
 			#Only add the cumulative mana cost if it's different from the total cost (No need to say '3 mana, 3 total')
 			if 'cmc' in card and card['cmc'] != card['manacost']:
-				replytext += u", CMC {card[cmc]}"
+				manacost += u", CMC " + card['cmc']
 			#If no cmc is shown, specify the number is the manacost
 			else:
-				replytext += u" mana"
-			replytext += u")"
+				manacost += u" mana"
+			cardInfoList.append(manacost)
 		if 'power' in card and 'toughness' in card:
-			replytext += u" ({card[power]}/{card[toughness]} P/T)"
+			cardInfoList.append(card['power'] + u"/" + card['toughness'] + u" P/T")
 		if 'loyalty' in card:
-			replytext += u" ({card[loyalty]} loyalty)"
+			cardInfoList.append(card['loyalty'] + u" loyalty")
 		if 'hand' in card or 'life' in card:
-			replytext += u" ("
+			handLife = u""
 			if 'hand' in card:
-				replytext += u"{card[hand]} handmod"
+				handLife = card['hand'] + u" handmod"
 			if 'hand' in card and 'life' in card:
-				replytext += u", "
+				handLife += u", "
 			if 'life' in card:
-				replytext += u"{card[life]} lifemod"
-			replytext += u")"
-		if 'layout' in card and card['layout'] != 'normal':
-			replytext += u" (Layout is '{card[layout]}'"
+				handLife += card['life'] + u" lifemod"
+			cardInfoList.append(handLife)
+		if 'layout' in card and card['layout'] != u'normal':
+			cardInfoList.append(u"Layout is '" + card['layout'] + u"'")
 			if 'names' in card:
-				replytext += u", also contains {names}".format(names=card['names'])
-			replytext += u")"
-		replytext += u"."
-		#All cards have a 'text' key set, it's just empty on ones that didn't have one
+				cardInfoList[-1] += u", also contains " + card['names']
+		#All cards have a 'text' key set (for search reasons), it's just empty on ones that didn't have one
 		if len(card['text']) > 0:
-			replytext += u" {card[text]}"
+			cardInfoList.append(card['text'])
 		if addExtendedInfo:
 			if not setname or setname not in sets:
 				setname = random.choice(sets.keys())
 			if 'flavor' in sets[setname]:
-				replytext += u" Flavor: " + sets[setname]['flavor']
+				#Make the flavor text gray to indicate it's not too important.
+				#  '\x03' is colour code character, '14' is gray, '\x0f' is decoration end character
+				#  (own code instead of Twisted's because the latter overcomplicates things)
+				cardInfoList.append(u'\x0314' + sets[setname]['flavor'] + u'\x0f')
 			maxSetsToDisplay = 4
 			setcount = len(sets)
 			setlist = sets.keys()
 			if setcount > maxSetsToDisplay:
 				setlist = random.sample(setlist, maxSetsToDisplay)
-			replytext += u" [in set{} ".format('s' if setcount > 1 else '')
+			setlistString = u"in "
 			for setname in setlist:
-				#Make the display 'setname [first letter of rarity]', so 'Magic 2015 [R]'
+				#Make the display 'setname (first letter of rarity)', so 'Magic 2015 (R)'
 				rarity = sets[setname]['rarity']
-				if rarity == 'Basic Land':
-					rarity = 'L'
+				if rarity == u"Basic Land":
+					rarity = u'L'
 				else:
 					rarity = rarity[0]
-				replytext += u"{} [{}]; ".format(setname, rarity)
-			replytext = replytext[:-2]  #Remove the last ': '
+				setlistString += u"{} ({}); ".format(setname, rarity)
+			setlistString = setlistString[:-2]  #Remove the last '; '
 			if setcount > maxSetsToDisplay:
-				replytext += u" and {:,} more".format(setcount - maxSetsToDisplay)
-			replytext += u"]"
+				setlistString += u" and {:,} more".format(setcount - maxSetsToDisplay)
+			cardInfoList.append(setlistString)
 		#No extra set info, but still add a warning if it's in a non-legal set
 		else:
-			for illegalSet in ['Happy Holidays', 'Unglued', 'Unhinged']:
+			for illegalSet in ('Happy Holidays', 'Unglued', 'Unhinged'):
 				if illegalSet in sets:
-					replytext += u" [in illegal set {}!]".format(illegalSet)
+					cardInfoList.append(u"in illegal set \x0304{illegalSet}\x0f!".format(illegalSet=illegalSet))  #color-code the setname red
 					break
 
 		#FILL THAT SHIT IN (encoded properly)
-		replytext = replytext.format(card=card).encode('utf-8')
+		separator = u' \x0314|\x0f '  #'\x03' is the 'color' control char, 14 is grey, and '\x0f' is the 'reset' character ending any decoration
+		separatorLength = 3  #Set directly instead of using 'len(separator)' so it ignores the colour code
+		#Keep adding parts to the output until an entire block wouldn't fit on one line, then start a new message
+		replytext = u''
+		messageLength = separatorLength * -1  #Start negative, because the first separator will get removed again
+		MAX_MESSAGE_LENGTH = 330
+		DOUBLE_MAX_MESSAGE_LENGTH = 2 * MAX_MESSAGE_LENGTH
+		for cardInfoPart in cardInfoList:
+			#Always add a separator
+			replytext += separator
+			messageLength += separatorLength
+			partLength = len(cardInfoPart)
+			#Then check if adding the new card info part would exceed max message length
+			#  (Unless it's a really long part, which would spill over anyway, then just slap it in there)
+			if MAX_MESSAGE_LENGTH < messageLength + partLength < DOUBLE_MAX_MESSAGE_LENGTH:
+				#Adding this would make the message too long! Start a new message
+				replytext += u'\n'
+				#And reset the length counter
+				messageLength = 0
+			#Add the info...
+			replytext += cardInfoPart
+			#...and update the message length count
+			messageLength += partLength
+		#Remove the separator at the start, and make sure it's a string and not unicode
+		replytext = replytext.lstrip(separator).encode('utf-8')
 		return replytext
 
 	def getDefinition(self, message, addExtendedInfo=False):
