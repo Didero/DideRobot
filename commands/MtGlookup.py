@@ -338,9 +338,6 @@ class Command(CommandTemplate):
 		MAX_MESSAGE_LENGTH = 330
 		DOUBLE_MAX_MESSAGE_LENGTH = 2 * MAX_MESSAGE_LENGTH
 		for cardInfoPart in cardInfoList:
-			#Always add a separator
-			replytext += separator
-			messageLength += separatorLength
 			partLength = len(cardInfoPart)
 			#Then check if adding the new card info part would exceed max message length
 			#  (Unless it's a really long part, which would spill over anyway, then just slap it in there)
@@ -349,6 +346,9 @@ class Command(CommandTemplate):
 				replytext += u'\n'
 				#And reset the length counter
 				messageLength = 0
+			#Always add a separator
+			replytext += separator
+			messageLength += separatorLength
 			#Add the info...
 			replytext += cardInfoPart
 			#...and update the message length count
