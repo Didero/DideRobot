@@ -264,7 +264,7 @@ class Command(CommandTemplate):
 	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None):
 		card = carddata[0]
 		sets = carddata[1]
-		cardInfoList = [SharedFunctions.makeTextBold(card['name'])]
+		cardInfoList = [u"\x02" + card['name'] + u"\x0f"]  #Make card name bold ('\x02' is the 'bold' character, '\x0f' the 'decoration reset' character
 		if 'type' in card and len(card['type']) > 0:
 			cardInfoList.append(card['type'])
 		if 'manacost' in card:
