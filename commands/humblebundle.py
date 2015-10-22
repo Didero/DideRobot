@@ -94,7 +94,7 @@ class Command(CommandTemplate):
 				if strongElement and paragraph.text.startswith(strongElement.text) and gameFound:
 						break
 				#Otherwise, add all the titles listed to the collection
-				for titleElement in paragraph.find_all('em'):
+				for titleElement in paragraph.find_all('i'):
 					gameFound = True
 					gamename = titleElement.text
 					gamecount += 1
@@ -156,10 +156,8 @@ class Command(CommandTemplate):
 				#Add a list of all the games found
 				for priceType in ['PWYW', 'BTA', 'Fixed']:
 					if len(gamePriceCategories[priceType]) > 0:
-						replytext += u"{}: {}. ".format(priceType, u" | ".join(gamePriceCategories[priceType]))
-				# If the lock-element search found much more items than described in the text, warn users the output may be inaccurate
-				if len(lockedGames['BTA']) + len(lockedGames['Fixed']) > len(gamePriceCategories['BTA']) + len(gamePriceCategories['Fixed']) + 5:
-					replytext += u"(itemlist may be wrong)"
+						replytext += u"{}: {}. ".format(priceType, u" \x0314|\x0f ".join(gamePriceCategories[priceType]))
+				replytext += u"(itemlist may be wrong)"
 			#Add the url too, so people can go see the bundle easily
 			replytext += u" ({})".format(url)
 
