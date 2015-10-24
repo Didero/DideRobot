@@ -78,7 +78,7 @@ class Command(CommandTemplate):
 							dataAgeDisplay = dataAgeDisplay.format(dataAge=dataAge)
 
 						#Sometimes the wind direction is missing, catch that
-						windDirection = getWindDirection(data['wind']['deg']) if 'deg' in data['wind'] else 'Unknown'
+						windDirection = getWindDirection(data['wind']['deg']) if 'deg' in data['wind'] else 'Dir. Unknown'
 
 						#Not all replies include a placename
 						if 'name' in data and len(data['name']) > 0:
