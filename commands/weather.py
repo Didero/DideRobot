@@ -77,17 +77,19 @@ class Command(CommandTemplate):
 							dataAgeDisplay += u" old"
 							dataAgeDisplay = dataAgeDisplay.format(dataAge=dataAge)
 
-						#Sometimes the wind direction is missing, catch that
-						windDirection = getWindDirection(data['wind']['deg']) if 'deg' in data['wind'] else 'Dir. Unknown'
+						windString = u"{:.1f} m/s".format(data['wind']['speed'])
+						#Only add a wind direction if we know it
+						if 'deg' in data['wind']:
+							windString += u", " + getWindDirection(data['wind']['deg'])
 
 						#Not all replies include a placename
 						if 'name' in data and len(data['name']) > 0:
 							replytext += u"{city} ({country}): "
 						elif 'country' in data['sys'] and len(data['sys']['country']) > 0:
 							replytext += u"Somewhere in {country}: "
-						replytext += u"{tempC:.1f}°C / {tempF:.1f}°F, {weatherType}. Wind: {windSpeed:.1f} m/s, {windDir}. Humidity of {humidity}% (Data is {dataAge})"
+						replytext += u"{tempC:.1f}°C / {tempF:.1f}°F, {weatherType}. Wind: {windString}. Humidity of {humidity}% (Data is {dataAge})"
 						replytext = replytext.format(city=data['name'], country=data['sys']['country'], tempC=data['main']['temp'], tempF=celsiusToFahrenheit(data['main']['temp']),
-													 weatherType=data['weather'][0]['description'], windSpeed=data['wind']['speed'], windDir=windDirection,
+													 weatherType=data['weather'][0]['description'], windString=windString,
 													 humidity=data['main']['humidity'], dataAge=dataAgeDisplay)
 
 					else:
