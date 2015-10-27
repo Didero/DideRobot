@@ -96,7 +96,7 @@ class Command(CommandTemplate):
 				#Otherwise, add all the titles listed to the collection
 				for titleElement in paragraph.find_all('i'):
 					gameFound = True
-					gamename = titleElement.text
+					gamename = titleElement.text.strip()
 					gamecount += 1
 					if addGameList:
 						#See if this title is in the locked-games lists we found earlier
@@ -156,7 +156,7 @@ class Command(CommandTemplate):
 				#Add a list of all the games found
 				for priceType in ['PWYW', 'BTA', 'Fixed']:
 					if len(gamePriceCategories[priceType]) > 0:
-						replytext += u" {}: {}. ".format(priceType, u" \x0314|\x0f ".join(gamePriceCategories[priceType]))
+						replytext += u" \x02{}\x0f: {}.".format(priceType, u" \x0314|\x0f ".join(gamePriceCategories[priceType]))
 				replytext += u" (itemlist may be wrong)"
 			#Add the url too, so people can go see the bundle easily
 			replytext += u" ({})".format(url)
