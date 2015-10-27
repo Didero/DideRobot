@@ -151,13 +151,13 @@ class Command(CommandTemplate):
 			replytext = u"{} has an average price of ${:.2f} and raised ${:,} from {:,} people.".format(title, round(avgPrice, 2), round(totalMoney, 2), contributors)
 			if timeLeft != u"":
 				replytext += u" It will end in {}.".format(timeLeft)
-			replytext += u" It contains {:,} titles. ".format(gamecount)
+			replytext += u" It contains {:,} titles.".format(gamecount)
 			if addGameList:
 				#Add a list of all the games found
 				for priceType in ['PWYW', 'BTA', 'Fixed']:
 					if len(gamePriceCategories[priceType]) > 0:
-						replytext += u"{}: {}. ".format(priceType, u" \x0314|\x0f ".join(gamePriceCategories[priceType]))
-				replytext += u"(itemlist may be wrong)"
+						replytext += u" {}: {}. ".format(priceType, u" \x0314|\x0f ".join(gamePriceCategories[priceType]))
+				replytext += u" (itemlist may be wrong)"
 			#Add the url too, so people can go see the bundle easily
 			replytext += u" ({})".format(url)
 
