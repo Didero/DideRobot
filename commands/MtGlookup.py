@@ -335,20 +335,29 @@ class Command(CommandTemplate):
 		#Keep adding parts to the output until an entire block wouldn't fit on one line, then start a new message
 		replytext = u''
 		messageLength = separatorLength * -1  #Start negative, because the first separator will get removed again
-		MAX_MESSAGE_LENGTH = 330
+		MAX_MESSAGE_LENGTH = 325
 		DOUBLE_MAX_MESSAGE_LENGTH = 2 * MAX_MESSAGE_LENGTH
 		for cardInfoPart in cardInfoList:
+			addedSeparator = False
 			partLength = len(cardInfoPart)
-			#Then check if adding the new card info part would exceed max message length
-			#  (Unless it's a really long part, which would spill over anyway, then just slap it in there)
-			if MAX_MESSAGE_LENGTH < messageLength + partLength < DOUBLE_MAX_MESSAGE_LENGTH:
+			#If adding this part would exceed the max message length twice, just let it overflow,
+			# but set the current message length to the overflowed length
+			if messageLength + partLength > DOUBLE_MAX_MESSAGE_LENGTH:
+				messageLength = messageLength + partLength - DOUBLE_MAX_MESSAGE_LENGTH
+			#If adding the part would exceed max message length, start a new message
+			elif messageLength + partLength > MAX_MESSAGE_LENGTH:
+				#Check to see if the separator would fit here, to save space in the new message
+				if messageLength + separatorLength < MAX_MESSAGE_LENGTH:
+					replytext += separator
+					addedSeparator = True
 				#Adding this would make the message too long! Start a new message
 				replytext += u'\n'
 				#And reset the length counter
 				messageLength = 0
-			#Always add a separator
-			replytext += separator
-			messageLength += separatorLength
+			#Always add a separator if there isn't one already
+			if not addedSeparator:
+				replytext += separator
+				messageLength += separatorLength
 			#Add the info...
 			replytext += cardInfoPart
 			#...and update the message length count
