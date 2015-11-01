@@ -84,7 +84,7 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			self.settings.update(serverSettings)
 
 		#First make sure the required settings are in there
-		settingsToEnsure = ["server", "port", "nickname", "realname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"]
+		settingsToEnsure = ["server", "port", "nickname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"]
 		for settingToEnsure in settingsToEnsure:
 			if settingToEnsure not in self.settings:
 				self.logger.error("Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
