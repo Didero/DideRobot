@@ -19,11 +19,11 @@ class DideRobot(irc.IRCClient):
 		self.lineRate = self.factory.settings.get('minSecondsBetweenMessages', -1.0)
 		if not isinstance(self.lineRate, float) or self.lineRate <= 0.0:
 			self.lineRate = None
+		self.nickname = self.factory.settings['nickname']
+		self.realname = self.factory.settings['realname'] if 'realname' in self.factory.settings else 'DideRobot'
 	
 	def connectionMade(self):
 		"""Called when a connection is made."""
-		self.nickname = self.factory.settings['nickname'].encode('utf-8')
-		self.realname = self.factory.settings['realname'].encode('utf-8')
 		irc.IRCClient.connectionMade(self)
 		self.factory.messageLogger.log("Connection to server made")
 
