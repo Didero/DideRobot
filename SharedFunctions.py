@@ -159,17 +159,17 @@ def durationSecondsToText(durationInSeconds, precision='s'):
 
 	replytext = u""
 	if days > 0:
-		replytext += u"{:,.0f} days, ".format(days)
+		replytext += u"{:,.0f} day{}, ".format(days, u's' if days > 1 else u'')
 	if hours > 0:
-		replytext += u"{:,.0f} hours".format(hours)
+		replytext += u"{:,.0f} hour{}".format(hours, u's' if days > 1 else u'')
 	if minutes > 0 and precision in ['s', 'm']:
 		if hours > 0:
 			replytext += u", "
-		replytext += u"{:,.0f} minutes".format(minutes)
+		replytext += u"{:,.0f} minute{}".format(minutes, u's' if days > 1 else u'')
 	if seconds > 0 and precision == 's':
 		if hours > 0 or minutes > 0:
 			replytext += u", "
-		replytext += u"{:,.0f} seconds".format(seconds)
+		replytext += u"{:,.0f} second{}".format(seconds, u's' if days > 1 else u'')
 	return replytext
 
 
