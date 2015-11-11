@@ -11,9 +11,10 @@ class Command(CommandTemplate):
 	helptext = "Shows a randomly chosen tip from one of the Star Trek Tips accounts, or of a specific one if a name is provided. Add a regex search after the name to search for a specific tip"
 	scheduledFunctionTime = 21600.0  #Six hours in seconds
 
-	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'laforge': 'LaForgeTips', 'locutus': 'LocutusTips',
-						'picard': 'PicardTips', 'quark': 'QuarkTips', 'riker': 'RikerTips', 'rikergoogling': 'RikerGoogling','worf': 'WorfTips'}
-	resultPrefix = {'rikergoogling': 'Riker searched'}  # Not all 'tips' are actually tips. This is a list of a replacement term to use if 'tip' is not accurate. It replaces the entire part before the colon
+	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'laforge': 'LaForgeTips', 'locutus': 'LocutusTips', 'picard': 'PicardTips',
+						'quark': 'QuarkTips', 'riker': 'RikerTips', 'rikergoogling': 'RikerGoogling','worf': 'WorfTips', 'worfemail': 'WorfEmail'}
+	# Not all 'tips' are actually tips. This is a list of a replacement term to use if 'tip' is not accurate. It replaces the entire part before the colon
+	resultPrefix = {'rikergoogling': "Riker searched", 'worfemail': "Worf's Outbox"}
 	isUpdating = False
 
 	def executeScheduledFunction(self):
