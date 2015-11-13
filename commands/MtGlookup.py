@@ -18,7 +18,6 @@ class Command(CommandTemplate):
 	helptext += "Or use 'search' with key-value attribute pairs for more control, see http://mtgjson.com/ for available attributes. "
 	helptext += "{commandPrefix}mtgf adds the flavor text and sets to the output. {commandPrefix}mtgb or '{commandPrefix}mtg booster' opens a boosterpack"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
-	callInThread = True
 
 	areCardfilesInUse = False
 
@@ -331,39 +330,53 @@ class Command(CommandTemplate):
 
 		#FILL THAT SHIT IN (encoded properly)
 		separator = u' \x0314|\x0f '  #'\x03' is the 'color' control char, 14 is grey, and '\x0f' is the 'reset' character ending any decoration
-		separatorLength = 3  #Set directly instead of using 'len(separator)' so it ignores the colour code
+		separatorLength = len(separator)
 		#Keep adding parts to the output until an entire block wouldn't fit on one line, then start a new message
 		replytext = u''
-		messageLength = separatorLength * -1  #Start negative, because the first separator will get removed again
+		messageLength = 0
 		MAX_MESSAGE_LENGTH = 325
-		DOUBLE_MAX_MESSAGE_LENGTH = 2 * MAX_MESSAGE_LENGTH
-		for cardInfoPart in cardInfoList:
-			addedSeparator = False
+
+		while len(cardInfoList) > 0:
+			cardInfoPart = cardInfoList.pop(0)
 			partLength = len(cardInfoPart)
-			#If adding this part would exceed the max message length twice, just let it overflow,
-			# but set the current message length to the overflowed length
-			if messageLength + partLength > DOUBLE_MAX_MESSAGE_LENGTH:
-				messageLength = messageLength + partLength - DOUBLE_MAX_MESSAGE_LENGTH
-			#If adding the part would exceed max message length, start a new message
-			elif messageLength + partLength > MAX_MESSAGE_LENGTH:
-				#Check to see if the separator would fit here, to save space in the new message
-				if messageLength + separatorLength < MAX_MESSAGE_LENGTH:
-					replytext += separator
-					addedSeparator = True
-				#Adding this would make the message too long! Start a new message
-				replytext += u'\n'
-				#And reset the length counter
-				messageLength = 0
-			#Always add a separator if there isn't one already
-			if not addedSeparator:
+			if messageLength + partLength < MAX_MESSAGE_LENGTH:
+				replytext += cardInfoPart
+				messageLength += partLength
+				#Separator!
+				if messageLength + separatorLength > MAX_MESSAGE_LENGTH:
+					#If the separator wouldn't fit anymore, start a new message
+					replytext += '\n'
+					messageLength = 0
+				#Add a separator
 				replytext += separator
 				messageLength += separatorLength
-			#Add the info...
-			replytext += cardInfoPart
-			#...and update the message length count
-			messageLength += partLength
-		#Remove the separator at the start, and make sure it's a string and not unicode
-		replytext = replytext.lstrip(separator).encode('utf-8')
+			else:
+				#If we would exceed max message length, cut off at the highest space and continue in a new message
+				#  If the message started with a special character (bold for name, grey for flavour), copy those
+				prefix = u''
+				#bold
+				if cardInfoPart.startswith(u'\x02'):
+					prefix = u'\x02'
+				#color
+				elif cardInfoPart.startswith(u'\x03'):
+					#Also copy colour code
+					prefix = cardInfoPart[:3]
+				#Get the spot in the text where the cut-off would be (How much of the part text fits in the open space)
+				splitIndex = MAX_MESSAGE_LENGTH - messageLength
+				#Then get the last space before that index, so we don't split mid-word (if possible)
+				if u' ' in cardInfoPart[:splitIndex]:
+					splitIndex = cardInfoPart.rindex(u' ', 0, splitIndex)
+				#If we can't find a space, add a dash to indicate the word continues in the new message
+				elif splitIndex > 0:
+					cardInfoPart = cardInfoPart[:splitIndex-1] + u'-' + cardInfoPart[splitIndex-1:]
+				#Add the second section back to the list, so it can be properly added, even if it would still be too long
+				cardInfoList.insert(0, prefix + cardInfoPart[splitIndex:])
+				#Then add the first part to the message
+				replytext += cardInfoPart[:splitIndex] + u'\n'
+				messageLength = 0
+
+		#Remove the separator at the end, and make sure it's a string and not unicode
+		replytext = replytext.rstrip(separator).rstrip().encode('utf-8')
 		return replytext
 
 	def getDefinition(self, message, addExtendedInfo=False):
