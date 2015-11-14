@@ -188,7 +188,7 @@ class Command(CommandTemplate):
 		cardInfoList = [u'\x02' + card['title'] + u'\x0f']  #Make title bold
 		if 'type' in card:
 			cardInfoList.append(card['type'])
-			if 'subtype' in card and len(card['subtype']) > 0:
+			if 'subtype' in card:
 				cardInfoList[-1] += u": " + card['subtype']
 		if 'cost' in card:
 			cardInfoList.append(u"Costs " + card['cost'])
@@ -211,39 +211,60 @@ class Command(CommandTemplate):
 		if 'faction' in card:
 			cardInfoList.append(u"Faction: " + card['faction'])
 		if addExtendedInfo:
-			if 'setname' in card:
-				cardInfoList.append(u"in set " + card['setname'])
 			if 'flavor' in card:
 				cardInfoList.append(u"\x0314" + card['flavor'] + u"\x0f")  #Color flavor text gray
+			if 'setname' in card:
+				cardInfoList.append(u"in set " + card['setname'])
 
 		#FILL THAT SHIT IN (encoded properly)
 		separator = u' \x0314|\x0f '  #'\x03' is the 'color' control char, 14 is grey, and '\x0f' is the 'reset' character ending any decoration
-		separatorLength = 3  #Set directly instead of using 'len(separator)' so it ignores the colour code
+		separatorLength = len(separator)
 		#Keep adding parts to the output until an entire block wouldn't fit on one line, then start a new message
 		replytext = u''
-		messageLength = separatorLength * -1  #Start negative, because the first separator will get removed again
-		MAX_MESSAGE_LENGTH = 330
-		DOUBLE_MAX_MESSAGE_LENGTH = 2 * MAX_MESSAGE_LENGTH
-		for cardInfoPart in cardInfoList:
+		messageLength = 0
+		MAX_MESSAGE_LENGTH = 325
+
+		while len(cardInfoList) > 0:
+			cardInfoPart = cardInfoList.pop(0)
 			partLength = len(cardInfoPart)
-			#Then check if adding the new card info part would exceed max message length
-			#  (Unless it's a really long part, which would spill over anyway, then just slap it in there)
-			if messageLength + partLength > DOUBLE_MAX_MESSAGE_LENGTH:
+			if messageLength + partLength < MAX_MESSAGE_LENGTH:
+				replytext += cardInfoPart
+				messageLength += partLength
+				#Separator!
+				if messageLength + separatorLength > MAX_MESSAGE_LENGTH:
+					#If the separator wouldn't fit anymore, start a new message
+					replytext += '\n'
+					messageLength = 0
+				#Add a separator
+				replytext += separator
+				messageLength += separatorLength
+			else:
+				#If we would exceed max message length, cut off at the highest space and continue in a new message
+				#  If the message started with a special character (bold for name, grey for flavour), copy those
+				prefix = u''
+				#bold
+				if cardInfoPart.startswith(u'\x02'):
+					prefix = u'\x02'
+				#color
+				elif cardInfoPart.startswith(u'\x03'):
+					#Also copy colour code
+					prefix = cardInfoPart[:3]
+				#Get the spot in the text where the cut-off would be (How much of the part text fits in the open space)
+				splitIndex = MAX_MESSAGE_LENGTH - messageLength
+				#Then get the last space before that index, so we don't split mid-word (if possible)
+				if u' ' in cardInfoPart[:splitIndex]:
+					splitIndex = cardInfoPart.rindex(u' ', 0, splitIndex)
+				#If we can't find a space, add a dash to indicate the word continues in the new message
+				elif splitIndex > 0:
+					cardInfoPart = cardInfoPart[:splitIndex-1] + u'-' + cardInfoPart[splitIndex-1:]
+				#Add the second section back to the list, so it can be properly added, even if it would still be too long
+				cardInfoList.insert(0, prefix + cardInfoPart[splitIndex:])
+				#Then add the first part to the message
+				replytext += cardInfoPart[:splitIndex] + u'\n'
 				messageLength = 0
-			elif messageLength + partLength > MAX_MESSAGE_LENGTH:
-				#Adding this would make the message too long! Start a new message
-				replytext += u'\n'
-				#And reset the length counter
-				messageLength = 0
-			#Always add a separator
-			replytext += separator
-			messageLength += separatorLength
-			#Add the info...
-			replytext += cardInfoPart
-			#...and update the message length count
-			messageLength += partLength
-		#Remove the separator at the start, and make sure it's a string and not unicode
-		replytext = replytext.lstrip(separator).encode('utf-8')
+
+		#Remove the separator at the end, and make sure it's a string and not unicode
+		replytext = replytext.rstrip(separator).rstrip().encode('utf-8')
 		return replytext
 
 
@@ -278,6 +299,7 @@ class Command(CommandTemplate):
 							 'influencelimit', 'memoryunits', 'minimumdecksize', 'number', 'quantity', 'strength', 'trash')
 		keysToRename = {'factioncost': 'influence'}
 		keysToReformat = ('flavor', 'text')
+		keysToCheckForLength = ('flavor', 'subtype')
 		htmlparser = HTMLParser.HTMLParser()  #Needed because for some reason there's HTML entities in the text ('&ndash' etc)
 		for card in carddata:
 			for keyToRemove in keysToRemove:
@@ -301,6 +323,12 @@ class Command(CommandTemplate):
 					card[field] = card[field].replace('\r\n', ' ').replace('\n', ' ')
 					#Fix stray HTML entities
 					card[field] = htmlparser.unescape(card[field])
+
+			for field in keysToCheckForLength:
+				if field in card:
+					#If the field is, remove it from the card
+					if len(card[field]) == 0:
+						del card[field]
 
 		#Save the carddata to file
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCards.json'), 'w') as cardfile:
