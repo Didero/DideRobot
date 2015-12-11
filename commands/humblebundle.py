@@ -89,9 +89,10 @@ class Command(CommandTemplate):
 			self.logError("[Humble] No description element found!")
 		else:
 			for paragraph in descriptionElement.find_all('p'):
-				strongElement = paragraph.find('strong')
-				#If there is a strong element, and it's at the start of the paragraph, AND we've already found names, we're done
-				if strongElement and paragraph.text.startswith(strongElement.text) and gameFound:
+				#If there is a bolded element, and it's at the start of the paragraph, AND we've already found names, we're done,
+				#  because all the games are listed in the first paragraph
+				boldedElement = paragraph.find('b')
+				if boldedElement and paragraph.text.startswith(boldedElement.text) and gameFound:
 						break
 				#Otherwise, add all the titles listed to the collection
 				for titleElement in paragraph.find_all('i'):
