@@ -636,8 +636,8 @@ class Command(CommandTemplate):
 
 			newcardstore = {}
 			setstore = {'_setsWithBoosterpacks': []}
-			keysToChange = {'keysToRemove': ['border', 'id', 'imageName', 'number', 'releaseDate', 'reserved', 'starter',
-											 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations'],
+			keysToChange = {'keysToRemove': ['border', 'colorIdentity', 'id', 'imageName', 'number', 'releaseDate', 'reserved',
+											 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations'],
 							'numberKeysToMakeString': ['cmc', 'hand', 'life', 'loyalty', 'multiverseid'],
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
