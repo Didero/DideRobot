@@ -14,11 +14,11 @@ class CommandTemplate(object):
 	allowedMessageTypes = ['say']
 	
 	def __init__(self):
+		self.onLoad()  #Put this before starting the scheduled function because it may rely on loaded data
 		if self.scheduledFunctionTime > 0.0:
 			self.logInfo("Executing looping function every {} seconds".format(self.scheduledFunctionTime))
 			self.scheduledFunctionTimer = task.LoopingCall(self.executeScheduledFunction)
 			self.scheduledFunctionTimer.start(self.scheduledFunctionTime)
-		self.onLoad()
 
 	def onLoad(self):
 		pass
