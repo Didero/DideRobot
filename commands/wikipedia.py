@@ -36,7 +36,7 @@ class Command(CommandTemplate):
 		minimumSentenceLength = 50
 		maximumSearchResults = 3
 
-		wikitext = BeautifulSoup(page.text)
+		wikitext = BeautifulSoup(page.text, 'html.parser')
 		if searchterm and len(page.history) == 0:
 			#We're still on the search page, so the search didn't lead to an article
 			replytext = "Sorry, no article with that name was found. "

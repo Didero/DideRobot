@@ -48,7 +48,7 @@ class Command(CommandTemplate):
 			message.bot.sendMessage(message.source, "Sorry, I can't retrieve that bundle page. Either their site is down, or that bundle doesn't exist")
 			return
 
-		page = BeautifulSoup(pageDownload.content)
+		page = BeautifulSoup(pageDownload.content, 'html.parser')
 
 		#Get the part of the title up to the first opening parenthesis, since that's where the 'Pay what you wan't message starts
 		title = page.title.string[:page.title.string.find('(') - 1]
