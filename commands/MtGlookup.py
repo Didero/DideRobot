@@ -263,7 +263,7 @@ class Command(CommandTemplate):
 	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None):
 		card = carddata[0]
 		sets = carddata[1]
-		cardInfoList = [u"\x02" + card['name'] + u"\x0f"]  #Make card name bold ('\x02' is the 'bold' character, '\x0f' the 'decoration reset' character
+		cardInfoList = [SharedFunctions.makeTextBold(card['name'])]
 		if 'type' in card and len(card['type']) > 0:
 			cardInfoList.append(card['type'])
 		if 'manacost' in card:
@@ -329,7 +329,7 @@ class Command(CommandTemplate):
 					break
 
 		#FILL THAT SHIT IN (encoded properly)
-		separator = u' \x0314|\x0f '  #'\x03' is the 'color' control char, 14 is grey, and '\x0f' is the 'reset' character ending any decoration
+		separator = SharedFunctions.getGreySeparator()
 		separatorLength = len(separator)
 		#Keep adding parts to the output until an entire block wouldn't fit on one line, then start a new message
 		replytext = u''
