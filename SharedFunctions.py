@@ -225,11 +225,6 @@ def addSeparatorsToString(listOfStrings, separator='|'):
 	return formattedSeparator.join(listOfStrings)
 
 def makeTextBold(s):
-	if isinstance(s, unicode):
-		try:
-			s = s.encode('utf-8')
-		except UnicodeDecodeError:
-			logging.getLogger('DideRobot').error("[SharedFunctions] Error while trying to make string bold when converting unicode to string")
-			return s
-	return assembleFormattedText(attributes.normal['', attributes.bold[s], ''])
+	return '\x02' + s + '\x0f'
+
 
