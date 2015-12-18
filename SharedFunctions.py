@@ -224,6 +224,10 @@ def addSeparatorsToString(listOfStrings, separator='|'):
 	formattedSeparator = assembleFormattedText(attributes.normal[' ', attributes.fg.gray[separator], ' '])
 	return formattedSeparator.join(listOfStrings)
 
+def getGreySeparator():
+	#Since a grey separator is often used to separate parts of a message, provide an easy way to get one
+	return u' \x0314|\x0f '  #'\x03' is the 'color' control char, 14 is grey, and '\x0f' is the 'reset' character ending any decoration
+
 def makeTextBold(s):
 	return '\x02' + s + '\x0f'  #\x02 is the 'bold' control character, '\x0f' cancels all decorations
 
