@@ -11,7 +11,7 @@ class Command(CommandTemplate):
 	triggers = ['twitterwatcher']
 	helptext = "Automatically says new tweets of watched accounts. Use parameter 'add' to add an account to watch and 'remove' to stop watching an account. 'latest' shows latest tweet. " \
 			   "Use 'setname' and 'removename' to set and remove a display name. These parameters need to be followed by a Twitter name. 'list' lists all accounts being watched"
-	scheduledFunctionTime = 600.0  #Check every 10 minutes
+	scheduledFunctionTime = 300.0  #Check every 5 minutes
 	runInThread = True
 
 	watchData = {}  #keys are Twitter usernames, contains fields with highest ID and which channel(s) to report new tweets to, and a display name if specified
@@ -152,42 +152,47 @@ class Command(CommandTemplate):
 			if username not in self.watchData:
 				self.logWarning("[TwitterWatcher] Asked to check account '{}' for new tweets, but it is not in the watchlist".format(username))
 				continue
-			tweetsReply = SharedFunctions.downloadTweets(username, maxTweetCount=5, downloadNewerThanId=self.watchData[username].get('highestId', None))
+			tweetsReply = SharedFunctions.downloadTweets(username, maxTweetCount=10, downloadNewerThanId=self.watchData[username].get('highestId', None), includeRetweets=False)
 			if not tweetsReply[0]:
 				self.logError("[TwitterWatcher] Couldn't retrieve tweets for '{}': {}".format(username, tweetsReply[1]))
 				continue
 			#If there aren't any new tweets, move on
 			if len(tweetsReply[1]) == 0:
 				continue
+			tweets = tweetsReply[1]
 			#Always store the highest ID, so we don't encounter the same tweet twice
 			watchDataChanged = True
-			self.watchData[username]['hightestId'] = tweetsReply[1][0]['id']
+			self.watchData[username]['highestId'] = tweets[0]['id']
 			#If we don't have to actually report the tweets, then we have nothing left to do
 			if not reportNewTweets:
 				continue
 			#To prevent spam, only mention the latest few tweets, in case of somebody posting a LOT in a short timespan
-			if len(tweetsReply[1]) > self.MAX_TWEETS_TO_MENTION:
-				lastTweetIndexToMention = len(tweetsReply[1]) - self.MAX_TWEETS_TO_MENTION - 1
-				tweetOverflowSuffix = "\n(and {:,} more tweets at https://twitter.com/{})".format(len(tweetsReply[1]) - self.MAX_TWEETS_TO_MENTION, username)
+			if len(tweets) > self.MAX_TWEETS_TO_MENTION:
+				tweetsSkipped = len(tweets) - self.MAX_TWEETS_TO_MENTION
+				tweets = tweets[:self.MAX_TWEETS_TO_MENTION]
 			else:
-				lastTweetIndexToMention = -1
-				tweetOverflowSuffix = ''
-			#If necessary, go through the tweets retrieved and mention them, (In reversed order, so we go from oldest to newest)
-			for tweetIndex in xrange(len(tweetsReply[1])-1, lastTweetIndexToMention, -1):
-				tweet = tweetsReply[1][tweetIndex]
-				tweetAge = self.getTweetAge(tweet['created_at'], now)
-				if tweetAge.total_seconds() <= self.scheduledFunctionTime:
-					#New recent tweet! Shout about it
-					for target in self.watchData[username]['targets']:
-						#A tuple with the server name at [0] and the channel name at [1]
-						#Just ignore it if we're either not on the server or not in the channel
-						if target[0] not in GlobalStore.bothandler.botfactories:
-							continue
-						targetbot = GlobalStore.bothandler.botfactories[target[0]].bot
-						if target[1] not in targetbot.channelsUserList:
-							continue
-						#If we reached here, we can shout!
-						targetbot.sendMessage(target[1].encode('utf-8'), self.formatNewTweetText(username, tweet, tweetAge) + tweetOverflowSuffix, 'say')
+				tweetsSkipped = 0
+			#Reverse the tweets so we get them old to new, instead of new to old
+			tweets.reverse()
+			#New recent tweets! Shout about it (if we're in the place where we should shout)
+			for target in self.watchData[username]['targets']:
+				#'target' is a tuple with the server name at [0] and the channel name at [1]
+				#Just ignore it if we're either not on the server or not in the channel
+				if target[0] not in GlobalStore.bothandler.botfactories:
+					continue
+				targetbot = GlobalStore.bothandler.botfactories[target[0]].bot
+				if target[1] not in targetbot.channelsUserList:
+					continue
+				targetchannel = target[1].encode('utf-8')  #encode it because Twisted can't handle Unicode targets
+				#Now go tell that channel all about the tweets
+				for tweet in tweets:
+					tweetAge = self.getTweetAge(tweet['created_at'], now)
+					targetbot.sendMessage(targetchannel, self.formatNewTweetText(username, tweet, tweetAge), 'say')
+				#If we skipped a few tweets, make a mention of that too
+				if tweetsSkipped > 0:
+					displayname = self.watchData[username]['displayname'] if 'displayname' in self.watchData[username] else username
+					targetbot.sendMessage(targetchannel, "(skipped {:,} of {}'s tweets)".format(tweetsSkipped, displayname))
+
 		if watchDataChanged:
 			self.saveWatchData()
 
@@ -212,8 +217,8 @@ class Command(CommandTemplate):
 		#Get the special username if there is any, or use the regular one if not
 		displayname = self.watchData[username]['displayname'] if 'displayname' in self.watchData[username] else username
 		#Add in all the text around the tweet now, so we get a better sense of message length
-		formattedTweetText = u"@{name}: {text}{age}{sep}{url}".format(name=SharedFunctions.makeTextBold(displayname), text=formattedTweetText,
-																			 age=tweetAge, sep=SharedFunctions.getGreySeparator(), url=tweetUrl)
+		formattedTweetText = u"{name}: {text}{age}{sep}{url}".format(name=SharedFunctions.makeTextBold(displayname), text=formattedTweetText,
+																	 age=tweetAge, sep=SharedFunctions.getGreySeparator(), url=tweetUrl)
 		#Expand URLs (if it'd fit)
 		if 'urls' in tweetData['entities']:
 			for urldata in tweetData['entities']['urls']:
