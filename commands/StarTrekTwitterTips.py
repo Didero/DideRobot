@@ -1,4 +1,4 @@
-import os, random, re, time
+import json, os, random, re, time
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
