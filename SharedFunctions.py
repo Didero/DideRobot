@@ -72,7 +72,7 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 		params['since_id'] = apireply[0]['id']
 		#Remove retweets if necessary (done manually to make the 'count' variable be accurate)
 		if not includeRetweets:
-			apireply = [t for t in apireply if not t['retweeted']]
+			apireply = [t for t in apireply if 'retweeted_status' not in t]
 		#There are tweets, store those
 		tweets.extend(apireply)
 	return (True, tweets)
