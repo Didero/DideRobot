@@ -31,77 +31,59 @@ def updateTwitterToken():
 	GlobalStore.commandhandler.saveApiKeys()
 	return True
 
-def downloadTweets(username, downloadNewerThanId=-1, downloadOlderThanId=999999999999999999):
-	apikeys = GlobalStore.commandhandler.apikeys
-	if 'twitter' not in apikeys or 'token' not in apikeys['twitter'] or 'tokentype' not in apikeys['twitter']:
-		logging.getLogger('DideRobot').info('No twitter token found, retrieving a new one')
-		updateTwitterToken()
+def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downloadOlderThanId=None, includeReplies=False, includeRetweets=False):
+	#First check if we can even connect to the Twitter API
+	if 'twitter' not in GlobalStore.commandhandler.apikeys or\
+					'token' not in GlobalStore.commandhandler.apikeys['twitter'] or\
+					'tokentype' not in GlobalStore.commandhandler.apikeys['twitter']:
+		logging.getLogger('DideRobot').warning("No twitter token found, retrieving a new one")
+		tokenUpdateSuccess = updateTwitterToken()
+		if not tokenUpdateSuccess:
+			logging.getLogger('DideRobot').error("Unable to retrieve a new Twitter token!")
+			return (False, "Unable to retrieve Twitter authentication token!")
 
-	highestIdDownloaded = 0
-	storedInfo = {}
-	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', 'metadata.json')
-	if os.path.exists(twitterInfoFilename):
-		with open(twitterInfoFilename, 'r') as twitterInfoFile:
-			storedInfo = json.load(twitterInfoFile)
-	if username not in storedInfo:
-		storedInfo[username] = {}
-	elif "highestIdDownloaded" in storedInfo[username]:
-		highestIdDownloaded = storedInfo[username]['highestIdDownloaded']
+	#Now download tweets!
+	headers = {'Authorization': "{} {}".format(GlobalStore.commandhandler.apikeys['twitter']['tokentype'], GlobalStore.commandhandler.apikeys['twitter']['token'])}
+	params = {'screen_name': username, 'count': min(200, maxTweetCount), 'trim_user': 'true',
+			  'exclude_replies': 'false' if includeReplies else 'true',
+			  'include_rts': True}  #Always get retweets, remove them later if necessary. Needed because 'count' always includes retweets, even if you don't want them
+	if downloadOlderThanId:
+		params['max_id'] = downloadOlderThanId
 
+	tweets = []
+	if downloadNewerThanId:
+		params['since_id'] = downloadNewerThanId
+	while len(tweets) < maxTweetCount:
+		params['count'] = maxTweetCount - len(tweets)  #Get as much tweets as we still need
+		try:
+			req = requests.get("https://api.twitter.com/1.1/statuses/user_timeline.json", headers=headers, params=params, timeout=20.0)
+			apireply = json.loads(req.text)
+		except requests.exceptions.Timeout:
+			logging.getLogger('DideRobot').error("Twitter API reply took too long to arrive")
+			return (False, "Twitter took too long to respond", tweets)
+		except ValueError:
+			logging.getLogger('DideRobot').error(u"Didn't get parsable JSON return from Twitter API: {}".format(req.text.replace('\n', '|')))
+			return (False, "Unexpected data returned", tweets)
 
-	headers = {"Authorization": "{} {}".format(GlobalStore.commandhandler.apikeys['twitter']['tokentype'], GlobalStore.commandhandler.apikeys['twitter']['token'])}
-	params = {"screen_name": username, "count": "200", "trim_user": "true", "exclude_replies": "true", "include_rts": "false"}
-	if downloadNewerThanId > -1:
-		params["since_id"] = downloadNewerThanId
+		if len(apireply) == 0:
+			#No more tweets to parse!
+			break
+		#Tweets are sorted reverse-chronologically, so we can get the highest ID from the first tweet
+		params['since_id'] = apireply[0]['id']
+		#Remove retweets if necessary (done manually to make the 'count' variable be accurate)
+		if not includeRetweets:
+			apireply = [t for t in apireply if not t['retweeted']]
+		#There are tweets, store those
+		tweets.extend(apireply)
+	return (True, tweets)
 
-	tweets = {}
-	lowestIdFound = downloadOlderThanId
-	newTweetsFound = True
-	while newTweetsFound:
-		params["max_id"] = lowestIdFound
-
-		req = requests.get("https://api.twitter.com/1.1/statuses/user_timeline.json", headers=headers, params=params)
-		apireply = json.loads(req.text)
-
-		newTweetsFound = False
-		for tweet in apireply:
-			tweettext = tweet["text"].replace("\n", " ").encode(encoding="utf-8", errors="replace")
-			if tweet["id"] not in tweets:
-				newTweetsFound = True
-				tweets[tweet["id"]] = tweettext
-
-				tweetId = int(tweet["id"])
-				lowestIdFound = min(lowestIdFound, tweetId-1)
-				highestIdDownloaded = max(highestIdDownloaded, tweetId)
-
-	#All tweets downloaded. Time to process them
-	tweetfile = open(os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', "{}.txt".format(username)), "a")
-	#Sort the keys before saving, so we're writing from oldest to newest, so in the same order as the Twitter timeline (Not absolutely necessary, but it IS neat and tidy)
-	for tweetId in sorted(tweets.keys()):
-		tweetfile.write(tweets[tweetId] + "\n")
-	tweetfile.close()
-
-	storedInfo[username]["highestIdDownloaded"] = highestIdDownloaded
-	linecount = len(tweets)
-	if "linecount" in storedInfo[username]:
-		linecount += storedInfo[username]["linecount"]
-	storedInfo[username]["linecount"] = linecount
-
-	#Save the stored info to disk too, for future lookups
-	with open(twitterInfoFilename, 'w') as twitterFile:
-		twitterFile.write(json.dumps(storedInfo))
-	return True
-
-def downloadNewTweets(username):
-	highestIdDownloaded = -1
-	twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', 'metadata.json')
-	if os.path.exists(twitterInfoFilename):
-		with open(twitterInfoFilename, 'r') as twitterInfoFile:
-			storedInfo = json.load(twitterInfoFile)
-		if username in storedInfo and 'highestIdDownloaded' in storedInfo[username]:
-			highestIdDownloaded = storedInfo[username]["highestIdDownloaded"]
-	return downloadTweets(username, highestIdDownloaded)
-
+def downloadTweet(username, tweetId):
+	downloadedTweet =  downloadTweets(username, maxTweetCount=1, downloadNewerThanId=tweetId-1, downloadOlderThanId=tweetId+1)
+	#If something went wrong, pass on the error
+	if not downloadedTweet[0]:
+		return downloadedTweet
+	#Otherwise, make the single-item tweet list just the tweet
+	return (True, downloadedTweet[1][0])
 
 def getRandomLineFromFile(filename):
 	lines = getAllLinesFromFile(filename)
