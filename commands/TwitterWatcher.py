@@ -14,9 +14,8 @@ class Command(CommandTemplate):
 	scheduledFunctionTime = 600.0  #Check every 10 minutes
 	runInThread = True
 
-	watchData = {}  #keys are Twitter usernames, contains fields with highest ID and which channel(s) to report new tweets to
-	# Not all 'tips' are actually tips. This is a list of a replacement term to use if 'tip' is not accurate. It replaces the entire part before the colon
-	isUpdating = False
+	watchData = {}  #keys are Twitter usernames, contains fields with highest ID and which channel(s) to report new tweets to, and a display name if specified
+	MAX_TWEETS_TO_MENTION = 2
 
 	def onLoad(self):
 		#First retrieve which Twitter accounts we should follow, if that file exists
@@ -160,14 +159,24 @@ class Command(CommandTemplate):
 			#If there aren't any new tweets, move on
 			if len(tweetsReply[1]) == 0:
 				continue
+			#Always store the highest ID, so we don't encounter the same tweet twice
 			watchDataChanged = True
-			#Go through all the tweets retrieved, (In reversed order, so we go from oldest to newest)
-			for tweetIndex in xrange(len(tweetsReply[1])-1, -1, -1):
+			self.watchData[username]['hightestId'] = tweetsReply[1][0]['id']
+			#If we don't have to actually report the tweets, then we have nothing left to do
+			if not reportNewTweets:
+				continue
+			#To prevent spam, only mention the latest few tweets, in case of somebody posting a LOT in a short timespan
+			if len(tweetsReply[1]) > self.MAX_TWEETS_TO_MENTION:
+				lastTweetIndexToMention = len(tweetsReply[1]) - self.MAX_TWEETS_TO_MENTION - 1
+				tweetOverflowSuffix = "\n(and {:,} more tweets at https://twitter.com/{})".format(len(tweetsReply[1]) - self.MAX_TWEETS_TO_MENTION, username)
+			else:
+				lastTweetIndexToMention = -1
+				tweetOverflowSuffix = ''
+			#If necessary, go through the tweets retrieved and mention them, (In reversed order, so we go from oldest to newest)
+			for tweetIndex in xrange(len(tweetsReply[1])-1, lastTweetIndexToMention, -1):
 				tweet = tweetsReply[1][tweetIndex]
-				#Store the tweet ID every iteration, so we can stop if we reach too many and we still know where we left off
-				self.watchData[username]['highestId'] = tweet['id']
 				tweetAge = self.getTweetAge(tweet['created_at'], now)
-				if reportNewTweets and tweetAge.total_seconds() <= self.scheduledFunctionTime:
+				if tweetAge.total_seconds() <= self.scheduledFunctionTime:
 					#New recent tweet! Shout about it
 					for target in self.watchData[username]['targets']:
 						#A tuple with the server name at [0] and the channel name at [1]
@@ -178,9 +187,7 @@ class Command(CommandTemplate):
 						if target[1] not in targetbot.channelsUserList:
 							continue
 						#If we reached here, we can shout!
-						targetbot.sendMessage(target[1].encode('utf-8'), self.formatNewTweetText(username, tweet, tweetAge), 'say')
-				#Good tweet found, some going through the rest
-				break
+						targetbot.sendMessage(target[1].encode('utf-8'), self.formatNewTweetText(username, tweet, tweetAge) + tweetOverflowSuffix, 'say')
 		if watchDataChanged:
 			self.saveWatchData()
 
