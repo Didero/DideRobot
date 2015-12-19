@@ -94,8 +94,44 @@ class Command(CommandTemplate):
 	def updateTwitterMessages(self):
 		starttime = time.time()
 		self.isUpdating = True
+		#First load all the stored tweet data, if it exists
+		twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', 'metadata.json')
+		if os.path.exists(twitterInfoFilename):
+			with open(twitterInfoFilename, 'r') as twitterInfoFile:
+				storedInfo = json.load(twitterInfoFile)
+		else:
+			storedInfo = {}
+		#Go through all the names we need to update
 		for name, username in self.twitterUsernames.iteritems():
-			SharedFunctions.downloadNewTweets(username)
+			highestIdDownloaded = -1
+			if username not in storedInfo:
+				storedInfo[username] = {'linecount': 0}
+			elif "highestIdDownloaded" in storedInfo[username]:
+				highestIdDownloaded = storedInfo[username]['highestIdDownloaded']
+			tweetResponse = SharedFunctions.downloadTweets(username, downloadNewerThanId=highestIdDownloaded)
+			if not tweetResponse[0]:
+				self.logError("[STTip] Something went wrong while downloading new tweets for '{}', skipping".format(username))
+				continue
+			#If there aren't any tweets, stop here
+			if len(tweetResponse[1]) == 0:
+				continue
+			tweets = tweetResponse[1]
+			#Reverse tweets so they're from old to new. That way when we write them to file, the entire file will be old to new
+			# Not necessary but neat
+			tweets.reverse()
+			#All tweets downloaded. Time to process them
+			tweetfile = open(os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', "{}.txt".format(username)), "a")
+			for tweet in tweets:
+				tweetfile.write(tweet['text'].replace('\n', ' ').encode(encoding='utf-8', errors='replace') + '\n')
+			tweetfile.close()
+			#Get the id of the last tweet in the list (the newest one), so we know where to start downloading from next time
+			storedInfo[username]['highestIdDownloaded'] = tweets[-1]['id']
+			storedInfo[username]['linecount'] += len(tweets)
+
+		#Save the stored info to disk too, for future lookups
+		with open(twitterInfoFilename, 'w') as twitterFile:
+			twitterFile.write(json.dumps(storedInfo))
+
 		self.isUpdating = False
 		self.logInfo("[STtip] Updating tweets took {} seconds".format(time.time() - starttime))
 		return True
