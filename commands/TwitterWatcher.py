@@ -47,7 +47,7 @@ class Command(CommandTemplate):
 			watchlist = []
 			for username, usernameData in self.watchData.iteritems():
 				if serverChannelPair in usernameData['targets']:
-					watchlist.append(username)
+					watchlist.append(self.getDisplayName(username))
 			watchlistLength = len(watchlist)
 			if watchlistLength == 0:
 				replytext = "I'm not watching any Twitter users for this channel"
@@ -55,7 +55,7 @@ class Command(CommandTemplate):
 				replytext = "I just watch {} for the people here".format(watchlist[0])
 			else:
 				watchlist.sort()
-				replytext = "I watch {:,} Twitter users for this channel: {}".format(watchlistLength, ", ".join(watchlist))
+				replytext = "I watch {:,} Twitter users for this channel: {}".format(watchlistLength, "; ".join(watchlist))
 			message.reply(replytext, 'say')
 			return
 		#'update' forces an update check, but it's only available to admins. Also doesn't need a username
@@ -76,10 +76,11 @@ class Command(CommandTemplate):
 
 		accountName = message.messageParts[1]
 		accountNameLowered = accountName.lower()
+		isUserBeingWatchedHere = accountNameLowered in self.watchData and serverChannelPair in self.watchData[accountNameLowered]['targets']
 
 		if parameter == 'add':
-			if accountNameLowered in self.watchData and serverChannelPair in self.watchData[accountNameLowered]['targets']:
-				replytext = "That Twitter user is already being watched"
+			if isUserBeingWatchedHere:
+				replytext = "I'm already keeping a close eye on {}. On their tweets, I mean".format(self.getDisplayName(accountNameLowered, accountName))
 			else:
 				#New account
 				if accountNameLowered not in self.watchData:
@@ -95,9 +96,9 @@ class Command(CommandTemplate):
 				#Save the whole thing
 				self.saveWatchData()
 				self.checkForNewTweets([accountNameLowered], False)
-				replytext = "Ok, I'll keep you informed about any new tweets {}... makes? Tweets? What's the verb here?".format(accountName)
+				replytext = "Ok, I'll keep you informed about any new tweets {}... makes? Tweets? What's the verb here?".format(self.getDisplayName(accountNameLowered))
 		elif parameter == 'remove':
-			if accountNameLowered not in self.watchData or serverChannelPair not in self.watchData[accountNameLowered]['targets']:
+			if not isUserBeingWatchedHere:
 				replytext = "I already wasn't watching {}! Not even secretly".format(accountName)
 			else:
 				self.watchData[accountNameLowered]['targets'].remove(serverChannelPair)
@@ -108,8 +109,8 @@ class Command(CommandTemplate):
 				replytext = "Ok, I won't keep you updated on whatever {} posts. Tweets. Messages? I don't know the proper verb".format(accountName)
 		elif parameter == 'latest':
 			#Download a specific tweet
-			if accountNameLowered not in self.watchData or serverChannelPair not in self.watchData[accountNameLowered]['targets']:
-				replytext = "I'm not watching {}, so I've got nothing to show".format(accountName)
+			if not isUserBeingWatchedHere:
+				replytext = "I'm not watching {}, so I don't know what they've been up to. On Twitter or anywhere else".format(accountName)
 			else:
 				singleTweet = SharedFunctions.downloadTweet(accountNameLowered, self.watchData[accountNameLowered]['highestId'])
 				if not singleTweet[0]:
@@ -119,8 +120,8 @@ class Command(CommandTemplate):
 					replytext = self.formatNewTweetText(accountName, singleTweet[1], addTweetAge=True).replace(u'New', u'Latest', 1)
 		elif parameter == 'setname':
 			#Allow users to set a display name
-			if accountNameLowered not in self.watchData or serverChannelPair not in self.watchData[accountNameLowered]['targets']:
-				replytext = "I'm not watching {}, so I can't change the display name. Add them with the 'add' parameter first"
+			if not isUserBeingWatchedHere:
+				replytext = "I'm not watching {}, so I can't change the display name. Add them with the 'add' parameter first".format(accountName)
 			elif message.messagePartsLength < 2:
 				replytext = "Please add a display name for '{}' too. You don't want me thinking up nicknames for people".format(accountName)
 			else:
@@ -128,7 +129,7 @@ class Command(CommandTemplate):
 				self.saveWatchData()
 				replytext = "Ok, I will call {} '{}' from now on".format(accountName, self.watchData[accountNameLowered]['displayname'])
 		elif parameter == 'removename':
-			if accountNameLowered not in self.watchData or serverChannelPair not in self.watchData[accountNameLowered]['targets']:
+			if not isUserBeingWatchedHere:
 				replytext = "I wasn't calling them anything anyway, since I'm not following {}".format(accountName)
 			elif 'displayname' not in self.watchData[accountNameLowered]:
 				replytext = "I didn't have a nickname listed for {} anyway, so I guess I did what you asked?".format(accountNameLowered)
@@ -190,8 +191,7 @@ class Command(CommandTemplate):
 					targetbot.sendMessage(targetchannel, self.formatNewTweetText(username, tweet, tweetAge), 'say')
 				#If we skipped a few tweets, make a mention of that too
 				if tweetsSkipped > 0:
-					displayname = self.watchData[username]['displayname'] if 'displayname' in self.watchData[username] else username
-					targetbot.sendMessage(targetchannel, "(skipped {:,} of {}'s tweets)".format(tweetsSkipped, displayname))
+					targetbot.sendMessage(targetchannel, "(skipped {:,} of {}'s tweets)".format(tweetsSkipped, self.getDisplayName(username)))
 
 		if watchDataChanged:
 			self.saveWatchData()
@@ -206,7 +206,7 @@ class Command(CommandTemplate):
 			tweetAge = ''
 		tweetUrl = "http://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
 		#Remove newlines
-		formattedTweetText = tweetData['text'].replace('\n', SharedFunctions.getGreySeparator())
+		formattedTweetText = tweetData['text'].replace('\n\n', '\n').replace('\n', SharedFunctions.getGreySeparator())
 		#Fix special characters (convert '&amp;' to '&' for instance)
 		formattedTweetText = HTMLParser.HTMLParser().unescape(formattedTweetText)
 		#Remove the link to the photo at the end, but mention that there is one
@@ -214,10 +214,8 @@ class Command(CommandTemplate):
 			for mediaItem in tweetData['entities']['media']:
 				formattedTweetText = formattedTweetText.replace(mediaItem['url'], u'')
 				formattedTweetText += u"(has {})".format(mediaItem['type'])
-		#Get the special username if there is any, or use the regular one if not
-		displayname = self.watchData[username]['displayname'] if 'displayname' in self.watchData[username] else username
 		#Add in all the text around the tweet now, so we get a better sense of message length
-		formattedTweetText = u"{name}: {text}{age}{sep}{url}".format(name=SharedFunctions.makeTextBold(displayname), text=formattedTweetText,
+		formattedTweetText = u"{name}: {text}{age}{sep}{url}".format(name=SharedFunctions.makeTextBold(self.getDisplayName(username)), text=formattedTweetText,
 																	 age=tweetAge, sep=SharedFunctions.getGreySeparator(), url=tweetUrl)
 		#Expand URLs (if it'd fit)
 		if 'urls' in tweetData['entities']:
@@ -231,6 +229,14 @@ class Command(CommandTemplate):
 		if not presentTimeToUse:
 			presentTimeToUse = datetime.datetime.utcnow()
 		return presentTimeToUse - datetime.datetime.strptime(createdAt, "%a %b %d %H:%M:%S +0000 %Y")
+
+	def getDisplayName(self, username, alternativeName=None):
+		if not alternativeName:
+			alternativeName = username
+		if username not in self.watchData:
+			self.logDebug("[TwitterWatcher] Asked to look up display name for '{}', but there's no data stored for that name".format(username))
+			return ''
+		return self.watchData[username].get('displayname', alternativeName)
 
 	def saveWatchData(self):
 		watchDataFilePath = os.path.join(GlobalStore.scriptfolder, 'data', 'WatchedTwitterAccounts.json')
