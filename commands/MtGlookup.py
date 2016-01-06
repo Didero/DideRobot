@@ -15,8 +15,8 @@ from IrcMessage import IrcMessage
 class Command(CommandTemplate):
 	triggers = ['mtg', 'mtgf', 'mtgb', 'magic']
 	helptext = "Looks up info on Magic: The Gathering cards. Provide a card name or regex to search for, or 'random' for a surprise. "
-	helptext += "Or use 'search' with key-value attribute pairs for more control, see http://mtgjson.com/ for available attributes. "
-	helptext += "{commandPrefix}mtgf adds the flavor text and sets to the output. {commandPrefix}mtgb or '{commandPrefix}mtg booster' opens a boosterpack"
+	helptext += "Use 'search' with key-value attribute pairs for more control, see http://mtgjson.com/documentation.html#cards for available attributes. "
+	helptext += "{commandPrefix}mtgf adds the flavor text and sets to the output. '{commandPrefix}mtgb [setname]' opens a boosterpack"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 
 	areCardfilesInUse = False
@@ -31,7 +31,7 @@ class Command(CommandTemplate):
 		"""
 		#Immediately check if there's any parameters, to prevent useless work
 		if message.messagePartsLength == 0:
-			message.bot.say(message.source, "This command " + self.helptext[0].lower() + self.helptext[1:].format(commandPrefix=message.bot.factory.commandPrefix))
+			message.reply("This command " + self.helptext[0].lower() + self.helptext[1:].format(commandPrefix=message.bot.factory.commandPrefix))
 			return
 
 		replytext = ""
@@ -51,27 +51,27 @@ class Command(CommandTemplate):
 				replytext += " " + self.updateDefinitions()
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.scheduledFunctionTimer.reset()
-			message.bot.say(message.source, replytext)
+			message.reply(replytext)
 			return
 
 		#Allow checking of card database version
 		elif searchType == 'version':
 			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')):
 				#If we don't have a version file, something's weird. Force an update to recreate all files properly
-				message.bot.sendMessage(message.source, "I don't have a version file, for some reason. I'll make sure I have one by updating the card database, give me a minute")
+				message.reply("I don't have a version file, for some reason. I'll make sure I have one by updating the card database, give me a minute")
 				self.executeScheduledFunction()
 				self.scheduledFunctionTimer.reset()
 			else:
 				#Version file's there, show the version number
 				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'r') as versionfile:
 					versions = json.load(versionfile)
-				message.bot.sendMessage(message.source, "My card database is based on version {} from www.mtgjson.com".format(versions['version']))
+				message.reply("My card database is based on version {} from www.mtgjson.com".format(versions['version']))
 			#Regardless, we don't need to continue
 			return
 
 		#We can also search for definitions
 		elif searchType == 'define':
-			message.bot.say(message.source, self.getDefinition(message, addExtendedInfo))
+			message.reply(self.getDefinition(message, addExtendedInfo))
 			return
 
 		#Check if the data file even exists
@@ -81,20 +81,20 @@ class Command(CommandTemplate):
 			else:
 				replytext = "Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
 				GlobalStore.reactor.callInThread(self.updateCardFile, True)
-			message.bot.say(message.source, replytext)
+			message.reply(replytext)
 			return
 
 		elif searchType == 'booster' or message.trigger == 'mtgb':
 			if (searchType == 'booster' and message.messagePartsLength == 1) or (message.trigger == 'mtgb' and message.messagePartsLength == 0):
-				message.bot.sendMessage(message.source, "Please provide a set name, so I can open a boosterpack from that set. Or use 'random' to have me pick one")
+				message.reply("Please provide a set name, so I can open a boosterpack from that set. Or use 'random' to have me pick one")
 				return
 			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
-				message.bot.sendMessage(message.source, "I'm sorry, I don't seem to have my set file. I'll retrieve it, give me a minute and try again")
+				message.reply("I'm sorry, I don't seem to have my set file. I'll retrieve it, give me a minute and try again")
 				self.executeScheduledFunction()
 				self.scheduledFunctionTimer.reset()
 				return
 			setname = ' '.join(message.messageParts[1:]).lower() if searchType == 'booster' else message.message.lower()
-			message.bot.sendMessage(message.source, self.openBoosterpack(setname)[1])
+			message.reply(self.openBoosterpack(setname)[1])
 			return
 
 
@@ -104,14 +104,16 @@ class Command(CommandTemplate):
 		if (searchType == 'search' and ':' in message.message) or (searchType in ['random', 'randomcommander'] and message.messagePartsLength > 1):
 			#Advanced search!
 			if message.messagePartsLength <= 1:
-				message.bot.say(message.source, "Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. Look on www.mtgjson.com for available fields")
+				message.reply("Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. "
+							  "Look on http://mtgjson.com/documentation.html#cards for available fields, though not all of them may work. "
+							  "The values support regular expressions as well")
 				return
 
 			#Turn the search string (not the argument) into a usable dictionary, case-insensitive,
 			searchDict = SharedFunctions.stringToDict(" ".join(message.messageParts[1:]).lower(), True)
 			if len(searchDict) == 0:
-				message.bot.say(message.source, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
-												"For a list of valid keys, see http://mtgjson.com/#cards (though not all keys may be available)")
+				message.reply("That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
+							  "For a list of valid keys, see http://mtgjson.com/documentation.html#cards (though not all keys may be available)")
 				return
 		#If the searchtype is just 'random', don't set a 'name' field so we don't go through all the cards first
 		#  Otherwise, set the whole message as the 'name' search, since that's the default search
@@ -162,7 +164,7 @@ class Command(CommandTemplate):
 			#Multiple errors, list them all
 			else:
 				replytext = "Errors occurred while parsing attributes: {}. Please check your search query for errors".format(", ".join(errors))
-			message.bot.say(message.source, replytext)
+			message.reply(replytext)
 			return
 
 		#All entered data is valid, look through the stored cards
@@ -636,12 +638,11 @@ class Command(CommandTemplate):
 
 			newcardstore = {}
 			setstore = {'_setsWithBoosterpacks': []}
-			keysToChange = {'keysToRemove': ['border', 'colorIdentity', 'id', 'imageName', 'number', 'releaseDate', 'reserved',
-											 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations'],
-							'layoutTypesToRemove': ['phenomenon', 'vanguard', 'plane', 'scheme', 'leveler'],
-							'numberKeysToMakeString': ['cmc', 'hand', 'life', 'loyalty', 'multiverseid'],
-							'listKeysToMakeString': ['colors', 'names'],
-							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
+			keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'number', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
+			layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme', 'leveler')
+			numberKeysToMakeString = ('cmc', 'hand', 'life', 'loyalty', 'multiverseid')
+			listKeysToMakeString = ('colors', 'names')
+			keysToFormatNicer = ('flavor', 'manacost', 'text')
 			raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
 			raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s'}  #Non-standard rarities are interpreted as regexes for type
 			rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls
@@ -730,12 +731,12 @@ class Command(CommandTemplate):
 					#If the card isn't in the store yet, parse its data
 					if cardname not in newcardstore:
 						#Remove some useless data to save some space, memory and time
-						for keyToRemove in keysToChange['keysToRemove']:
+						for keyToRemove in keysToRemove:
 							if keyToRemove in card:
 								del card[keyToRemove]
 
 						#No need to store there's nothing special about the card's layout
-						if 'layout' in card and card['layout'] in keysToChange['layoutTypesToRemove']:
+						if 'layout' in card and card['layout'] in layoutTypesToRemove:
 							del card['layout']
 
 						#The 'Colors' field benefits from some ordering, for readability.
@@ -748,10 +749,10 @@ class Command(CommandTemplate):
 							card['names'].remove(card['name'])
 
 						#Make sure all stored values are strings, that makes searching later much easier
-						for attrib in keysToChange['numberKeysToMakeString']:
+						for attrib in numberKeysToMakeString:
 							if attrib in card:
 								card[attrib] = unicode(card[attrib])
-						for attrib in keysToChange['listKeysToMakeString']:
+						for attrib in listKeysToMakeString:
 							if attrib in card:
 								card[attrib] = u"; ".join(card[attrib])
 
@@ -760,7 +761,7 @@ class Command(CommandTemplate):
 							card['manacost'] = card['manaCost']
 							del card['manaCost']
 
-						for keyToFormat in keysToChange['keysToFormatNicer']:
+						for keyToFormat in keysToFormatNicer:
 							if keyToFormat in card:
 								card[keyToFormat] = formatNicer(card[keyToFormat])
 						#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
@@ -793,7 +794,7 @@ class Command(CommandTemplate):
 			with open(versionFilename, 'w') as versionFile:
 				versionFile.write(json.dumps(versiondata))
 
-			replytext = "MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/#changeLog).".format(storedVersion, latestVersion)
+			replytext = "MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/changeog.html).".format(storedVersion, latestVersion)
 		#No update was necessary
 		else:
 			replytext = "No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
