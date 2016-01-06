@@ -565,7 +565,7 @@ class Command(CommandTemplate):
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		setsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
-		latestFormatVersion = "3.3.1"
+		latestFormatVersion = "3.4.0"
 
 		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
 		storedVersion = "0.00"
@@ -638,6 +638,7 @@ class Command(CommandTemplate):
 			setstore = {'_setsWithBoosterpacks': []}
 			keysToChange = {'keysToRemove': ['border', 'colorIdentity', 'id', 'imageName', 'number', 'releaseDate', 'reserved',
 											 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations'],
+							'layoutTypesToRemove': ['phenomenon', 'vanguard', 'plane', 'scheme', 'leveler'],
 							'numberKeysToMakeString': ['cmc', 'hand', 'life', 'loyalty', 'multiverseid'],
 							'listKeysToMakeString': ['colors', 'names'],
 							'keysToFormatNicer': ['flavor', 'manacost', 'text']}
@@ -734,7 +735,7 @@ class Command(CommandTemplate):
 								del card[keyToRemove]
 
 						#No need to store there's nothing special about the card's layout
-						if 'layout' in card and card['layout'] == 'normal':
+						if 'layout' in card and card['layout'] in keysToChange['layoutTypesToRemove']:
 							del card['layout']
 
 						#The 'Colors' field benefits from some ordering, for readability.
