@@ -35,7 +35,6 @@ class Command(CommandTemplate):
 			return
 
 		replytext = ""
-		maxCardsToList = 20 if message.isPrivateMessage else 10
 		addExtendedInfo = message.trigger == 'mtgf'
 		searchType = message.messageParts[0].lower()
 
@@ -101,7 +100,7 @@ class Command(CommandTemplate):
 		#If we reached here, we're gonna search through the card store
 		searchDict = {}
 		# If there is an actual search (with colon key-value separator OR a random card is requested with specific search requirements
-		if (searchType == 'search' and ':' in message.message) or (searchType in ['random', 'randomcommander'] and message.messagePartsLength > 1):
+		if (searchType == 'search' and ':' in message.message) or (searchType in ('random', 'randomcommander') and message.messagePartsLength > 1):
 			#Advanced search!
 			if message.messagePartsLength <= 1:
 				message.reply("Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. "
@@ -128,7 +127,7 @@ class Command(CommandTemplate):
 			searchDict['type'] = 'legendary.+creature.*' + searchDict['type']
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
-		searchTermsToCorrect = {'set': ['sets'], 'colors': ['color', 'colour', 'colours'], 'type': ['types', 'supertypes', 'subtypes'], 'flavor': ['flavour']}
+		searchTermsToCorrect = {'set': ('sets'), 'colors': ('color', 'colour', 'colours'), 'type': ('types', 'supertypes', 'subtypes'), 'flavor': ('flavour')}
 		for correctTerm, listOfWrongterms in searchTermsToCorrect.iteritems():
 			for wrongTerm in listOfWrongterms:
 				if wrongTerm in searchDict:
@@ -214,27 +213,32 @@ class Command(CommandTemplate):
 						break
 
 		numberOfCardsFound = len(cardstore)
-		#Pick a random card if needed and possible
-		if searchType.startswith('random') and numberOfCardsFound > 0:
-			randomCardname = random.choice(cardstore.keys())
-			cardstore = {randomCardname: cardstore[randomCardname]}
-			numberOfCardsFound = 1
-
 		if numberOfCardsFound == 0:
 			replytext = "Sorry, no card matching your query was found"
-		elif numberOfCardsFound == 1:
+		#If we only found a single card (or if we have to pick a random card from all available cards), just display it
+		elif numberOfCardsFound == 1 or (searchType.startswith('random') and len(searchDict) == 0):
+			if searchType.startswith('random'):
+				cardname = random.choice(cardstore.keys())
+				cardstore = {cardname: cardstore[cardname]}
 			setname = cardstore[cardstore.keys()[0]][1].pop('_match', None)
 			replytext = self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedInfo, setname)
+		#If we found multiple cards, list their names (and the full info on a single card, if it matches)
 		else:
+			maxCardsToList = 20 if message.isPrivateMessage else 10
 			nameMatchedCardFound = False
 			#If there was a name search, check if the literal name is in the resulting cards
-			if 'name' in searchDict and searchDict['name'] in cardstore:
+			# If we need to pick a random card and there's a search query provided, procedure is mostly the same, except displayed card is random
+			if ('name' in searchDict and searchDict['name'] in cardstore) or (searchType.startswith('random') and len(searchDict) > 0):
+				#Pick a random card if a random card was wanted, otherwise use the provided search name (only two options to get here)
+				cardname = random.choice(cardstore.keys()) if searchType.startswith('random') else searchDict['name']
 				#If the search returned a setmatch, it's in a '_match' field, retrieve that
-				setname = cardstore[searchDict['name']][1].pop('_match', None)
-				replytext = self.getFormattedCardInfo(cardstore[searchDict['name']], addExtendedInfo, setname)
-				del cardstore[searchDict['name']]
+				setname = cardstore[cardname][1].pop('_match', None)
+				replytext = self.getFormattedCardInfo(cardstore[cardname], addExtendedInfo, setname)
+				del cardstore[cardname]
 				numberOfCardsFound -= 1
 				nameMatchedCardFound = True
+				#Reduce the number of card names displayed, since we're also showing a card's info and we don't want to spam
+				maxCardsToList = 10 if message.isPrivateMessage else 5
 
 			#Pick some cards to show
 			cardnames = []
