@@ -20,8 +20,12 @@ class Command(CommandTemplate):
 		nickmessages = {}
 		nickmessagesFilepath = os.path.join(GlobalStore.scriptfolder, 'data', 'NickMessages.json')
 		if os.path.exists(nickmessagesFilepath):
-			with open(nickmessagesFilepath) as nickmessagesFile:
-				nickmessages = json.load(nickmessagesFile)
+			#If the file exists but is empty, an error is thrown. Prevent that error, even though an empty file should never exist
+			try:
+				with open(nickmessagesFilepath, 'r') as nickmessagesFile:
+					nickmessages = json.load(nickmessagesFile)
+			except ValueError:
+				self.logError("[NickMessage] An error occurred while trying to load the NickMessages file. Something probably went wrong with storing the data")
 
 		#Let's create a slightly shorter way to reference this, shall we
 		serverfolder = message.bot.factory.serverfolder
@@ -42,9 +46,15 @@ class Command(CommandTemplate):
 				if serverfolder not in nickmessages:
 					nickmessages[serverfolder] = {}
 				nickmessages[serverfolder][message.userNickname.lower()] = (message.message, time.time())
-				with open(nickmessagesFilepath, 'w') as nickmessagesFile:
-					nickmessagesFile.write(json.dumps(nickmessages))
-				message.reply(u"Your nick message was successfully set")
+				#Only save the file if the message doesn't contain any weird Unicode characters that might trip up the JSON lib
+				try:
+					nickMessagesString = json.dumps(nickmessages)
+				except UnicodeDecodeError:
+					message.reply(u"I'm sorry, but there's a weird character in your message. I can't store it like this. Please remove any unusual characters, and try again")
+				else:
+					with open(nickmessagesFilepath, 'w') as nickmessagesFile:
+						nickmessagesFile.write(nickMessagesString)
+					message.reply(u"Your nick message was successfully set")
 		elif message.trigger == 'clearnickmessage':
 			if serverfolder not in nickmessages or message.userNickname.lower() not in nickmessages[serverfolder]:
 				message.reply(u"There is no message stored for your nick")
