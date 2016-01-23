@@ -8,6 +8,7 @@ import requests
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
+import SharedFunctions
 
 
 class Command(CommandTemplate):
@@ -110,6 +111,10 @@ class Command(CommandTemplate):
 			replystring = replystring.replace('  ', ' ')
 		#Add the search url
 		if includeUrl:
-			replystring += " (http://www.wolframalpha.com/input/?i={})".format(urllib.quote_plus(query))
+			searchUrl = "http://www.wolframalpha.com/input/?i={}".format(urllib.quote_plus(query))
+			#If the message would get too long, shorten the result URL
+			if len(replystring) + len(searchUrl) > 300:
+				searchUrl = SharedFunctions.shortenUrl(searchUrl)[1]
+			replystring += " ({})".format(searchUrl)
 			
 		return replystring
