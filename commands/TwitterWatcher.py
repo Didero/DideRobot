@@ -148,6 +148,7 @@ class Command(CommandTemplate):
 			usernamesToCheck = self.watchData  #Don't use '.keys()' so we don't copy the username list
 		now = datetime.datetime.utcnow()
 		watchDataChanged = False
+		tweetAgeCutoff = self.scheduledFunctionTime * 1.1  #Give tweet age a little grace period, so tweets can't fall between checks
 		#Retrieve the latest tweets for every account.
 		for username in usernamesToCheck:
 			if username not in self.watchData:
@@ -160,6 +161,7 @@ class Command(CommandTemplate):
 			#If there aren't any new tweets, move on
 			if len(tweetsReply[1]) == 0:
 				continue
+
 			tweets = tweetsReply[1]
 			#Always store the highest ID, so we don't encounter the same tweet twice
 			watchDataChanged = True
@@ -167,12 +169,27 @@ class Command(CommandTemplate):
 			#If we don't have to actually report the tweets, then we have nothing left to do
 			if not reportNewTweets:
 				continue
+
+			#Go through the tweets to check if they're not too old to report
+			firstOldTweetIndex = -1
+			for index, tweet in enumerate(tweets):
+				if self.getTweetAge(tweet['created_at'], now).total_seconds() > tweetAgeCutoff:
+					firstOldTweetIndex = index
+					break
+			#If all tweets are old, stop here
+			if firstOldTweetIndex == 0:
+				continue
+			#Otherwise remove the old tweet and every older tweet
+			elif firstOldTweetIndex > -1:
+				tweets = tweets[:firstOldTweetIndex]
+
 			#To prevent spam, only mention the latest few tweets, in case of somebody posting a LOT in a short timespan
 			if len(tweets) > self.MAX_TWEETS_TO_MENTION:
 				tweetsSkipped = len(tweets) - self.MAX_TWEETS_TO_MENTION
 				tweets = tweets[:self.MAX_TWEETS_TO_MENTION]
 			else:
 				tweetsSkipped = 0
+
 			#Reverse the tweets so we get them old to new, instead of new to old
 			tweets.reverse()
 			#New recent tweets! Shout about it (if we're in the place where we should shout)
