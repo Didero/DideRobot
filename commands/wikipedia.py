@@ -64,7 +64,7 @@ class Command(CommandTemplate):
 						elif resultCount > 1:
 							replytext += " ({:,} more possible results)".format(resultCount)
 		else:
-			contentContainer = wikitext.find(id="bodyContent")  #The actual article is in a div with id 'content'
+			contentContainer = wikitext.find(id='mw-content-text')  #The actual article text is in a separate div
 			paragraphFound = False
 			while not paragraphFound:
 				articleContainer = contentContainer.find('div')  #For some reason it's nested in another div tag
