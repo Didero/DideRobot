@@ -109,6 +109,13 @@ class Command(CommandTemplate):
 
 		if cleanUpText:
 			replystring = replystring.replace('  ', ' ')
+			
+		#Make sure we don't spam the channel, keep message length limited
+		#  Shortened URL will be about 25 characters, keep that in mind
+		messageLengthLimit = 270 if includeUrl else 300
+		if len(replystring) > messageLengthLimit:
+			replystring = replystring[:messageLengthLimit] + '[...]'
+
 		#Add the search url
 		if includeUrl:
 			searchUrl = "http://www.wolframalpha.com/input/?i={}".format(urllib.quote_plus(query))
