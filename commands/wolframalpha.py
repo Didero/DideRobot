@@ -65,7 +65,13 @@ class Command(CommandTemplate):
 		if not wolframResult[0]:
 			return wolframResult[1]
 
-		xml = ElementTree.fromstring(wolframResult[1])
+		try:
+			xml = ElementTree.fromstring(wolframResult[1])
+		except ElementTree.ParseError:
+			self.logError("[Wolfram] Unexpected reply, invalid XML:")
+			self.logError(wolframResult[1])
+			return "Wow, that's some weird data. I don't know what to do with this, sorry. Try reformulating your query, or just try again and see what happens"
+
 		if xml.attrib['error'] != 'false':
 			replystring = "Sorry, an error occurred. Tell my owner(s) to check the error log"
 			self.logError("[Wolfram] An error occurred for the search query '{}'. Reply:".format(query, wolframResult[1]))
@@ -109,7 +115,7 @@ class Command(CommandTemplate):
 
 		if cleanUpText:
 			replystring = replystring.replace('  ', ' ')
-			
+
 		#Make sure we don't spam the channel, keep message length limited
 		#  Shortened URL will be about 25 characters, keep that in mind
 		messageLengthLimit = 270 if includeUrl else 300
