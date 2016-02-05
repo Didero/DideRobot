@@ -5,12 +5,13 @@ from twisted.words.protocols.irc import assembleFormattedText, attributes
 
 import GlobalStore
 
+logger = logging.getLogger('DideRobot')
 
 #First some Twitter functions
 def updateTwitterToken():
 	apikeys = GlobalStore.commandhandler.apikeys
 	if 'twitter' not in apikeys or 'key' not in apikeys['twitter']or 'secret' not in apikeys['twitter']:
-		logging.getLogger('DideRobot').error("No Twitter API key and/or secret found!")
+		logger.error("No Twitter API key and/or secret found!")
 		return False
 
 	credentials = base64.b64encode("{}:{}".format(apikeys['twitter']['key'], apikeys['twitter']['secret']))
@@ -20,7 +21,7 @@ def updateTwitterToken():
 	req = requests.post("https://api.twitter.com/oauth2/token", data=data, headers=headers)
 	reply = json.loads(req.text)
 	if 'access_token' not in reply:
-		logging.getLogger('DideRobot').error("An error occurred while retrieving Twitter token: " + json.dumps(reply))
+		logger.error("An error occurred while retrieving Twitter token: " + json.dumps(reply))
 		return False
 
 	if 'twitter' not in apikeys:
@@ -36,10 +37,10 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 	if 'twitter' not in GlobalStore.commandhandler.apikeys or\
 					'token' not in GlobalStore.commandhandler.apikeys['twitter'] or\
 					'tokentype' not in GlobalStore.commandhandler.apikeys['twitter']:
-		logging.getLogger('DideRobot').warning("No twitter token found, retrieving a new one")
+		logger.warning("No twitter token found, retrieving a new one")
 		tokenUpdateSuccess = updateTwitterToken()
 		if not tokenUpdateSuccess:
-			logging.getLogger('DideRobot').error("Unable to retrieve a new Twitter token!")
+			logger.error("Unable to retrieve a new Twitter token!")
 			return (False, "Unable to retrieve Twitter authentication token!")
 
 	#Now download tweets!
@@ -59,10 +60,10 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 			req = requests.get("https://api.twitter.com/1.1/statuses/user_timeline.json", headers=headers, params=params, timeout=20.0)
 			apireply = json.loads(req.text)
 		except requests.exceptions.Timeout:
-			logging.getLogger('DideRobot').error("Twitter API reply took too long to arrive")
+			logger.error("Twitter API reply took too long to arrive")
 			return (False, "Twitter took too long to respond", tweets)
 		except ValueError:
-			logging.getLogger('DideRobot').error(u"Didn't get parsable JSON return from Twitter API: {}".format(req.text.replace('\n', '|')))
+			logger.error(u"Didn't get parsable JSON return from Twitter API: {}".format(req.text.replace('\n', '|')))
 			return (False, "Unexpected data returned", tweets)
 
 		if len(apireply) == 0:
@@ -91,7 +92,7 @@ def getRandomLineFromFile(filename):
 
 def getAllLinesFromFile(filename):
 	if not os.path.exists(filename):
-		logging.getLogger('DideRobot').error(u"Can't read lines from file '{}'; it does not exist".format(filename))
+		logger.error(u"Can't read lines from file '{}'; it does not exist".format(filename))
 		return None
 	#Make sure it's an absolute filename
 	if GlobalStore.scriptfolder not in filename:
@@ -110,7 +111,7 @@ def parseIsoDate(isoString, formatstring=""):
 	regex = 'P(?:(?P<year>\d+)Y)?(?:(?P<month>\d+)M)?(?:(?P<week>\d+)W)?(?:(?P<day>\d+)D)?T?(?:(?P<hour>\d+)H)?(?:(?P<minute>\d+)M)?(?:(?P<second>\d+)S)?'
 	result = re.search(regex, isoString)
 	if result is None:
-		logging.getLogger('DideRobot').warning("No date results found")
+		logger.warning("No date results found")
 	else:
 		for group, value in result.groupdict().iteritems():
 			if value is not None:
@@ -176,7 +177,7 @@ def stringToDict(string, removeStartAndEndQuotes=True):
 	for pair in keyValuePairs:
 		parts = pair.split(':')
 		if len(parts) != 2:
-			logging.getLogger('DideRobot').error("ERROR in stringToDict when trying to parse pair '{}'. Expected 2 parts, found {}".format(pair, len(parts)))
+			logger.error("ERROR in stringToDict when trying to parse pair '{}'. Expected 2 parts, found {}".format(pair, len(parts)))
 			continue
 		key = parts[0].strip()
 		item = parts[1].strip()
@@ -215,7 +216,7 @@ def makeTextBold(s):
 
 def shortenUrl(longUrl):
 	if 'google' not in GlobalStore.commandhandler.apikeys:
-		logging.getLogger('DideRobot').error("Url shortening requested but Google API key not found")
+		logger.error("Url shortening requested but Google API key not found")
 		return (False, longUrl, "No Google API key found")
 	#The Google shortening API requires the url key in the POST message body for some reason, hence 'json' and not 'data'
 	response = requests.post('https://www.googleapis.com/urlshortener/v1/url?key=' + GlobalStore.commandhandler.apikeys['google'],
