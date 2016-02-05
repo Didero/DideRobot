@@ -69,6 +69,14 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 		if len(apireply) == 0:
 			#No more tweets to parse!
 			break
+		#Check for errors
+		if isinstance(apireply, dict) and 'errors' in apireply:
+			logger.error("[SharedFunctions] Error occurred while retrieving tweets for {}. Parameters:".format(username))
+			logger.error(params)
+			logger.error("[SharedFunctions] Twitter API reply:")
+			logger.error(apireply)
+			errorMessages = '; '.join(e['message'] for e in apireply)
+			return (False, "Error(s) occurred: {}".format(errorMessages), tweets)
 		#Sometimes the API does not return a list of tweets for some reason. Catch that
 		if not isinstance(apireply, list):
 			logger.error("[SharedFunctions] Unexpected reply from Twitter API. Expected tweet list, got {}:".format(type(apireply)))
