@@ -49,6 +49,9 @@ class Command(CommandTemplate):
 		except requests.exceptions.Timeout:
 			return (False, "Sorry, Wolfram Alpha took too long to respond")
 		xmltext = apireturn.text
+		#Wolfram sends errors back in HTML apparently. Check for that
+		if xmltext.startswith('<!DOCTYPE html>'):
+			return (False, "Sorry, Wolfram returned unusable data")
 		#Since Wolfram apparently doesn't really understand unicode, fix '\:XXXX' characters by turning them into their proper '\uXXXX' characters
 		#  (Thanks, ekimekim!)
 		xmltext = re.sub(r"\\:[0-9a-f]{4}", lambda x: unichr(int(x.group(0)[2:], 16)), xmltext)
