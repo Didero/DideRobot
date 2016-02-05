@@ -103,7 +103,7 @@ class Command(CommandTemplate):
 			storedInfo = {}
 		#Go through all the names we need to update
 		for name, username in self.twitterUsernames.iteritems():
-			highestIdDownloaded = -1
+			highestIdDownloaded = 0
 			if username not in storedInfo:
 				storedInfo[username] = {'linecount': 0}
 			elif "highestIdDownloaded" in storedInfo[username]:
