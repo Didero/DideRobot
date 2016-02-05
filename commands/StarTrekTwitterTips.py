@@ -101,6 +101,9 @@ class Command(CommandTemplate):
 				storedInfo = json.load(twitterInfoFile)
 		else:
 			storedInfo = {}
+			#Create the 'tweets' folder if it doesn't exist already, so we can create our files in there once we're done
+			if not os.path.exists(os.path.dirname(twitterInfoFilename)):
+				os.makedirs(os.path.dirname(twitterInfoFilename))
 		#Go through all the names we need to update
 		for name, username in self.twitterUsernames.iteritems():
 			highestIdDownloaded = 0
