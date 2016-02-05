@@ -69,6 +69,11 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 		if len(apireply) == 0:
 			#No more tweets to parse!
 			break
+		#Sometimes the API does not return a list of tweets for some reason. Catch that
+		if not isinstance(apireply, list):
+			logger.error("[SharedFunctions] Unexpected reply from Twitter API. Expected tweet list, got {}:".format(type(apireply)))
+			logger.error(apireply)
+			return (False, "Unexpected API reply", tweets)
 		#Tweets are sorted reverse-chronologically, so we can get the highest ID from the first tweet
 		params['since_id'] = apireply[0]['id']
 		#Remove retweets if necessary (done manually to make the 'count' variable be accurate)
