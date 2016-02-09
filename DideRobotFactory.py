@@ -83,6 +83,13 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			serverSettings = json.load(serverSettingsFile)
 			self.settings.update(serverSettings)
 
+		if not self.parseSettings():
+			return False
+		if updateLogger:
+			self.messageLogger.updateLogSettings()
+		return True
+
+	def parseSettings(self):
 		#First make sure the required settings are in there
 		settingsToEnsure = ["server", "port", "nickname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"]
 		for settingToEnsure in settingsToEnsure:
@@ -112,10 +119,28 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		#Assume values smaller than zero mean endless retries
 		if self.maxRetries < 0:
 			self.maxRetries = None
-
-		if updateLogger:
-			self.messageLogger.updateLogSettings()
 		return True
+
+	def saveSettings(self):
+		#First get only the keys that are different from the globalsettings
+		settingsToSave = {}
+		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', 'globalsettings.json'), 'r') as globalSettingsFile:
+			globalsettings = json.load(globalSettingsFile)
+		for key, value in self.settings.iteritems():
+			if key not in globalsettings or value != globalsettings[key]:
+				settingsToSave[key] = value
+
+		settingsFilename = os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, 'settings.json')
+		#Save the data to a new file, so we don't end up without a settings file if something goes wrong
+		with open(settingsFilename + '.new', 'w') as f:
+			f.write(json.dumps(settingsToSave, indent=2))
+		#Remove any old backup files
+		if os.path.exists(settingsFilename + '.old'):
+			os.remove(settingsFilename + '.old')
+		#Keep the old settings file around, just in case we need to put it back
+		os.rename(settingsFilename, settingsFilename + '.old')
+		#Set the new settings file as the in-use one
+		os.rename(settingsFilename + '.new', settingsFilename)
 
 	def isUserAdmin(self, user, userNick=None, userAddress=None):
 		return self.isUserInList(self.settings['admins'], user, userNick, userAddress)
