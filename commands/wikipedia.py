@@ -22,7 +22,7 @@ class Command(CommandTemplate):
 		return self.getArticleText(articleName, addExtendedText)
 
 	def searchWikipedia(self, searchterm, addExtendedText=False):
-		url = 'https://en.wikipedia.org/w/api.php?format=json&utf8=1&action=query&list=search&srwhat=nearmatch&srlimit=1&srsearch={}&srprop='.format(searchterm)
+		url = u'https://en.wikipedia.org/w/api.php?format=json&utf8=1&action=query&list=search&srwhat=nearmatch&srlimit=1&srsearch={}&srprop='.format(searchterm)
 		result = requests.get(url)
 		result = json.loads(result.text)
 		if 'error' in result:
@@ -39,7 +39,7 @@ class Command(CommandTemplate):
 		#If we need to be verbose, get as many characters as we can. Otherwise just get the first sentence
 		limitation = 'exchars={}'.format(replyLengthLimit) if addExtendedText else 'exsentences=1'
 
-		url = 'https://en.wikipedia.org/w/api.php?format=json&utf8=1&action=query&prop=extracts&redirects=1&exintro=1&explaintext=1&exsectionformat=plain&titles={}&{}'.format(pagename, limitation)
+		url = u'https://en.wikipedia.org/w/api.php?format=json&utf8=1&action=query&prop=extracts&redirects=1&exintro=1&explaintext=1&exsectionformat=plain&titles={}&{}'.format(pagename, limitation)
 		apireply = requests.get(url)
 		result = json.loads(apireply.text)
 		if 'error' in result:
@@ -63,7 +63,7 @@ class Command(CommandTemplate):
 					replytext = replytext[:lastSpaceIndex]
 				replytext += ' [...]'
 			#Add the URL
-			replytext += ' (http://en.wikipedia.org/wiki/{})'.format(pagedata['title'].replace(' ', '_'))
+			replytext += u' (http://en.wikipedia.org/wiki/{})'.format(pagedata['title'].replace(u' ', u'_'))
 			return (True, replytext)
 
 
