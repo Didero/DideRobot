@@ -53,7 +53,11 @@ class MessageLogger(object):
 		#If no file has been opened for this source, open it
 		if source not in self.logfiles:
 			logfilename = "{}-{}.log".format(source, now.strftime("%Y-%m-%d"))
-			self.logfiles[source] = open(os.path.join(self.logfolder, logfilename), 'a')
+			try:
+				self.logfiles[source] = open(os.path.join(self.logfolder, logfilename), 'a')
+			except IOError as e:
+				self.logger.error("[MessageLogger] Error while trying to open logfile '{}': {}".format(logfilename, e.message))
+				return
 		self.logfiles[source].write("[{0}] {1}\n".format(timestamp, msg))
 		self.logfiles[source].flush()
 
