@@ -36,11 +36,17 @@ class Command(CommandTemplate):
 
 	def getArticleText(self, pagename, addExtendedText=False, limitLength=True):
 		replyLengthLimit = 310
-		#If we need to be verbose, get as many characters as we can. Otherwise just get the first sentence
-		limitation = 'exchars={}'.format(replyLengthLimit) if addExtendedText else 'exsentences=1'
 
-		url = u'https://en.wikipedia.org/w/api.php?format=json&utf8=1&action=query&prop=extracts&redirects=1&exintro=1&explaintext=1&exsectionformat=plain&titles={}&{}'.format(pagename, limitation)
-		apireply = requests.get(url)
+		url = u'https://en.wikipedia.org/w/api.php'
+		params = {'format': 'json', 'utf8': '1', 'action': 'query', 'prop': 'extracts', 'redirects': '1',
+				  'exintro': '1', 'explaintext': '1', 'exsectionformat': 'plain', 'titles': pagename}
+		#If we need to be verbose, get as many characters as we can
+		if addExtendedText:
+			params['exchars'] = replyLengthLimit
+		#Otherwise just get the first sentence
+		else:
+			params['exsentences'] = '1'
+		apireply = requests.get(url, params=params)
 		result = json.loads(apireply.text)
 		if 'error' in result:
 			self.logError("[wiki] An error occurred while retrieving an article. Page name: '{}'; url: '{}'; error: '{}'".format(pagename, url, result['error']['info']))
@@ -51,7 +57,7 @@ class Command(CommandTemplate):
 		else:
 			#The 'pages' dictionary contains a single key-value pair. The key is the (unknown) revision number. So just get the single entry
 			pagedata = result['pages'].popitem()[1]
-			replytext = pagedata['extract']
+			replytext = pagedata['extract'].replace('\n', ' ').replace('  ', ' ')
 			if replytext.endswith("may refer to:") or replytext.endswith("may refer to:..."):
 				replytext = "'{}' has multiple meanings".format(pagename)
 			#Make sure the text isn't too long
