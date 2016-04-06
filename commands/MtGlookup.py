@@ -602,11 +602,16 @@ class Command(CommandTemplate):
 
 		#Load in that version file
 		with open(newversionfilename) as newversionfile:
-			versiondata = json.load(newversionfile)
+			try:
+				versiondata = json.load(newversionfile)
+			except ValueError:
+				self.logError("[MtG] Downloaded version file is not valid JSON!")
+				return "Downloaded version file could not be read as a JSON file"
+
 			if 'version' in versiondata:
 				latestVersion = versiondata['version']
 			else:
-				self.logWarning("[MtG] Unexpected contents of downloaded version file:")
+				self.logError("[MtG] Unexpected contents of downloaded version file:")
 				for key, value in versiondata.iteritems():
 					self.logWarning(" {}: {}".format(key, value))
 				return "Something went wrong when trying to read the downloaded version file"
