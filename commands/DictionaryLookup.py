@@ -28,7 +28,9 @@ class Command(CommandTemplate):
 		apireply = requests.get('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/{}?key={}'.format(searchQuery, GlobalStore.commandhandler.apikeys['dictionarylookup']))
 		xmltext = apireply.text.encode('utf8')
 		#<fw> tags are useless and mess everything up. They're links to other definitions on the site, but in here they just confuse the XML parser
-		xmltext = xmltext.replace('<fw>', '').replace('</fw>', '')
+		#There's also a few fields only used to indicate a certain layout. Remove those too
+		for field in ('fw', 'd_link', 'i_link', 'dx_ety', 'dx_def'):
+			xmltext = xmltext.replace('<{}>'.format(field), '').replace('</{}>'.format(field), '')
 		xmldata = ElementTree.fromstring(xmltext)
 
 		maxMessageLength = 290
