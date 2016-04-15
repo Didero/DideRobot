@@ -59,6 +59,14 @@ class Command(CommandTemplate):
 			entryword = entry.find('ew').text.lower()
 			if entryword != searchQuery:
 				continue
+			#First check if the required fields exist
+			if entry.find('fl') is None:
+				#Maybe it suggests an alternative spelling?
+				cognate = entry.find('cx')
+				if cognate is None or cognate.find('cl') is None or cognate.find('ct') is None:
+					continue
+				replytext += " {} {}".format(cognate.find('cl').text, cognate.find('ct').text)
+				continue
 			#Prefix the type of word it is
 			wordType = entry.find('fl').text
 			if entriesSkipped > 0 or len(replytext) + len(wordType) >= maxMessageLength:
