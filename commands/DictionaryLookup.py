@@ -46,6 +46,10 @@ class Command(CommandTemplate):
 			replytext = replytext[:-2]  #Remove the last semicolon
 			return message.reply(replytext)
 
+		#Check if there are any definitions
+		if xmldata.find('entry') is None:
+			return message.reply("No definition found for '{}', sorry".format(message.message))
+
 		#Definition(s) found. List as many as we can
 		entriesSkipped = 0
 		definitionsSkipped = 0
