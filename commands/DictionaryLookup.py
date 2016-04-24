@@ -29,7 +29,7 @@ class Command(CommandTemplate):
 		xmltext = apireply.text.encode('utf8')
 		#<fw> tags are useless and mess everything up. They're links to other definitions on the site, but in here they just confuse the XML parser
 		#There's also a few fields only used to indicate a certain layout. Remove those too
-		for field in ('fw', 'd_link', 'i_link', 'dx_ety', 'dx_def'):
+		for field in ('fw', 'd_link', 'i_link', 'dx_ety', 'dx_def', 'it', 'bold', 'bit'):
 			xmltext = xmltext.replace('<{}>'.format(field), '').replace('</{}>'.format(field), '')
 		xmldata = ElementTree.fromstring(xmltext)
 
@@ -69,10 +69,10 @@ class Command(CommandTemplate):
 				continue
 			#Prefix the type of word it is
 			wordType = entry.find('fl').text
-			if entriesSkipped > 0 or len(replytext) + len(wordType) >= maxMessageLength:
+			if entriesSkipped > 0 and len(replytext) + len(wordType) >= maxMessageLength:
 				entriesSkipped += 1
 			else:
-				replytext += ' [{}] '.format(wordType)
+				replytext += '. [{}] '.format(wordType)
 				#Now go through all the <def>initions, to get the actual definitions
 				for definitionNode in entry.find('def').findall('dt'):
 					definition = definitionNode.text.strip().strip(':').strip()  #Whether an item stars with a space and then a colon or vice versa is inconsistent
