@@ -72,7 +72,7 @@ class Command(CommandTemplate):
 			if entriesSkipped > 0 and len(replytext) + len(wordType) >= maxMessageLength:
 				entriesSkipped += 1
 			else:
-				replytext += '. [{}] '.format(wordType)
+				replytext += ' [{}] '.format(wordType)
 				#Now go through all the <def>initions, to get the actual definitions
 				for definitionNode in entry.find('def').findall('dt'):
 					definition = definitionNode.text.strip().strip(':').strip()  #Whether an item stars with a space and then a colon or vice versa is inconsistent
