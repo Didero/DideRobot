@@ -48,7 +48,7 @@ class Command(CommandTemplate):
 
 		#Check if there are any definitions
 		if xmldata.find('entry') is None:
-			return message.reply("No definition found for '{}', sorry".format(message.message))
+			return message.reply("No definition of that term found, sorry".format(message.message))
 
 		#Definition(s) found. List as many as we can
 		entriesSkipped = 0
