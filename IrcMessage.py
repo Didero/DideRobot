@@ -45,6 +45,10 @@ class IrcMessage(object):
 			elif self.rawText.startswith(bot.nickname + ": ") and len(self.rawText) > len(bot.nickname) + 2:
 				self.trigger = self.rawText.split(" ", 2)[1].strip().lower()
 				self.message = self.rawText[len(bot.nickname) + len(self.trigger) + 3:].lstrip()  #+3 because of the colon and space
+			#In private messages we should respond too if there's no command character, because there's no other reason to PM a bot
+			elif self.isPrivateMessage:
+				self.trigger = self.rawText.split(" ", 1)[0].lower()
+				self.message = self.rawText[len(self.trigger)+1:]
 			else:
 				self.trigger = None
 				self.message = self.rawText
