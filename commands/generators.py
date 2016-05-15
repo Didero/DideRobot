@@ -15,8 +15,8 @@ class Command(CommandTemplate):
 
 	def onLoad(self):
 		# Set in 'onLoad' so referencing the methods actually works
-		self.generators = {"creature": self.generateCreature, "name": self.generateName, "samAndMax": self.generateSamAndMaxSentence,
-						   "superhero": self.generateSuperhero, "videogame": self.generateVideogame,
+		self.generators = {"creature": self.generateCreature, "dndchar": self.generateDndCharacter, "name": self.generateName,
+						   "samAndMax": self.generateSamAndMaxSentence, "superhero": self.generateSuperhero, "videogame": self.generateVideogame,
 						   "word": self.generateWord, "word2": self.generateWord2}
 		self.helptext += ", ".join(sorted(self.generators.keys()))
 
@@ -423,3 +423,12 @@ class Command(CommandTemplate):
 			gamenames.append(" ".join(gamenameparts))
 
 		return "; ".join(gamenames)
+
+	def generateDndCharacter(self, extraArgument=None):
+		description = self.parseGrammarFile("AgressiveDndCharGenerator.grammar")
+		if extraArgument == 'clean':
+			description = description.replace('give a fuck', 'give a hoot')
+			for swearword in ('shit', 'fucking'):
+				description = description.replace(swearword, '')
+			description = description.replace('  ', ' ').replace('--', '')
+		return description
