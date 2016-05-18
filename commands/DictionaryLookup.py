@@ -55,8 +55,13 @@ class Command(CommandTemplate):
 		definitionsSkipped = 0
 		replytext = SharedFunctions.makeTextBold(message.message) + ':'
 		for entry in xmldata.findall('entry'):
-			#The API returns terms containing the search term too. If the entry isn't literally the search term, skip it
-			entryword = entry.find('ew').text.lower()
+			#Sometimes entries don't have a word field for some reason, skip those since they're useless stubs
+			entryword = entry.find('ew')
+			if entryword is None:
+				continue
+			#The API returns terms containing the search term too (for instance 'test-case' when searching for 'test')
+			#  So if the entry isn't literally the search term, skip it
+			entryword = entryword.text.lower()
 			if entryword != searchQuery:
 				continue
 			#First check if the required fields exist
