@@ -8,7 +8,7 @@ from IrcMessage import IrcMessage
 
 class Command(CommandTemplate):
 	triggers = ['startrektip', 'startrektips', 'sttip', 'sttips']
-	helptext = "Shows a randomly chosen tip from one of the Star Trek Tips accounts, or of a specific one if a name is provided. Add a regex search after the name to search for a specific tip"
+	helptext = "Shows a tip from the provided Star Trek character, or a random one. Add a (regex) search after the name to search for a specific tip"
 	scheduledFunctionTime = 21600.0  #Six hours in seconds
 
 	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'laforge': 'LaForgeTips', 'locutus': 'LocutusTips', 'picard': 'PicardTips',
@@ -16,6 +16,10 @@ class Command(CommandTemplate):
 	# Not all 'tips' are actually tips. This is a list of a replacement term to use if 'tip' is not accurate. It replaces the entire part before the colon
 	resultPrefix = {'rikergoogling': "Riker searched", 'worfemail': "Worf's Outbox"}
 	isUpdating = False
+
+	def onLoad(self):
+		#Add the available names to the helptext
+		self.helptext += ". Available names are: " + ", ".join(sorted(self.twitterUsernames.keys()))
 
 	def executeScheduledFunction(self):
 		GlobalStore.reactor.callInThread(self.updateTwitterMessages)
