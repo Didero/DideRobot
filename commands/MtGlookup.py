@@ -570,7 +570,7 @@ class Command(CommandTemplate):
 		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		setsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
-		latestFormatVersion = "3.4.0"
+		latestFormatVersion = "3.4.1"
 
 		storedVersion = "0.00"
 		storedFormatVersion = "0.00"
@@ -646,8 +646,8 @@ class Command(CommandTemplate):
 
 			newcardstore = {}
 			setstore = {'_setsWithBoosterpacks': []}
-			keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'number', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
-			layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme', 'leveler')
+			keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
+			layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme')
 			numberKeysToMakeString = ('cmc', 'hand', 'life', 'loyalty', 'multiverseid')
 			listKeysToMakeString = ('colors', 'names')
 			keysToFormatNicer = ('flavor', 'manacost', 'text')
@@ -743,8 +743,8 @@ class Command(CommandTemplate):
 							if keyToRemove in card:
 								del card[keyToRemove]
 
-						#No need to store there's nothing special about the card's layout
-						if 'layout' in card and card['layout'] in layoutTypesToRemove:
+						#No need to store there's nothing special about the card's layout or if the special-ness is already evident from the text
+						if card['layout'] in layoutTypesToRemove:
 							del card['layout']
 
 						#The 'Colors' field benefits from some ordering, for readability.
