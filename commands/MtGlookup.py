@@ -530,6 +530,9 @@ class Command(CommandTemplate):
 			cardname, carddata = cardstore.popitem()
 			if properSetname not in carddata[1]:
 				continue
+			#Skip cards whose number ends with 'b', since they're the backside of doublefaced cards or the upside-down part of split cards
+			if carddata[0]['number'].endswith('b'):
+				continue
 			if collectTypes:
 				for typeName, typeRegex in typesToCollect:
 					if typeRegex.search(carddata[0]['type']):
