@@ -600,7 +600,10 @@ class Command(CommandTemplate):
 		#Download the latest version file
 		url = "http://mtgjson.com/json/version-full.json"
 		newversionfilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
-		urllib.urlretrieve(url, newversionfilename)
+		success, extraInfo = SharedFunctions.downloadFile(url, newversionfilename)
+		if not success:
+			self.logError("[MTG] Error occurred while trying to download version file: " + extraInfo.message)
+			return "Unable to download version file."
 
 		#Load in that version file
 		with open(newversionfilename) as newversionfile:
@@ -626,9 +629,13 @@ class Command(CommandTemplate):
 		if forceUpdate or latestVersion != storedVersion or latestFormatVersion != storedFormatVersion or not os.path.exists(cardsJsonFilename) or not os.path.exists(setsJsonFilename):
 			self.areCardfilesInUse = True
 			self.logInfo("[MtG] Updating card database!")
+
 			url = "http://mtgjson.com/json/AllSets.json.zip"  #Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
 			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
-			urllib.urlretrieve(url, cardzipFilename)
+			success, extraInfo = SharedFunctions.downloadFile(url, cardzipFilename)
+			if not success:
+				self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo.message)
+				return "Something went wrong while trying to download the card file."
 
 			#Since it's a zip, extract it
 			zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
