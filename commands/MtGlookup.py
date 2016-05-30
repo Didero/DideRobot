@@ -40,7 +40,7 @@ class Command(CommandTemplate):
 
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
 		if searchType == 'update' or searchType == 'forceupdate':
-			shouldForceUpdate = True if message.message.lower() == 'forceupdate' else False
+			shouldForceUpdate = searchType == 'forceupdate'
 			if self.areCardfilesInUse:
 				replytext = "I'm already updating!"
 			elif not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
@@ -472,9 +472,8 @@ class Command(CommandTemplate):
 			for setname in setdata:
 				if setname == '_setsWithBoosterpacks':
 					continue
-				#Match found!
 				if askedSetnameRegex.search(setname):
-					#If we hadn't found a match previously, store this name
+					#Match found! If we hadn't found a match previously, store this name
 					if properSetname == u'':
 						properSetname = setname
 					else:
@@ -573,10 +572,10 @@ class Command(CommandTemplate):
 
 		latestFormatVersion = "3.4.0"
 
-		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
 		storedVersion = "0.00"
 		storedFormatVersion = "0.00"
 		latestVersion = ""
+		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
 		#Load in the currently stored version number
 		if not os.path.exists(versionFilename):
 			self.logWarning("[MtG] No old card database version file found!")
@@ -606,7 +605,7 @@ class Command(CommandTemplate):
 				versiondata = json.load(newversionfile)
 			except ValueError:
 				self.logError("[MtG] Downloaded version file is not valid JSON!")
-				return "Downloaded version file could not be read as a JSON file"
+				return "Downloaded version file could not be read as a JSON file."
 
 			if 'version' in versiondata:
 				latestVersion = versiondata['version']
@@ -614,7 +613,7 @@ class Command(CommandTemplate):
 				self.logError("[MtG] Unexpected contents of downloaded version file:")
 				for key, value in versiondata.iteritems():
 					self.logWarning(" {}: {}".format(key, value))
-				return "Something went wrong when trying to read the downloaded version file"
+				return "Something went wrong when trying to read the downloaded version file."
 		if latestVersion == "":
 			return "Something went wrong, the latest MtG database version number could not be retrieved."
 
