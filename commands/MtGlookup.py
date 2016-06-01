@@ -531,7 +531,7 @@ class Command(CommandTemplate):
 			if properSetname not in carddata[1]:
 				continue
 			#Skip cards whose number ends with 'b', since they're the backside of doublefaced cards or the upside-down part of split cards
-			if carddata[0]['number'].endswith('b'):
+			if 'number' in carddata[0] and carddata[0]['number'].endswith('b'):
 				continue
 			if collectTypes:
 				for typeName, typeRegex in typesToCollect:
