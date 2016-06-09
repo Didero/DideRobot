@@ -22,8 +22,7 @@ class Command(CommandTemplate):
 	areCardfilesInUse = False
 
 	def executeScheduledFunction(self):
-		GlobalStore.reactor.callInThread(self.updateCardFile)
-		GlobalStore.reactor.callInThread(self.updateDefinitions)
+		self.updateData(False)
 
 	def execute(self, message):
 		"""
@@ -46,8 +45,7 @@ class Command(CommandTemplate):
 			elif not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				replytext = "Sorry, only admins can use my update function"
 			else:
-				replytext = self.updateCardFile(shouldForceUpdate)
-				replytext += " " + self.updateDefinitions()
+				success, replytext = self.updateData(shouldForceUpdate)
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.scheduledFunctionTimer.reset()
 			message.reply(replytext)
@@ -566,12 +564,43 @@ class Command(CommandTemplate):
 			replytext += "{}: {}. ".format(rarityText, cardlist)
 		return (True, replytext)
 
+	def downloadCardDataset(self):
+		url = "http://mtgjson.com/json/AllSets.json.zip"  # Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
+		cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
+		success, extraInfo = SharedFunctions.downloadFile(url, cardzipFilename)
+		if not success:
+			self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo.message)
+			return (False, "Something went wrong while trying to download the card file.")
 
-	def updateCardFile(self, forceUpdate=False):
+		# Since it's a zip, extract it
+		zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
+		newcardfilename = os.path.join(GlobalStore.scriptfolder, 'data', zipWithJson.namelist()[0])
+		if os.path.exists(newcardfilename):
+			os.remove(newcardfilename)
+		zipWithJson.extractall(os.path.join(GlobalStore.scriptfolder, 'data'))
+		zipWithJson.close()
+		# We don't need the zip anymore
+		os.remove(cardzipFilename)
+		return (True, newcardfilename)
+
+	def updateData(self, forceUpdate=False):
+		success, result = self.downloadCardDataset()
+		if not success:
+			#If the download failed, 'result' is the error message
+			self.logError("[MTG] Update cancelled because of download error")
+			return (False, result)
+		else:
+			#If the download succeeded, 'result' is the full filename
+			replytext = self.updateCardFile(forceUpdate, result)
+			replytext += " " + self.updateDefinitions()
+			os.remove(result)
+			return (True, replytext)
+
+	def updateCardFile(self, forceUpdate=False, cardDatasetFilename=None):
 		starttime = time.time()
 		replytext = ""
-		cardsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
-		setsJsonFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
+		cardStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
+		setStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
 		latestFormatVersion = "3.4.1"
 
@@ -599,16 +628,16 @@ class Command(CommandTemplate):
 
 		#Download the latest version file
 		url = "http://mtgjson.com/json/version-full.json"
-		newversionfilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
-		success, extraInfo = SharedFunctions.downloadFile(url, newversionfilename)
+		latestVersionFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
+		success, extraInfo = SharedFunctions.downloadFile(url, latestVersionFilename)
 		if not success:
 			self.logError("[MTG] Error occurred while trying to download version file: " + extraInfo.message)
 			return "Unable to download version file."
 
 		#Load in that version file
-		with open(newversionfilename) as newversionfile:
+		with open(latestVersionFilename) as latestVersionFile:
 			try:
-				versiondata = json.load(newversionfile)
+				versiondata = json.load(latestVersionFile)
 			except ValueError:
 				self.logError("[MtG] Downloaded version file is not valid JSON!")
 				return "Downloaded version file could not be read as a JSON file."
@@ -626,33 +655,28 @@ class Command(CommandTemplate):
 		self.logInfo("[MTG] Done version-checking at {} seconds in".format(time.time() - starttime))
 
 		#Now let's check if we need to update the cards
-		if forceUpdate or latestVersion != storedVersion or latestFormatVersion != storedFormatVersion or not os.path.exists(cardsJsonFilename) or not os.path.exists(setsJsonFilename):
+		if forceUpdate or latestVersion != storedVersion or latestFormatVersion != storedFormatVersion or not os.path.exists(cardStoreFilename) or not os.path.exists(setStoreFilename):
 			self.areCardfilesInUse = True
 			self.logInfo("[MtG] Updating card database!")
 
-			url = "http://mtgjson.com/json/AllSets.json.zip"  #Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
-			cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
-			success, extraInfo = SharedFunctions.downloadFile(url, cardzipFilename)
-			if not success:
-				self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo.message)
-				return "Something went wrong while trying to download the card file."
-
-			#Since it's a zip, extract it
-			zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
-			newcardfilename = os.path.join(GlobalStore.scriptfolder, 'data', zipWithJson.namelist()[0])
-			if os.path.exists(newcardfilename):
-				os.remove(newcardfilename)
-			zipWithJson.extractall(os.path.join(GlobalStore.scriptfolder, 'data'))
-			zipWithJson.close()
-			#We don't need the zip anymore
-			os.remove(cardzipFilename)
+			#If the card dataset hasn't already been downloaded, download it now
+			if cardDatasetFilename is None:
+				success, result = self.downloadCardDataset()
+				if not success:
+					self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo.message)
+					return result
+				else:
+					newCardDatasetFilename = result
+			else:
+				newCardDatasetFilename = cardDatasetFilename
 
 			#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
-			downloadedCardstore = {}
-			with open(newcardfilename, 'r') as newcardfile:
+			with open(newCardDatasetFilename, 'r') as newcardfile:
 				downloadedCardstore = json.load(newcardfile)
 			#Remove the file downloaded from MTGjson.com, since we've got the data in memory now
-			os.remove(newcardfilename)
+			# (If it was us that downloaded the file, at least)
+			if cardDatasetFilename is None:
+				os.remove(newCardDatasetFilename)
 
 			newcardstore = {}
 			setstore = {'_setsWithBoosterpacks': []}
@@ -670,7 +694,7 @@ class Command(CommandTemplate):
 				#Remove brackets around mana cost
 				if '{' in text:
 					text = text.replace('}{', ' ').replace('{', '').replace('}', '')
-				#Replace newlines with spaces. If the sentence adds in a letter, add a period
+				#Replace newlines with spaces. If the sentence ends in a letter, add a period
 				text = re.sub('(?<=\w)\n', '. ', text).replace('\n', ' ')
 				#Prevent double spaces
 				text = text.replace('  ', ' ').strip()
@@ -796,15 +820,15 @@ class Command(CommandTemplate):
 					newcardstore[cardname][1][setData['name']] = cardSetInfo
 
 			#First delete the original files
-			if os.path.exists(cardsJsonFilename):
-				os.remove(cardsJsonFilename)
-			if os.path.exists(setsJsonFilename):
-				os.remove(setsJsonFilename)
+			if os.path.exists(cardStoreFilename):
+				os.remove(cardStoreFilename)
+			if os.path.exists(setStoreFilename):
+				os.remove(setStoreFilename)
 			#Save the new databases to disk
-			with open(cardsJsonFilename, 'w') as cardfile:
+			with open(cardStoreFilename, 'w') as cardfile:
 				#json.dump(cards, cardfile) #This is dozens of seconds slower than below
 				cardfile.write(json.dumps(newcardstore))
-			with open(setsJsonFilename, 'w') as setsfile:
+			with open(setStoreFilename, 'w') as setsfile:
 				setsfile.write(json.dumps(setstore))
 
 			#Replace the old version file with the new one
@@ -812,12 +836,12 @@ class Command(CommandTemplate):
 			with open(versionFilename, 'w') as versionFile:
 				versionFile.write(json.dumps(versiondata))
 
-			replytext = "MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/changeog.html).".format(storedVersion, latestVersion)
+			replytext = "MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/changelog.html).".format(storedVersion, latestVersion)
 		#No update was necessary
 		else:
 			replytext = "No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
 
-		os.remove(newversionfilename)
+		os.remove(latestVersionFilename)
 		urllib.urlcleanup()
 		self.areCardfilesInUse = False
 		self.logInfo("[MtG] updating database took {} seconds".format(time.time() - starttime))
