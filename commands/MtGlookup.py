@@ -915,9 +915,9 @@ class Command(CommandTemplate):
 						#If this is a new definition, add it, after cleaning it up a bit
 						definition = definition.rstrip(')')
 						#Some definitions start with a cost, remove that
-						while definition.startswith('{'):
-							definition = definition[definition.find('}') + 1:]
-						definition.lstrip(':').lstrip()
+						if definition.startswith('{'):
+							definition = definition[definition.find(':') + 1:]
+						definition = definition.strip()
 						#Some explanations mention the current card name. Generalize the definition
 						definition = definition.replace(card['name'], 'this card')
 						#Finally, add the term and definition!
