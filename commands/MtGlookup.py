@@ -22,7 +22,7 @@ class Command(CommandTemplate):
 	areCardfilesInUse = False
 
 	def executeScheduledFunction(self):
-		self.updateData(False)
+		GlobalStore.reactor.callInThread(self.updateData, False)
 
 	def execute(self, message):
 		"""
