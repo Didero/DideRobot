@@ -424,7 +424,6 @@ class Command(CommandTemplate):
 			if len(replytext) > maxMessageLength:
 				splitIndex = replytext[:maxMessageLength].rfind(' ')
 				textRemainder = replytext[splitIndex+1:]
-				print "[MTG] text '{}' is too long ({:,} chars), splitting at index {:,}".format(replytext, len(replytext), splitIndex)
 				replytext = replytext[:splitIndex] + ' [...]'
 				#If we do need to add the full definition, split it up properly
 				if addExtendedInfo:
