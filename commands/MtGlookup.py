@@ -911,6 +911,9 @@ class Command(CommandTemplate):
 						if end.isdigit() or end == 'x':
 							parts = term.split(' ')
 							term = ' '.join(parts[:-1])
+					#For some keywords, the card description just doesn't work that well. Ignore those, and get those from Wikipedia later on
+					if term in ('kicker', 'multikicker'):
+						continue
 					if term not in definitions:
 						#If this is a new definition, add it, after cleaning it up a bit
 						definition = definition.rstrip(')')
