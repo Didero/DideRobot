@@ -441,13 +441,14 @@ class Command(CommandTemplate):
 		#Multiple matching definitions found
 		else:
 			if searchterm in possibleDefinitions:
-				possibleDefinitions.remove(searchterm)
-				possibleDefinitionsCount -= 1
-				replytext = "{}: {} ({:,} more matches)".format(searchterm, definitions[searchterm][:maxMessageLength-18], possibleDefinitionsCount)  #-18 to account for the added text
+				replytext = "{}: {}".format(searchterm, definitions[searchterm])
+				if len(replytext) > maxMessageLength - 18:  #-18 to account for the added text later
+					replytext = replytext[:maxMessageLength-24] + ' [...]'
+				replytext += " ({:,} more matches)".format(possibleDefinitionsCount-1)  
 			else:
 				replytext = "Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
-			if possibleDefinitionsCount < 10:
-				replytext += ": {}".format(u"; ".join(possibleDefinitions))
+				if possibleDefinitionsCount < 10:
+					replytext += ": {}".format(u"; ".join(possibleDefinitions))
 		return replytext
 
 
