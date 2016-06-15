@@ -390,53 +390,66 @@ class Command(CommandTemplate):
 			else:
 				GlobalStore.reactor.callInThread(self.updateDefinitions)
 				return "I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
+
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
 			definitions = json.load(definitionsFile)
-		searchterm = " ".join(message.messageParts[1:]).lower()
-		try:
-			searchRegex = re.compile(searchterm)
-		except re.error:
-			return "That is not valid regex. Please check for typos, and try again"
+
+		maxMessageLength = 300
 		possibleDefinitions = []
-		for keyword in definitions:
-			if re.search(searchRegex, keyword):
-				possibleDefinitions.append(keyword)
-		if len(possibleDefinitions) == 0:
-			#If nothing was found, search again, but this time check the definitions themselves
-			for keyword, defdict in definitions.iteritems():
-				if re.search(searchRegex, defdict['short']):
-					possibleDefinitions.append(keyword)
+
+		searchterm = " ".join(message.messageParts[1:]).lower()
+		if searchterm == 'random':
+			possibleDefinitions = [random.choice(definitions.keys())]
+		else:
+			try:
+				searchRegex = re.compile(searchterm)
+			except re.error:
+				return "That is not valid regex. Please check for typos, and try again"
+
+			for term in definitions:
+				if re.search(searchRegex, term):
+					possibleDefinitions.append(term)
+			if len(possibleDefinitions) == 0:
+				#If nothing was found, search again, but this time check the definitions themselves
+				for term, definition in definitions.iteritems():
+					if re.search(searchRegex, definition):
+						possibleDefinitions.append(term)
+
 		possibleDefinitionsCount = len(possibleDefinitions)
 		if possibleDefinitionsCount == 0:
 			return "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
 		elif possibleDefinitionsCount == 1:
-			keyword = possibleDefinitions[0]
-			replytext = "{}: {}.".format(keyword, definitions[keyword]['short'])
-			currentReplyLength = len(replytext)
-			if addExtendedInfo and 'extra' in definitions[keyword]:
-				replytext += " " + definitions[keyword]['extra']
-				#MORE INFO
-				maxLength = 300
-				if not message.isPrivateMessage and currentReplyLength + len(definitions[keyword]['extra']) > maxLength:
-					textLeft = replytext[maxLength:]
-					replytext = replytext[:maxLength] + " [continued in notices]"
-					counter = 1
-					while len(textLeft) > 0:
-						GlobalStore.reactor.callLater(0.2 * counter, message.bot.sendMessage, message.userNickname, u"({}) {}".format(counter + 1, textLeft[:maxLength]), 'notice')
-						textLeft = textLeft[maxLength:]
-						counter += 1
-			return replytext
+			replytext = "{}: {}".format(possibleDefinitions[0], definitions[possibleDefinitions[0]])
+			#Limit the message length
+			if len(replytext) > maxMessageLength:
+				splitIndex = replytext[:maxMessageLength].rfind(' ')
+				textRemainder = replytext[splitIndex+1:]
+				print "[MTG] text '{}' is too long ({:,} chars), splitting at index {:,}".format(replytext, len(replytext), splitIndex)
+				replytext = replytext[:splitIndex] + ' [...]'
+				#If we do need to add the full definition, split it up properly
+				if addExtendedInfo:
+					#If it's a private message, we don't have to worry about spamming, so just dump the full thing
+					if message.isPrivateMessage:
+						GlobalStore.reactor.callLater(0.2, message.bot.sendMessage, message.userNickname, textRemainder)
+					# If it's in a public channel, send the message via notices
+					else:
+						counter = 1
+						while len(textRemainder) > 0:
+							GlobalStore.reactor.callLater(0.2 * counter, message.bot.sendMessage, message.userNickname,
+														  u"({}) {}".format(counter + 1, textRemainder[:maxMessageLength]), 'notice')
+							textRemainder = textRemainder[maxMessageLength:]
+							counter += 1
+		#Multiple matching definitions found
 		else:
 			if searchterm in possibleDefinitions:
 				possibleDefinitions.remove(searchterm)
 				possibleDefinitionsCount -= 1
-				replytext = "{}: {}; {:,} more matching definitions found".format(searchterm, definitions[searchterm]['short'], possibleDefinitionsCount)
+				replytext = "{}: {} ({:,} more matches)".format(searchterm, definitions[searchterm][:maxMessageLength-18], possibleDefinitionsCount)  #-18 to account for the added text
 			else:
 				replytext = "Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
 			if possibleDefinitionsCount < 10:
 				replytext += ": {}".format(u"; ".join(possibleDefinitions))
-			replytext += "."
-			return replytext
+		return replytext
 
 
 	@staticmethod
@@ -592,7 +605,7 @@ class Command(CommandTemplate):
 		else:
 			#If the download succeeded, 'result' is the full filename
 			replytext = self.updateCardFile(forceUpdate, result)
-			replytext += " " + self.updateDefinitions()
+			replytext += " " + self.updateDefinitions(result)
 			os.remove(result)
 			return (True, replytext)
 
@@ -847,13 +860,71 @@ class Command(CommandTemplate):
 		self.logInfo("[MtG] updating database took {} seconds".format(time.time() - starttime))
 		return replytext
 
-	def updateDefinitions(self):
+	def updateDefinitions(self, cardstoreLocation=None):
 		starttime = time.time()
-		definitions = {}
-		textCutoffLength = 200
-		replytext = "Nothing happened..."
-
 		self.areCardfilesInUse = True
+
+		if cardstoreLocation is None:
+			#Download the file ourselves
+			success, result = self.downloadCardDataset()
+			if not success:
+				self.logError("[MTG] Error occurred while downloading file to update definitions!")
+				return "Sorry, I couldn't download the card file to get the definitions from"
+			else:
+				cardstoreLocation = result
+				deleteCardstore = True
+		else:
+			deleteCardstore = False
+
+		definitions = {}
+		with open(cardstoreLocation, 'r') as cardfile:
+			cardstore = json.load(cardfile)
+		if deleteCardstore:
+			os.remove(cardstoreLocation)
+
+		#Go through all the cards to get the reminder text
+		for setcount in xrange(0, len(cardstore)):
+			setcode, setdata = cardstore.popitem()
+			for cardcount in xrange(0, len(setdata['cards'])):
+				card = setdata['cards'].pop(0)
+				if 'text' not in card or '(' not in card['text']:
+					continue
+				lines = card['text'].splitlines()
+				for line in lines:
+					if '(' not in line:
+						continue
+					term, definition = line.split('(', 1)
+					if term.count(' ') > 2:  # Make sure there aren't any sentences in there
+						continue
+					if ',' in term or ';' in term:  # Some cards list multiple keywords, ignore those since they're listed individually on other cards
+						continue
+					if '{' in term:
+						#Get the term without any mana costs
+						term = term.split('{', 1)[0]
+					if u'\u2014' in term:  # This is the special dash, which is sometimes used in costs too
+						term = term.split(u'\u2014', 1)[0]
+					term = term.rstrip().lower()
+					if len(term) == 0:
+						continue
+					# Check to see if the term ends with mana costs. If it does, strip that off
+					if ' ' in term:
+						end = term.split(' ')[-1]
+						if end.isdigit() or end == 'x':
+							parts = term.split(' ')
+							term = ' '.join(parts[:-1])
+					if term not in definitions:
+						#If this is a new definition, add it, after cleaning it up a bit
+						definition = definition.rstrip(')')
+						#Some definitions start with a cost, remove that
+						while definition.startswith('{'):
+							definition = definition[definition.find('}') + 1:]
+						definition.lstrip(':').lstrip()
+						#Some explanations mention the current card name. Generalize the definition
+						definition = definition.replace(card['name'], 'this card')
+						#Finally, add the term and definition!
+						definitions[term] = definition
+
+		#Then get possibly missed keyword definitions and slang term meanings from other sites
 		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content"),
 			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-body")]
 		try:
@@ -864,9 +935,8 @@ class Command(CommandTemplate):
 					#On MTGSalvation, sections are sorted into alphabetized subsections. Ignore the letter headers
 					if len(keyword) <= 1:
 						continue
-					#Report duplicate definitions, and keep the original
+					#Don't overwrite any definitions
 					if keyword in definitions:
-						self.logWarning("[MTG] [DefinitionsUpdate] Duplicate definition: '{}'".format(keyword))
 						continue
 					#Cycle through all the paragraphs following the header
 					currentParagraph = defHeader.next_sibling
@@ -881,14 +951,7 @@ class Command(CommandTemplate):
 						continue
 
 					#Split the found text into a short definition and a longer description
-					definitions[keyword] = {}
-					if len(paragraphText) < textCutoffLength:
-						definitions[keyword]['short'] = paragraphText
-					else:
-						splitIndex = paragraphText.rfind('.', 0, textCutoffLength)
-						definitions[keyword]['short'] = paragraphText[:splitIndex].lstrip()
-						definitions[keyword]['extra'] = paragraphText[splitIndex + 1:].lstrip()
-			self.logInfo("[MTG] Updating definitions took {} seconds".format(time.time() - starttime))
+					definitions[keyword] = paragraphText
 		except Exception as e:
 			self.logError("[MTG] [DefinitionsUpdate] An error ({}) occurred: {}".format(type(e), e.message))
 			traceback.print_exc()
@@ -897,12 +960,14 @@ class Command(CommandTemplate):
 				self.logError("[MTG] request headers:", e.request.headers)
 			except AttributeError:
 				self.logError(" no request attribute found")
-			replytext = "Definitions file NOT updated, check log for errors"
+			replytext = "Definitions file NOT entirely updated, check the log for errors"
 		else:
-			#Save the data to disk
-			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGdefinitions.json"), 'w') as definitionsFile:
-				definitionsFile.write(json.dumps(definitions))
 			replytext = "Definitions file successfully updated"
 		finally:
 			self.areCardfilesInUse = False
+
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'w') as defsFile:
+			defsFile.write(json.dumps(definitions))
+
+		self.logInfo("[MTG] Updating definitions took {} seconds".format(time.time() - starttime))
 		return replytext
