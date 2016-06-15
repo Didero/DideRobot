@@ -444,7 +444,7 @@ class Command(CommandTemplate):
 				replytext = "{}: {}".format(searchterm, definitions[searchterm])
 				if len(replytext) > maxMessageLength - 18:  #-18 to account for the added text later
 					replytext = replytext[:maxMessageLength-24] + ' [...]'
-				replytext += " ({:,} more matches)".format(possibleDefinitionsCount-1)  
+				replytext += " ({:,} more matches)".format(possibleDefinitionsCount-1)
 			else:
 				replytext = "Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
 				if possibleDefinitionsCount < 10:
@@ -913,7 +913,7 @@ class Command(CommandTemplate):
 							parts = term.split(' ')
 							term = ' '.join(parts[:-1])
 					#For some keywords, the card description just doesn't work that well. Ignore those, and get those from Wikipedia later on
-					if term in ('kicker', 'multikicker'):
+					if term in ('bolster', 'kicker', 'multikicker'):
 						continue
 					if term not in definitions:
 						#If this is a new definition, add it, after cleaning it up a bit
