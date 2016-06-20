@@ -1,6 +1,7 @@
 {
 "_name": "Creature Generator",
-"_description": "Generate the description of a creature",
+"_description": "Generates the description of a creature",
+"_triggers": ["creature"],
 "_start": "This creature is a <size> <creatureExistence>. It has <bodyDescription>. It is <colourDescription>. <specialPartsLine>",
 "size": ["mimiscule", "tiny", "small", "medium-sized", "large", "huge", "gargantuan", "collosal"],
 "creatureExistence": ["carnivore that typically <carnivoreBehaviour>", "herbivore that typically <herbivoreBehaviour>", "omnivore that typically <omnivoreBehaviour>"],
