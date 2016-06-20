@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import json, os, random, re, time, zipfile
+import gc, json, os, random, re, time, zipfile
 import traceback
 
 import requests
@@ -607,6 +607,8 @@ class Command(CommandTemplate):
 			replytext = self.updateCardFile(forceUpdate, result)
 			replytext += " " + self.updateDefinitions(result)
 			os.remove(result)
+			#Python is bad at clearing up memory and updating uses up quite a bit, so tell it to clean up its mess now
+			gc.collect()
 			return (True, replytext)
 
 	def updateCardFile(self, forceUpdate=False, cardDatasetFilename=None):
