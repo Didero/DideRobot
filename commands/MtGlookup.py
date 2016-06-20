@@ -419,7 +419,7 @@ class Command(CommandTemplate):
 		if possibleDefinitionsCount == 0:
 			return "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
 		elif possibleDefinitionsCount == 1:
-			replytext = "{}: {}".format(possibleDefinitions[0], definitions[possibleDefinitions[0]])
+			replytext = "{}: {}".format(SharedFunctions.makeTextBold(possibleDefinitions[0]), definitions[possibleDefinitions[0]])
 			#Limit the message length
 			if len(replytext) > maxMessageLength:
 				splitIndex = replytext[:maxMessageLength].rfind(' ')
@@ -441,7 +441,7 @@ class Command(CommandTemplate):
 		#Multiple matching definitions found
 		else:
 			if searchterm in possibleDefinitions:
-				replytext = "{}: {}".format(searchterm, definitions[searchterm])
+				replytext = "{}: {}".format(SharedFunctions.makeTextBold(searchterm), definitions[searchterm])
 				if len(replytext) > maxMessageLength - 18:  #-18 to account for the added text later
 					replytext = replytext[:maxMessageLength-24] + ' [...]'
 				replytext += " ({:,} more matches)".format(possibleDefinitionsCount-1)
@@ -855,7 +855,6 @@ class Command(CommandTemplate):
 			replytext = "No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
 
 		os.remove(latestVersionFilename)
-		urllib.urlcleanup()
 		self.areCardfilesInUse = False
 		self.logInfo("[MtG] updating database took {} seconds".format(time.time() - starttime))
 		return replytext
