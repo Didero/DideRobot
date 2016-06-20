@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import json, os, random, re, time, urllib, zipfile
+import json, os, random, re, time, zipfile
 import traceback
 
 import requests
