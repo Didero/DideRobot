@@ -103,7 +103,7 @@ class Command(CommandTemplate):
 					if text is None or text.startswith('\n'):
 						continue
 					if cleanUpText:
-						text = text.replace('\n', ' ').strip()
+						text = text.replace('\n', SharedFunctions.getGreySeparator()).strip()
 					#If there's no text in this pod (for instance if it's just an image)
 					if len(text) == 0:
 						continue
