@@ -117,7 +117,7 @@ class Command(CommandTemplate):
 				replystring += "Sorry, results were either images, irrelevant or non-existent"
 
 		if cleanUpText:
-			replystring = replystring.replace('  ', ' ')
+			replystring = re.sub(' {2,}', ' ', replystring)
 
 		#Make sure we don't spam the channel, keep message length limited
 		#  Shortened URL will be about 25 characters, keep that in mind
