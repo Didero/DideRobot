@@ -20,9 +20,11 @@ class Command(CommandTemplate):
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 
 	areCardfilesInUse = False
+	dataFormatVersion = '3.4.1'
 
 	def executeScheduledFunction(self):
-		GlobalStore.reactor.callInThread(self.updateData, False)
+		if self.shouldUpdate():
+			GlobalStore.reactor.callInThread(self.updateCardFile)
 
 	def execute(self, message):
 		"""
@@ -39,13 +41,14 @@ class Command(CommandTemplate):
 
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
 		if searchType == 'update' or searchType == 'forceupdate':
-			shouldForceUpdate = searchType == 'forceupdate'
 			if self.areCardfilesInUse:
 				replytext = "I'm already updating!"
 			elif not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				replytext = "Sorry, only admins can use my update function"
+			elif not searchType == 'forceupdate' and not self.shouldUpdate():
+				replytext = "I've already got all the latest card data, no update is needed"
 			else:
-				success, replytext = self.updateData(shouldForceUpdate)
+				success, replytext = self.updateCardFile()
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.scheduledFunctionTimer.reset()
 			message.reply(replytext)
@@ -56,13 +59,13 @@ class Command(CommandTemplate):
 			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')):
 				#If we don't have a version file, something's weird. Force an update to recreate all files properly
 				message.reply("I don't have a version file, for some reason. I'll make sure I have one by updating the card database, give me a minute")
-				self.executeScheduledFunction()
+				GlobalStore.reactor.callInThread(self.updateCardFile)
 				self.scheduledFunctionTimer.reset()
 			else:
 				#Version file's there, show the version number
 				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'r') as versionfile:
 					versions = json.load(versionfile)
-				message.reply("My card database is based on version {} from www.mtgjson.com".format(versions['version']))
+				message.reply("My card database is based on version {} from http://www.mtgjson.com".format(versions['dataVersion']))
 			#Regardless, we don't need to continue
 			return
 
@@ -77,7 +80,8 @@ class Command(CommandTemplate):
 				replytext = "I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
 			else:
 				replytext = "Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
-				GlobalStore.reactor.callInThread(self.updateCardFile, True)
+				GlobalStore.reactor.callInThread(self.updateCardFile)
+				self.scheduledFunctionTimer.reset()
 			message.reply(replytext)
 			return
 
@@ -261,7 +265,7 @@ class Command(CommandTemplate):
 				replytext += ")"
 
 		re.purge()  #Clear the stored regexes, since we don't need them anymore
-		message.bot.say(message.source, replytext)
+		message.reply(replytext)
 
 	@staticmethod
 	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None):
@@ -596,270 +600,232 @@ class Command(CommandTemplate):
 		os.remove(cardzipFilename)
 		return (True, newcardfilename)
 
-	def updateData(self, forceUpdate=False):
-		success, result = self.downloadCardDataset()
-		if not success:
-			#If the download failed, 'result' is the error message
-			self.logError("[MTG] Update cancelled because of download error")
-			return (False, result)
-		else:
-			#If the download succeeded, 'result' is the full filename
-			replytext = self.updateCardFile(forceUpdate, result)
-			replytext += " " + self.updateDefinitions(result)
-			os.remove(result)
-			#Python is bad at clearing up memory and updating uses up quite a bit, so tell it to clean up its mess now
-			gc.collect()
-			return (True, replytext)
+	def getLatestVersionNumber(self):
+		try:
+			latestVersion = requests.get("http://mtgjson.com/json/version.json", timeout=10.0).text.replace('"', '')
+		except requests.exceptions.Timeout:
+			self.logError("[MTG] Fetching card version timed out")
+			return (False, "Fetching online card version took too long")
+		latestVersion = latestVersion.replace('"', '')  #Version is a quoted string, remove the quotes
+		return (True, latestVersion)
 
-	def updateCardFile(self, forceUpdate=False, cardDatasetFilename=None):
+	def shouldUpdate(self):
+		basepath = os.path.join(GlobalStore.scriptfolder, 'data')
+		#If one of the required files doesn't exist, we should update
+		for filename in ('MTGversion', 'MTGcards', 'MTGsets'):
+			if not os.path.exists(os.path.join(basepath, filename + '.json')):
+				return True
+		with open(os.path.join(basepath, 'MTGversion.json'), 'r') as versionfile:
+			versiondata = json.load(versionfile)
+		#We should fix the files if the version file is missing keys we need
+		for requiredKey in ('formatVersion', 'dataVersion', 'lastUpdateTime'):
+			if requiredKey not in versiondata:
+				return True
+		#We should update if the latest formatting version differs from the stored one
+		if versiondata['formatVersion'] != self.dataFormatVersion:
+			return True
+		#If the last update check has been recent, don't update (with some leniency to prevent edge cases)
+		if time.time() - versiondata['lastUpdateTime'] < self.scheduledFunctionTime - 5.0:
+			return False
+		#Get the latest online version to see if we're behind
+		success, result = self.getLatestVersionNumber()
+		if success and result != versiondata['dataVersion']:
+			return True
+		return False
+
+	def updateCardFile(self, shouldUpdateDefinitions=True):
 		starttime = time.time()
-		replytext = ""
 		cardStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		setStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
-		latestFormatVersion = "3.4.1"
-
-		storedVersion = "0.00"
-		storedFormatVersion = "0.00"
-		latestVersion = ""
-		versionFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
-		#Load in the currently stored version number
-		if not os.path.exists(versionFilename):
-			self.logWarning("[MtG] No old card database version file found!")
-		else:
-			with open(versionFilename) as oldversionfile:
-				oldversiondata = json.load(oldversionfile)
-				if 'version' in oldversiondata:
-					storedVersion = oldversiondata['version']
-				else:
-					self.logError("[MtG] Unexpected content of stored version file:")
-					for key, value in oldversiondata.iteritems():
-						self.logError("  {}: {}".format(key, value))
-					return "Something went wrong when reading the stored version number."
-				if '_formatVersion' in oldversiondata:
-					storedFormatVersion = oldversiondata['_formatVersion']
-				else:
-					self.logWarning("[MTG] No stored format version found")
-
-		#Download the latest version file
-		url = "http://mtgjson.com/json/version-full.json"
-		latestVersionFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
-		success, extraInfo = SharedFunctions.downloadFile(url, latestVersionFilename)
-		if not success:
-			self.logError("[MTG] Error occurred while trying to download version file: " + extraInfo.message)
-			return "Unable to download version file."
-
-		#Load in that version file
-		with open(latestVersionFilename) as latestVersionFile:
-			try:
-				versiondata = json.load(latestVersionFile)
-			except ValueError:
-				self.logError("[MtG] Downloaded version file is not valid JSON!")
-				return "Downloaded version file could not be read as a JSON file."
-
-			if 'version' in versiondata:
-				latestVersion = versiondata['version']
-			else:
-				self.logError("[MtG] Unexpected contents of downloaded version file:")
-				for key, value in versiondata.iteritems():
-					self.logWarning(" {}: {}".format(key, value))
-				return "Something went wrong when trying to read the downloaded version file."
-		if latestVersion == "":
-			return "Something went wrong, the latest MtG database version number could not be retrieved."
-
-		self.logInfo("[MTG] Done version-checking at {} seconds in".format(time.time() - starttime))
-
 		#Now let's check if we need to update the cards
-		if forceUpdate or latestVersion != storedVersion or latestFormatVersion != storedFormatVersion or not os.path.exists(cardStoreFilename) or not os.path.exists(setStoreFilename):
-			self.areCardfilesInUse = True
-			self.logInfo("[MtG] Updating card database!")
+		self.areCardfilesInUse = True
+		self.logInfo("[MtG] Updating card database!")
 
-			#If the card dataset hasn't already been downloaded, download it now
-			if cardDatasetFilename is None:
-				success, result = self.downloadCardDataset()
-				if not success:
-					self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo.message)
-					return result
-				else:
-					newCardDatasetFilename = result
-			else:
-				newCardDatasetFilename = cardDatasetFilename
-
-			#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
-			with open(newCardDatasetFilename, 'r') as newcardfile:
-				downloadedCardstore = json.load(newcardfile)
-			#Remove the file downloaded from MTGjson.com, since we've got the data in memory now
-			# (If it was us that downloaded the file, at least)
-			if cardDatasetFilename is None:
-				os.remove(newCardDatasetFilename)
-
-			newcardstore = {}
-			setstore = {'_setsWithBoosterpacks': []}
-			keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
-			layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme')
-			numberKeysToMakeString = ('cmc', 'hand', 'life', 'loyalty', 'multiverseid')
-			listKeysToMakeString = ('colors', 'names')
-			keysToFormatNicer = ('flavor', 'manacost', 'text')
-			raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
-			raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s'}  #Non-standard rarities are interpreted as regexes for type
-			rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls
-			# This function will be called on the 'keysToFormatNicer' keys
-			#  Made into a function, because it's used in two places
-			def formatNicer(text):
-				#Remove brackets around mana cost
-				if '{' in text:
-					text = text.replace('}{', ' ').replace('{', '').replace('}', '')
-				#Replace newlines with spaces. If the sentence ends in a letter, add a period
-				text = re.sub('(?<=\w)\n', '. ', text).replace('\n', ' ')
-				#Prevent double spaces
-				text = text.replace('  ', ' ').strip()
-				return text
-
-			#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
-			for setcount in xrange(0, len(downloadedCardstore)):
-				setcode, setData = downloadedCardstore.popitem()
-				#Put the cardlist in a separate variable, so we can store all the set information easily
-				cardlist = setData.pop('cards')
-				#The 'booster' set field is a bit verbose, make that shorter and easier to use
-				if 'booster' in setData:
-					#Keep a list of sets that have booster packs
-					setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
-					originalBoosterList = setData.pop('booster')
-					countedBoosterData = {}
-					for rarity in originalBoosterList:
-						#If the entry is a list, it's a list of possible choices for that card
-						#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
-						if isinstance(rarity, list):
-							#Remove useless options here too
-							for rarityToRemove in raritiesToRemove:
-								if rarityToRemove in rarity:
-									rarity.remove(rarityToRemove)
-							#Rename 'wrongly' named rarites
-							for r in raritiesToRename:
-								if r in rarity:
-									rarity.remove(r)
-									rarity.append(raritiesToRename[r])
-							#Check if any of the choices have a prefix that needs to be removed (use a copy so we can delete elements in the loop)
-							for choice in rarity[:]:
-								for rp in rarityPrefixesToRemove:
-									if choice.startswith(rp):
-										#Remove the original choice...
-										rarity.remove(choice)
-										#...and put in the choice without the prefix
-										rarity.append(choice[rarityPrefixesToRemove[rp]:])
-							#If we removed all options and just have an empty list now, replace it with a rare
-							if len(rarity) == 0:
-								rarity = 'rare'
-							#If we've removed all but one option, it's not a choice anymore, so treat it like a 'normal' rarity
-							elif len(rarity) == 1:
-								rarity = rarity[0]
-							else:
-								#If it's still a list, keep it like that
-								if '_choice' not in countedBoosterData:
-									countedBoosterData['_choice'] = [rarity]
-								else:
-									countedBoosterData['_choice'].append(rarity)
-								#...but don't do any of the other stuff
-								continue
-						#Some keys are dumb and useless ('marketing'). Ignore those
-						if rarity in raritiesToRemove:
-							continue
-						#Here the rarity for a basic land is called 'land', while in the cards themselves it's 'basic land'. Correct that
-						for rarityToRename in raritiesToRename:
-							if rarity == rarityToRename:
-								rarity = raritiesToRename[rarity]
-						#Remove any useless prefixes like 'foil'
-						for rp in rarityPrefixesToRemove:
-							if rarity.startswith(rp):
-								rarity = rarity[rarityPrefixesToRemove[rp]:]
-						#Finally, count the rarity
-						if rarity not in countedBoosterData:
-							countedBoosterData[rarity] = 1
-						else:
-							countedBoosterData[rarity] += 1
-					setData['booster'] = countedBoosterData
-				setstore[setData['name'].lower()] = setData
-
-				#Again, pop off cards when we need them, to save on memory
-				for cardcount in xrange(0, len(cardlist)):
-					card = cardlist.pop(0)
-					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
-
-					#If the card isn't in the store yet, parse its data
-					if cardname not in newcardstore:
-						#Remove some useless data to save some space, memory and time
-						for keyToRemove in keysToRemove:
-							if keyToRemove in card:
-								del card[keyToRemove]
-
-						#No need to store there's nothing special about the card's layout or if the special-ness is already evident from the text
-						if card['layout'] in layoutTypesToRemove:
-							del card['layout']
-
-						#The 'Colors' field benefits from some ordering, for readability.
-						if 'colors' in card:
-							card['colors'] = sorted(card['colors'])
-
-						#Remove the current card from the list of names this card also contains (for flip cards)
-						# (Saves on having to remove it later, and the presence of this field shows it's in there too)
-						if 'names' in card:
-							card['names'].remove(card['name'])
-
-						#Make sure all stored values are strings, that makes searching later much easier
-						for attrib in numberKeysToMakeString:
-							if attrib in card:
-								card[attrib] = unicode(card[attrib])
-						for attrib in listKeysToMakeString:
-							if attrib in card:
-								card[attrib] = u"; ".join(card[attrib])
-
-						#Make 'manaCost' lowercase, since we make the searchstring lowercase too, and we don't want to miss this
-						if 'manaCost' in card:
-							card['manacost'] = card['manaCost']
-							del card['manaCost']
-
-						for keyToFormat in keysToFormatNicer:
-							if keyToFormat in card:
-								card[keyToFormat] = formatNicer(card[keyToFormat])
-						#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
-						if 'text' not in card:
-							card['text'] = u""
-
-						#Add the card as a new entry, as a tuple with the card data first and set data second
-						newcardstore[cardname] = (card, {})
-
-					#New and already listed cards need their set info stored
-					cardSetInfo = {'rarity': card.pop('rarity')}
-					if 'flavor' in card:
-						cardSetInfo['flavor'] = formatNicer(card.pop('flavor'))
-					newcardstore[cardname][1][setData['name']] = cardSetInfo
-
-			#First delete the original files
-			if os.path.exists(cardStoreFilename):
-				os.remove(cardStoreFilename)
-			if os.path.exists(setStoreFilename):
-				os.remove(setStoreFilename)
-			#Save the new databases to disk
-			with open(cardStoreFilename, 'w') as cardfile:
-				#json.dump(cards, cardfile) #This is dozens of seconds slower than below
-				cardfile.write(json.dumps(newcardstore))
-			with open(setStoreFilename, 'w') as setsfile:
-				setsfile.write(json.dumps(setstore))
-
-			#Replace the old version file with the new one
-			versiondata['_formatVersion'] = latestFormatVersion
-			with open(versionFilename, 'w') as versionFile:
-				versionFile.write(json.dumps(versiondata))
-
-			replytext = "MtG card database successfully updated from version {} to {} (Changelog: http://mtgjson.com/changelog.html).".format(storedVersion, latestVersion)
-		#No update was necessary
+		#Download the wrongly-formatted (for our purposes) card data
+		success, result = self.downloadCardDataset()
+		if not success:
+			self.logError("[MTG] An error occurred while trying to download the card file: " + result.message)
+			return (False, result)
 		else:
-			replytext = "No card update needed, I already have the latest MtG card database version (v {}).".format(latestVersion)
+			cardDatasetFilename = result
 
-		os.remove(latestVersionFilename)
+		#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
+		with open(cardDatasetFilename, 'r') as newcardfile:
+			downloadedCardstore = json.load(newcardfile)
+
+		newcardstore = {}
+		setstore = {'_setsWithBoosterpacks': []}
+		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
+		layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme')
+		numberKeysToMakeString = ('cmc', 'hand', 'life', 'loyalty', 'multiverseid')
+		listKeysToMakeString = ('colors', 'names')
+		keysToFormatNicer = ('flavor', 'manacost', 'text')
+		raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
+		raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s'}  #Non-standard rarities are interpreted as regexes for type
+		rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls
+		# This function will be called on the 'keysToFormatNicer' keys
+		#  Made into a function, because it's used in two places
+		def formatNicer(text):
+			#Remove brackets around mana cost
+			if '{' in text:
+				text = text.replace('}{', ' ').replace('{', '').replace('}', '')
+			#Replace newlines with spaces. If the sentence ends in a letter, add a period
+			text = re.sub('(?<=\w)\n', '. ', text).replace('\n', ' ')
+			#Prevent double spaces
+			text = text.replace('  ', ' ').strip()
+			return text
+
+		#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
+		for setcount in xrange(0, len(downloadedCardstore)):
+			setcode, setData = downloadedCardstore.popitem()
+			#Put the cardlist in a separate variable, so we can store all the set information easily
+			cardlist = setData.pop('cards')
+			#The 'booster' set field is a bit verbose, make that shorter and easier to use
+			if 'booster' in setData:
+				#Keep a list of sets that have booster packs
+				setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
+				originalBoosterList = setData.pop('booster')
+				countedBoosterData = {}
+				for rarity in originalBoosterList:
+					#If the entry is a list, it's a list of possible choices for that card
+					#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
+					if isinstance(rarity, list):
+						#Remove useless options here too
+						for rarityToRemove in raritiesToRemove:
+							if rarityToRemove in rarity:
+								rarity.remove(rarityToRemove)
+						#Rename 'wrongly' named rarites
+						for r in raritiesToRename:
+							if r in rarity:
+								rarity.remove(r)
+								rarity.append(raritiesToRename[r])
+						#Check if any of the choices have a prefix that needs to be removed (use a copy so we can delete elements in the loop)
+						for choice in rarity[:]:
+							for rp in rarityPrefixesToRemove:
+								if choice.startswith(rp):
+									#Remove the original choice...
+									rarity.remove(choice)
+									#...and put in the choice without the prefix
+									rarity.append(choice[rarityPrefixesToRemove[rp]:])
+						#If we removed all options and just have an empty list now, replace it with a rare
+						if len(rarity) == 0:
+							rarity = 'rare'
+						#If we've removed all but one option, it's not a choice anymore, so treat it like a 'normal' rarity
+						elif len(rarity) == 1:
+							rarity = rarity[0]
+						else:
+							#If it's still a list, keep it like that
+							if '_choice' not in countedBoosterData:
+								countedBoosterData['_choice'] = [rarity]
+							else:
+								countedBoosterData['_choice'].append(rarity)
+							#...but don't do any of the other stuff
+							continue
+					#Some keys are dumb and useless ('marketing'). Ignore those
+					if rarity in raritiesToRemove:
+						continue
+					#Here the rarity for a basic land is called 'land', while in the cards themselves it's 'basic land'. Correct that
+					for rarityToRename in raritiesToRename:
+						if rarity == rarityToRename:
+							rarity = raritiesToRename[rarity]
+					#Remove any useless prefixes like 'foil'
+					for rp in rarityPrefixesToRemove:
+						if rarity.startswith(rp):
+							rarity = rarity[rarityPrefixesToRemove[rp]:]
+					#Finally, count the rarity
+					if rarity not in countedBoosterData:
+						countedBoosterData[rarity] = 1
+					else:
+						countedBoosterData[rarity] += 1
+				setData['booster'] = countedBoosterData
+			setstore[setData['name'].lower()] = setData
+
+			#Again, pop off cards when we need them, to save on memory
+			for cardcount in xrange(0, len(cardlist)):
+				card = cardlist.pop(0)
+				cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
+
+				#If the card isn't in the store yet, parse its data
+				if cardname not in newcardstore:
+					#Remove some useless data to save some space, memory and time
+					for keyToRemove in keysToRemove:
+						if keyToRemove in card:
+							del card[keyToRemove]
+
+					#No need to store there's nothing special about the card's layout or if the special-ness is already evident from the text
+					if card['layout'] in layoutTypesToRemove:
+						del card['layout']
+
+					#The 'Colors' field benefits from some ordering, for readability.
+					if 'colors' in card:
+						card['colors'] = sorted(card['colors'])
+
+					#Remove the current card from the list of names this card also contains (for flip cards)
+					# (Saves on having to remove it later, and the presence of this field shows it's in there too)
+					if 'names' in card:
+						card['names'].remove(card['name'])
+
+					#Make sure all stored values are strings, that makes searching later much easier
+					for attrib in numberKeysToMakeString:
+						if attrib in card:
+							card[attrib] = unicode(card[attrib])
+					for attrib in listKeysToMakeString:
+						if attrib in card:
+							card[attrib] = u"; ".join(card[attrib])
+
+					#Make 'manaCost' lowercase, since we make the searchstring lowercase too, and we don't want to miss this
+					if 'manaCost' in card:
+						card['manacost'] = card['manaCost']
+						del card['manaCost']
+
+					for keyToFormat in keysToFormatNicer:
+						if keyToFormat in card:
+							card[keyToFormat] = formatNicer(card[keyToFormat])
+					#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
+					if 'text' not in card:
+						card['text'] = u""
+
+					#Add the card as a new entry, as a tuple with the card data first and set data second
+					newcardstore[cardname] = (card, {})
+
+				#New and already listed cards need their set info stored
+				cardSetInfo = {'rarity': card.pop('rarity')}
+				if 'flavor' in card:
+					cardSetInfo['flavor'] = formatNicer(card.pop('flavor'))
+				newcardstore[cardname][1][setData['name']] = cardSetInfo
+
+		#First delete the original files
+		if os.path.exists(cardStoreFilename):
+			os.remove(cardStoreFilename)
+		if os.path.exists(setStoreFilename):
+			os.remove(setStoreFilename)
+		#Save the new databases to disk
+		with open(cardStoreFilename, 'w') as cardfile:
+			#json.dump(cards, cardfile) #This is dozens of seconds slower than below
+			cardfile.write(json.dumps(newcardstore))
+		with open(setStoreFilename, 'w') as setsfile:
+			setsfile.write(json.dumps(setstore))
+
+		#Store the new version data
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
+			versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': self.getLatestVersionNumber()[1], 'lastUpdateTime': time.time()}))
+
+		replytext = "MtG card database successfully updated (Changelog: http://mtgjson.com/changelog.html). "
+		if shouldUpdateDefinitions:
+			#Have the definitions updated too
+			replytext += self.updateDefinitions(cardDatasetFilename)[1]
+
+		#Since we don't need the cardfile anymore now, delete it
+		os.remove(cardDatasetFilename)
+
+		#Updating apparently uses up RAM that Python doesn't clear up soon or properly. Force it to
+		re.purge()
+		gc.collect()
+
 		self.areCardfilesInUse = False
 		self.logInfo("[MtG] updating database took {} seconds".format(time.time() - starttime))
-		return replytext
+		return (True, "Successfully updated the card database")
 
 	def updateDefinitions(self, cardstoreLocation=None):
 		starttime = time.time()
@@ -870,7 +836,7 @@ class Command(CommandTemplate):
 			success, result = self.downloadCardDataset()
 			if not success:
 				self.logError("[MTG] Error occurred while downloading file to update definitions!")
-				return "Sorry, I couldn't download the card file to get the definitions from"
+				return (False, "Sorry, I couldn't download the card file to get the definitions from")
 			else:
 				cardstoreLocation = result
 				deleteCardstore = True
@@ -974,4 +940,4 @@ class Command(CommandTemplate):
 			defsFile.write(json.dumps(definitions))
 
 		self.logInfo("[MTG] Updating definitions took {} seconds".format(time.time() - starttime))
-		return replytext
+		return (True, replytext)
