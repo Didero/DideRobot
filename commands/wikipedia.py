@@ -4,6 +4,7 @@ import requests
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
+import SharedFunctions
 
 class Command(CommandTemplate):
 	triggers = ['wikipedia', 'wiki', 'wikirandom']
@@ -69,7 +70,7 @@ class Command(CommandTemplate):
 					replytext = replytext[:lastSpaceIndex]
 				replytext += ' [...]'
 			#Add the URL
-			replytext += u' (http://en.wikipedia.org/wiki/{})'.format(pagedata['title'].replace(u' ', u'_'))
+			replytext += u'{}http://en.wikipedia.org/wiki/{}'.format(SharedFunctions.getGreySeparator(), pagedata['title'].replace(u' ', u'_'))
 			return (True, replytext)
 
 
