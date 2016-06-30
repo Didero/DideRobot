@@ -51,6 +51,8 @@ class Command(CommandTemplate):
 		xmltext = apireturn.text
 		#Wolfram sends errors back in HTML apparently. Check for that
 		if xmltext.startswith('<!DOCTYPE html>'):
+			self.logError("Wolfram API returned an HTML page:")
+			self.logError(xmltext)
 			return (False, "Sorry, Wolfram returned unusable data")
 		#Since Wolfram apparently doesn't really understand unicode, fix '\:XXXX' characters by turning them into their proper '\uXXXX' characters
 		#  (Thanks, ekimekim!)
@@ -131,6 +133,6 @@ class Command(CommandTemplate):
 			#If the message would get too long, shorten the result URL
 			if len(replystring) + len(searchUrl) > 300:
 				searchUrl = SharedFunctions.shortenUrl(searchUrl)[1]
-			replystring += " ({})".format(searchUrl)
+			replystring += "{}{}".format(SharedFunctions.getGreySeparator(), searchUrl)
 			
 		return replystring
