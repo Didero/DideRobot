@@ -19,7 +19,8 @@ class Command(CommandTemplate):
 	areCardfilesBeingUpdated = False
 
 	def executeScheduledFunction(self):
-		GlobalStore.reactor.callInThread(self.updateCardFile)
+		if self.shouldUpdate():
+			GlobalStore.reactor.callInThread(self.updateCardFile)
 
 	def execute(self, message):
 		"""
@@ -40,8 +41,10 @@ class Command(CommandTemplate):
 				replytext = "I'm already updating!"
 			elif not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				replytext = "Sorry, only admins can use my update function"
+			elif not searchType == 'forceupdate' and not self.shouldUpdate()[0]:
+				replytext = "The last update check was done pretty recently, there's no need to check again so soon"
 			else:
-				replytext = self.updateCardFile(searchType == 'forceupdate')[1]
+				replytext = self.updateCardFile()[1]
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.scheduledFunctionTimer.reset()
 			message.bot.say(message.source, replytext)
@@ -53,7 +56,7 @@ class Command(CommandTemplate):
 				replytext = "I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
 			else:
 				replytext = "Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
-				self.executeScheduledFunction()
+				GlobalStore.reactor.callInThread(self.updateCardFile())
 				self.scheduledFunctionTimer.reset()
 			message.bot.say(message.source, replytext)
 			return
@@ -267,8 +270,19 @@ class Command(CommandTemplate):
 		replytext = replytext.rstrip(separator).rstrip().encode('utf-8')
 		return replytext
 
+	def shouldUpdate(self):
+		# If we don't absolutely HAVE to update, check if our last update isn't too soon, to prevent work and traffic
+		versionfilename = os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCardsVersion.json')
+		if not os.path.exists(versionfilename):
+			return (True, "Version file does not exist")
+		else:
+			with open(versionfilename) as versionfile:
+				versiondata = json.load(versionfile)
+			if time.time() - versiondata['lastUpdateTime'] < self.scheduledFunctionTime - 5.0:
+				return (False, "Last update was less than 5 days ago, not updating now")
+		return (True, "Last update was more than 5 days ago, check needed")
 
-	def updateCardFile(self, forceupdate=False):
+	def updateCardFile(self):
 		starttime = time.time()
 		try:
 			requestReply = requests.get("http://netrunnerdb.com/api/cards", timeout=60.0)
@@ -279,16 +293,6 @@ class Command(CommandTemplate):
 		except ValueError:
 			self.logError("[Netrunner] Invalid JSON when updating card database:", requestReply.text)
 			return (False, "Invalid JSON data")
-
-		#If we don't absolutely HAVE to update, check if our last update isn't too soon, to prevent work and traffic
-		versionfilename = os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCardsVersion.json')
-		if not forceupdate:
-			if os.path.exists(versionfilename):
-				with open(versionfilename) as versionfile:
-					versiondata = json.load(versionfile)
-				if time.time() - versiondata['lastUpdateTime'] < 5.0 * 24.0 * 3600.0:
-					self.logInfo("[Netrunner] Not updating card database, last check less than 5 days ago")
-					return (False, "Last update was less than 5 days ago, not updating now")
 
 		self.areCardfilesBeingUpdated = True
 
@@ -326,15 +330,16 @@ class Command(CommandTemplate):
 
 			for field in keysToCheckForLength:
 				if field in card:
-					#If the field is, remove it from the card
+					#If the field is empty, remove it from the card
 					if len(card[field]) == 0:
 						del card[field]
 
 		#Save the carddata to file
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCards.json'), 'w') as cardfile:
 			cardfile.write(json.dumps(carddata))  #Faster than 'json.dump()' for some reason
-		#Update the last-updated date
-		with open(versionfilename, 'w') as versionfile:
+
+		#Store latest update time for future checks
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCardsVersion.json'), 'w') as versionfile:
 			versionfile.write(json.dumps({'lastUpdateTime': time.time()}))
 
 		#Done! Free the file read, log the update, and report our success
