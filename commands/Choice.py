@@ -28,8 +28,9 @@ class Command(CommandTemplate):
 		if message.messagePartsLength == 0:
 			replytext = "My choice would be to provide me with some choices, preferably separated by commas"
 		else:
-			choices = []
-			if ',' in message.message:
+			if ';' in message.message:
+				choices = message.message.split(';')
+			elif ',' in message.message:
 				choices = message.message.split(',')
 			else:
 				choices = message.messageParts
