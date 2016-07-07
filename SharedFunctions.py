@@ -65,6 +65,9 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 		except ValueError:
 			logger.error(u"Didn't get parsable JSON return from Twitter API: {}".format(req.text.replace('\n', '|')))
 			return (False, "Unexpected data returned", tweets)
+		except Exception as e:
+			logger.error("Tweet download threw an unexpected error: " + e.message)
+			return (False, "Unknown error occurred", tweets)
 
 		if len(apireply) == 0:
 			#No more tweets to parse!
