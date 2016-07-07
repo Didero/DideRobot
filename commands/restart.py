@@ -9,6 +9,7 @@ class Command(CommandTemplate):
 	triggers = ['restart', 'restartfull']
 	helptext = "Restarts the bot instance or the whole program"
 	adminOnly = True
+	stopAfterThisCommand = True
 
 	def execute(self, message):
 		"""
