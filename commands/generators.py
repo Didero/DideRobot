@@ -8,7 +8,7 @@ import GlobalStore
 
 class Command(CommandTemplate):
 	triggers = ['generate', 'gen']
-	helptext = "Generate random stories or words. Call a specific generator with '{commandPrefix}generate [genName]'. Available generators: "
+	helptext = "Generate random stories or words. Call a specific generator with '{commandPrefix}generate [genName]'. Enter 'random' to let me pick, or choose from: "
 
 	generators = {}
 	filesLocation = os.path.join(GlobalStore.scriptfolder, "data", "generators")
@@ -17,7 +17,6 @@ class Command(CommandTemplate):
 		#First fill the generators dict with a few built-in generators
 		self.generators = {self.generateName: 'name', self.generateVideogame: ('game', 'videogame'), self.generateWord: 'word', self.generateWord2: 'word2'}
 		#Go through all available .grammar files and store their 'triggers'
-		triggers = ['name', 'game', 'videogame', 'word', 'word2']
 		for grammarFilename in glob.iglob(os.path.join(self.filesLocation, '*.grammar')):
 			with open(grammarFilename, 'r') as grammarFile:
 				try:
@@ -26,9 +25,8 @@ class Command(CommandTemplate):
 					self.logError("[Generators] Error parsing grammar file '{}', invalid JSON: {}".format(grammarFilename, e.message))
 				else:
 					self.generators[grammarFilename] = tuple(grammarJson['_triggers'])
-					triggers.extend(self.generators[grammarFilename])
 		#Add all the available triggers to the module's helptext
-		self.helptext += ", ".join(triggers)
+		self.helptext += ", ".join(self.getAvailableTriggers())
 		self.logDebug("[Generators] Loaded {:,} generators".format(len(self.generators)))
 
 	def execute(self, message):
@@ -57,10 +55,8 @@ class Command(CommandTemplate):
 					break
 
 		if wantedGenerator is None:
-			availableTriggers = []
-			for generator, triggers in self.generators.iteritems():
-				availableTriggers.extend(triggers)
-			message.reply("That is not a valid generator name. Available generators: {}".format(", ".join(availableTriggers)))
+			#No suitable generator found, list the available ones
+			message.reply("That is not a valid generator name. Use 'random' to let me pick, or choose from: {}".format(", ".join(self.getAvailableTriggers())))
 		else:
 			parameters = message.messageParts[1:]
 			#The generator can either be a module function, or a string pointing to a grammar file. Check which it is
@@ -71,6 +67,14 @@ class Command(CommandTemplate):
 				#Function! Just call it, with the message so it can figure it out from there itself
 				message.reply(wantedGenerator(parameters))
 
+	def getAvailableTriggers(self):
+		availableTriggers = []
+		for generator, triggers in self.generators.iteritems():
+			if isinstance(triggers, basestring):
+				availableTriggers.append(triggers)
+			else:
+				availableTriggers.extend(triggers)
+		return sorted(availableTriggers)
 
 	def getRandomLine(self, filename, filelocation=None):
 		if not filelocation:
