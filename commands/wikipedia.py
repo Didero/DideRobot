@@ -58,9 +58,12 @@ class Command(CommandTemplate):
 		else:
 			#The 'pages' dictionary contains a single key-value pair. The key is the (unknown) revision number. So just get the single entry
 			pagedata = result['pages'].popitem()[1]
-			replytext = pagedata['extract'].replace('\n', ' ').replace('  ', ' ')
-			if replytext.endswith("may refer to:") or replytext.endswith("may refer to:..."):
+			replytext = pagedata['extract']
+			#Check if it's not a disambiguation page (rstrip('.') because sometimes it ends with dots and we want to catch that too)
+			if replytext.split('\n', 1)[0].rstrip('.').endswith("may refer to:"):
 				replytext = "'{}' has multiple meanings".format(pagename)
+			else:
+				replytext = replytext.replace('\n', ' ').replace('  ', ' ')
 			#Make sure the text isn't too long
 			if limitLength and len(replytext) > replyLengthLimit:
 				replytext = replytext[:replyLengthLimit]
