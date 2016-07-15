@@ -574,11 +574,10 @@ class Command(CommandTemplate):
 							   u"I need {:,}, but I only found {:,}".format(rarity, boosterRarities[rarity], len(possibleCards[rarity])))
 
 		#Draw the cards!
-		replytext = "Boosterpack for '{}' contains: ".format(properSetname.encode('utf-8'))
+		replytext = "{}{}".format(properSetname.encode('utf-8'), SharedFunctions.getGreySeparator())
 		for rarity, count in boosterRarities.iteritems():
-			rarityText = SharedFunctions.makeTextBold(rarity.capitalize())
 			cardlist = "; ".join(random.sample(possibleCards[rarity], count)).encode('utf-8')
-			replytext += "{}: {}. ".format(rarityText, cardlist)
+			replytext += "{}: {}. ".format(SharedFunctions.makeTextBold(rarity.capitalize()), cardlist)
 		return (True, replytext)
 
 	def downloadCardDataset(self):
