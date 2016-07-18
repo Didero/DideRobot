@@ -33,6 +33,8 @@ class Command(CommandTemplate):
 				if len(pokemondata) == 0:
 					replytext = "No data on that Pokémon was found, for some reason. Did you make a typo?"
 				else:
+					#Encode the url name properly
+					pokemondata['urlname'] = pokemondata['name'].replace(' ', '_')
 					#Let's turn the collected data into something presentable!
 					replytext = "{name} ({generation} nr {Pokédex number}) is a {species} of type '{type}'."
 					if 'evolves from' in pokemondata:
@@ -41,7 +43,7 @@ class Command(CommandTemplate):
 						replytext += " Evolves into {evolves into}."
 					replytext += " {hit points} HP, {attack} Atk, {defense} Def, " \
 								 "{special attack} SAtk, {special defense} SDef, {speed} Spd. " \
-								 "More info: http://bulbapedia.bulbagarden.net/wiki/{name}"
+								 "More info: http://bulbapedia.bulbagarden.net/wiki/{urlname}"
 					replytext = replytext.format(**pokemondata)
 
 		message.bot.sendMessage(message.source, replytext)
