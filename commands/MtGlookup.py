@@ -20,7 +20,7 @@ class Command(CommandTemplate):
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 
 	areCardfilesInUse = False
-	dataFormatVersion = '3.4.1'
+	dataFormatVersion = '3.4.2'
 
 	def executeScheduledFunction(self):
 		if self.shouldUpdate():
@@ -655,7 +655,7 @@ class Command(CommandTemplate):
 
 		newcardstore = {}
 		setstore = {'_setsWithBoosterpacks': []}
-		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
+		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
 		layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme')
 		numberKeysToMakeString = ('cmc', 'hand', 'life', 'loyalty', 'multiverseid')
 		listKeysToMakeString = ('colors', 'names')
