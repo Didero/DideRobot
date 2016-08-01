@@ -89,7 +89,10 @@ class Command(CommandTemplate):
 			if (searchType == 'booster' and message.messagePartsLength == 1) or (message.trigger == 'mtgb' and message.messagePartsLength == 0):
 				message.reply("Please provide a set name, so I can open a boosterpack from that set. Or use 'random' to have me pick one")
 				return
-			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
+			if self.areCardfilesInUse:
+				message.reply("Oh, sorry, I'm currently retrieving updated set data. If you try again in about 10, 15 seconds, I'll have a freshly updated boosterpack for you!")
+				return
+			elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
 				message.reply("I'm sorry, I don't seem to have my set file. I'll retrieve it, give me a minute and try again")
 				self.executeScheduledFunction()
 				self.scheduledFunctionTimer.reset()
@@ -98,6 +101,10 @@ class Command(CommandTemplate):
 			message.reply(self.openBoosterpack(setname)[1])
 			return
 
+		#If the card set is currently being updated, we probably shouldn't try loading it
+		if self.areCardfilesInUse:
+			message.reply("I'm currently updating my card datastore, sorry! If you try again in, oh, 10 seconds, I should be done. You'll be the first to look through the new cards!")
+			return
 
 		#If we reached here, we're gonna search through the card store
 		searchDict = {}
