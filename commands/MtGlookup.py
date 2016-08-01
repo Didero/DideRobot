@@ -686,58 +686,63 @@ class Command(CommandTemplate):
 				setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
 				originalBoosterList = setData.pop('booster')
 				countedBoosterData = {}
-				for rarity in originalBoosterList:
-					#If the entry is a list, it's a list of possible choices for that card
-					#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
-					if isinstance(rarity, list):
-						#Remove useless options here too
-						for rarityToRemove in raritiesToRemove:
-							if rarityToRemove in rarity:
-								rarity.remove(rarityToRemove)
-						#Rename 'wrongly' named rarites
-						for r in raritiesToRename:
-							if r in rarity:
-								rarity.remove(r)
-								rarity.append(raritiesToRename[r])
-						#Check if any of the choices have a prefix that needs to be removed (use a copy so we can delete elements in the loop)
-						for choice in rarity[:]:
-							for rp in rarityPrefixesToRemove:
-								if choice.startswith(rp):
-									#Remove the original choice...
-									rarity.remove(choice)
-									#...and put in the choice without the prefix
-									rarity.append(choice[rarityPrefixesToRemove[rp]:])
-						#If we removed all options and just have an empty list now, replace it with a rare
-						if len(rarity) == 0:
-							rarity = 'rare'
-						#If we've removed all but one option, it's not a choice anymore, so treat it like a 'normal' rarity
-						elif len(rarity) == 1:
-							rarity = rarity[0]
-						else:
-							#If it's still a list, keep it like that
-							if '_choice' not in countedBoosterData:
-								countedBoosterData['_choice'] = [rarity]
+				try:
+					for rarity in originalBoosterList:
+						#If the entry is a list, it's a list of possible choices for that card
+						#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
+						if isinstance(rarity, list):
+							#Remove useless options here too
+							for rarityToRemove in raritiesToRemove:
+								if rarityToRemove in rarity:
+									rarity.remove(rarityToRemove)
+							#Rename 'wrongly' named rarites
+							for r in raritiesToRename:
+								if r in rarity:
+									rarity.remove(r)
+									rarity.append(raritiesToRename[r])
+							#Check if any of the choices have a prefix that needs to be removed (use a copy so we can delete elements in the loop)
+							for choice in rarity[:]:
+								for rp in rarityPrefixesToRemove:
+									if choice.startswith(rp):
+										#Remove the original choice...
+										rarity.remove(choice)
+										#...and put in the choice without the prefix
+										rarity.append(choice[rarityPrefixesToRemove[rp]:])
+							#If we removed all options and just have an empty list now, replace it with a rare
+							if len(rarity) == 0:
+								rarity = 'rare'
+							#If we've removed all but one option, it's not a choice anymore, so treat it like a 'normal' rarity
+							elif len(rarity) == 1:
+								rarity = rarity[0]
 							else:
-								countedBoosterData['_choice'].append(rarity)
-							#...but don't do any of the other stuff
+								#If it's still a list, keep it like that
+								if '_choice' not in countedBoosterData:
+									countedBoosterData['_choice'] = [rarity]
+								else:
+									countedBoosterData['_choice'].append(rarity)
+								#...but don't do any of the other stuff
+								continue
+						#Some keys are dumb and useless ('marketing'). Ignore those
+						if rarity in raritiesToRemove:
 							continue
-					#Some keys are dumb and useless ('marketing'). Ignore those
-					if rarity in raritiesToRemove:
-						continue
-					#Here the rarity for a basic land is called 'land', while in the cards themselves it's 'basic land'. Correct that
-					for rarityToRename in raritiesToRename:
-						if rarity == rarityToRename:
-							rarity = raritiesToRename[rarity]
-					#Remove any useless prefixes like 'foil'
-					for rp in rarityPrefixesToRemove:
-						if rarity.startswith(rp):
-							rarity = rarity[rarityPrefixesToRemove[rp]:]
-					#Finally, count the rarity
-					if rarity not in countedBoosterData:
-						countedBoosterData[rarity] = 1
-					else:
-						countedBoosterData[rarity] += 1
-				setData['booster'] = countedBoosterData
+						#Here the rarity for a basic land is called 'land', while in the cards themselves it's 'basic land'. Correct that
+						for rarityToRename in raritiesToRename:
+							if rarity == rarityToRename:
+								rarity = raritiesToRename[rarity]
+						#Remove any useless prefixes like 'foil'
+						for rp in rarityPrefixesToRemove:
+							if rarity.startswith(rp):
+								rarity = rarity[rarityPrefixesToRemove[rp]:]
+						#Finally, count the rarity
+						if rarity not in countedBoosterData:
+							countedBoosterData[rarity] = 1
+						else:
+							countedBoosterData[rarity] += 1
+				except Exception as e:
+					self.logError("Error while parsing booster field of set '{}' ({}): {!r}".format(setData['name'], setcode, e))
+				else:
+					#If no parsing error occurred, add the parsed booster data
+					setData['booster'] = countedBoosterData
 			setstore[setData['name'].lower()] = setData
 
 			#Again, pop off cards when we need them, to save on memory
