@@ -689,8 +689,6 @@ class Command(CommandTemplate):
 			cardlist = setData.pop('cards')
 			#The 'booster' set field is a bit verbose, make that shorter and easier to use
 			if 'booster' in setData:
-				#Keep a list of sets that have booster packs
-				setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
 				originalBoosterList = setData.pop('booster')
 				countedBoosterData = {}
 				try:
@@ -750,6 +748,8 @@ class Command(CommandTemplate):
 				else:
 					#If no parsing error occurred, add the parsed booster data
 					setData['booster'] = countedBoosterData
+					# Keep a list of sets that have booster packs
+					setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
 			setstore[setData['name'].lower()] = setData
 
 			#Again, pop off cards when we need them, to save on memory
