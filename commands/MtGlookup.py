@@ -147,17 +147,24 @@ class Command(CommandTemplate):
 		#Turn the search strings into actual regexes
 		regexDict = {}
 		errors = []
+		shouldAddRegexWarning = False
 		for attrib, query in searchDict.iteritems():
-			regex = None
 			try:
 				#Since the query is a string, and the card data is unicode, convert the query to unicode before turning it into a regex
 				# This fixes the module not finding a literal search for 'Ætherling', for instance
 				regex = re.compile(unicode(query, encoding='utf8'), re.IGNORECASE)
-			except (re.error, SyntaxError) as e:
-				self.logError("[MTG] Regex error when trying to parse '{}': {}".format(query, e))
-				errors.append(attrib)
+			except (re.error, SyntaxError):
+				#Try parsing the string again as an escaped string, so mismatched brackets for instance aren't a problem
+				try:
+					regex = re.compile(unicode(re.escape(query), encoding='utf8'), re.IGNORECASE)
+				except re.error as e:
+					self.logDebug("[MTG] Regex error when trying to parse '{}': {}".format(query, e))
+					errors.append(attrib)
+				else:
+					shouldAddRegexWarning = True
+					regexDict[attrib] = regex
 			except UnicodeDecodeError as e:
-				self.logError("[MTG] Unicode error in key '{}': {}".format(attrib, e))
+				self.logDebug("[MTG] Unicode error in key '{}': {}".format(attrib, e))
 				errors.append(attrib)
 			else:
 				regexDict[attrib] = regex
@@ -174,6 +181,8 @@ class Command(CommandTemplate):
 				replytext = "Errors occurred while parsing attributes: {}. Please check your search query for errors".format(", ".join(errors))
 			message.reply(replytext)
 			return
+		elif shouldAddRegexWarning:
+			replytext += "(Invalid regex corrected) "
 
 		#All entered data is valid, look through the stored cards
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
@@ -223,14 +232,14 @@ class Command(CommandTemplate):
 
 		numberOfCardsFound = len(cardstore)
 		if numberOfCardsFound == 0:
-			replytext = "Sorry, no card matching your query was found"
+			replytext += "Sorry, no card matching your query was found"
 		#If we only found a single card (or if we have to pick a random card from all available cards), just display it
 		elif numberOfCardsFound == 1 or (searchType.startswith('random') and len(searchDict) == 0):
 			if searchType.startswith('random'):
 				cardname = random.choice(cardstore.keys())
 				cardstore = {cardname: cardstore[cardname]}
 			setname = cardstore[cardstore.keys()[0]][1].pop('_match', None)
-			replytext = self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedInfo, setname)
+			replytext += self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedInfo, setname, len(replytext))
 		#If we found multiple cards, list their names (and the full info on a single card, if it matches)
 		else:
 			maxCardsToList = 20 if message.isPrivateMessage else 10
@@ -242,7 +251,7 @@ class Command(CommandTemplate):
 				cardname = random.choice(cardstore.keys()) if searchType.startswith('random') else searchDict['name']
 				#If the search returned a setmatch, it's in a '_match' field, retrieve that
 				setname = cardstore[cardname][1].pop('_match', None)
-				replytext = self.getFormattedCardInfo(cardstore[cardname], addExtendedInfo, setname)
+				replytext += self.getFormattedCardInfo(cardstore[cardname], addExtendedInfo, setname, len(replytext))
 				del cardstore[cardname]
 				numberOfCardsFound -= 1
 				nameMatchedCardFound = True
@@ -275,7 +284,7 @@ class Command(CommandTemplate):
 		message.reply(replytext)
 
 	@staticmethod
-	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None):
+	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None, startingLength=0):
 		card = carddata[0]
 		sets = carddata[1]
 		cardInfoList = [SharedFunctions.makeTextBold(card['name'])]
@@ -348,7 +357,7 @@ class Command(CommandTemplate):
 		separatorLength = len(separator)
 		#Keep adding parts to the output until an entire block wouldn't fit on one line, then start a new message
 		replytext = u''
-		messageLength = 0
+		messageLength = startingLength
 		MAX_MESSAGE_LENGTH = 325
 
 		while len(cardInfoList) > 0:
