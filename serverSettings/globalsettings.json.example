@@ -1,6 +1,7 @@
 {
 	"server": "",
 	"port": 6667,
+    "serverpassword": "",
 	"nickname": "DideRobot",
 	"realname": "DideRobot",
 	"maxConnectionRetries": 5,

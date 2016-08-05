@@ -21,6 +21,8 @@ class DideRobot(irc.IRCClient):
 			self.lineRate = None
 		self.nickname = self.factory.settings['nickname']
 		self.realname = self.factory.settings['realname'] if 'realname' in self.factory.settings else 'DideRobot'
+		if 'serverpassword' in self.factory.settings and len(self.factory.settings['serverpassword']) > 0:
+			self.password = self.factory.settings['serverpassword']
 	
 	def connectionMade(self):
 		"""Called when a connection is made."""
