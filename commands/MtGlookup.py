@@ -20,7 +20,7 @@ class Command(CommandTemplate):
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 
 	areCardfilesInUse = False
-	dataFormatVersion = '3.4.2'
+	dataFormatVersion = '3.4.3'
 
 	def executeScheduledFunction(self):
 		if self.shouldUpdate():
@@ -720,8 +720,10 @@ class Command(CommandTemplate):
 									if choice.startswith(rp):
 										#Remove the original choice...
 										rarity.remove(choice)
-										#...and put in the choice without the prefix
-										rarity.append(choice[rarityPrefixesToRemove[rp]:])
+										newRarity = choice[rarityPrefixesToRemove[rp]:]
+										#...and put in the choice without the prefix, if it's not there already
+										if newRarity not in rarity:
+											rarity.append(newRarity)
 							#If we removed all options and just have an empty list now, replace it with a rare
 							if len(rarity) == 0:
 								rarity = 'rare'
