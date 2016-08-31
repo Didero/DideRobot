@@ -90,7 +90,7 @@ class Command(CommandTemplate):
 					if didyoumean.attrib['level'] != 'low':
 						suggestion = didyoumean.text.replace('\n','').strip()
 						if len(suggestion) > 0:
-							suggestions.append(suggestion)
+							suggestions.append(suggestion.encode('utf-8'))
 				if len(suggestions) > 0:
 					replystring += ". Did you perhaps mean: {}".format(", ".join(suggestions))
 		else:
