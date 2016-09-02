@@ -285,7 +285,7 @@ class Command(CommandTemplate):
 	def updateCardFile(self):
 		starttime = time.time()
 		try:
-			requestReply = requests.get("http://netrunnerdb.com/api/cards", timeout=60.0)
+			requestReply = requests.get("http://netrunnerdb.com/api/2.0/public/cards", timeout=60.0)
 			carddata = json.loads(requestReply.text)
 		except requests.exceptions.Timeout:
 			self.logError("[Netrunner] Data retrieval took too long")
@@ -293,6 +293,12 @@ class Command(CommandTemplate):
 		except ValueError:
 			self.logError("[Netrunner] Invalid JSON when updating card database: " + requestReply.text)
 			return (False, "Invalid JSON data")
+
+		if 'data' not in carddata:
+			self.logError("[Netrunner] API reply did not contain card data: " + requestReply.text)
+			return (False, "API did not return card data")
+
+		carddata = carddata['data']
 
 		self.areCardfilesBeingUpdated = True
 
