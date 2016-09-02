@@ -291,7 +291,7 @@ class Command(CommandTemplate):
 			self.logError("[Netrunner] Data retrieval took too long")
 			return (False, "Card retrieval took too long")
 		except ValueError:
-			self.logError("[Netrunner] Invalid JSON when updating card database:", requestReply.text)
+			self.logError("[Netrunner] Invalid JSON when updating card database: " + requestReply.text)
 			return (False, "Invalid JSON data")
 
 		self.areCardfilesBeingUpdated = True
