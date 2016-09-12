@@ -593,7 +593,7 @@ class Command(CommandTemplate):
 		replytext = "{}{}".format(properSetname.encode('utf-8'), SharedFunctions.getGreySeparator())
 		for rarity, count in boosterRarities.iteritems():
 			cardlist = "; ".join(random.sample(possibleCards[rarity], count)).encode('utf-8')
-			replytext += "{}: {}. ".format(SharedFunctions.makeTextBold(rarity.capitalize()), cardlist)
+			replytext += "{}: {}. ".format(SharedFunctions.makeTextBold(rarity.encode('utf-8').capitalize()), cardlist)
 		return (True, replytext)
 
 	def downloadCardDataset(self):
