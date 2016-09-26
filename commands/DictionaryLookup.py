@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as ElementTree
+import json, urllib
 
 import requests
 
@@ -16,84 +16,78 @@ class Command(CommandTemplate):
 		:type message: IrcMessage.IrcMessage
 		"""
 
-		#First check if we have the required data
-		if 'dictionarylookup' not in GlobalStore.commandhandler.apikeys:
-			self.logError("[Dictionary] No API key for DictionaryLookup found!")
-			return message.reply("Sorry, I don't seem to have the key required to be able to use this module. Inform my owner, they'll fix it!")
 		if message.messagePartsLength == 0:
-			return message.reply("Look up which word? I'm not just going to pick a random one")
+			return message.reply("Please add a term to search for. You wouldn't want me making up words, trust me")
 
+		#Lower case makes it easier to compare with later
 		searchQuery = message.message.lower()
-		#Retrieve the definition
-		apireply = requests.get('http://www.dictionaryapi.com/api/v1/references/collegiate/xml/{}?key={}'.format(searchQuery, GlobalStore.commandhandler.apikeys['dictionarylookup']))
-		xmltext = apireply.text.encode('utf8')
-		#<fw> tags are useless and mess everything up. They're links to other definitions on the site, but in here they just confuse the XML parser
-		#There's also a few fields only used to indicate a certain layout. Remove those too
-		for field in ('fw', 'd_link', 'i_link', 'dx_ety', 'dx_def', 'it', 'bold', 'bit'):
-			xmltext = xmltext.replace('<{}>'.format(field), '').replace('</{}>'.format(field), '')
-		xmldata = ElementTree.fromstring(xmltext)
 
-		maxMessageLength = 290
+		#Get the data
+		try:
+			apireply = requests.get("http://api.pearson.com/v2/dictionaries/ldoce5/entries", params={'limit': 100, 'headword': searchQuery}, timeout=15.0)
+		except requests.exceptions.Timeout:
+			return message.reply("Sorry, the dictionary API took too long to respond. Please try again in a little while. Or a longer while, if the API is temporarily broken")
+		#Load the data
+		try:
+			definitionData = json.loads(apireply.text)
+		except ValueError:
+			self.logError("[DictLookup] Unexpected reply from Dictionary API:")
+			self.logError(apireply.text)
+			return message.reply("I'm sorry, the dictionary API I'm using returned some weird data. Tell my owner(s) about it, maybe it's something they can fix? Or just try again in a little while")
 
-		#Check if we have actual results or if the user made a typo or something. If there is one or more 'suggestion' entry, it's not an existing word
-		if xmldata.find('suggestion') is not None:
-			replytext = "That term doesn't seem to exist. Did you perhaps mean: "
-			#List all the suggestions, at least until we run out of room
-			for suggestionNode in xmldata.findall('suggestion'):
-				suggestion = suggestionNode.text
-				if len(replytext) + len(suggestion) < maxMessageLength:
-					replytext += suggestion + '; '
-			replytext = replytext[:-2]  #Remove the last semicolon
-			return message.reply(replytext)
+		#Check to see if it's a recognised word/term
+		if 'total' not in definitionData or definitionData['total'] == 0 or 'results' not in definitionData or len(definitionData['results']) == 0:
+			return message.reply("That is apparently not a term this dictionary API is familiar with. Maybe you made a typo? Or maybe you invented a new word!")
 
-		#Check if there are any definitions
-		if xmldata.find('entry') is None:
-			return message.reply("No definition of that term found, sorry".format(message.message))
+		replytext = SharedFunctions.makeTextBold(message.message) + ": "
 
-		#Definition(s) found. List as many as we can
-		entriesSkipped = 0
+		#Keep adding definitions until we run out of space
+		maxMessageLength = 290  #Be conservative with our max length since we don't take all part lengths into account
 		definitionsSkipped = 0
-		replytext = SharedFunctions.makeTextBold(message.message) + ':'
-		for entry in xmldata.findall('entry'):
-			#Sometimes entries don't have a word field for some reason, skip those since they're useless stubs
-			entryword = entry.find('ew')
-			if entryword is None:
+		hasAddedDefinition = False
+		fallbackDefinitionEntry = None
+		wordTypeReplacements = {'verb': 'v', 'noun': 'n', 'adjective': 'adj', 'adverb': 'adv'}
+		for definitionEntry in definitionData['results']:
+			#Only add definitions if the search query and the word the entry is about match exactly (so verb forms)
+			if definitionEntry['headword'] != searchQuery:
+				#Store it in case we end up with no results, then we can show this one
+				if fallbackDefinitionEntry is None:
+					fallbackDefinitionEntry = definitionEntry
 				continue
-			#The API returns terms containing the search term too (for instance 'test-case' when searching for 'test')
-			#  So if the entry isn't literally the search term, skip it
-			entryword = entryword.text.lower()
-			if entryword != searchQuery:
-				continue
-			#First check if the required fields exist
-			if entry.find('fl') is None:
-				#Maybe it suggests an alternative spelling?
-				cognate = entry.find('cx')
-				if cognate is None or cognate.find('cl') is None or cognate.find('ct') is None:
+			for sense in definitionEntry['senses']:
+				if 'definition' not in sense:
 					continue
-				replytext += " {} {}".format(cognate.find('cl').text, cognate.find('ct').text)
-				continue
-			#Prefix the type of word it is
-			wordType = entry.find('fl').text
-			if entriesSkipped > 0 and len(replytext) + len(wordType) >= maxMessageLength:
-				entriesSkipped += 1
-			else:
-				replytext += ' [{}] '.format(wordType)
-				#Now go through all the <def>initions, to get the actual definitions
-				for definitionNode in entry.find('def').findall('dt'):
-					definition = definitionNode.text.strip().strip(':').strip()  #Whether an item stars with a space and then a colon or vice versa is inconsistent
-					if len(definition) == 0:
-						continue
-					if len(replytext) + len(definition) >= maxMessageLength:
-						definitionsSkipped += 1
+				#For some reason 'definition' is a list, usually with only one entry
+				for definition in sense['definition']:
+					if len(replytext) + len(definition) < maxMessageLength:
+						#Add a separator if this isn't the first definition
+						if hasAddedDefinition:
+							replytext += SharedFunctions.getGreySeparator()
+						#Prefix with the word type (verb, noun, etc.)
+						if 'part_of_speech' in definitionEntry:
+							wordType = definitionEntry['part_of_speech']
+							#Shorten the word type so we don't waste space
+							if wordType in wordTypeReplacements:
+								wordType = wordTypeReplacements[wordType]
+							replytext += "[{}] ".format(wordType)
+						replytext += definition
+						hasAddedDefinition = True
 					else:
-						replytext += definition + '; '
-				#Check if it doesn't just end with the wordType indicator
-				if replytext.endswith('] '):
-					replytext = replytext[:replytext.rfind('[')].rstrip()
-					entriesSkipped += 1  #Increment this because we didn't add anything from this entry
-				else:
-					replytext = replytext.rstrip('; ')  #Remove the trailing separator
-		if entriesSkipped > 0 or definitionsSkipped > 0:
-			replytext += " ({:,} skipped)".format(entriesSkipped + definitionsSkipped)
+						definitionsSkipped += 1
 
-		message.reply(replytext)
+		#If we didn't find any definition that matched the search query and wasn't too long, report that
+		if not hasAddedDefinition:
+			#If we didn't find the literal search query, but we did find at least something, show that
+			if fallbackDefinitionEntry is not None and 'senses' in fallbackDefinitionEntry and 'definition' in fallbackDefinitionEntry['senses'][0]:
+				replytext = "{}: {}".format(SharedFunctions.makeTextBold(fallbackDefinitionEntry['headword']), fallbackDefinitionEntry['senses'][0]['definition'][0])
+				if len(replytext) > maxMessageLength:
+					replytext = replytext[:maxMessageLength-5] + "[...]"
+				return message.reply(replytext)
+			else:
+				return message.reply("Sorry, all the definitions I found were either for the wrong word or too long. Maybe try Wiktionary: http://en.wiktionary.org/wiki/Special:Search?search=" + urllib.quote_plus(searchQuery))
+		#But if everything is fine and we found some definitions, report 'em!
+		else:
+			#If we've skipped a few definitions for length, add that info too
+			if definitionsSkipped > 0:
+				replytext += " ({} skipped)".format(definitionsSkipped)
+			return message.reply(replytext)
