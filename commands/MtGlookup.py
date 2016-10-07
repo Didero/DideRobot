@@ -584,10 +584,10 @@ class Command(CommandTemplate):
 			if rarity == '_choice':
 				continue
 			if rarity not in possibleCards:
-				return (False, u"No cards with rarity '{}' found, and I can't make a booster pack without it!".format(rarity))
+				return (False, u"No cards with rarity '{}' found in set '{}', and I can't make a booster pack without it!".format(rarity, properSetname))
 			elif len(possibleCards[rarity]) < count:
-				return (False, u"That set doesn't contain enough '{}'-rarity cards for a boosterpack. "
-							   u"I need {:,}, but I only found {:,}".format(rarity, boosterRarities[rarity], len(possibleCards[rarity])))
+				return (False, u"The set '{}' doesn't seem to contain enough '{}'-rarity cards for a boosterpack. "
+							   u"I need {:,}, but I only found {:,}".format(properSetname, rarity, boosterRarities[rarity], len(possibleCards[rarity])))
 
 		#Draw the cards!
 		replytext = "{}{}".format(properSetname.encode('utf-8'), SharedFunctions.getGreySeparator())
