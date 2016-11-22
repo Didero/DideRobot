@@ -79,14 +79,19 @@ class Command(CommandTemplate):
 					replytext = u"That's on my server! And I'm right here"
 			else:
 				params = {'key': GlobalStore.commandhandler.apikeys['locatorhq']['key'],
-						  'user': GlobalStore.commandhandler.apikeys['locatorhq']['username'], 'ip': userIp, 'format': 'json'}
-				apiReturn = requests.get("http://api.locatorhq.com", params=params)
+						  'user': GlobalStore.commandhandler.apikeys['locatorhq']['username'],
+						  'ip': userIp, 'format': 'json'}
 
+				apiReturn = None
 				try:
+					apiReturn = requests.get("http://api.locatorhq.com", params=params, timeout=10.0)
 					data = json.loads(apiReturn.text)
+				except requests.exceptions.Timeout:
+					replytext = u"I'm sorry, pinpointing {} location took too long for some reason. Maybe try again later?"
+					replytext = replytext.format(u"your" if message.messagePartsLength == 0 else username + u"'s")
 				except ValueError:
 					#If there's an error message in the API output, it's not valid JSON. Check if we know what's wrong
-					self.logError("[location] Invalid API reply: '{}'".format(apiReturn.text))
+					self.logError("[location] Invalid API reply: '{}'".format(apiReturn.text if apiReturn else "no API reply found"))
 					error = apiReturn.text.lower()
 					if error == 'no data':
 						replytext = u"I'm sorry, I can't find any country data for {username}".format(username=username)
