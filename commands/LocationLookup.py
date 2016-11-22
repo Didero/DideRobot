@@ -46,7 +46,7 @@ class Command(CommandTemplate):
 					if not channelname.startswith('#'):
 						channelname = '#' + channelname
 				if channelname not in message.bot.channelsUserList:
-					replytext = u"That is not a channel I'm familiar with, sorry"
+					replytext = u"I'm not familiar with the channel '{}', sorry".format(channelname)
 				else:
 					nickToMatch = message.messageParts[0].lower() + '!'  #Add an exclamation mark to make sure the match is the full nick, not just the start
 					replytext = u"I'm sorry, but I don't know who you're talking about..."  #Set it in advance, in case we don't find a match
