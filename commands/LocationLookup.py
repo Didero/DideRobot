@@ -10,6 +10,7 @@ from IrcMessage import IrcMessage
 class Command(CommandTemplate):
 	triggers = ['location']
 	helptext = "Retrieves the country a user is from (or at least it tries to, no promises). Arguments are a user name, and optionally a channel name (which is mainly useful in PMs)"
+	callInThread = True  #Very rarely the lookup is really slow, don't hold up the whole bot then
 
 	def execute(self, message):
 		"""
