@@ -1,7 +1,6 @@
 import base64, codecs, json, logging, os, random, re
 
 import requests
-from twisted.words.protocols.irc import assembleFormattedText, attributes
 
 import GlobalStore
 
@@ -219,9 +218,10 @@ def removeCharactersFromStringEnds(string, *chars):
 				string = string[:-charLength]
 	return string
 
-def addSeparatorsToString(listOfStrings, separator='|'):
-	formattedSeparator = assembleFormattedText(attributes.normal[' ', attributes.fg.gray[separator], ' '])
-	return formattedSeparator.join(listOfStrings)
+def addSeparatorsToString(listOfStrings, separator=None):
+	if not separator:
+		separator = getGreySeparator()
+	return separator.join(listOfStrings)
 
 def getGreySeparator():
 	#Since a grey separator is often used to separate parts of a message, provide an easy way to get one
