@@ -88,6 +88,7 @@ class Command(CommandTemplate):
 		if not descriptionElement:
 			self.logError("[Humble] No description element found!")
 		else:
+			descriptionGameList = []
 			for paragraph in descriptionElement.find_all('p'):
 				#If there is a bolded element, and it's at the start of the paragraph, AND we've already found names, we're done,
 				#  because all the games are listed in the first paragraph
@@ -97,16 +98,30 @@ class Command(CommandTemplate):
 				#Otherwise, add all the titles listed to the collection
 				for titleElement in paragraph.find_all('i'):
 					gameFound = True
-					gamename = titleElement.text.strip()
-					gamecount += 1
-					if addGameList:
-						#See if this title is in the locked-games lists we found earlier
-						if gamename.lower() in lockedGames['BTA']:
-							gamePriceCategories['BTA'].append(gamename)
-						elif gamename.lower() in lockedGames['Fixed']:
-							gamePriceCategories['Fixed'].append(gamename)
-						else:
-							gamePriceCategories['PWYW'].append(gamename)
+					gamename = titleElement.text.strip(" ,.;")  #Sometimes punctuation marks are included in the tag, remove those
+					#If the site lists two games after each other, they don't start a new HTML tag, so the game names
+					# get mushed together. Split that up
+					if "," in gamename:
+						gamenames = gamename.split(",")
+						for splitGamename in gamenames:
+							splitGamename = splitGamename.strip(" ,.;")
+							if len(splitGamename) > 0:
+								descriptionGameList.append(splitGamename)
+					#If there's no comma, it's just a single game name
+					else:
+						descriptionGameList.append(gamename)
+			gamecount = len(descriptionGameList)
+
+			#Now check to see which category the games we found belong to
+			if addGameList:
+				for gamename in descriptionGameList:
+					#See if this title is in the locked-games lists we found earlier
+					if gamename.lower() in lockedGames['BTA']:
+						gamePriceCategories['BTA'].append(gamename)
+					elif gamename.lower() in lockedGames['Fixed']:
+						gamePriceCategories['Fixed'].append(gamename)
+					else:
+						gamePriceCategories['PWYW'].append(gamename)
 
 		#Totals aren't shown on the site immediately, but are edited into the page with Javascript. Get info from there
 		totalMoney = -1.0
