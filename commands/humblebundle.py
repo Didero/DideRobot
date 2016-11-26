@@ -170,9 +170,9 @@ class Command(CommandTemplate):
 			replytext += u" It contains {:,} titles.".format(gamecount)
 			if addGameList:
 				#Add a list of all the games found
-				for priceType in ['PWYW', 'BTA', 'Fixed']:
+				for priceType in ('PWYW', 'BTA', 'Fixed'):
 					if len(gamePriceCategories[priceType]) > 0:
-						replytext += u" \x02{}\x0f: {}.".format(priceType, u" \x0314|\x0f ".join(gamePriceCategories[priceType]))
+						replytext += u" {}: {}.".format(SharedFunctions.makeTextBold(priceType), SharedFunctions.addSeparatorsToString(gamePriceCategories[priceType]))
 				replytext += u" (itemlist may be wrong)"
 			#Add the url too, so people can go see the bundle easily
 			replytext += u" ({})".format(url)
