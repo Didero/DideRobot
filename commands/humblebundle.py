@@ -57,27 +57,27 @@ class Command(CommandTemplate):
 		#Only if we actually need to show all the games
 		if addGameList:
 			lockedGames = {'BTA': [], 'Fixed': []}
-			for lockedGameElement in page.find_all('i', class_='hb-lock'):
+			for lockImageElement in page.find_all('i', class_='hb-lock'):
 				lockType = None
-				if 'green' in lockedGameElement.attrs['class']:
+				if 'green' in lockImageElement.attrs['class']:
 					lockType = 'BTA'
-				elif 'blue' in lockedGameElement.attrs['class']:
+				elif 'blue' in lockImageElement.attrs['class']:
 					lockType = 'Fixed'
 				else:
-					#print "[Humble] Unknown Lock type for game '{}': '{}'".format(" ".join(lockedGameElement.stripped_strings), lockedGameElement.attrs['class'])
 					continue
+				#The game name is a sibling of the lock node, so parse the lock's parent text
+				lockedGameElement = lockImageElement.parent
 				#If the game name consists of a single line (and it's not empty) store that
 				if lockedGameElement.string and len(lockedGameElement.string) > 0:
 					lockedGames[lockType].append(lockedGameElement.string.strip().lower())
 				#Multiple lines. Add both the first line, and a combination of all the lines
 				else:
 					lines = list(lockedGameElement.stripped_strings)
-					lockedGames[lockType].append(lines[0].strip().lower())
-					lockedGames[lockType].append(" ".join(lines).lower())
-				# Sometimes the name consists of multiple elements (Like with 'Deluxe Editions' or something). Add those too if needed
-				fullname = " ".join(lockedGameElement.parent.stripped_strings).strip().lower()
-				if fullname not in lockedGames[lockType]:
-					lockedGames[lockType].append(fullname)
+					if len(lines) > 0:
+						lockedGames[lockType].append(lines[0].strip().lower())
+						#If there's multiple lines, join them and add the full title too
+						if len(lines) > 1:
+							lockedGames[lockType].append(" ".join(lines).lower())
 
 		#The names of the games (or books) are listed in italics in the description section, get them from there
 		#Also do this if we don't need to list the games, since we do need a game count
