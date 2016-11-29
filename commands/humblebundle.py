@@ -33,6 +33,7 @@ class Command(CommandTemplate):
 
 		#Only add all the games if the full trigger is used
 		addGameList = message.trigger == 'humblebundle'
+		maxMessageLength = 300
 
 		try:
 			pageDownload = requests.get(url, timeout=10.0)
@@ -175,6 +176,7 @@ class Command(CommandTemplate):
 					if len(gamePriceCategories[priceType]) > 0:
 						replytext += u" {}: {}".format(SharedFunctions.makeTextBold(priceType), SharedFunctions.addSeparatorsToString(gamePriceCategories[priceType]))
 				if not message.isPrivateMessage and len(replytext) > maxMessageLength:
+					replytext = replytext[:maxMessageLength-5] + u"[...]"
 				replytext += u" (itemlist may be wrong)"
 			#Add the url too, so people can go see the bundle easily
 			replytext += u" ({})".format(url)
