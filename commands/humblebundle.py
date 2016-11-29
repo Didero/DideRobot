@@ -167,12 +167,14 @@ class Command(CommandTemplate):
 			replytext = u"{} has an average price of ${:.2f} and raised ${:,} from {:,} people.".format(title, round(avgPrice, 2), round(totalMoney, 2), contributors)
 			if timeLeft != u"":
 				replytext += u" It will end in {}.".format(timeLeft)
-			replytext += u" It contains {:,} titles.".format(gamecount)
+			replytext += u" It contains {:,} titles".format(gamecount)
 			if addGameList:
+				replytext += u":"
 				#Add a list of all the games found
 				for priceType in ('PWYW', 'BTA', 'Fixed'):
 					if len(gamePriceCategories[priceType]) > 0:
-						replytext += u" {}: {}.".format(SharedFunctions.makeTextBold(priceType), SharedFunctions.addSeparatorsToString(gamePriceCategories[priceType]))
+						replytext += u" {}: {}".format(SharedFunctions.makeTextBold(priceType), SharedFunctions.addSeparatorsToString(gamePriceCategories[priceType]))
+				if not message.isPrivateMessage and len(replytext) > maxMessageLength:
 				replytext += u" (itemlist may be wrong)"
 			#Add the url too, so people can go see the bundle easily
 			replytext += u" ({})".format(url)
