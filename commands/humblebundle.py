@@ -21,7 +21,8 @@ class Command(CommandTemplate):
 		url = "http://www.humblebundle.com/"
 		#Allow for any special bundle search
 		if message.messagePartsLength > 0:
-			urlSuffix = message.messageParts[0].lower()
+			#Some bundles have a name with spaces in it. The URL replaces these with dashes, so we should too
+			urlSuffix = message.message.replace(' ', '-').lower()
 			if urlSuffix == 'store':
 				message.bot.sendMessage(message.source, "I'm sorry, I can't retrieve store data (yet (maybe))", 'say')
 				return
