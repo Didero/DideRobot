@@ -98,7 +98,7 @@ class Command(CommandTemplate):
 				if boldedElement and paragraph.text.startswith(boldedElement.text) and gameFound:
 						break
 				#Otherwise, add all the titles listed to the collection
-				for titleElement in paragraph.find_all('i'):
+				for titleElement in paragraph.find_all(['i', 'em']):
 					gameFound = True
 					gamename = titleElement.text.strip(" ,.;")  #Sometimes punctuation marks are included in the tag, remove those
 					#If the site lists two games after each other, they don't start a new HTML tag, so the game names
