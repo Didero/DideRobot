@@ -24,7 +24,7 @@ class Command(CommandTemplate):
 			#Some bundles have a name with spaces in it. The URL replaces these with dashes, so we should too
 			urlSuffix = message.message.replace(' ', '-').lower()
 			if urlSuffix == 'store':
-				message.bot.sendMessage(message.source, "I'm sorry, I can't retrieve store data (yet (maybe))", 'say')
+				message.reply("I'm sorry, I can't retrieve store data (yet (maybe))")
 				return
 			#Correct a possible typo, since the weekly bundle is called 'weekly' and not 'week'
 			elif urlSuffix == 'week':
@@ -39,15 +39,15 @@ class Command(CommandTemplate):
 		try:
 			pageDownload = requests.get(url, timeout=10.0)
 		except requests.ConnectionError:
-			message.bot.sendMessage(message.source, "Sorry, I couldn't connect to the Humble Bundle site. Try again in a little while!")
+			message.reply("Sorry, I couldn't connect to the Humble Bundle site. Try again in a little while!")
 			return
 		except requests.exceptions.Timeout:
-			message.bot.sendMessage(message.source, "Sorry, the Humble Bundle site took too long to respond. Try again in a bit!")
+			message.reply("Sorry, the Humble Bundle site took too long to respond. Try again in a bit!")
 			return
 
 		if pageDownload.status_code != 200:
 			self.logWarning("[Humble] Page '{}' returned code {} instead of 200 (OK)".format(url, pageDownload.status_code))
-			message.bot.sendMessage(message.source, "Sorry, I can't retrieve that bundle page. Either their site is down, or that bundle doesn't exist")
+			message.reply("Sorry, I can't retrieve that bundle page. Either the site is down, or that bundle doesn't exist")
 			return
 
 		page = BeautifulSoup(pageDownload.content, 'html.parser')
@@ -182,4 +182,4 @@ class Command(CommandTemplate):
 			#Add the url too, so people can go see the bundle easily
 			replytext += u" ({})".format(url)
 
-		message.bot.say(message.source, replytext)
+		message.reply(replytext)
