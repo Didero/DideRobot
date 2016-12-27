@@ -342,7 +342,7 @@ class Command(CommandTemplate):
 			currentNewLetterFraction = newLetterFraction
 			consonantCount = 0
 			while random.randint(0, currentNewLetterFraction) <= 6:
-				if random.randint(1, 100) <= vowelChance:
+				if random.randint(1, 100) <= currentVowelChance:
 					consonantCount = 0
 					#vowel. Check if we're going to add a special or normal vowel
 					if random.randint(1, 100) <= 10:
