@@ -153,6 +153,9 @@ class Command(CommandTemplate):
 
 					if totalMoney > -1.0 and contributors > -1:
 						avgPrice = totalMoney / contributors
+					else:
+						self.logWarning("[Humble] Money raised and/or number of contributors not found!")
+						self.logWarning(json.dumps(data))
 
 			#The time variable is in a different script than the other data, search for it separately
 			timeLeftMatch = re.search('var timing = \{"start": \d+, "end": (\d+)\};', script)
