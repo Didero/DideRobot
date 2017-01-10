@@ -84,4 +84,4 @@ class Command(CommandTemplate):
 			replytext = "Please provide a term to search for"
 		else:
 			replytext = self.searchWikipedia(message.message, message.trigger=='wikipedia')[1]
-		message.bot.say(message.source, replytext)
+		message.reply(replytext, "say")

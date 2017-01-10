@@ -21,4 +21,4 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		message.bot.say(message.source, "Hi {0}! My command prefix is {1}. I probably have a {1}help command, try it out!".format(message.userNickname, message.bot.factory.commandPrefix))
+		message.reply("Hi {0}! My command prefix is {1}. I probably have a {1}help command, try it out!".format(message.userNickname, message.bot.factory.commandPrefix), "say")

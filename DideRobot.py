@@ -231,12 +231,3 @@ class DideRobot(irc.IRCClient):
 				self.notice(target, msg)
 
 			self.factory.messageLogger.log(logtext.format(user=self.nickname, message=msg), target)
-
-	def say(self, target, msg):
-		self.sendMessage(target, msg, 'say')
-
-	def doAction(self, target, action):
-		self.sendMessage(target, action, 'action')
-
-	def sendNotice(self, target, msg):
-		self.sendMessage(target, msg, 'notice')

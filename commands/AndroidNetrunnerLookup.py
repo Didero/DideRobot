@@ -28,7 +28,7 @@ class Command(CommandTemplate):
 		"""
 		#Immediately check if there's any parameters, to prevent useless work
 		if message.messagePartsLength == 0:
-			message.bot.say(message.source, "Please provide a term to search for. See '{}help {}' for an explanation how to use this command".format(message.bot.factory.commandPrefix, message.trigger))
+			message.reply("Please provide a term to search for. See '{}help {}' for an explanation how to use this command".format(message.bot.factory.commandPrefix, message.trigger), "say")
 			return
 
 		searchType = message.messageParts[0].lower()
@@ -47,18 +47,17 @@ class Command(CommandTemplate):
 				replytext = self.updateCardFile()[1]
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.scheduledFunctionTimer.reset()
-			message.bot.say(message.source, replytext)
+			message.reply(replytext, "say")
 			return
 
 		#Check if the data file even exists
 		elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCards.json')):
 			if self.areCardfilesBeingUpdated:
-				replytext = "I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
+				message.reply("I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds")
 			else:
-				replytext = "Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
+				message.reply("Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops")
 				GlobalStore.reactor.callInThread(self.updateCardFile())
 				self.scheduledFunctionTimer.reset()
-			message.bot.say(message.source, replytext)
 			return
 
 		#If we reached here, we're gonna search through the card store
@@ -67,13 +66,13 @@ class Command(CommandTemplate):
 		if (searchType == 'search' and ':' in message.message) or (searchType == 'random' and message.messagePartsLength > 1):
 			#Advanced search!
 			if message.messagePartsLength <= 1:
-				message.bot.say(message.source, "Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'")
+				message.reply("Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'")
 				return
 
 			#Turn the search string (not the argument) into a usable dictionary, case-insensitive,
 			searchDict = SharedFunctions.stringToDict(" ".join(message.messageParts[1:]).lower(), True)
 			if len(searchDict) == 0:
-				message.bot.say(message.source, "That is not a valid search query. It should be entered like JSON, so 'name: Wall of Thorns, type: ICE,...'. ")
+				message.reply("That is not a valid search query. It should be entered like JSON, so 'name: Wall of Thorns, type: ICE,...'. ")
 				return
 		#If the searchtype is just 'random', don't set a 'name' field so we don't go through all the cards first
 		#  Otherwise, set the whole message as the 'name' search, since that's the default search
@@ -109,14 +108,13 @@ class Command(CommandTemplate):
 		if len(errors) > 0:
 			#If there was only one search element to begin with, there's no need to specify
 			if len(searchDict) == 1:
-				replytext = "An error occurred when trying to parse your search query. Please check if it is a valid regular expression, and that there are no non-UTF8 characters"
+				message.reply("An error occurred when trying to parse your search query. Please check if it is a valid regular expression, and that there are no non-UTF8 characters")
 			#If there were more elements but only one error, specify
 			elif len(errors) == 1:
-				replytext = "An error occurred while trying to parse the query for the '{}' field. Please check if it is a valid regular expression without non-UTF8 characters".format(errors[0])
+				message.reply("An error occurred while trying to parse the query for the '{}' field. Please check if it is a valid regular expression without non-UTF8 characters".format(errors[0]))
 			#Multiple errors, list them all
 			else:
-				replytext = "Errors occurred while parsing attributes: {}. Please check your search query for errors".format(", ".join(errors))
-			message.bot.say(message.source, replytext)
+				message.reply("Errors occurred while parsing attributes: {}. Please check your search query for errors".format(", ".join(errors)))
 			return
 
 		#All entered data is valid, look through the stored cards
@@ -184,7 +182,7 @@ class Command(CommandTemplate):
 
 
 		re.purge()  #Clear the stored regexes, since we don't need them anymore
-		message.bot.say(message.source, replytext)
+		message.reply(replytext)
 
 	@staticmethod
 	def getFormattedCardInfo(card, addExtendedInfo=False):

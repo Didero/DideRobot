@@ -30,7 +30,7 @@ class Command(CommandTemplate):
 		"""
 
 		if self.isUpdating:
-			message.bot.sendMessage(message.source, "Sorry, but I'm updating my data (hah) at the moment. Try again in a bit!")
+			message.reply("Sorry, but I'm updating my data (hah) at the moment. Try again in a bit!", "say")
 			return
 
 		name = "random"
@@ -42,7 +42,7 @@ class Command(CommandTemplate):
 			message.bot.sendMessage(message.source, "Ok, I'll update my list of Star Trek Tips. But since they have to come from the future, it might take a while. Try again in, oh, half a minute or so, just to be sure")
 			return
 		searchterm = None if message.messagePartsLength <= 1 else " ".join(message.messageParts[1:])
-		message.bot.say(message.source, self.getTip(name, searchterm))
+		message.reply(self.getTip(name, searchterm), "say")
 
 	def getTweets(self, name='random', searchterm=None):
 		name = name.lower()

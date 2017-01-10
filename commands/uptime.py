@@ -14,7 +14,4 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 		uptime = round(time.time() - message.bot.connectedAt)
-		replytext = u"I have been running for {}".format(SharedFunctions.durationSecondsToText(uptime))
-
-		message.bot.say(message.source, replytext)
-
+		message.reply(u"I have been running for {}".format(SharedFunctions.durationSecondsToText(uptime)), "say")

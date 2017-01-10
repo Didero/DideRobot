@@ -10,4 +10,4 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		message.bot.say(message.source, "You wanna know how I work? I'm flattered! Here you go: https://github.com/Didero/DideRobot")
+		message.reply("You wanna know how I work? I'm flattered! Here you go: https://github.com/Didero/DideRobot", "say")

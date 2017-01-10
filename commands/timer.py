@@ -34,8 +34,8 @@ class Command(CommandTemplate):
 					if message.messagePartsLength >= 2:
 						timerMsg += u": {}".format(u" ".join(message.messageParts[1:]))
 
-					GlobalStore.reactor.callLater(waittime, message.bot.say, message.source, timerMsg)
+					GlobalStore.reactor.callLater(waittime, message.bot.sendMessage, message.source, timerMsg, "say")
 
 					replytext = u"{}: Your timer will fire in {} seconds".format(message.userNickname, waittime)
 
-		message.bot.say(message.source, replytext)
+		message.reply(replytext, "say")

@@ -12,13 +12,13 @@ class Command(CommandTemplate):
 		"""
 		if message.isPrivateMessage:
 			if message.messagePartsLength >= 1:
-				message.bot.say("All right, I'll leave '{}' if I'm there")
+				message.reply("All right, I'll leave '{}' if I'm there", "say")
 				if message.messagePartsLength > 1:
 					message.bot.leave(message.messageParts[0], " ".join(message.messagePartsLength[1:]))
 				else:
 					message.bot.leave(message.messageParts[0])
 			else:
-				message.bot.say("This isn't a channel, this is a private conversation. YOU leave")
+				message.reply("This isn't a channel, this is a private conversation. YOU leave", "say")
 		else:
-			message.bot.say(message.source, "All right, I'll go... Call me back in when you want me around again!")
+			message.reply("All right, I'll go... Call me back in when you want me around again!", "say")
 			message.bot.leave(message.source)

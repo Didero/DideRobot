@@ -65,7 +65,7 @@ class Command(CommandTemplate):
 				#Make sure titles aren't too long
 				if len(title) > 250:
 					title = title[:250] + "[...]"
-				message.bot.say(message.source, u"Title: {}".format(title))
+				message.reply(u"Title: {}".format(title), "say")
 
 	@staticmethod
 	def retrieveGenericTitle(url, timeout=5.0):

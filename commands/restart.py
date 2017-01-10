@@ -22,7 +22,7 @@ class Command(CommandTemplate):
 		if message.trigger == 'restart':
 			if message.isPrivateMessage:
 				#Private message, let the other person know the command was received
-				message.bot.say(message.source, "All right, restarting, I'll be back in a bit if everything goes well")
+				message.reply("All right, restarting, I'll be back in a bit if everything goes well", "say")
 
 			serverfolder = u""
 			if message.messagePartsLength == 0:
@@ -32,14 +32,14 @@ class Command(CommandTemplate):
 				#Restart other bot
 				serverfolder = message.message
 			else:
-				message.bot.say(message.source, "I'm not familiar with that server, sorry")
+				message.reply("I'm not familiar with that server, sorry", "say")
 
 			if serverfolder != u"":
 				GlobalStore.bothandler.stopBotfactory(serverfolder, quitmessage, True)
 				GlobalStore.reactor.callLater(5.0, GlobalStore.bothandler.startBotfactory, serverfolder)
 		elif message.trigger == 'restartfull':
 			if message.isPrivateMessage:
-				message.bot.say(message.source, "Fully restarting bot, hopefully I'll be back in a couple of seconds")
+				message.reply("Fully restarting bot, hopefully I'll be back in a couple of seconds", "say")
 			#Idea from PyMoronBot (as usual)
 			#First shut down all bots to make sure the logs are saved properly
 			GlobalStore.bothandler.shutdown(quitmessage)

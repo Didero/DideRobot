@@ -113,5 +113,5 @@ class Command(CommandTemplate):
 				replytext += u"{:,} is a LOT of rolls, even I would spend ages on that. I'll just give you the expected value, that'll be close enough. " \
 							 u"And that is... {:,}!".format(rollcount, total)
 
-		message.bot.say(message.source, replytext)
+		message.reply(replytext, "say")
 

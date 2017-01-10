@@ -22,4 +22,4 @@ class Command(CommandTemplate):
 				replytext = "All right, I'll go to {}. See you there!".format(channel)
 				message.bot.join(channel)
 				
-		message.bot.say(message.source, replytext)
+		message.reply(replytext, "say")

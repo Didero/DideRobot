@@ -79,7 +79,7 @@ class CommandHandler:
 
 				if command.shouldExecute(message):
 					if command.adminOnly and not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
-						message.bot.say(message.source, "Sorry, this command is admin-only")
+						message.reply("Sorry, this command is admin-only", "say")
 					else:
 						if command.callInThread:
 							#print "Calling '{}' in thread".format(command.triggers[0])
@@ -93,7 +93,7 @@ class CommandHandler:
 		try:
 			self.commands[commandname].execute(message)
 		except Exception as e:
-			message.bot.say(message.source, "Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it")
+			message.reply("Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it", "say")
 			message.bot.factory.messageLogger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
 			self.logger.error("Exception thrown while handling command '{}' and message '{}'".format(commandname, message.rawText), exc_info=True)
 			traceback.print_exc()

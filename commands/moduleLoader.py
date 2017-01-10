@@ -55,4 +55,4 @@ class Command(CommandTemplate):
 					else:
 						reply = u"Module '{}' successfully {}ed".format(modulename, message.trigger)
 
-		message.bot.say(message.source, reply)
+		message.reply(reply, "say")
