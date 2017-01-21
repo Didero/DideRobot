@@ -1,5 +1,3 @@
-import os
-
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 
