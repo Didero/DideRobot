@@ -68,7 +68,7 @@ class Command(CommandTemplate):
 			if len(followedStreamers) == 0:
 				message.reply(u"I'm not watching anybody for this channel. You can add streamers for me to watch with the 'add' parameter", "say")
 			else:
-				message.reply(u"I'm watching {:,} streamer(s): ".format(len(followedStreamers)) + u", ".join(followedStreamers, "say"))
+				message.reply(u"I'm watching {:,} streamer(s): ".format(len(followedStreamers)) + u", ".join(followedStreamers), "say")
 		elif parameter == "add" or parameter == "follow":
 			if message.messagePartsLength < 2:
 				# At the risk of ruining the joke, the '26 hours' is a reference to Star Trek DS9, not a mistake
