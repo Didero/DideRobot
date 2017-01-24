@@ -63,13 +63,15 @@ class Command(CommandTemplate):
 		if parameter == "list":
 			followedStreamers = []
 			for streamername, streamerdata in self.watchedStreamersData.iteritems():
-				if serverChannelString in streamerdata['followChannels'] or serverChannelString in streamerdata['reportChannels']:
+				if serverChannelString in streamerdata['followChannels']:
 					followedStreamers.append(streamername)
+				elif serverChannelString in streamerdata['reportChannels']:
+					followedStreamers.append(streamername + "[a]")
 			if len(followedStreamers) == 0:
 				message.reply(u"I'm not watching anybody for this channel. You can add streamers for me to watch with the 'add' parameter", "say")
 			else:
 				followedStreamers.sort()
-				message.reply(u"I'm watching {:,} streamer(s): ".format(len(followedStreamers)) + u", ".join(followedStreamers), "say")
+				message.reply(u"I'm watching {:,} streamer(s) ('[a'] for autoreport): ".format(len(followedStreamers)) + u", ".join(followedStreamers), "say")
 		elif parameter == "add" or parameter == "follow":
 			if message.messagePartsLength < 2:
 				# At the risk of ruining the joke, the '26 hours' is a reference to Star Trek DS9, not a mistake
