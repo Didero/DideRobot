@@ -140,7 +140,7 @@ class Command(CommandTemplate):
 					if serverChannelString in self.watchedStreamersData[streamername]['followChannels']:
 						self.watchedStreamersData[streamername]['followChannels'].remove(serverChannelString)
 						self.watchedStreamersData[streamername]['reportChannels'].append(serverChannelString)
-						message.reply(u"All right, I'll shout in here when {} goes live. You'll never miss a stream of them again!".format(streamername), "Say")
+						message.reply(u"All right, I'll shout in here when {} goes live. You'll never miss a stream of them again!".format(streamername), "say")
 					else:
 						self.watchedStreamersData[streamername]['reportChannels'].remove(serverChannelString)
 						self.watchedStreamersData[streamername]['followChannels'].append(serverChannelString)
