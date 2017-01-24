@@ -55,6 +55,7 @@ class Command(CommandTemplate):
 		parameter = message.messageParts[0].lower()
 		if (parameter == "add" or parameter == "live") and 'twitch' not in GlobalStore.commandhandler.apikeys:
 			message.reply("Oh, I'm sorry, I seem to have lost my access key to Twitch. Inform my owner(s), they can probably find it for me!", "say")
+			return
 
 		#All options need this for lookup
 		serverChannelString = "{} {}".format(message.bot.factory.serverfolder, message.source)
