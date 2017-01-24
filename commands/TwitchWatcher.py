@@ -168,6 +168,8 @@ class Command(CommandTemplate):
 						reportStrings.append(u"{displaynameBold}: {status} [{game}] ({url})".format(displaynameBold=SharedFunctions.makeTextBold(streamerdata['channel']['display_name']),
 																							 **streamerdata['channel']))
 				message.reply(SharedFunctions.addSeparatorsToString(reportStrings), "say")
+		else:
+			message.reply("I don't know what to do with the parameter '{}', sorry. Maybe you made a typo? Or you could try (re)reading the help text")
 
 
 	def executeScheduledFunction(self):
