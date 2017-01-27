@@ -3,7 +3,7 @@ from IrcMessage import IrcMessage
 
 
 class Command(CommandTemplate):
-	triggers = ['say', 'do', 'notice', 'saydef', 'dodef', 'noticedef']
+	triggers = ['sayto', 'doto', 'noticeto', 'saydef', 'dodef', 'noticedef']
 	helptext = "Makes the bot say the provided text in the provided channel  (format 'say [channel/user] [text]'). " \
 			   "Set a default with 'say setdefault [default]', and use 'saydef [default]' to use that default to save on typing"
 	adminOnly = True
@@ -17,7 +17,7 @@ class Command(CommandTemplate):
 		"""
 
 		if message.messagePartsLength == 0:
-			message.bot.sendMessage(message.source, "Say what? To whom? So many questions, you'd better just provide some more options")
+			message.bot.sendMessage(message.source, "Say what? To whom? So many questions, you'd better just provide some more parameters")
 			return
 
 		#Everything's fine, let's do some actual work
