@@ -14,4 +14,4 @@ class Command(CommandTemplate):
 		if message.messagePartsLength == 0:
 			message.reply("I'm not going to make up something, you have to tell me what to {}!".format(message.trigger))
 		else:
-			message.reply(message.message, message.trigger)  #Trigger can only be 'say' or 'do', which are valid options for the bot's sendMessage function
+			message.reply(message.message, "say" if message.trigger == "say" else "action")
