@@ -158,8 +158,6 @@ class Command(CommandTemplate):
 		#Allow for newlines in aliases, each a new message
 		for newMessageText in aliasText.split("\\n"):
 			# Fill in the special values
-			# $cp is the command prefix
-			newMessageText = re.sub(r"(?<!\\)\$CP", message.bot.factory.commandPrefix, newMessageText, flags=re.IGNORECASE)
 			# $0 is the whole provided message,
 			newMessageText = re.sub(r"(?<!\\)\$0", message.message, newMessageText)
 
@@ -186,6 +184,9 @@ class Command(CommandTemplate):
 			# The replacements may have left some trailing spaces if they couldn't fill in the parameters. Remove those
 			newMessageText = newMessageText.rstrip()
 
+
+			# $cp is the command prefix
+			newMessageText = re.sub(r"(?<!\\)\$CP", message.bot.factory.commandPrefix, newMessageText, flags=re.IGNORECASE)
 			#Since all commands (so far) only fire if the message starts with the command prefix, add it if it's not there
 			if not newMessageText.startswith(message.bot.factory.commandPrefix):
 				newMessageText = message.bot.factory.commandPrefix + newMessageText
