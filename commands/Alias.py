@@ -184,6 +184,19 @@ class Command(CommandTemplate):
 			# The replacements may have left some trailing spaces if they couldn't fill in the parameters. Remove those
 			newMessageText = newMessageText.rstrip()
 
+			# '$random(lowerbound,higherbound)' returns a random integer between the lower bound (inclusive) and the upper bound (exclusive)
+			def insertRandomNumber(regexMatchObject):
+				#group(1) is the lower bound, group(2) is the upper bound
+				lowerbound = int(regexMatchObject.group(1))
+				upperbound = int(regexMatchObject.group(2))
+				#Flip bounds if lowerbound is larger than upperbound, to prevent errors and weird behaviour
+				if lowerbound > upperbound:
+					temp = lowerbound
+					lowerbound = upperbound
+					upperbound = temp
+				return str(random.randrange(lowerbound, upperbound))
+
+			newMessageText = re.sub(r"(?<!\\)\$random\((\d+),(\d+)\)", insertRandomNumber, newMessageText)
 
 			# $cp is the command prefix
 			newMessageText = re.sub(r"(?<!\\)\$CP", message.bot.factory.commandPrefix, newMessageText, flags=re.IGNORECASE)
