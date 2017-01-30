@@ -9,13 +9,13 @@ class CommandTemplate(object):
 	showInCommandList = True
 	stopAfterThisCommand = False  #Some modules might affect the command list, which leads to errors. If this is set to true and the command fires, no further commands are executed
 	adminOnly = False
-	scheduledFunctionTime = -1.0
+	scheduledFunctionTime = None  #Float, in seconds. Or None if you don't want a scheduled function
 	callInThread = False
 	allowedMessageTypes = ['say']
 	
 	def __init__(self):
 		self.onLoad()  #Put this before starting the scheduled function because it may rely on loaded data
-		if self.scheduledFunctionTime > 0.0:
+		if self.scheduledFunctionTime:
 			self.logInfo("Executing looping function every {} seconds".format(self.scheduledFunctionTime))
 			self.scheduledFunctionTimer = task.LoopingCall(self.executeScheduledFunction)
 			self.scheduledFunctionTimer.start(self.scheduledFunctionTime)
@@ -24,7 +24,7 @@ class CommandTemplate(object):
 		pass
 
 	def unload(self):
-		if self.scheduledFunctionTime > 0.0:
+		if self.scheduledFunctionTime:
 			self.logInfo("Stopping looping function")
 			self.scheduledFunctionTimer.stop()
 			self.scheduledFunctionTimer = None
