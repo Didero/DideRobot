@@ -164,7 +164,7 @@ class Command(CommandTemplate):
 			# $n is a specific message part (so $1 is the first index, so messageParts[0])
 			# $n+ would fill in everything starting at $n and all the parts after it ($2+ is messageParts[1:])
 			# $n- is for everything until $n (so $3- is messageParts[:2])
-			def fillInMessageParts(regexMatchObject):
+			def fillInNumberedMessageParts(regexMatchObject):
 				# group(0) is the whole match, group(1) is the first bracketed match, so the \d+
 				index = int(regexMatchObject.group(1)) - 1
 				if index >= message.messagePartsLength:
@@ -180,7 +180,7 @@ class Command(CommandTemplate):
 						return " ".join(message.messageParts[:index])
 				return message.messageParts[index]
 
-			newMessageText = re.sub(r"(?<!\\)\$(\d+)(\+|-)?", fillInMessageParts, newMessageText)
+			newMessageText = re.sub(r"(?<!\\)\$(\d+)(\+|-)?", fillInNumberedMessageParts, newMessageText)
 			# The replacements may have left some trailing spaces if they couldn't fill in the parameters. Remove those
 			newMessageText = newMessageText.rstrip()
 
