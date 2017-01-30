@@ -219,6 +219,9 @@ class DideRobot(irc.IRCClient):
 					msg = msg.encode(encoding='utf-8', errors='replace')
 				except (UnicodeDecodeError, UnicodeEncodeError):
 					self.logger.warning("[sendMessage] Error encoding message to string (is now type '{}'): '{}'".format(type(msg), msg))
+			#It can't handle unicode message targets either
+			if isinstance(target, unicode):
+				target = target.encode('utf-8')
 			logtext = ""
 			if messageType == 'say':
 				logtext = "{user}: {message}"
