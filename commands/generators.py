@@ -455,7 +455,8 @@ class Command(CommandTemplate):
 						parts = word.split('^')
 						word = parts[0]
 						subjects = parts[1].split('|')
-					if word in gamenameparts:
+					#Check if the word has appeared in the name already, or is too similar in subject to an already picked word
+					if word in gamenameparts or word in subjectsPicked:
 						repeatedSubjectFound = True
 						continue
 					elif len(subjects) > 0:
