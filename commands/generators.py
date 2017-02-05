@@ -436,8 +436,19 @@ class Command(CommandTemplate):
 
 	def generateVideogame(self, parameters=None):
 		repeats = 1
+		replacementWord = None
 		if parameters and len(parameters) > 0:
-			repeats = SharedFunctions.parseInt(parameters[0], 1, 1, 5)
+			#Accepted parameters are either a number, which would be the game name repeats, or a word, which will replace a generated word later
+			for param in parameters:
+				try:
+					paramAsInt = int(param)
+				except ValueError:
+					replacementWord = param.capitalize()
+				else:
+					repeats = paramAsInt
+		#Clamp the repeats to a max of 5
+		repeats = min(repeats, 5)
+		repeats = max(repeats, 1)
 
 		#Both data and functioning completely stolen from http://videogamena.me/
 		gamenames = []
@@ -468,6 +479,11 @@ class Command(CommandTemplate):
 						subjectsPicked.extend(subjects)
 					gamenameparts.append(word)
 
-			gamenames.append(" ".join(gamenameparts))
+			gamename = " ".join(gamenameparts)
+			if replacementWord:
+				#Replace a word with the provided word (but not words like 'of' and 'the')
+				words = re.findall(r"\w{4,}", gamename)
+				gamename = gamename.replace(random.choice(words), replacementWord, 1)
+			gamenames.append(gamename)
 
 		return SharedFunctions.getGreySeparator().join(gamenames)
