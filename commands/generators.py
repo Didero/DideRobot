@@ -436,19 +436,24 @@ class Command(CommandTemplate):
 
 	def generateVideogame(self, parameters=None):
 		repeats = 1
-		replacementWord = None
+		replacementText = None
 		if parameters and len(parameters) > 0:
 			#Accepted parameters are either a number, which would be the game name repeats, or a word, which will replace a generated word later
-			for param in parameters:
-				try:
-					paramAsInt = int(param)
-				except ValueError:
-					replacementWord = param.capitalize()
-				else:
-					repeats = paramAsInt
-		#Clamp the repeats to a max of 5
-		repeats = min(repeats, 5)
-		repeats = max(repeats, 1)
+			try:
+				repeats = int(parameters[0])
+				replacementWords = parameters[1:]
+			except ValueError:
+				replacementWords = parameters
+
+			#Make the replacement text titlecase (But not with .title() because that also capitalizes "'s" at the end of words)
+			replacementText = ""
+			for word in replacementWords:
+				replacementText += word.capitalize() + " "
+			replacementText = replacementText.rstrip()
+
+			#Clamp the repeats to a max of 5
+			repeats = min(repeats, 5)
+			repeats = max(repeats, 1)
 
 		#Both data and functioning completely stolen from http://videogamena.me/
 		gamenames = []
@@ -480,10 +485,10 @@ class Command(CommandTemplate):
 					gamenameparts.append(word)
 
 			gamename = " ".join(gamenameparts)
-			if replacementWord:
+			if replacementText and len(replacementText) > 0:
 				#Replace a word with the provided word (but not words like 'of' and 'the')
 				words = re.findall(r"\w{4,}", gamename)
-				gamename = gamename.replace(random.choice(words), replacementWord, 1)
+				gamename = gamename.replace(random.choice(words), replacementText, 1)
 			gamenames.append(gamename)
 
 		return SharedFunctions.getGreySeparator().join(gamenames)
