@@ -156,76 +156,77 @@ class Command(CommandTemplate):
 			self.logWarning("[Alias] Asked to parse alias in message '{}' but that alias doesn't exist".format(message.rawText))
 			return
 
-		#Allow for newlines in aliases, each a new message
-		for newMessageText in aliasText.split("\\n"):
-			# Fill in the special values
-			# $0 is the whole provided message,
-			newMessageText = re.sub(r"(?<!\\)\$0", message.message, newMessageText)
+		# Fill in the special values
+		newMessageText = aliasText
+		# $0 is the whole provided message,
+		newMessageText = re.sub(r"(?<!\\)\$0", message.message, newMessageText)
 
-			# $n is a specific message part (so $1 is the first index, so messageParts[0])
-			# $n+ would fill in everything starting at $n and all the parts after it ($2+ is messageParts[1:])
-			# $n- is for everything until $n (so $3- is messageParts[:2])
-			def fillInNumberedMessageParts(regexMatchObject):
-				# group(0) is the whole match, group(1) is the first bracketed match, so the \d+
-				index = int(regexMatchObject.group(1)) - 1
-				if index >= message.messagePartsLength:
-					# If there aren't enough message parts, just leave the part empty
-					return ""
-				# If there's a second group, a '+' or '-' was added after the number
-				# '+' means all args starting with the index, '-' is all args until the index
-				if regexMatchObject.group(2):
-					if regexMatchObject.group(2) == "+":
-						return " ".join(message.messageParts[index:])
-					else:
-						# If it's not +, it's -
-						return " ".join(message.messageParts[:index])
-				return message.messageParts[index]
-
-			newMessageText = re.sub(r"(?<!\\)\$(\d+)(\+|-)?", fillInNumberedMessageParts, newMessageText)
-			# The replacements may have left some trailing spaces if they couldn't fill in the parameters. Remove those
-			newMessageText = newMessageText.rstrip()
-
-			# Parse all possible alias commands
-			def executeAliasCommand(regexMatchObject):
-				command = regexMatchObject.group(1).lower()
-				args = re.split(r", *", regexMatchObject.group(2))
-				if command == "random":
-					#'$random(lowerbound,higherbound)' returns a random integer between the lower bound (inclusive) and the upper bound (exclusive)
-					try:
-						lowerbound = int(args[0])
-						upperbound = int(args[1])
-					except ValueError:
-						return "ERROR: 'random' only accepts number"
-					except IndexError:
-						return "ERROR: 'random' needs 2 arguments"
-					#Flip bounds if lowerbound is larger than upperbound, to prevent errors and weird behaviour
-					if lowerbound > upperbound:
-						temp = lowerbound
-						lowerbound = upperbound
-						upperbound = temp
-					try:
-						return str(random.randrange(lowerbound, upperbound))
-					except ValueError:
-						return "ERROR: Invalid values for 'random'"
+		# $n is a specific message part (so $1 is the first index, so messageParts[0])
+		# $n+ would fill in everything starting at $n and all the parts after it ($2+ is messageParts[1:])
+		# $n- is for everything until $n (so $3- is messageParts[:2])
+		def fillInNumberedMessageParts(regexMatchObject):
+			# group(0) is the whole match, group(1) is the first bracketed match, so the \d+
+			index = int(regexMatchObject.group(1)) - 1
+			if index >= message.messagePartsLength:
+				# If there aren't enough message parts, just leave the part empty
+				return ""
+			# If there's a second group, a '+' or '-' was added after the number
+			# '+' means all args starting with the index, '-' is all args until the index
+			if regexMatchObject.group(2):
+				if regexMatchObject.group(2) == "+":
+					return " ".join(message.messageParts[index:])
 				else:
-					return "ERROR: Unknown command '{}'".format(command)
-			changeCount = 1
-			while changeCount != 0:
-				#Substitute the right-most command:	No escaped $'s	get command		get args, if present	Not followed by other commands
-				newMessageText, changeCount = re.subn(r"(?<!\\)\$(?P<command>\w+?)\((?P<args>[\w,% ]*?)\)(?=[^$]*$)", executeAliasCommand, newMessageText)
+					# If it's not +, it's -
+					return " ".join(message.messageParts[:index])
+			return message.messageParts[index]
 
-			# $cp is the command prefix
-			newMessageText = re.sub(r"(?<!\\)\$CP", message.bot.factory.commandPrefix, newMessageText, flags=re.IGNORECASE)
-			#Since all commands (so far) only fire if the message starts with the command prefix, add it if it's not there
-			if not newMessageText.startswith(message.bot.factory.commandPrefix):
-				newMessageText = message.bot.factory.commandPrefix + newMessageText
+		newMessageText = re.sub(r"(?<!\\)\$(\d+)(\+|-)?", fillInNumberedMessageParts, newMessageText)
+		# The replacements may have left some trailing spaces if they couldn't fill in the parameters. Remove those
+		newMessageText = newMessageText.rstrip()
 
-			# Modules won't expect incoming messages to be unicode, best convert it
-			if isinstance(newMessageText, unicode):
-				newMessageText = newMessageText.encode('utf-8', errors='replace')
+		# Parse all possible alias commands
+		def executeAliasCommand(regexMatchObject):
+			command = regexMatchObject.group(1).lower()
+			args = re.split(r", *", regexMatchObject.group(2))
+			if command == "random":
+				#'$random(lowerbound,higherbound)' returns a random integer between the lower bound (inclusive) and the upper bound (exclusive)
+				try:
+					lowerbound = int(args[0])
+					upperbound = int(args[1])
+				except ValueError:
+					return "ERROR: 'random' only accepts number"
+				except IndexError:
+					return "ERROR: 'random' needs 2 arguments"
+				#Flip bounds if lowerbound is larger than upperbound, to prevent errors and weird behaviour
+				if lowerbound > upperbound:
+					temp = lowerbound
+					lowerbound = upperbound
+					upperbound = temp
+				try:
+					return str(random.randrange(lowerbound, upperbound))
+				except ValueError:
+					return "ERROR: Invalid values for 'random'"
+			else:
+				return "ERROR: Unknown command '{}'".format(command)
+		changeCount = 1
+		while changeCount != 0:
+			#Substitute the right-most command:	No escaped $'s	get command		get args, if present	Not followed by other commands
+			newMessageText, changeCount = re.subn(r"(?<!\\)\$(?P<command>\w+?)\((?P<args>[\w,% ]*?)\)(?=[^$]*$)", executeAliasCommand, newMessageText)
 
+		# $cp is the command prefix
+		newMessageText = re.sub(r"(?<!\\)\$CP", message.bot.factory.commandPrefix, newMessageText, flags=re.IGNORECASE)
+		#Since all commands (so far) only fire if the message starts with the command prefix, add it if it's not there
+		if not newMessageText.startswith(message.bot.factory.commandPrefix):
+			newMessageText = message.bot.factory.commandPrefix + newMessageText
+
+		# Modules won't expect incoming messages to be unicode, best convert it
+		if isinstance(newMessageText, unicode):
+			newMessageText = newMessageText.encode('utf-8', errors='replace')
+
+		# Allow for newlines in aliases, each a new message
+		for newMessageLine in newMessageText.split("\\n"):
 			#Done! Send the new message to the Commandhandler
-			newMessage = IrcMessage(message.messageType, message.bot, message.user, message.source, newMessageText)
+			newMessage = IrcMessage(message.messageType, message.bot, message.user, message.source, newMessageLine)
 			GlobalStore.commandhandler.fireCommand(newMessage)
 
 
