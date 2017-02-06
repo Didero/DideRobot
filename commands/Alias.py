@@ -185,19 +185,34 @@ class Command(CommandTemplate):
 			# The replacements may have left some trailing spaces if they couldn't fill in the parameters. Remove those
 			newMessageText = newMessageText.rstrip()
 
-			# '$random(lowerbound,higherbound)' returns a random integer between the lower bound (inclusive) and the upper bound (exclusive)
-			def insertRandomNumber(regexMatchObject):
-				#group(1) is the lower bound, group(2) is the upper bound
-				lowerbound = int(regexMatchObject.group(1))
-				upperbound = int(regexMatchObject.group(2))
-				#Flip bounds if lowerbound is larger than upperbound, to prevent errors and weird behaviour
-				if lowerbound > upperbound:
-					temp = lowerbound
-					lowerbound = upperbound
-					upperbound = temp
-				return str(random.randrange(lowerbound, upperbound))
-
-			newMessageText = re.sub(r"(?<!\\)\$random\((\d+),(\d+)\)", insertRandomNumber, newMessageText)
+			# Parse all possible alias commands
+			def executeAliasCommand(regexMatchObject):
+				command = regexMatchObject.group(1).lower()
+				args = re.split(r", *", regexMatchObject.group(2))
+				if command == "random":
+					#'$random(lowerbound,higherbound)' returns a random integer between the lower bound (inclusive) and the upper bound (exclusive)
+					try:
+						lowerbound = int(args[0])
+						upperbound = int(args[1])
+					except ValueError:
+						return "ERROR: 'random' only accepts number"
+					except IndexError:
+						return "ERROR: 'random' needs 2 arguments"
+					#Flip bounds if lowerbound is larger than upperbound, to prevent errors and weird behaviour
+					if lowerbound > upperbound:
+						temp = lowerbound
+						lowerbound = upperbound
+						upperbound = temp
+					try:
+						return str(random.randrange(lowerbound, upperbound))
+					except ValueError:
+						return "ERROR: Invalid values for 'random'"
+				else:
+					return "ERROR: Unknown command '{}'".format(command)
+			changeCount = 1
+			while changeCount != 0:
+				#Substitute the right-most command:	No escaped $'s	get command		get args, if present	Not followed by other commands
+				newMessageText, changeCount = re.subn(r"(?<!\\)\$(?P<command>\w+?)\((?P<args>[\w,% ]*?)\)(?=[^$]*$)", executeAliasCommand, newMessageText)
 
 			# $cp is the command prefix
 			newMessageText = re.sub(r"(?<!\\)\$CP", message.bot.factory.commandPrefix, newMessageText, flags=re.IGNORECASE)
@@ -205,7 +220,7 @@ class Command(CommandTemplate):
 			if not newMessageText.startswith(message.bot.factory.commandPrefix):
 				newMessageText = message.bot.factory.commandPrefix + newMessageText
 
-			# Modules won't expect unicode messages incoming, best convert it
+			# Modules won't expect incoming messages to be unicode, best convert it
 			if isinstance(newMessageText, unicode):
 				newMessageText = newMessageText.encode('utf-8', errors='replace')
 
