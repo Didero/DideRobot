@@ -450,7 +450,10 @@ class Command(CommandTemplate):
 			#Make the replacement text titlecase (But not with .title() because that also capitalizes "'s" at the end of words)
 			replacementText = ""
 			for word in replacementWords:
-				replacementText += word.capitalize() + " "
+				if len(word) > 1:
+					replacementText += word[0].upper() + word[1:] + " "
+				else:
+					replacementText += word.upper()
 			replacementText = replacementText.rstrip()
 
 			#Clamp the repeats to a max of 5
