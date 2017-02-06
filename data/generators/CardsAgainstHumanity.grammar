@@ -1,0 +1,7 @@
+{
+"_name": "Cards Against Humanity Card Generator",
+"_description": "Picks a random black card, and fills it in with one or multiple white cards",
+"_triggers": ["cah", "cardsagainsthumanity"],
+"_start": "<_file|CardsAgainstHumanityBlackCards.txt>",
+"whitecard": "<_bold|<_file//|CardsAgainstHumanityWhiteCards.txt//>>"
+}
