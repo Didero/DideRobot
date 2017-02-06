@@ -232,6 +232,8 @@ class Command(CommandTemplate):
 						replacement = arguments[2]
 					else:
 						replacement = arguments[3]
+				elif fieldKey == u"_bold":
+					replacement = SharedFunctions.makeTextBold(arguments[1])
 				elif fieldKey == u"_" or fieldKey == u"_dummy":
 					replacement = u""
 				else:
