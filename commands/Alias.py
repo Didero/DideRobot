@@ -184,6 +184,9 @@ class Command(CommandTemplate):
 		# The replacements may have left some trailing spaces if they couldn't fill in the parameters. Remove those
 		newMessageText = newMessageText.rstrip()
 
+		#Replace '$nick' with the nickname of the person calling the alias
+		newMessageText = re.sub(r"(?<!\\)\$nick", message.userNickname, newMessageText)
+
 		# Parse all possible alias commands
 		def executeAliasCommand(regexMatchObject):
 			command = regexMatchObject.group(1).lower()
