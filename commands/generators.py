@@ -491,8 +491,16 @@ class Command(CommandTemplate):
 
 			gamename = " ".join(gamenameparts)
 			if replacementText and len(replacementText) > 0:
-				#Replace a word with the provided word (but not words like 'of' and 'the')
-				words = re.findall(r"\w{4,}", gamename)
+				#Replace a word with the provided replacement text
+				#  (but not words like 'of' and 'the', so only words that start with upper-case)
+				if replacementText.endswith("'s"):
+					#Possessive, try to match it with an existing possessive
+					words = re.findall(r"\w+'s?(?= )", gamename)
+					if len(words) == 0:
+						#No possessive words in the gamename, pick other words (but not the last one)
+						words = re.findall(r"[A-Z]\w+(?= )", gamename)
+				else:
+					words = re.findall(r"[A-Z]\w+", gamename)
 				gamename = gamename.replace(random.choice(words), replacementText, 1)
 			gamenames.append(gamename)
 
