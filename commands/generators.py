@@ -244,8 +244,6 @@ class Command(CommandTemplate):
 						replacement = arguments[2]
 					else:
 						replacement = arguments[3]
-				elif fieldKey == u"_bold":
-					replacement = SharedFunctions.makeTextBold(arguments[1])
 				elif fieldKey == u"_" or fieldKey == u"_dummy":
 					replacement = u""
 				else:
@@ -284,6 +282,8 @@ class Command(CommandTemplate):
 						replacement = replacement[0].upper() + replacement[1:]
 					else:
 						replacement = replacement.upper()
+				elif argument == 'bold':
+					replacement = SharedFunctions.makeTextBold(replacement)
 
 			#Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
 			if len(arguments) > 1 and not fieldKey.startswith('_') and replacement.startswith('<'):
