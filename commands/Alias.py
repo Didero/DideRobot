@@ -209,6 +209,8 @@ class Command(CommandTemplate):
 					return str(random.randrange(lowerbound, upperbound))
 				except ValueError:
 					return "ERROR: Invalid values for 'random'"
+			elif command == "choose" or command == "choice":
+				return random.choice(args)
 			else:
 				return "ERROR: Unknown command '{}'".format(command)
 		changeCount = 1
