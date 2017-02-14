@@ -2137,7 +2137,6 @@ Alcoholic games of Clue® lead to <whitecard>.
 <whitecard> has the "mount" keyword.
 <whitecard> probably tastes better than Quiznos.
 Nickelodeon's next kids' game show is "<whitecard>", hosted by <whitecard>.
-<whitecard>.
 Next on GSN: "The $100,000 <whitecard>."
 Who dunnit? <whitecard> with <whitecard> in <whitecard>.
 Much <whitecard>. So <whitecard>. Wow.
