@@ -248,6 +248,12 @@ class Command(CommandTemplate):
 						replacement = arguments[2]
 					else:
 						replacement = arguments[3]
+				elif fieldKey == u"_params":
+					#Fill in the provided parameter(s) in this field
+					if not parameters:
+						replacement = u""
+					else:
+						replacement = u" ".join(parameters)
 				elif fieldKey == u"_" or fieldKey == u"_dummy":
 					replacement = u""
 				else:
