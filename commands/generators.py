@@ -157,9 +157,6 @@ class Command(CommandTemplate):
 		if not variableDict:
 			variableDict = {}
 
-		#Make all the parameters lower-case
-		parameters = [param.lower() for param in parameters]
-
 		#Load the file and parse any options it needs
 		with open(os.path.join(self.filesLocation, grammarFilename), "r") as grammarfile:
 			grammar = json.load(grammarfile)
@@ -240,7 +237,7 @@ class Command(CommandTemplate):
 				elif fieldKey == u"_hasparameter" or fieldKey == u"_hasparam":
 					#<_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 					#Used to check if the literal parameter was passed in the message calling this generator
-					if arguments[1].lower() in parameters:
+					if arguments[1] in parameters:
 						replacement = arguments[2]
 					else:
 						replacement = arguments[3]
