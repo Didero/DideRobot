@@ -208,6 +208,18 @@ class Command(CommandTemplate):
 					#Load a sentence from the specified file. Useful for not cluttering up the grammar file with a lot of options
 					newFilename = arguments[1]
 					replacement = self.getRandomLine(newFilename)
+				elif fieldKey == u"_setvar":
+					#<_setvar|varname|value>
+					variableDict[arguments[1]] = arguments[2]
+				elif fieldKey == u"_remvar":
+					if arguments[1] in variableDict:
+						del variableDict[arguments[1]]
+				elif fieldKey == u"_hasvar":
+					#<_hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
+					if arguments[1] in variableDict:
+						replacement = arguments[2]
+					else:
+						replacement = arguments[3]
 				elif fieldKey == u"_variable" or fieldKey == u"_var":
 					#Variable, fill it in if it's in the variable dictionary
 					if arguments[1] not in variableDict:
@@ -261,15 +273,7 @@ class Command(CommandTemplate):
 
 			#Process the possible arguments that can be provided
 			for argument in arguments[1:]:
-				#<addvar:key=value>
-				if argument.startswith('addvar') and ':' in argument and '=' in argument:
-					key, value = argument.split(':')[1].split('=', 1)
-					if key in variableDict:
-						if isinstance(variableDict[key], list):
-							variableDict[key].append(value)
-						else:
-							variableDict[key] = value
-				elif argument == 'lowercase':
+				if argument == 'lowercase':
 					replacement = replacement.lower()
 				elif argument == 'uppercase':
 					replacement = replacement.upper()
