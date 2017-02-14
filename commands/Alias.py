@@ -222,6 +222,9 @@ class Command(CommandTemplate):
 		if not newMessageText.startswith(message.bot.factory.commandPrefix):
 			newMessageText = message.bot.factory.commandPrefix + newMessageText
 
+		#Turn escaped dollar signs into normal ones, since we're done replacing
+		newMessageText = newMessageText.replace("\\$", "$")
+
 		# Modules won't expect incoming messages to be unicode, best convert it
 		if isinstance(newMessageText, unicode):
 			newMessageText = newMessageText.encode('utf-8', errors='replace')
