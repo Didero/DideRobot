@@ -234,6 +234,13 @@ class Command(CommandTemplate):
 						replacement = arguments[2]
 					else:
 						replacement = arguments[3]
+				elif fieldKey == u"_hasparameters" or fieldKey == u"_hasparams":
+					#<_hasparams|stringIfHasParams|stringIfDoesntHaveParams>"
+					#Checks if there are any parameters provided
+					if parameters and len(parameters) > 0:
+						replacement = arguments[1]
+					else:
+						replacement = arguments[2]
 				elif fieldKey == u"_hasparameter" or fieldKey == u"_hasparam":
 					#<_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 					#Used to check if the literal parameter was passed in the message calling this generator
