@@ -509,8 +509,8 @@ class Command(CommandTemplate):
 						properSetname = setname
 					else:
 						#A match has been found previously. We can't make a boosterpack from two sets, so show an error
-						return (False, "That setname matches at least two sets, '{}' and '{}'. I can't make a boosterpack from more than one set. "
-									   "Please be a bit more specific".format(setname, properSetname))
+						return (False, u"That setname matches at least two sets, '{}' and '{}'. I can't make a boosterpack from more than one set. "
+									   u"Please be a bit more specific".format(setname, properSetname))
 		#If we still haven't found anything, give up
 		if properSetname == u'':
 			return (False, "I'm sorry, I don't know the set '{}'. Did you make a typo?".format(askedSetname))
