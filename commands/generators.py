@@ -312,26 +312,43 @@ class Command(CommandTemplate):
 
 
 	def generateName(self, parameters=None):
-		# First get a last name
-		lastName = self.getRandomLine("LastNames.txt")
+		genderDict = None
+		namecount = 1
+		#Determine if a specific gender name and/or number of names was requested
+		if parameters and len(parameters) > 0:
+			for param in parameters:
+				if self.isGenderParameter(param):
+					genderDict = self.getGenderWords(param, False)
+				else:
+					try:
+						namecount = int(param)
+						# Limit the number of names
+						namecount = max(namecount, 1)
+						namecount = min(namecount, 10)
+					except ValueError:
+						pass
 
-		#Then determine if a specific gender name was requested
-		if parameters and len(parameters) > 0 and self.isGenderParameter(parameters[0]):
-			genderDict = self.getGenderWords(parameters[0], False)
-		else:
+		#If no gender parameter was passed, pick a random one
+		if not genderDict:
 			genderDict = self.getGenderWords('', False)
 
-		#Get the right name
-		if genderDict['gender'] == 'f':
-			firstName = self.getRandomLine('FirstNamesFemale.txt')
-		else:
-			firstName = self.getRandomLine('FirstNamesMale.txt')
+		names = []
+		for i in xrange(namecount):
+			# First get a last name
+			lastName = self.getRandomLine("LastNames.txt")
+			#Get the right name for the provided gender
+			if genderDict['gender'] == 'f':
+				firstName = self.getRandomLine("FirstNamesFemale.txt")
+			else:
+				firstName = self.getRandomLine("FirstNamesMale.txt")
 
-		#with a chance add a middle letter:
-		if random.randint(1, 100) <= 15:
-			return u"{} {}. {}".format(firstName, self.getBasicOrSpecialLetter(50, 75).upper(), lastName)
-		else:
-			return u"{} {}".format(firstName, lastName)
+			#with a chance add a middle letter:
+			if (parameters and "addletter" in parameters) or random.randint(1, 100) <= 15:
+				names.append(u"{} {}. {}".format(firstName, self.getBasicOrSpecialLetter(50, 75).upper(), lastName))
+			else:
+				names.append(u"{} {}".format(firstName, lastName))
+
+		return SharedFunctions.addSeparatorsToString(names)
 
 
 	def generateWord(self, parameters=None):
