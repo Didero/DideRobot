@@ -168,8 +168,8 @@ class Command(CommandTemplate):
 			# group(0) is the whole match, group(1) is the first bracketed match, so the \d+
 			index = int(regexMatchObject.group(1)) - 1
 			if index >= message.messagePartsLength:
-				# If there aren't enough message parts, just leave the part empty
-				return ""
+				# If there aren't enough message parts, just leave text as-is
+				return format(regexMatchObject.group(0))
 			# If there's a second group, a '+' or '-' was added after the number
 			# '+' means all args starting with the index, '-' is all args until the index
 			if regexMatchObject.group(2):
