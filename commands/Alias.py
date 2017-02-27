@@ -158,6 +158,10 @@ class Command(CommandTemplate):
 
 		# Fill in the special values
 		newMessageText = aliasText
+		# Modules won't expect incoming messages to be unicode, and the regex module doesn't like it. Best convert it
+		if isinstance(newMessageText, unicode):
+			newMessageText = newMessageText.encode('utf-8', errors='replace')
+
 		# $0 is the whole provided message,
 		newMessageText = re.sub(r"(?<!\\)\$0", message.message, newMessageText)
 
@@ -226,10 +230,6 @@ class Command(CommandTemplate):
 
 		#Turn escaped dollar signs into normal ones, since we're done replacing
 		newMessageText = newMessageText.replace("\\$", "$")
-
-		# Modules won't expect incoming messages to be unicode, best convert it
-		if isinstance(newMessageText, unicode):
-			newMessageText = newMessageText.encode('utf-8', errors='replace')
 
 		# Allow for newlines in aliases, each a new message
 		for newMessageLine in newMessageText.split("\\n"):
