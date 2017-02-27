@@ -1,4 +1,4 @@
-import importlib, json, logging, os, traceback
+import importlib, json, logging, os
 
 import GlobalStore
 from IrcMessage import IrcMessage
@@ -96,7 +96,6 @@ class CommandHandler:
 			message.reply("Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it", "say")
 			message.bot.factory.messageLogger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
 			self.logger.error("Exception thrown while handling command '{}' and message '{}'".format(commandname, message.rawText), exc_info=True)
-			traceback.print_exc()
 
 	@staticmethod
 	def isCommandAllowedForBot(bot, commandname):
@@ -137,7 +136,6 @@ class CommandHandler:
 			return (True, "Successfully loaded file '{}'".format(name))
 		except Exception as e:
 			self.logger.error("An error occurred while trying to load command '{}'".format(name), exc_info=True)
-			traceback.print_exc()
 			return (False, e)
 
 	def unloadCommand(self, name, folder='commands'):
@@ -163,7 +161,6 @@ class CommandHandler:
 			return (True, "Module '{}' successfully unloaded".format(name))
 		except Exception as e:
 			self.logger.error("An error occurred while trying to unload '{}'".format(name), exc_info=True)
-			traceback.print_exc()
 			return (False, e)
 
 	def unloadAllCommands(self):
