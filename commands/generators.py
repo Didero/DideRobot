@@ -488,6 +488,8 @@ class Command(CommandTemplate):
 				else:
 					replacementText += word.upper() + " "
 			replacementText = replacementText.rstrip()
+			#Game names are unicode, best make this unicode too
+			replacementText = replacementText.decode("utf-8", errors="replace")
 
 			#Clamp the repeats to a max of 5
 			repeats = min(repeats, 5)
@@ -522,7 +524,7 @@ class Command(CommandTemplate):
 						subjectsPicked.extend(subjects)
 					gamenameparts.append(word)
 
-			gamename = " ".join(gamenameparts)
+			gamename = u" ".join(gamenameparts)
 			if replacementText and len(replacementText) > 0:
 				#Replace a word with the provided replacement text
 				#  (but not words like 'of' and 'the', so only words that start with upper-case)
