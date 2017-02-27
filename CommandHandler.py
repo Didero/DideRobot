@@ -31,11 +31,12 @@ class CommandHandler:
 			apifile.write(json.dumps(self.apikeys, sort_keys=True, indent=4))
 
 	def addCommandFunction(self, module, name, function):
+		name = name.lower()
 		if name in self.commandFunctions:
 			self.logger.warning("Trying to add a commandFuction called '{}' but it already exists".format(name))
 			return False
-		self.logger.info("Adding command function '{}' from module '{}'".format(name, os.path.basename(module).split('.')[0]))
-		self.commandFunctions[name.lower()] = {'module': os.path.basename(module).split('.')[0], 'function': function}
+		self.commandFunctions[name] = {'module': os.path.basename(module).split('.', 1)[0], 'function': function}
+		self.logger.info("Adding command function '{}' from module '{}'".format(name, self.commandFunctions[name]['module']))
 		return True
 
 	def addCommandFunctions(self, module, *args):
@@ -82,7 +83,6 @@ class CommandHandler:
 						message.reply("Sorry, this command is admin-only", "say")
 					else:
 						if command.callInThread:
-							#print "Calling '{}' in thread".format(command.triggers[0])
 							GlobalStore.reactor.callInThread(self.executeCommand, commandname, message)
 						else:
 							self.executeCommand(commandname, message)
