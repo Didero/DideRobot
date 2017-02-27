@@ -253,7 +253,9 @@ class Command(CommandTemplate):
 					if not parameters:
 						replacement = u""
 					else:
-						replacement = u" ".join(parameters)
+						#The parameters will be strings. Convert them to unicode
+						replacement = " ".join(parameters)
+						replacement = replacement.decode("utf-8", errors="replace")
 				elif fieldKey == u"_" or fieldKey == u"_dummy":
 					replacement = u""
 				else:
