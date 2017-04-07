@@ -51,7 +51,7 @@ class Command(CommandTemplate):
 					title = GlobalStore.commandhandler.runCommandFunction('getWikipediaArticle', None, url, False)
 				#If nothing has been found so far, just display whatever is between the <title> tags
 				if title is None:
-					self.retrieveGenericTitle(url, timeout)
+					title = self.retrieveGenericTitle(url, timeout)
 			except requests.exceptions.Timeout:
 				self.logError("[url] '{}' took too long to respond, ignoring".format(url))
 			except requests.exceptions.ConnectionError as error:
