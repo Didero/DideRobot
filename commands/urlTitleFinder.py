@@ -75,7 +75,7 @@ class Command(CommandTemplate):
 				return None
 		titlematch = re.search(r'<title ?.*?>(.+)</title>', requests.get(url, timeout=timeout).text, re.DOTALL | re.IGNORECASE)
 		if titlematch:
-			return titlematch.group(1).replace('\n', '').strip()
+			return titlematch.group(1)  #No need to do clean-up, that's handled in the main 'execute' function
 		return None
 
 	@staticmethod
