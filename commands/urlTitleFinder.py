@@ -73,7 +73,7 @@ class Command(CommandTemplate):
 		for ext in extensionsToIgnore:
 			if url.endswith(ext):
 				return None
-		titlematch = re.search(r'<title.*?>(.+)</title>', requests.get(url, timeout=timeout).text, re.DOTALL)
+		titlematch = re.search(r'<title ?.*?>(.+)</title>', requests.get(url, timeout=timeout).text, re.DOTALL | re.IGNORECASE)
 		if titlematch:
 			return titlematch.group(1).replace('\n', '').strip()
 		return None
