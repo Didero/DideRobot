@@ -69,8 +69,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveGenericTitle(url, timeout=5.0):
-		extensionsToIgnore = ['.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf']
-		for ext in extensionsToIgnore:
+		for ext in ('.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf'):
 			if url.endswith(ext):
 				return None
 		titlematch = re.search(r'<title ?.*?>(.+)</title>', requests.get(url, timeout=timeout).text, re.DOTALL | re.IGNORECASE)
