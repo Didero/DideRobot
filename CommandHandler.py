@@ -69,7 +69,7 @@ class CommandHandler:
 			return defaultValue
 		return self.commandFunctions[name]['function'](*args, **kwargs)
 
-	def fireCommand(self, message):
+	def handleMessage(self, message):
 		"""
 		:type message: IrcMessage
 		"""

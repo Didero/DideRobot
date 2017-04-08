@@ -235,7 +235,7 @@ class Command(CommandTemplate):
 		for newMessageLine in newMessageText.split("\\n"):
 			#Done! Send the new message to the Commandhandler
 			newMessage = IrcMessage(message.messageType, message.bot, message.user, message.source, newMessageLine)
-			GlobalStore.commandhandler.fireCommand(newMessage)
+			GlobalStore.commandhandler.handleMessage(newMessage)
 
 
 	def saveAliases(self):

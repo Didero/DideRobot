@@ -60,7 +60,7 @@ class DideRobot(irc.IRCClient):
 		#If we don't know this user yet, add it to our list
 		elif prefix not in self.channelsUserList[params[0]]:
 			self.channelsUserList[params[0]].append(prefix)
-		GlobalStore.commandhandler.fireCommand(message)
+		GlobalStore.commandhandler.handleMessage(message)
 
 		
 	def irc_PART(self, prefix, params):
@@ -82,7 +82,7 @@ class DideRobot(irc.IRCClient):
 		#Keep track of channel users
 		elif prefix in self.channelsUserList[params[0]]:
 				self.channelsUserList[params[0]].remove(prefix)
-		GlobalStore.commandhandler.fireCommand(message)
+		GlobalStore.commandhandler.handleMessage(message)
 
 	def irc_QUIT(self, prefix, params):
 		"""Called when a user quits"""
@@ -93,7 +93,7 @@ class DideRobot(irc.IRCClient):
 			if prefix in userlist:
 				self.factory.messageLogger.log("QUIT: {nick} ({address}): '{quitmessage}' ".format(nick=message.userNickname, address=prefix, quitmessage=params[0]), channel)
 				userlist.remove(prefix)
-		GlobalStore.commandhandler.fireCommand(message)
+		GlobalStore.commandhandler.handleMessage(message)
 
 	def irc_KICK(self, prefix, params):
 		"""Called when a user is kicked"""
@@ -107,7 +107,7 @@ class DideRobot(irc.IRCClient):
 				self.channelsUserList.pop(params[0])
 		elif params[1] in self.channelsUserList[params[0]]:
 				self.channelsUserList[params[0]].remove(params[1])
-		GlobalStore.commandhandler.fireCommand(message)
+		GlobalStore.commandhandler.handleMessage(message)
 
 	def irc_NICK(self, prefix, params):
 		"""Called when a user or me change their nickname"""
@@ -127,7 +127,7 @@ class DideRobot(irc.IRCClient):
 				userlist.append(newaddress)
 				userlist.remove(prefix)
 				self.factory.messageLogger.log("NICK CHANGE: {oldnick} changed their nick to {newnick}".format(oldnick=oldnick, newnick=newnick), channel)
-		GlobalStore.commandhandler.fireCommand(message)
+		GlobalStore.commandhandler.handleMessage(message)
 
 	#Misc. logging
 	def irc_TOPIC(self, prefix, params):
@@ -207,7 +207,7 @@ class DideRobot(irc.IRCClient):
 
 		message = IrcMessage(messageType, self, user, channel, messageText)
 		#Let the CommandHandler see if something needs to be said
-		GlobalStore.commandhandler.fireCommand(message)
+		GlobalStore.commandhandler.handleMessage(message)
 
 	def sendMessage(self, target, msg, messageType='say'):
 		#Only say something if we're not muted, or if it's a private message or a notice
