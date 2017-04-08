@@ -91,8 +91,7 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 
 	def parseSettings(self):
 		#First make sure the required settings are in there
-		settingsToEnsure = ["server", "port", "nickname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"]
-		for settingToEnsure in settingsToEnsure:
+		for settingToEnsure in ("server", "port", "nickname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"):
 			if settingToEnsure not in self.settings:
 				self.logger.error("Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
 				return False
