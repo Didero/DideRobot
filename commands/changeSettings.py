@@ -84,7 +84,7 @@ class Command(CommandTemplate):
 				if settingsKey not in settings:
 					return message.reply(u"The setting '{}' does not exist. Check your spelling or use 'setlist' to create the list")
 				if not isinstance(settings[settingsKey], list):
-					return message.reply(u"The setting '{}' is not a list. Use 'set' to change it")
+					return message.reply(u"The setting '{}' is not a list. Use 'set' to change it".format(settingsKey))
 				if param == 'add':
 					settings[settingsKey].append(newSettingValue)
 				elif param == 'remove':
