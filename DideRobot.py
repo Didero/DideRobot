@@ -105,8 +105,6 @@ class DideRobot(irc.IRCClient):
 		if kickedUserNick == self.nickname:
 			if params[0] in self.channelsUserList:
 				self.channelsUserList.pop(params[0])
-				#If we were kicked, rejoin
-				self.join(params[0])
 		elif params[1] in self.channelsUserList[params[0]]:
 				self.channelsUserList[params[0]].remove(params[1])
 		GlobalStore.commandhandler.fireCommand(message)
