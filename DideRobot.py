@@ -97,11 +97,12 @@ class DideRobot(irc.IRCClient):
 
 	def irc_KICK(self, prefix, params):
 		"""Called when a user is kicked"""
-		#'prefix' is the kicker, params[0] is the channel, params[1] is the kicked, params[-1] is the message
+		#'prefix' is the kicker, params[0] is the channel, params[1] is the user address of the kicked, params[-1] is the kick reason
 		message = IrcMessage('kick', self, prefix, params[0], params[-1])
-		self.factory.messageLogger.log("KICK: {kicked} was kicked by {kicker}, reason: '{reason}'".format(kicked=params[1].split("!", 1)[0], kicker=message.userNickname, reason=params[-1]), params[0])
+		kickedUserNick = params[1].split("!", 1)[0]
+		self.factory.messageLogger.log("KICK: {} was kicked by {}, reason: '{}'".format(kickedUserNick, message.userNickname, params[-1]), params[0])
 		#Keep track of the channels we're in
-		if message.userNickname == self.nickname:
+		if kickedUserNick == self.nickname:
 			if params[0] in self.channelsUserList:
 				self.channelsUserList.pop(params[0])
 				#If we were kicked, rejoin
