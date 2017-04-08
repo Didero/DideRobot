@@ -61,7 +61,7 @@ class Command(CommandTemplate):
 			if param == 'set' or param == 'setlist':
 				if param == 'set' and settingsKey in settings and isinstance(settings[settingsKey], list):
 					return message.reply(u"The '{}' setting is a list. Use 'add', 'remove', or 'setlist' to alter it".format(settingsKey))
-				elif param == 'setlist' and settingsKey in settings and not isinstance(settings[settingsKey], list):
+				elif param == 'setlist' and settingsKey in settings and settings[settingsKey] is not None and not isinstance(settings[settingsKey], list):
 					return message.reply(u"The '{}' setting is not a list. Use 'set' to change it".format(settingsKey))
 				if param == 'setlist':
 					newSettingValue = newSettingValue.split('; ')
