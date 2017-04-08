@@ -109,7 +109,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveYoutubetitle(url, timeout=5.0):
-		if 'google' not in GlobalStore.commandhandler.apikeys.has_section('google'):
+		if 'google' not in GlobalStore.commandhandler.apikeys:
 			CommandTemplate.logError("[url] Google API key not found!")
 			return None
 		#First we need to determine the video ID from something like this: http://www.youtube.com/watch?v=jmAKXADLcxY or http://youtu.be/jmAKXADLcxY
@@ -229,5 +229,3 @@ class Command(CommandTemplate):
 			if 'verified' in twitterdata and twitterdata['verified'] is True:
 				title += u". Verified account"
 			return title.format(**twitterdata)
-
-
