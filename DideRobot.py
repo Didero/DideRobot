@@ -207,7 +207,7 @@ class DideRobot(irc.IRCClient):
 
 		self.factory.messageLogger.log(logtext.format(user=usernick, message=messageText), logsource)
 
-		message = IrcMessage(messageType, self, user, channel, irc.stripFormatting(messageText))
+		message = IrcMessage(messageType, self, user, channel, messageText)
 		#Let the CommandHandler see if something needs to be said
 		GlobalStore.commandhandler.fireCommand(message)
 
