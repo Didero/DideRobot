@@ -18,6 +18,7 @@ class Command(CommandTemplate):
 	isUpdating = False
 
 	def onLoad(self):
+		GlobalStore.commandhandler.addCommandFunctions(__file__, 'getStarTrekTip', self.getTip)
 		#Add the available names to the helptext
 		self.helptext += ". Available names are: " + ", ".join(sorted(self.twitterUsernames.keys()))
 
@@ -39,7 +40,7 @@ class Command(CommandTemplate):
 		if name == 'update':
 			self.executeScheduledFunction()
 			self.scheduledFunctionTimer.reset()
-			message.bot.sendMessage(message.source, "Ok, I'll update my list of Star Trek Tips. But since they have to come from the future, it might take a while. Try again in, oh, half a minute or so, just to be sure")
+			message.reply("Ok, I'll update my list of Star Trek Tips. But since they have to come from the future, it might take a while. Try again in, oh, half a minute or so, just to be sure", "say")
 			return
 		searchterm = None if message.messagePartsLength <= 1 else " ".join(message.messageParts[1:])
 		message.reply(self.getTip(name, searchterm), "say")
