@@ -46,8 +46,9 @@ class Command(CommandTemplate):
 				if settingsKey not in settings:
 					return message.reply(u"The key '{}' does not exist".format(settingsKey))
 				del settings[settingsKey]
-				if message.bot.factory.parseSettings():
+				if message.bot.factory.verifySettings():
 					message.bot.factory.saveSettings()
+					message.bot.factory.parseSettings()
 					return message.reply(u"Successfully removed setting '{}'".format(settingsKey))
 				else:
 					return message.reply(u"Something went wrong with parsing the settings file after deletion. Please check the logs")
@@ -75,8 +76,9 @@ class Command(CommandTemplate):
 					except ValueError:
 						return message.reply(u"'{}' is not a valid number, while the '{}' setting requires a numerical value".format(newSettingValue, settingsKey))
 				settings[settingsKey] = newSettingValue
-				if message.bot.factory.parseSettings():
+				if message.bot.factory.verifySettings():
 					message.bot.factory.saveSettings()
+					message.bot.factory.parseSettings()
 					return message.reply(u"Successfully changed the value for '{}' to '{}'".format(settingsKey, settings[settingsKey]))
 				else:
 					return message.reply(u"Something went wrong when parsing the change of the value for '{}' to '{}'. Please check the logs".format(settingsKey, settings[settingsKey]))
@@ -91,8 +93,9 @@ class Command(CommandTemplate):
 					if newSettingValue not in settings[settingsKey]:
 						return message.reply(u"The setting '{}' does not contain the value '{}', so I cannot remove it".format(settingsKey, newSettingValue))
 					settings[settingsKey].remove(newSettingValue)
-				if message.bot.factory.parseSettings():
+				if message.bot.factory.verifySettings():
 					message.bot.factory.saveSettings()
+					message.bot.factory.parseSettings()
 					return message.reply(u"Successfully updated the '{}' list".format(settingsKey))
 				else:
 					return message.reply(u"Something went wrong when parsing the new settings. Please check the log for errors")
@@ -102,14 +105,14 @@ class Command(CommandTemplate):
 			if message.message.lower() == "all":
 				serversWithReloadFault = []
 				for serverfolder, botfactory in GlobalStore.bothandler.botfactories.iteritems():
-					if not botfactory.updateSettings():
+					if not botfactory.loadSettings():
 						serversWithReloadFault.append(serverfolder)
 				replytext = u"Reloaded all settings"
 				if len(serversWithReloadFault) > 0:
 					replytext += u" (error reloading settings for {})".format("; ".join(serversWithReloadFault))
 			#Otherwise, just reload the settings of this bot
 			else:
-				if message.bot.factory.updateSettings():
+				if message.bot.factory.loadSettings():
 					replytext = u"Successfully reloaded settings for this bot"
 				else:
 					replytext = u"An error occurred while trying to reload the settings for this bot, check the debug output for the cause"

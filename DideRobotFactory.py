@@ -33,7 +33,7 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 
 		#If something goes wrong with updating the settings, it returns False. Don't continue then
 		#Also don't update the logger settings, since we don't have a logger yet
-		if not self.updateSettings(False):
+		if not self.loadSettings(False):
 			self.logger.critical("ERROR while loading settings for bot '{}', aborting launch!".format(self.serverfolder))
 			GlobalStore.reactor.callLater(2.0, GlobalStore.bothandler.unregisterFactory, serverfolder)
 		else:
@@ -67,7 +67,18 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 			self.stopTrying()
 			GlobalStore.bothandler.unregisterFactory(self.serverfolder)
 
-	def updateSettings(self, updateLogger=True):
+	def verifySettings(self, settings=None):
+		if not settings:
+			settings = self.settings
+		#First make sure the required settings are in there
+		for settingToEnsure in ("server", "port", "nickname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"):
+			if settingToEnsure not in settings:
+				return (False, "Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
+			elif isinstance(settings[settingToEnsure], (list, unicode)) and len(settings[settingToEnsure]) == 0:
+				return (False, "Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder))
+		return True
+
+	def loadSettings(self, updateLogger=True):
 		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", "globalsettings.json")):
 			self.logger.error("globalsettings.json not found!")
 			return False
@@ -77,28 +88,22 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 
 		#First load in the default settings
 		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', "globalsettings.json"), 'r') as globalSettingsFile:
-			self.settings = json.load(globalSettingsFile)
+			settings = json.load(globalSettingsFile)
 		#Then update the defaults with the server-specific ones
 		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, "settings.json"), 'r') as serverSettingsFile:
 			serverSettings = json.load(serverSettingsFile)
-			self.settings.update(serverSettings)
+			settings.update(serverSettings)
 
-		if not self.parseSettings():
+		if not self.verifySettings(settings):
 			return False
+		self.settings = settings
+
+		self.parseSettings()
 		if updateLogger:
 			self.messageLogger.updateLogSettings()
 		return True
 
 	def parseSettings(self):
-		#First make sure the required settings are in there
-		for settingToEnsure in ("server", "port", "nickname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"):
-			if settingToEnsure not in self.settings:
-				self.logger.error("Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
-				return False
-			elif isinstance(self.settings[settingToEnsure], (list, unicode)) and len(self.settings[settingToEnsure]) == 0:
-				self.logger.error("Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder))
-				return False
-
 		#All the strings should be strings and not unicode, which makes it a lot easier to use later
 		for key, value in self.settings.iteritems():
 			if isinstance(value, unicode):
@@ -118,7 +123,6 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 		#Assume values smaller than zero mean endless retries
 		if self.maxRetries < 0:
 			self.maxRetries = None
-		return True
 
 	def saveSettings(self):
 		#First get only the keys that are different from the globalsettings
@@ -130,10 +134,13 @@ class DideRobotFactory(protocol.ReconnectingClientFactory):
 				settingsToSave[key] = value
 
 		settingsFilename = os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, 'settings.json')
+		#Make sure there's no name collision
+		if os.path.exists(settingsFilename + '.new'):
+			os.remove(settingsFilename + '.new')
 		#Save the data to a new file, so we don't end up without a settings file if something goes wrong
 		with open(settingsFilename + '.new', 'w') as f:
 			f.write(json.dumps(settingsToSave, indent=2))
-		#Remove any old backup files
+		#Remove the previous backup file
 		if os.path.exists(settingsFilename + '.old'):
 			os.remove(settingsFilename + '.old')
 		#Keep the old settings file around, just in case we need to put it back
