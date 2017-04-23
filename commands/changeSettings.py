@@ -1,3 +1,5 @@
+import os
+
 from CommandTemplate import CommandTemplate
 import GlobalStore
 from IrcMessage import IrcMessage
@@ -101,8 +103,11 @@ class Command(CommandTemplate):
 					return message.reply(u"Something went wrong when parsing the new settings. Please check the log for errors")
 
 		elif message.trigger == 'reloadsettings':
+			argument = None
+			if message.messagePartsLength > 0:
+				argument = message.message.lower()
 			#If the keyword 'all' was provided, reload the settings of all bots
-			if message.message.lower() == "all":
+			if argument == "all":
 				serversWithReloadFault = []
 				for serverfolder, botfactory in GlobalStore.bothandler.botfactories.iteritems():
 					if not botfactory.loadSettings():
@@ -110,6 +115,20 @@ class Command(CommandTemplate):
 				replytext = u"Reloaded all settings"
 				if len(serversWithReloadFault) > 0:
 					replytext += u" (error reloading settings for {})".format("; ".join(serversWithReloadFault))
+			#Load the backup settings
+			elif argument == "old" or argument == "previous":
+				settingsFilepath = os.path.join(GlobalStore.scriptfolder, "serverSettings", message.bot.factory.serverfolder, "settings.json")
+				if not os.path.exists(settingsFilepath + ".old"):
+					return message.reply("I don't have a backup settings file, sorry", "say")
+				os.rename(settingsFilepath, settingsFilepath + ".new")
+				os.rename(settingsFilepath + ".old", settingsFilepath)
+				if message.bot.factory.loadSettings():
+					replytext = u"Old settings file successfully reloaded"
+				else:
+					#Loading went wrong, put the other file back
+					os.rename(settingsFilepath, settingsFilepath + ".old")
+					os.rename(settingsFilepath + ".new", settingsFilepath)
+					replytext = u"Something went wrong when reloading the old settings file, check the log for errors. Original settings file has been reinstated"
 			#Otherwise, just reload the settings of this bot
 			else:
 				if message.bot.factory.loadSettings():
