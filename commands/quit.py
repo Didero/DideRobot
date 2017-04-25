@@ -18,7 +18,7 @@ class Command(CommandTemplate):
 			message.bot.factory.messageLogger.log("{0} told me to quit in channel {1}, obliging".format(message.user, message.source))
 		
 
-			quitmessage = "{0} told me to quit, so here I go..."
+			quitmessage = "{nick} told me to quit, so here I go..."
 			if message.messagePartsLength > 0:
 				quitmessage = message.message
 
