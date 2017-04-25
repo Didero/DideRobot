@@ -18,6 +18,7 @@ class Command(CommandTemplate):
 	helptext += "Use 'search' with key-value attribute pairs for more control, see http://mtgjson.com/documentation.html#cards for available attributes. "
 	helptext += "{commandPrefix}mtgf adds the flavor text and sets to the output. '{commandPrefix}mtgb [setname]' opens a boosterpack"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
+	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
 	dataFormatVersion = '3.4.3'
