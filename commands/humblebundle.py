@@ -12,7 +12,7 @@ class Command(CommandTemplate):
 	triggers = ['humble', 'humblebundle']
 	helptext = "Displays information about the latest Humble Bundle. Add the 'weekly' parameter to get info on their Weekly sale. " \
 			   "Use '{commandPrefix}humblebundle' to see the games in the bundle (can be both wrong and spammy)"
-	#callInThread = True
+	callInThread = True
 
 	def execute(self, message):
 		"""
