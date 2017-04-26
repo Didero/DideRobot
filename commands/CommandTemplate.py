@@ -6,13 +6,15 @@ from twisted.internet import task
 class CommandTemplate(object):
 	triggers = []
 	helptext = "This help text has not yet been filled in. Oops"
+	allowedMessageTypes = ['say']
+
+	adminOnly = False
+	callInThread = False
 	showInCommandList = True
 	stopAfterThisCommand = False  #Some modules might affect the command list, which leads to errors. If this is set to true and the command fires, no further commands are executed
-	adminOnly = False
-	scheduledFunctionTime = None  #Float, in seconds. Or None if you don't want a scheduled function
-	callInThread = False
-	allowedMessageTypes = ['say']
 	
+	scheduledFunctionTime = None  #Float, in seconds. Or None if you don't want a scheduled function
+
 	def __init__(self):
 		self.onLoad()  #Put this before starting the scheduled function because it may rely on loaded data
 		if self.scheduledFunctionTime:
