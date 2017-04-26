@@ -1,4 +1,4 @@
-import datetime, time
+import time
 
 from CommandTemplate import CommandTemplate
 import SharedFunctions
