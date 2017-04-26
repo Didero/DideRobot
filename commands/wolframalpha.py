@@ -9,6 +9,7 @@ import requests
 from CommandTemplate import CommandTemplate
 import GlobalStore
 import SharedFunctions
+from IrcMessage import IrcMessage
 
 
 class Command(CommandTemplate):
@@ -23,19 +24,16 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		replystring = ""
 		if message.messagePartsLength == 0:
-			replystring = "No query provided. I'm not just gonna make stuff up to send to Wolfram Alpha, I've got an API call limit! Add your query after the command."
+			message.reply("No query provided. I'm not just gonna make stuff up to send to Wolfram Alpha, I've got an API call limit! Add your query after the command.", "say")
 		else:
-			replystring = self.searchWolfram(message.message)
-		message.bot.sendMessage(message.source, replystring)
+			message.reply(self.searchWolfram(message.message), "say")
 
 	def fetchWolframData(self, query, podsToFetch=5):
 		#First check if there is an API key
 		if 'wolframalpha' not in GlobalStore.commandhandler.apikeys:
 			return (False, "No Wolfram Alpha API key found")
 
-		replystring = ""
 		params = {'appid': GlobalStore.commandhandler.apikeys['wolframalpha'], 'input': query}
 		if podsToFetch > 0:
 			podIndexParam = ""
@@ -43,7 +41,6 @@ class Command(CommandTemplate):
 				podIndexParam += "{},".format(i)
 			podIndexParam = podIndexParam[:-1]
 			params['podindex'] = podIndexParam
-		apireturn = None
 		try:
 			apireturn = requests.get("http://api.wolframalpha.com/v2/query", params=params, timeout=15.0)
 		except requests.exceptions.Timeout:
@@ -88,7 +85,7 @@ class Command(CommandTemplate):
 				suggestions = []
 				for didyoumean in didyoumeans:
 					if didyoumean.attrib['level'] != 'low':
-						suggestion = didyoumean.text.replace('\n','').strip()
+						suggestion = didyoumean.text.replace('\n', '').strip()
 						if len(suggestion) > 0:
 							suggestions.append(suggestion.encode('utf-8'))
 				if len(suggestions) > 0:
