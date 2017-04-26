@@ -11,13 +11,12 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 
-		replytext = ""
 		if message.messagePartsLength < 1:
 			replytext = "Please provide a channel for me to join"
 		else:
 			channel = message.messageParts[0].lower()
 			#Strip all possible channel prefixes
-			channelWithoutPrefix = channel.lstrip("".join(message.bot.supported.getFeature("CHANTYPES")))
+			channelWithoutPrefix = channel.lstrip("#&!+.~")
 
 			if channel in message.bot.channelsUserList or '#' + channelWithoutPrefix in message.bot.channelsUserList:
 				replytext = "I'm already there, waiting for you. You're welcome!"
