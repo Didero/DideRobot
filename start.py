@@ -1,7 +1,5 @@
 import argparse, logging, os, sys
 import logging.handlers
-#Make sure 'import' also searches inside the 'libraries' folder, so those libs don't clutter up the main directory
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libraries'))
 
 from twisted.internet import reactor
 
