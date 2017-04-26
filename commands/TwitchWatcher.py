@@ -258,6 +258,9 @@ class Command(CommandTemplate):
 			errormessage = apireply["message"] if "message" in apireply else u"No error message provided"
 			return (False, errormessage)
 
+		if not apireply['streams']:
+			#No live streams
+			return (True, {})
 		streamernameToData = {}
 		for streamdata in apireply['streams']:
 			streamername = streamdata['channel']['name'].lower()
