@@ -764,7 +764,7 @@ class Command(CommandTemplate):
 
 			#Again, pop off cards when we need them, to save on memory
 			for cardcount in xrange(0, len(cardlist)):
-				card = cardlist.pop(0)
+				card = cardlist.pop()
 				cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
 
 				#If the card isn't in the store yet, parse its data
@@ -831,6 +831,11 @@ class Command(CommandTemplate):
 		with open(setStoreFilename, 'w') as setsfile:
 			setsfile.write(json.dumps(setstore))
 
+		#We don't need the card info in memory anymore, saves memory for the definitions update later
+		downloadedCardstore = None
+		newcardstore = None
+		setstore = None
+
 		#Store the new version data
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
 			versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': self.getLatestVersionNumber()[1], 'lastUpdateTime': time.time()}))
@@ -877,10 +882,10 @@ class Command(CommandTemplate):
 		for setcount in xrange(0, len(cardstore)):
 			setcode, setdata = cardstore.popitem()
 			for cardcount in xrange(0, len(setdata['cards'])):
-				card = setdata['cards'].pop(0)
+				card = setdata['cards'].pop()
 				if 'text' not in card or '(' not in card['text']:
 					continue
-				lines = card['text'].splitlines()
+				lines = card.pop('text').splitlines()
 				for line in lines:
 					if '(' not in line:
 						continue
@@ -901,8 +906,7 @@ class Command(CommandTemplate):
 					if ' ' in term:
 						end = term.split(' ')[-1]
 						if end.isdigit() or end == 'x':
-							parts = term.split(' ')
-							term = ' '.join(parts[:-1])
+							term = term.rsplit(" ", 1)[0]
 					#For some keywords, the card description just doesn't work that well. Ignore those, and get those from Wikipedia later on
 					if term in ('bolster', 'kicker', 'multikicker'):
 						continue
