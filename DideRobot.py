@@ -295,9 +295,8 @@ class DideRobot(object):
 	def ctcp_unknown_message_type(self, ctcpType, user, messageTarget, message):
 		self.logger.info("|{}| Received unknown CTCP command '{}' on {} from {}, message '{}'".format(self.serverfolder, ctcpType, messageTarget, user, message))
 
-	def irc_RPL_MOTD(self, prefix, motdParts):
-		#Since the Message Of The Day can consist of multiple lines, print them all
-		self.messageLogger.log("Server message of the day: " + " ".join(motdParts))
+	def irc_RPL_MOTD(self, prefix, params):
+		self.messageLogger.log("Server message of the day: " + params[1])
 
 	def irc_JOIN(self, prefix, params):
 		"""Called when a user or the bot joins a channel"""
@@ -402,32 +401,28 @@ class DideRobot(object):
 	#HUMAN COMMUNICATION FUNCTIONS
 	def irc_PRIVMSG(self, user, messageParts):
 		# First part of the messageParts is the channel the message came in from, or the user if it was a PM
+		# Second part is the actual message
 		messageTarget = messageParts[0]
 		# If the actual message (past the first colon) starts with 'chr(1)', it means it's a special CTCP message (like an action)
-		if len(messageParts[1]) > 0 and messageParts[1][1] == Constants.CTCP_DELIMITER:
-			ctcpType = messageParts[1][2:]  #From position 2, because the message starts with a colon and the delimiter
-			message = " ".join(messageParts[2:])
+		if len(messageParts[1]) > 0 and messageParts[1][0] == Constants.CTCP_DELIMITER:
+			#First section is the CTCP type
+			ctcpType, messageParts[1] = messageParts[1].split(" ", 1)
+			ctcpType = ctcpType[1:]  #Remove the CTCP delimiter
 			#The message should also end with a 'chr(1)', remove that
-			if message.endswith(Constants.CTCP_DELIMITER):
-				message = message[:-1]
+			if messageParts[1].endswith(Constants.CTCP_DELIMITER):
+				messageParts[1] = messageParts[1][:-1]
 			#Check if we have a function to handle this type of CTCP message, otherwise fall back on a default
 			ctcpFunction = getattr(self, "ctcp_" + ctcpType, None)
 			if ctcpFunction:
-				ctcpFunction(user, messageTarget, message)
+				ctcpFunction(user, messageTarget, messageParts[1])
 			else:
-				self.ctcp_unknown_message_type(ctcpType, user, messageTarget, message)
+				self.ctcp_unknown_message_type(ctcpType, user, messageTarget, messageParts[1])
 		#Normal message
 		else:
-			message = " ".join(messageParts[1:])
-			if message.startswith(":"):
-				message = message[1:]
-			self.handleMessage(user, messageTarget, message, "say")
+			self.handleMessage(user, messageTarget, messageParts[1], "say")
 
 	def irc_NOTICE(self, user, messageParts):
-		message = " ".join(messageParts[1:])
-		if message.startswith(":"):
-			message = message[1:]
-		self.handleMessage(user, messageParts[0], message, 'notice')
+		self.handleMessage(user, messageParts[0], messageParts[1], 'notice')
 
 	def ctcp_ACTION(self, user, messageTarget, message):
 		self.handleMessage(user, messageTarget, message, 'action')
