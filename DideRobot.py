@@ -404,7 +404,7 @@ class DideRobot(object):
 		# First part of the messageParts is the channel the message came in from, or the user if it was a PM
 		messageTarget = messageParts[0]
 		# If the actual message (past the first colon) starts with 'chr(1)', it means it's a special CTCP message (like an action)
-		if messageParts[1][1] == Constants.CTCP_DELIMITER:
+		if len(messageParts[1]) > 0 and messageParts[1][1] == Constants.CTCP_DELIMITER:
 			ctcpType = messageParts[1][2:]  #From position 2, because the message starts with a colon and the delimiter
 			message = " ".join(messageParts[2:])
 			#The message should also end with a 'chr(1)', remove that
