@@ -7,7 +7,7 @@ class Command(CommandTemplate):
 	triggers = ['quit', 'shutdown']
 	helptext = "Shuts down the bot. {commandPrefix}quit closes down just this bot, {commandPrefix}shutdown shuts down all instances of DideRobot on all servers it's connected to"
 	adminOnly = True
-	stopAfterThisCommand = True  #Since 'shutdown' unloads all the modules, prevent iteration errors, even though it shouldn't matter much
+	stopAfterThisCommand = True  #Since 'shutdown' unloads all the modules, prevent iteration errors
 	
 	def execute(self, message):
 		"""
@@ -15,13 +15,11 @@ class Command(CommandTemplate):
 		"""
 		if message.trigger == 'quit':
 			#Just quit this server
-			message.bot.factory.messageLogger.log("{0} told me to quit in channel {1}, obliging".format(message.user, message.source))
-		
+			message.bot.messageLogger.log("{0} told me to quit in channel {1}, obliging".format(message.user, message.source))
 
 			quitmessage = "{nick} told me to quit, so here I go..."
 			if message.messagePartsLength > 0:
 				quitmessage = message.message
-
 			#Replace the first argument with the caller's name, for fun possibilities
 			quitmessage = quitmessage.format(nick=message.userNickname)
 
@@ -29,7 +27,7 @@ class Command(CommandTemplate):
 			if message.isPrivateMessage:
 				message.reply("Quitting! Reason: " + quitmessage, "say")
 
-			GlobalStore.bothandler.stopBotfactory(message.bot.factory.serverfolder, quitmessage)
+			GlobalStore.bothandler.stopBot(message.bot.serverfolder, quitmessage)
 
 		elif message.trigger == 'shutdown':
 			#SHUT DOWN EVERYTHING

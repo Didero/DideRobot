@@ -1,4 +1,5 @@
-import GlobalStore
+import gevent
+
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 
@@ -34,7 +35,7 @@ class Command(CommandTemplate):
 					if message.messagePartsLength >= 2:
 						timerMsg += u": {}".format(u" ".join(message.messageParts[1:]))
 
-					GlobalStore.reactor.callLater(waittime, message.bot.sendMessage, message.source, timerMsg, "say")
+					gevent.spawn_later(waittime, message.bot.sendMessage, message.source, timerMsg, "say")
 
 					replytext = u"{}: Your timer will fire in {} seconds".format(message.userNickname, waittime)
 

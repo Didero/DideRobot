@@ -24,7 +24,7 @@ class Command(CommandTemplate):
 			replytext = u"The Paste.ee API key was not found. Please tell my owner so they can fix this"
 		elif not message.source.startswith('#'):
 			replytext = u"A log of a private conversation? That could lead to all kinds of privacy concerns..."
-		elif not message.bot.factory.messageLogger.shouldKeepChannelLogs:
+		elif not message.bot.messageLogger.shouldKeepChannelLogs:
 			replytext = u"I'm sorry, I was told not to keep logs for this channel"
 		else:
 			date = None
@@ -53,7 +53,7 @@ class Command(CommandTemplate):
 			#If we have a datetime object, parse it to the text format we save logs as
 			if date:
 				logfilename = "{}-{}.log".format(message.source, date.strftime("%Y-%m-%d"))
-				logfilename = os.path.join(GlobalStore.scriptfolder, "serverSettings", message.bot.factory.serverfolder, "logs", logfilename)
+				logfilename = os.path.join(GlobalStore.scriptfolder, "serverSettings", message.bot.serverfolder, "logs", logfilename)
 				#check if we've got a log for this channel and day
 				if not os.path.exists(logfilename):
 					replytext = u"Sorry, no log for that day was found"

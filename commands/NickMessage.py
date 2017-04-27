@@ -28,7 +28,7 @@ class Command(CommandTemplate):
 				self.logError("[NickMessage] An error occurred while trying to load the NickMessages file. Something probably went wrong with storing the data")
 
 		#Let's create a slightly shorter way to reference this, shall we
-		serverfolder = message.bot.factory.serverfolder
+		serverfolder = message.bot.serverfolder
 
 		if message.trigger == 'nickmessage':
 			#Search if we know the provided nick (or use the user's nick if there's none provided)

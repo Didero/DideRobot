@@ -1,12 +1,15 @@
 import argparse, logging, os, sys
 import logging.handlers
 
-from twisted.internet import reactor
+import gevent
+import gevent.monkey
 
 import GlobalStore
 from CommandHandler import CommandHandler
 from BotHandler import BotHandler
 
+#First make sure everything is gevent-compatible
+gevent.monkey.patch_all()
 
 #Set up fancy argument parsing
 argparser = argparse.ArgumentParser()
@@ -33,9 +36,6 @@ loggingStreamHandler.setLevel(logging.DEBUG)
 loggingStreamHandler.setFormatter(loggingFormatter)
 logger.addHandler(loggingStreamHandler)
 
-#Some commands need the reactor, register it already
-GlobalStore.reactor = reactor
-
 #Start up the CommandHandler and have it load in all the modules
 GlobalStore.commandhandler = CommandHandler()
 GlobalStore.commandhandler.loadCommands()
@@ -45,5 +45,6 @@ serverfolderList = args.serverlist.split(',')
 #Start up the bots
 bothandler = BotHandler(serverfolderList)
 
-#Finally, set the whole thing off
-GlobalStore.reactor.run()
+#Only quit once every bot and command finishes running
+gevent.wait()
+logger.info("All bots quit and all commands unloaded, exiting")

@@ -37,7 +37,7 @@ class Command(CommandTemplate):
 		"""
 
 		#key in alias dict is either the server or a server-channel string
-		server = message.bot.factory.serverfolder
+		server = message.bot.serverfolder
 		serverChannelString = "{} {}".format(server, message.source)
 
 		if message.trigger in self.aliasNameList:
@@ -81,7 +81,7 @@ class Command(CommandTemplate):
 
 		elif parameter == "serveradd" or parameter == "channeladd" or parameter == "add":
 			#Restrict alias creation to bot admins for now
-			if not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
+			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				message.reply("Alias creation is limited to bot admins only for now, sorry! Poke them if you want an alias created", "say")
 				return
 
@@ -118,7 +118,7 @@ class Command(CommandTemplate):
 
 		elif parameter == "remove":
 			#Restrict alias removal to bot admins as well
-			if not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
+			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				message.reply("Alias removal is limited to bot admins only for now, sorry! Poke them if you think an alias should be removed", "say")
 				return
 
@@ -223,10 +223,10 @@ class Command(CommandTemplate):
 			newMessageText, changeCount = re.subn(r"(?<!\\)\$(?P<command>\w+?)\((?P<args>[\w,% ]*?)\)(?=[^$]*$)", executeAliasCommand, newMessageText)
 
 		# $cp is the command prefix
-		newMessageText = re.sub(r"(?<!\\)\$CP", message.bot.factory.commandPrefix, newMessageText, flags=re.IGNORECASE)
+		newMessageText = re.sub(r"(?<!\\)\$CP", message.bot.commandPrefix, newMessageText, flags=re.IGNORECASE)
 		#Since all commands (so far) only fire if the message starts with the command prefix, add it if it's not there
-		if not newMessageText.startswith(message.bot.factory.commandPrefix):
-			newMessageText = message.bot.factory.commandPrefix + newMessageText
+		if not newMessageText.startswith(message.bot.commandPrefix):
+			newMessageText = message.bot.commandPrefix + newMessageText
 
 		#Turn escaped dollar signs into normal ones, since we're done replacing
 		newMessageText = newMessageText.replace("\\$", "$")

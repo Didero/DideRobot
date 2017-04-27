@@ -5,6 +5,7 @@ import traceback
 
 import requests
 from bs4 import BeautifulSoup
+import gevent
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
@@ -25,7 +26,7 @@ class Command(CommandTemplate):
 
 	def executeScheduledFunction(self):
 		if self.shouldUpdate():
-			GlobalStore.reactor.callInThread(self.updateCardFile)
+			self.updateCardFile()
 
 	def execute(self, message):
 		"""
@@ -33,7 +34,7 @@ class Command(CommandTemplate):
 		"""
 		#Immediately check if there's any parameters, to prevent useless work
 		if message.messagePartsLength == 0:
-			message.reply("This command " + self.helptext[0].lower() + self.helptext[1:].format(commandPrefix=message.bot.factory.commandPrefix))
+			message.reply("This command " + self.helptext[0].lower() + self.helptext[1:].format(commandPrefix=message.bot.commandPrefix))
 			return
 
 		replytext = ""
@@ -44,14 +45,14 @@ class Command(CommandTemplate):
 		if searchType == 'update' or searchType == 'forceupdate':
 			if self.areCardfilesInUse:
 				replytext = "I'm already updating!"
-			elif not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
+			elif not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				replytext = "Sorry, only admins can use my update function"
 			elif not searchType == 'forceupdate' and not self.shouldUpdate():
 				replytext = "I've already got all the latest card data, no update is needed"
 			else:
 				success, replytext = self.updateCardFile()
 				#Since we're checking now, set the automatic check to start counting from now on
-				self.scheduledFunctionTimer.reset()
+				self.resetScheduledFunctionGreenlet()
 			message.reply(replytext)
 			return
 
@@ -60,8 +61,8 @@ class Command(CommandTemplate):
 			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')):
 				#If we don't have a version file, something's weird. Force an update to recreate all files properly
 				message.reply("I don't have a version file, for some reason. I'll make sure I have one by updating the card database, give me a minute")
-				GlobalStore.reactor.callInThread(self.updateCardFile)
-				self.scheduledFunctionTimer.reset()
+				self.updateCardFile()
+				self.resetScheduledFunctionGreenlet()
 			else:
 				#Version file's there, show the version number
 				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'r') as versionfile:
@@ -78,12 +79,11 @@ class Command(CommandTemplate):
 		#Check if the data file even exists
 		elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')):
 			if self.areCardfilesInUse:
-				replytext = "I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds"
+				message.reply("I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds", "say")
 			else:
-				replytext = "Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops"
-				GlobalStore.reactor.callInThread(self.updateCardFile)
-				self.scheduledFunctionTimer.reset()
-			message.reply(replytext)
+				message.reply("Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops", "say")
+				self.updateCardFile()
+				self.resetScheduledFunctionGreenlet()
 			return
 
 		elif searchType == 'booster' or message.trigger == 'mtgb':
@@ -95,8 +95,8 @@ class Command(CommandTemplate):
 				return
 			elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
 				message.reply("I'm sorry, I don't seem to have my set file. I'll retrieve it, give me a minute and try again")
-				self.executeScheduledFunction()
-				self.scheduledFunctionTimer.reset()
+				self.updateCardFile()
+				self.resetScheduledFunctionGreenlet()
 				return
 			setname = ' '.join(message.messageParts[1:]).lower() if searchType == 'booster' else message.message.lower()
 			message.reply(self.openBoosterpack(setname)[1])
@@ -260,7 +260,6 @@ class Command(CommandTemplate):
 				maxCardsToList = 10 if message.isPrivateMessage else 5
 
 			#Pick some cards to show
-			cardnames = []
 			if numberOfCardsFound <= maxCardsToList:
 				cardnames = sorted(cardstore.keys())
 			else:
@@ -326,7 +325,6 @@ class Command(CommandTemplate):
 			if 'flavor' in sets[setname]:
 				#Make the flavor text gray to indicate it's not too important.
 				#  '\x03' is colour code character, '14' is gray, '\x0f' is decoration end character
-				#  (own code instead of Twisted's because the latter overcomplicates things)
 				cardInfoList.append(u'\x0314' + sets[setname]['flavor'] + u'\x0f')
 			maxSetsToDisplay = 4
 			setcount = len(sets)
@@ -409,7 +407,7 @@ class Command(CommandTemplate):
 			if self.areCardfilesInUse:
 				return "I'm sorry, but my definitions file seems to missing. Don't worry, I'm making up-I mean reading up on the rules as we speak. Try again in a bit!"
 			else:
-				GlobalStore.reactor.callInThread(self.updateDefinitions)
+				gevent.spawn(self.updateDefinitions)
 				return "I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
 
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
@@ -450,12 +448,12 @@ class Command(CommandTemplate):
 				if addExtendedInfo:
 					#If it's a private message, we don't have to worry about spamming, so just dump the full thing
 					if message.isPrivateMessage:
-						GlobalStore.reactor.callLater(0.2, message.bot.sendMessage, message.userNickname, textRemainder)
+						gevent.spawn_later(0.2, message.bot.sendMessage, message.userNickname, textRemainder)
 					# If it's in a public channel, send the message via notices
 					else:
 						counter = 1
 						while len(textRemainder) > 0:
-							GlobalStore.reactor.callLater(0.2 * counter, message.bot.sendMessage, message.userNickname,
+							gevent.spawn_later(0.2 * counter, message.bot.sendMessage, message.userNickname,
 														  u"({}) {}".format(counter + 1, textRemainder[:maxMessageLength]), 'notice')
 							textRemainder = textRemainder[maxMessageLength:]
 							counter += 1
@@ -818,6 +816,9 @@ class Command(CommandTemplate):
 					cardSetInfo['flavor'] = formatNicer(card.pop('flavor'))
 				newcardstore[cardname][1][setData['name']] = cardSetInfo
 
+			#Don't hog the execution thread for too long, give it up after each set
+			gevent.sleep(0)
+
 		#First delete the original files
 		if os.path.exists(cardStoreFilename):
 			os.remove(cardStoreFilename)
@@ -916,6 +917,8 @@ class Command(CommandTemplate):
 						definition = definition.replace(card['name'], 'this card')
 						#Finally, add the term and definition!
 						definitions[term] = definition
+			#Let other code execute after every set
+			gevent.sleep(0)
 
 		#Then get possibly missed keyword definitions and slang term meanings from other sites
 		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content"),

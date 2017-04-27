@@ -12,7 +12,7 @@ class Command(CommandTemplate):
 	scheduledFunctionTime = 21600.0  #Six hours in seconds
 
 	twitterUsernames = {'data': 'Data_Tips', 'guinan': 'GuinanTips', 'laforge': 'LaForgeTips', 'locutus': 'LocutusTips', 'picard': 'PicardTips',
-						'quark': 'QuarkTips', 'riker': 'RikerTips', 'rikergoogling': 'RikerGoogling','worf': 'WorfTips', 'worfemail': 'WorfEmail'}
+						'quark': 'QuarkTips', 'riker': 'RikerTips', 'rikergoogling': 'RikerGoogling', 'worf': 'WorfTips', 'worfemail': 'WorfEmail'}
 	# Not all 'tips' are actually tips. This is a list of a replacement term to use if 'tip' is not accurate. It replaces the entire part before the colon
 	resultPrefix = {'rikergoogling': "Riker searched", 'worfemail': "Worf's Outbox"}
 	isUpdating = False
@@ -21,9 +21,6 @@ class Command(CommandTemplate):
 		GlobalStore.commandhandler.addCommandFunctions(__file__, 'getStarTrekTip', self.getTip)
 		#Add the available names to the helptext
 		self.helptext += ". Available names are: " + ", ".join(sorted(self.twitterUsernames.keys()))
-
-	def executeScheduledFunction(self):
-		GlobalStore.reactor.callInThread(self.updateTwitterMessages)
 
 	def execute(self, message):
 		"""
@@ -38,9 +35,12 @@ class Command(CommandTemplate):
 		if message.messagePartsLength > 0:
 			name = message.messageParts[0].lower()
 		if name == 'update':
-			self.executeScheduledFunction()
-			self.scheduledFunctionTimer.reset()
-			message.reply("Ok, I'll update my list of Star Trek Tips. But since they have to come from the future, it might take a while. Try again in, oh, half a minute or so, just to be sure", "say")
+			if self.scheduledFunctionIsExecuting:
+				message.reply("I'm already updating!", "say")
+			else:
+				message.reply("Ok, I'll update my list of Star Trek Tips. But since they have to come from the future, it might take a while. Try again in, oh, half a minute or so, just to be sure", "say")
+				self.executeScheduledFunction()
+				self.resetScheduledFunctionGreenlet()
 			return
 		searchterm = None if message.messagePartsLength <= 1 else " ".join(message.messageParts[1:])
 		message.reply(self.getTip(name, searchterm), "say")
@@ -96,7 +96,7 @@ class Command(CommandTemplate):
 			return replytext
 
 
-	def updateTwitterMessages(self):
+	def executeScheduledFunction(self):
 		starttime = time.time()
 		self.isUpdating = True
 		#First load all the stored tweet data, if it exists
@@ -142,4 +142,3 @@ class Command(CommandTemplate):
 
 		self.isUpdating = False
 		self.logInfo("[STtip] Updating tweets took {} seconds".format(time.time() - starttime))
-		return True

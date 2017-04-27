@@ -1,5 +1,7 @@
 import importlib, json, logging, os
 
+import gevent
+
 import GlobalStore
 from IrcMessage import IrcMessage
 
@@ -73,17 +75,17 @@ class CommandHandler:
 		"""
 		:type message: IrcMessage
 		"""
-		if not message.bot.factory.shouldUserBeIgnored(message.user, message.userNickname, message.userAddress):
+		if not message.bot.shouldUserBeIgnored(message.user, message.userNickname, message.userAddress):
 			for commandname, command in self.commands.iteritems():
 				if not self.isCommandAllowedForBot(message.bot, commandname):
 					continue
 
 				if command.shouldExecute(message):
-					if command.adminOnly and not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
+					if command.adminOnly and not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 						message.reply("Sorry, this command is admin-only", "say")
 					else:
 						if command.callInThread:
-							GlobalStore.reactor.callInThread(self.executeCommand, commandname, message)
+							gevent.spawn(self.executeCommand, commandname, message)
 						else:
 							self.executeCommand(commandname, message)
 						if command.stopAfterThisCommand:
@@ -94,14 +96,14 @@ class CommandHandler:
 			self.commands[commandname].execute(message)
 		except Exception as e:
 			message.reply("Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it", "say")
-			message.bot.factory.messageLogger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
+			message.bot.messageLogger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
 			self.logger.error("Exception thrown while handling command '{}' and message '{}'".format(commandname, message.rawText), exc_info=True)
 
 	@staticmethod
 	def isCommandAllowedForBot(bot, commandname):
-		if bot.factory.settings['commandWhitelist'] is not None and commandname not in bot.factory.settings['commandWhitelist']:
+		if bot.settings['commandWhitelist'] is not None and commandname not in bot.settings['commandWhitelist']:
 			return False
-		elif bot.factory.settings['commandBlacklist'] is not None and commandname in bot.factory.settings['commandBlacklist']:
+		elif bot.settings['commandBlacklist'] is not None and commandname in bot.settings['commandBlacklist']:
 			return False
 		return True
 	

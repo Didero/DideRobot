@@ -1,6 +1,7 @@
 import json, os, random, re, time
 import HTMLParser
 
+import gevent
 import requests
 
 from CommandTemplate import CommandTemplate
@@ -20,7 +21,7 @@ class Command(CommandTemplate):
 
 	def executeScheduledFunction(self):
 		if self.shouldUpdate():
-			GlobalStore.reactor.callInThread(self.updateCardFile)
+			self.updateCardFile()
 
 	def execute(self, message):
 		"""
@@ -28,7 +29,7 @@ class Command(CommandTemplate):
 		"""
 		#Immediately check if there's any parameters, to prevent useless work
 		if message.messagePartsLength == 0:
-			message.reply("Please provide a term to search for. See '{}help {}' for an explanation how to use this command".format(message.bot.factory.commandPrefix, message.trigger), "say")
+			message.reply("Please provide a term to search for. See '{}help {}' for an explanation how to use this command".format(message.bot.commandPrefix, message.trigger), "say")
 			return
 
 		searchType = message.messageParts[0].lower()
@@ -39,14 +40,14 @@ class Command(CommandTemplate):
 		if searchType == 'update' or searchType == 'forceupdate':
 			if self.areCardfilesBeingUpdated:
 				replytext = "I'm already updating!"
-			elif not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
+			elif not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				replytext = "Sorry, only admins can use my update function"
 			elif not searchType == 'forceupdate' and not self.shouldUpdate()[0]:
 				replytext = "The last update check was done pretty recently, there's no need to check again so soon"
 			else:
 				replytext = self.updateCardFile()[1]
 				#Since we're checking now, set the automatic check to start counting from now on
-				self.scheduledFunctionTimer.reset()
+				self.resetScheduledFunctionGreenlet()
 			message.reply(replytext, "say")
 			return
 
@@ -56,8 +57,8 @@ class Command(CommandTemplate):
 				message.reply("I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds")
 			else:
 				message.reply("Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops")
-				GlobalStore.reactor.callInThread(self.updateCardFile())
-				self.scheduledFunctionTimer.reset()
+				gevent.spawn(self.updateCardFile)
+				self.resetScheduledFunctionGreenlet()
 			return
 
 		#If we reached here, we're gonna search through the card store
@@ -92,7 +93,6 @@ class Command(CommandTemplate):
 		regexDict = {}
 		errors = []
 		for attrib, query in searchDict.iteritems():
-			regex = None
 			try:
 				#Since the query is a string, and the card data is unicode, convert the query to unicode before turning it into a regex
 				regex = re.compile(unicode(query, encoding='utf8'), re.IGNORECASE)
@@ -309,6 +309,7 @@ class Command(CommandTemplate):
 		keysToReformat = ('flavor', 'text')
 		keysToCheckForLength = ('flavor', 'subtype')
 		htmlparser = HTMLParser.HTMLParser()  #Needed because for some reason there's HTML entities in the text ('&ndash' etc)
+		cardcount = 0
 		for card in carddata:
 			for keyToRemove in keysToRemove:
 				if keyToRemove in card:
@@ -337,6 +338,12 @@ class Command(CommandTemplate):
 					#If the field is empty, remove it from the card
 					if len(card[field]) == 0:
 						del card[field]
+
+			#Don't hog the execution thread
+			cardcount += 1
+			if cardcount == 200:
+				gevent.sleep(0)
+				cardcount = 0
 
 		#Save the carddata to file
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCards.json'), 'w') as cardfile:

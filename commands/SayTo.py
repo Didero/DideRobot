@@ -34,21 +34,21 @@ class Command(CommandTemplate):
 				if defaultTarget.startswith('#') and defaultTarget not in message.bot.channelsUserList:
 					messageText = "I'm sorry, I'm not in that channel, so I can't set that as the default"
 				else:
-					self.defaultTargets[message.bot.factory.serverfolder] = defaultTarget
+					self.defaultTargets[message.bot.serverfolder] = defaultTarget
 					if defaultTarget.startswith('#'):
 						messageText = "Sure, all future Say messages will be sent to the channel '{}'".format(defaultTarget)
 					else:
 						messageText = "Ok, if you want to keep pestering user '{}' easily, I'll allow it, but I hope you know what you're doing".format(defaultTarget)
 		#Allow the default to be cleared
 		elif command == 'cleardefault':
-			if message.bot.factory.serverfolder in self.defaultTargets:
-				messageText = "Ok, default Say target '{}' cleared".format(self.defaultTargets[message.bot.factory.serverfolder])
-				del self.defaultTargets[message.bot.factory.serverfolder]
+			if message.bot.serverfolder in self.defaultTargets:
+				messageText = "Ok, default Say target '{}' cleared".format(self.defaultTargets[message.bot.serverfolder])
+				del self.defaultTargets[message.bot.serverfolder]
 			else:
 				messageText = "There's no default set for this server yet, so there's nothing to clear"
 		#Check if there is a default set, and if so, what it is
 		elif command == 'getdefault':
-			messageText = "The default Say target is " + self.defaultTargets.get(message.bot.factory.serverfolder, "not set")
+			messageText = "The default Say target is " + self.defaultTargets.get(message.bot.serverfolder, "not set")
 		#Nothing's stopping us now! Say it!
 		else:
 			#Set the target properly
@@ -60,13 +60,13 @@ class Command(CommandTemplate):
 			#'def' and non-'def' commands have to be treated a little differently
 			if message.trigger.endswith('def'):
 				#Should send to default, but no default set. Warn about that
-				if message.bot.factory.serverfolder not in self.defaultTargets:
+				if message.bot.serverfolder not in self.defaultTargets:
 					messageText = "There's no default set, so I don't know where to send the message. Use 'say setdefault [default]' to set a default"
 					messageType = 'say'
 				#There is a default set, so send the whole message there
 				else:
 					messageText = message.message
-					messageTarget = self.defaultTargets[message.bot.factory.serverfolder]
+					messageTarget = self.defaultTargets[message.bot.serverfolder]
 			#Don't use the default, so we need both a target and a message
 			elif message.messagePartsLength == 1:
 				messageText = "Tell '{}' what? I'm not gonna make anything up, add some text to send".format(message.messageParts[0])

@@ -35,7 +35,7 @@ class Command(CommandTemplate):
 		#Each channel dict has a list of tells for that person
 		#storedTells[serverfolder][username][channel] = [tellMessage1, tellMessag2, ...]
 
-		serverfolder = message.bot.factory.serverfolder
+		serverfolder = message.bot.serverfolder
 
 		#Check if the person that said something has tells waiting for them
 		usernick = message.userNickname.lower()
@@ -59,7 +59,6 @@ class Command(CommandTemplate):
 
 		#Check if we need to add a new tell
 		if message.trigger and message.trigger in self.triggers:
-			replytext = u""
 			if message.messagePartsLength == 0:
 				replytext = u"Add a username and a message as arguments, then we'll tell-I mean talk"
 			elif message.messagePartsLength == 1:

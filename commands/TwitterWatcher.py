@@ -29,7 +29,7 @@ class Command(CommandTemplate):
 			return
 
 	def executeScheduledFunction(self):
-		GlobalStore.reactor.callInThread(self.checkForNewTweets)
+		self.checkForNewTweets()
 
 	def execute(self, message):
 		"""
@@ -40,7 +40,7 @@ class Command(CommandTemplate):
 			return
 
 		parameter = message.messageParts[0].lower()
-		serverChannelPair = [message.bot.factory.serverfolder, message.source]  #List not tuple, because JSON can't save tuples and converts them to a list
+		serverChannelPair = [message.bot.serverfolder, message.source]  #List not tuple, because JSON can't save tuples and converts them to a list
 
 		#Start with 'list' because that doesn't need an account name
 		if parameter == 'list':
@@ -60,11 +60,13 @@ class Command(CommandTemplate):
 			return
 		#'update' forces an update check, but it's only available to admins. Also doesn't need a username
 		if parameter == 'update':
-			if not message.bot.factory.isUserAdmin(message.user, message.userNickname, message.userAddress):
+			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				replytext = "Only my admin(s) can force an update, sorry!"
+			elif self.scheduledFunctionIsExecuting:
+				replytext = "I was updating already! Lucky you, now it'll be done quicker"
 			else:
 				self.checkForNewTweets()
-				self.scheduledFunctionTimer.reset()
+				self.resetScheduledFunctionGreenlet()
 				replytext = "Finished forced TwitterWatcher update check"
 			message.reply(replytext, 'say')
 			return
@@ -196,12 +198,12 @@ class Command(CommandTemplate):
 			for target in self.watchData[username]['targets']:
 				#'target' is a tuple with the server name at [0] and the channel name at [1]
 				#Just ignore it if we're either not on the server or not in the channel
-				if target[0] not in GlobalStore.bothandler.botfactories:
+				if target[0] not in GlobalStore.bothandler.bots:
 					continue
-				targetbot = GlobalStore.bothandler.botfactories[target[0]].bot
+				targetbot = GlobalStore.bothandler.bots[target[0]]
 				if target[1] not in targetbot.channelsUserList:
 					continue
-				targetchannel = target[1].encode('utf-8')  #encode it because Twisted can't handle Unicode targets
+				targetchannel = target[1].encode('utf-8')  #Make sure it's not a unicode object
 				#Now go tell that channel all about the tweets
 				for tweet in tweets:
 					tweetAge = self.getTweetAge(tweet['created_at'], now)

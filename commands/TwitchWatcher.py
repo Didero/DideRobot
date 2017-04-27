@@ -58,7 +58,7 @@ class Command(CommandTemplate):
 			return
 
 		#All options need this for lookup
-		serverChannelString = "{} {}".format(message.bot.factory.serverfolder, message.source)
+		serverChannelString = "{} {}".format(message.bot.serverfolder, message.source)
 
 		if parameter == "list":
 			followedStreamers = []
@@ -173,9 +173,6 @@ class Command(CommandTemplate):
 
 
 	def executeScheduledFunction(self):
-		GlobalStore.reactor.callInThread(self.autoreportLiveStreamers)
-
-	def autoreportLiveStreamers(self):
 		#Go through all our stored streamers, and see if we need to report online status somewhere
 		#  If we do, check if they're actually online
 		streamerIdsToCheck = {}  #Store as a clientId-to-streamername dict to facilitate reverse lookup in self.streamerdata later
@@ -231,7 +228,7 @@ class Command(CommandTemplate):
 		for serverChannelString, streamdatalist in channelMessages.iteritems():
 			server, channel = serverChannelString.rsplit(" ", 1)
 			#First check if we're even in the server and channel we need to report to
-			if server not in GlobalStore.bothandler.botfactories or channel not in GlobalStore.bothandler.botfactories[server].bot.channelsUserList:
+			if server not in GlobalStore.bothandler.bots or channel not in GlobalStore.bothandler.bots[server].channelsUserList:
 				continue
 
 			reportStrings = []
@@ -245,7 +242,7 @@ class Command(CommandTemplate):
 				for streamdata in streamdatalist:
 					reportStrings.append(u"{streamernameBolded}: {1} [{2}] ({3})".format(streamernameBolded=SharedFunctions.makeTextBold(streamdata[0]), *streamdata))
 			#Now make the bot say it
-			GlobalStore.bothandler.botfactories[server].bot.sendMessage(channel.encode("utf8"), u"Streamer(s) went live: " + SharedFunctions.addSeparatorsToString(reportStrings), "say")
+			GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer(s) went live: " + SharedFunctions.addSeparatorsToString(reportStrings), "say")
 
 
 	@staticmethod

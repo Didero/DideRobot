@@ -1,6 +1,6 @@
 import logging
 
-from twisted.internet import task
+import gevent
 
 
 class CommandTemplate(object):
@@ -12,31 +12,37 @@ class CommandTemplate(object):
 	callInThread = False
 	showInCommandList = True
 	stopAfterThisCommand = False  #Some modules might affect the command list, which leads to errors. If this is set to true and the command fires, no further commands are executed
-	
+
 	scheduledFunctionTime = None  #Float, in seconds. Or None if you don't want a scheduled function
+	scheduledFunctionGreenlet = None  #The greenlet that manages the scheduled function, or None if there isn't one
+	scheduledFunctionIsExecuting = False  #Set to True if the scheduled function is running, so we know when we can kill the scheduler greenlet
+
 
 	def __init__(self):
 		self.onLoad()  #Put this before starting the scheduled function because it may rely on loaded data
 		if self.scheduledFunctionTime:
-			self.logInfo("Executing looping function every {} seconds".format(self.scheduledFunctionTime))
-			self.scheduledFunctionTimer = task.LoopingCall(self.executeScheduledFunction)
-			self.scheduledFunctionTimer.start(self.scheduledFunctionTime)
+			self.scheduledFunctionGreenlet = gevent.spawn(self.keepRunningScheduledFunction)
 
 	def onLoad(self):
 		pass
 
 	def unload(self):
 		if self.scheduledFunctionTime:
-			self.logInfo("Stopping looping function")
-			self.scheduledFunctionTimer.stop()
-			self.scheduledFunctionTimer = None
+			#We need to shut down the looping greenlet that calls the scheduled function
+			# If it's not currently executing, we can stop it right now
+			if not self.scheduledFunctionIsExecuting:
+				self.scheduledFunctionGreenlet.kill()
+			else:
+				#If we set the scheduled function time to 'None', it'll stop looping, so the greenlet will exit once the scheduled function completes
+				self.logInfo("Telling scheduled function to quit after finishing the current run")
+				self.scheduledFunctionTime = None
 		self.onUnload()
 
 	def onUnload(self):
 		pass
 
 	def getHelp(self, message):
-		return self.helptext.format(commandPrefix=message.bot.factory.commandPrefix)
+		return self.helptext.format(commandPrefix=message.bot.commandPrefix)
 		
 	def shouldExecute(self, message):
 		#Check if we need to respond, ordered from cheapest to most expensive check
@@ -47,7 +53,26 @@ class CommandTemplate(object):
 
 	def execute(self, message):
 		pass
-	
+
+	def keepRunningScheduledFunction(self):
+		self.logInfo("Executing looping function every {} seconds".format(self.scheduledFunctionTime))
+		try:
+			while self.scheduledFunctionTime and self.scheduledFunctionTime > 0:
+				gevent.sleep(self.scheduledFunctionTime)
+				self.scheduledFunctionIsExecuting = True
+				self.executeScheduledFunction()
+				self.scheduledFunctionIsExecuting = False
+		except gevent.GreenletExit:
+			self.logInfo("Scheduled function loop got killed")
+		else:
+			#While-loop ended normally
+			self.logInfo("Scheduled function loop finished current run and was asked to stop afterwards")
+
+	def resetScheduledFunctionGreenlet(self):
+		if not self.scheduledFunctionIsExecuting:
+			self.scheduledFunctionGreenlet.kill()
+			self.scheduledFunctionGreenlet = gevent.spawn(self.keepRunningScheduledFunction)
+
 	def executeScheduledFunction(self):
 		pass
 

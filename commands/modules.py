@@ -18,7 +18,7 @@ class Command(CommandTemplate):
 		
 		if modulename in GlobalStore.commandhandler.commands and GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, modulename):
 			module = GlobalStore.commandhandler.commands[modulename]
-			replytext = "Module '{0}' has triggers: {1}; Helptext: {2}".format(modulename, ", ".join(module.triggers), module.helptext.format(commandPrefix=message.bot.factory.commandPrefix))
+			replytext = "Module '{0}' has triggers: {1}; Helptext: {2}".format(modulename, ", ".join(module.triggers), module.helptext.format(commandPrefix=message.bot.commandPrefix))
 		else:
 			if modulename != "":
 				replytext = "Unknown module. "

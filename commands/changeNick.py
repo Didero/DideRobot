@@ -1,5 +1,4 @@
 from CommandTemplate import CommandTemplate
-import GlobalStore
 from IrcMessage import IrcMessage
 
 
@@ -14,6 +13,6 @@ class Command(CommandTemplate):
 		"""
 		if message.messagePartsLength == 0:
 			#Change nick back to the default
-			message.bot.setNick(message.bot.factory.settings['nickname'])
+			message.bot.setNick(message.bot.settings['nickname'])
 		else:
 			message.bot.setNick(message.messageParts[0])
