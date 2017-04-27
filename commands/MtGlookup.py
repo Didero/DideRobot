@@ -25,7 +25,7 @@ class Command(CommandTemplate):
 	dataFormatVersion = '3.4.3'
 
 	def executeScheduledFunction(self):
-		if self.shouldUpdate():
+		if not self.areCardfilesInUse and self.shouldUpdate():
 			self.updateCardFile()
 
 	def execute(self, message):
@@ -50,9 +50,10 @@ class Command(CommandTemplate):
 			elif not searchType == 'forceupdate' and not self.shouldUpdate():
 				replytext = "I've already got all the latest card data, no update is needed"
 			else:
-				success, replytext = self.updateCardFile()
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.resetScheduledFunctionGreenlet()
+				#Actually update
+				success, replytext = self.updateCardFile()
 			message.reply(replytext)
 			return
 
