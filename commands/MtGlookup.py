@@ -964,7 +964,9 @@ class Command(CommandTemplate):
 		else:
 			replytext = "Definitions file successfully updated"
 		finally:
-			self.areCardfilesInUse = False
+			#If we got called without a cardfile, we're the only one updating. Since we're done, turn off the update flag
+			if deleteCardstore:
+				self.areCardfilesInUse = False
 
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'w') as defsFile:
 			defsFile.write(json.dumps(definitions))
