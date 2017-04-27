@@ -454,6 +454,9 @@ class DideRobot(object):
 
 	#SENDING OUT MESSAGES
 	def sendLineToServer(self, lineToSend, shouldLogMessage=True):
+		if not self.ircSocket:
+			self.logger.error("|{}| Asked to send line '{}' to server, but socket closed".format(self.serverfolder, lineToSend))
+			return
 		if shouldLogMessage:
 			self.logger.debug("|{}| > {}".format(self.serverfolder, lineToSend))
 		self.ircSocket.send(lineToSend + "\r\n")
