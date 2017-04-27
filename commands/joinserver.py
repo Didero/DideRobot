@@ -15,9 +15,6 @@ class Command(CommandTemplate):
 		replytext = u""
 		if message.messagePartsLength == 0:
 			replytext = u"Please provide a server name to join"
-		#Assume a non-preconfigured server is entered, in a JSON way, so 'server: irc.server.com'
-		elif message.messagePartsLength > 1 or ":" in message.message:
-			replytext = u"Oh, being fancy, are we? This'll be implemented in a bit, but good on you for trying!"
 		#One word was provided, assume it's a preconfigured server folder
 		elif message.messagePartsLength == 1:
 			success = GlobalStore.bothandler.startBotfactory(message.message)
