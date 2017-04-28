@@ -160,7 +160,7 @@ class DideRobot(object):
 
 				#Start listening for replies
 				self.handleConnection()
-				self.logger.info("Lost connection to server '{}', reconnecting".format(self.serverfolder))
+				self.logger.info("Lost connection to server '{}'".format(self.serverfolder))
 
 			# We lost the connection, so close the socket and store that we lost connection
 			self.ircSocket.shutdown(gevent.socket.SHUT_RDWR)
