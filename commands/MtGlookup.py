@@ -42,6 +42,14 @@ class Command(CommandTemplate):
 			message.reply("I'm currently updating my card datastore, sorry! If you try again in, oh, 10 seconds, I should be done. You'll be the first to look through the new cards!")
 			return
 
+		#Check if we have all the files we need
+		for fn in ('cards', 'definitions', 'sets', 'version'):
+			if not os.path.isfile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTG{}.json'.format(fn))):
+				message.reply("Whoops, I don't seem to have all the files I need. I'll update now, retry again in like 15 seconds. Sorry!", "say")
+				self.resetScheduledFunctionGreenlet()
+				self.updateCardFile(True)
+				return
+
 		replytext = ""
 		addExtendedInfo = message.trigger == 'mtgf'
 		searchType = message.messageParts[0].lower()
@@ -62,17 +70,9 @@ class Command(CommandTemplate):
 
 		#Allow checking of card database version
 		elif searchType == 'version':
-			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')):
-				#If we don't have a version file, something's weird. Force an update to recreate all files properly
-				message.reply("I don't have a version file, for some reason. I'll make sure I have one by updating the card database, give me a minute")
-				self.updateCardFile()
-				self.resetScheduledFunctionGreenlet()
-			else:
-				#Version file's there, show the version number
-				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'r') as versionfile:
-					versions = json.load(versionfile)
-				message.reply("My card database is based on version {} from http://www.mtgjson.com".format(versions['dataVersion']))
-			#Regardless, we don't need to continue
+			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'r') as versionfile:
+				versions = json.load(versionfile)
+			message.reply("My card database is based on version {} from http://www.mtgjson.com".format(versions['dataVersion']))
 			return
 
 		#We can also search for definitions
@@ -80,21 +80,9 @@ class Command(CommandTemplate):
 			message.reply(self.getDefinition(message, addExtendedInfo))
 			return
 
-		#Check if the data file even exists
-		elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')):
-			message.reply("Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops", "say")
-			self.updateCardFile()
-			self.resetScheduledFunctionGreenlet()
-			return
-
 		elif searchType == 'booster' or message.trigger == 'mtgb':
 			if (searchType == 'booster' and message.messagePartsLength == 1) or (message.trigger == 'mtgb' and message.messagePartsLength == 0):
 				message.reply("Please provide a set name, so I can open a boosterpack from that set. Or use 'random' to have me pick one")
-				return
-			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
-				message.reply("I'm sorry, I don't seem to have my set file. I'll retrieve it, give me a minute and try again")
-				self.updateCardFile()
-				self.resetScheduledFunctionGreenlet()
 				return
 			setname = ' '.join(message.messageParts[1:]).lower() if searchType == 'booster' else message.message.lower()
 			message.reply(self.openBoosterpack(setname)[1])
