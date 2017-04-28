@@ -516,12 +516,25 @@ class DideRobot(object):
 				messageCommand = "NOTICE"
 			logtext += "{user}: {message}"
 			line = "{} {} :{}".format(messageCommand, target, messageText)
+			extraLines = None
+			#Turn newlines in this line into multiple lines
+			if '\n' in line or '\r' in line:
+				extraLines = line.splitlines()
+				line = extraLines.pop(0)
+			#Check if the line isn't too long to send
+			if len(line) >= Constants.MAX_MESSAGE_LENGTH:
+				extraLines.insert(0, line[Constants.MAX_MESSAGE_LENGTH:])
+				line = line[:Constants.MAX_MESSAGE_LENGTH]
 			if not target.startswith('#'):
 				#If it's a PM, bypass the message queue
 				self.sendLineToServer(line)
 			else:
 				self.queueLineToSend(line)
 			self.messageLogger.log(logtext.format(user=self.nickname, message=messageText), target)
+			#Make sure any extra lines get sent too
+			if extraLines:
+				for extraLine in extraLines:
+					self.sendMessage(target, extraLine, messageType)
 
 
 	#USER LIST CHECKING FUNCTIONS
