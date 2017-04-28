@@ -37,15 +37,18 @@ class Command(CommandTemplate):
 			message.reply("This command " + self.helptext[0].lower() + self.helptext[1:].format(commandPrefix=message.bot.commandPrefix))
 			return
 
+		#If the card set is currently being updated, we probably shouldn't try loading it
+		if self.areCardfilesInUse:
+			message.reply("I'm currently updating my card datastore, sorry! If you try again in, oh, 10 seconds, I should be done. You'll be the first to look through the new cards!")
+			return
+
 		replytext = ""
 		addExtendedInfo = message.trigger == 'mtgf'
 		searchType = message.messageParts[0].lower()
 
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
 		if searchType == 'update' or searchType == 'forceupdate':
-			if self.areCardfilesInUse:
-				replytext = "I'm already updating!"
-			elif not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
+			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				replytext = "Sorry, only admins can use my update function"
 			elif not searchType == 'forceupdate' and not self.shouldUpdate():
 				replytext = "I've already got all the latest card data, no update is needed"
@@ -79,22 +82,16 @@ class Command(CommandTemplate):
 
 		#Check if the data file even exists
 		elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')):
-			if self.areCardfilesInUse:
-				message.reply("I don't have my card database, but I'm solving that problem as we speak! Try again in, oh,  10, 15 seconds", "say")
-			else:
-				message.reply("Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops", "say")
-				self.updateCardFile()
-				self.resetScheduledFunctionGreenlet()
+			message.reply("Sorry, I don't appear to have my card database. I'll try to retrieve it though! Give me 20 seconds, tops", "say")
+			self.updateCardFile()
+			self.resetScheduledFunctionGreenlet()
 			return
 
 		elif searchType == 'booster' or message.trigger == 'mtgb':
 			if (searchType == 'booster' and message.messagePartsLength == 1) or (message.trigger == 'mtgb' and message.messagePartsLength == 0):
 				message.reply("Please provide a set name, so I can open a boosterpack from that set. Or use 'random' to have me pick one")
 				return
-			if self.areCardfilesInUse:
-				message.reply("Oh, sorry, I'm currently retrieving updated set data. If you try again in about 10, 15 seconds, I'll have a freshly updated boosterpack for you!")
-				return
-			elif not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
+			if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')):
 				message.reply("I'm sorry, I don't seem to have my set file. I'll retrieve it, give me a minute and try again")
 				self.updateCardFile()
 				self.resetScheduledFunctionGreenlet()
@@ -103,9 +100,6 @@ class Command(CommandTemplate):
 			message.reply(self.openBoosterpack(setname)[1])
 			return
 
-		#If the card set is currently being updated, we probably shouldn't try loading it
-		if self.areCardfilesInUse:
-			message.reply("I'm currently updating my card datastore, sorry! If you try again in, oh, 10 seconds, I should be done. You'll be the first to look through the new cards!")
 			return
 
 		#If we reached here, we're gonna search through the card store
