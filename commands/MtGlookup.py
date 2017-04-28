@@ -50,7 +50,6 @@ class Command(CommandTemplate):
 				self.updateCardFile(True)
 				return
 
-		replytext = ""
 		addExtendedInfo = message.trigger == 'mtgf'
 		searchType = message.messageParts[0].lower()
 
@@ -88,25 +87,43 @@ class Command(CommandTemplate):
 			message.reply(self.openBoosterpack(setname)[1])
 			return
 
+		#Check if the user passed valid search terms
+		parseSuccess, searchDict = self.parseSearchParameters(searchType, message)
+		if not parseSuccess:
+			#If an error occurred, the second returned parameter isn't the searchdict but an error message
+			message.reply(searchDict, "say")
 			return
+		#Check if the entered search terms can be converted to the regex we need
+		parseSuccess, regexDict = self.searchDictToRegexDict(searchDict)
+		if not parseSuccess:
+			#Again, 'regexDict' is the error string if an error occurred
+			message.reply(regexDict)
+			return
+		matchingCards = self.searchCardStore(regexDict)
+		#Clear the stored regexes, since we don't need them anymore
+		del regexDict
+		re.purge()
+		#Done, show the formatted result
+		message.reply(self.formatSearchResult(matchingCards, addExtendedInfo, searchType.startswith('random'), 20 if message.isPrivateMessage else 10,
+														searchDict.get('name', None), len(searchDict) > 0))
 
+	@staticmethod
+	def parseSearchParameters(searchType, message):
 		#If we reached here, we're gonna search through the card store
 		searchDict = {}
 		# If there is an actual search (with colon key-value separator OR a random card is requested with specific search requirements
 		if (searchType == 'search' and ':' in message.message) or (searchType in ('random', 'randomcommander') and message.messagePartsLength > 1):
 			#Advanced search!
 			if message.messagePartsLength <= 1:
-				message.reply("Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. "
+				return (False, "Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. "
 							  "Look on http://mtgjson.com/documentation.html#cards for available fields, though not all of them may work. "
 							  "The values support regular expressions as well")
-				return
 
 			#Turn the search string (not the argument) into a usable dictionary, case-insensitive,
 			searchDict = SharedFunctions.stringToDict(" ".join(message.messageParts[1:]).lower(), True)
 			if len(searchDict) == 0:
-				message.reply("That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
+				return (False, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
 							  "For a list of valid keys, see http://mtgjson.com/documentation.html#cards (though not all keys may be available)")
-				return
 		#If the searchtype is just 'random', don't set a 'name' field so we don't go through all the cards first
 		#  Otherwise, set the whole message as the 'name' search, since that's the default search
 		elif not searchType.startswith('random'):
@@ -127,11 +144,12 @@ class Command(CommandTemplate):
 					if correctTerm not in searchDict:
 						searchDict[correctTerm] = searchDict[wrongTerm]
 					searchDict.pop(wrongTerm)
+		return (True, searchDict)
 
+	def searchDictToRegexDict(self, searchDict):
 		#Turn the search strings into actual regexes
 		regexDict = {}
 		errors = []
-		shouldAddRegexWarning = False
 		for attrib, query in searchDict.iteritems():
 			try:
 				#Since the query is a string, and the card data is unicode, convert the query to unicode before turning it into a regex
@@ -145,7 +163,6 @@ class Command(CommandTemplate):
 					self.logDebug("[MTG] Regex error when trying to parse '{}': {}".format(query, e))
 					errors.append(attrib)
 				else:
-					shouldAddRegexWarning = True
 					regexDict[attrib] = regex
 			except UnicodeDecodeError as e:
 				self.logDebug("[MTG] Unicode error in key '{}': {}".format(attrib, e))
@@ -163,19 +180,18 @@ class Command(CommandTemplate):
 			#Multiple errors, list them all
 			else:
 				replytext = "Errors occurred while parsing attributes: {}. Please check your search query for errors".format(", ".join(errors))
-			message.reply(replytext)
-			return
-		elif shouldAddRegexWarning:
-			replytext += "(Invalid regex corrected) "
+			return (False, replytext)
+		return (True, regexDict)
 
-		#All entered data is valid, look through the stored cards
+	@staticmethod
+	def searchCardStore(regexDict):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
 			cardstore = json.load(jsonfile)
 
 		#Get the 'setname' search separately, so we can iterate over the rest later
 		setRegex = regexDict.pop('set', None)
 
-		setKeys = ['flavor', 'rarity']
+		setKeys = ('flavor', 'rarity')
 		for cardname in cardstore.keys():
 			carddata = cardstore[cardname]
 
@@ -213,58 +229,52 @@ class Command(CommandTemplate):
 						del cardstore[cardname]
 						#No need to keep looking either
 						break
+		return cardstore
 
+	def formatSearchResult(self, cardstore, addExtendedCardInfo, pickRandomCard, maxCardsToList=10, nameToMatch=None, addResultCount=True):
+		replytext = ""
 		numberOfCardsFound = len(cardstore)
+
 		if numberOfCardsFound == 0:
-			replytext += "Sorry, no card matching your query was found"
-		#If we only found a single card (or if we have to pick a random card from all available cards), just display it
-		elif numberOfCardsFound == 1 or (searchType.startswith('random') and len(searchDict) == 0):
-			if searchType.startswith('random'):
-				cardname = random.choice(cardstore.keys())
-				cardstore = {cardname: cardstore[cardname]}
+			return "Sorry, no card matching your query was found"
+
+		if pickRandomCard:
+			cardname = random.choice(cardstore.keys())
+			cardstore = {cardname: cardstore[cardname]}
+		#If the name we have to match is in there literally, lift it out
+		# (For instance, a search for 'Mirror Entity' returns 'Mirror Entity' and 'Mirror Entity Avatar'.
+		# Show the full info on 'Mirror Entity' but also report we found more matches)
+		elif nameToMatch and nameToMatch in cardstore:
+			cardstore = {nameToMatch: cardstore[nameToMatch]}
+
+		#If there's only one card found, just display it
+		# Use 'len()' instead of 'numberOfCardsFound' because 'pickRandomCard' or 'nameToMatch' could've changed it,
+		# and we need the cardcount var to show how many cards we found at the end
+		if len(cardstore) == 1:
 			setname = cardstore[cardstore.keys()[0]][1].pop('_match', None)
-			replytext += self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedInfo, setname, len(replytext))
-		#If we found multiple cards, list their names (and the full info on a single card, if it matches)
+			replytext += self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedCardInfo, setname, len(replytext))
+			#We may have culled the cardstore list, so there may have been more matches initially. List a count of those
+			if addResultCount and numberOfCardsFound > 1:
+				replytext += " ({:,} more match{} found)".format(numberOfCardsFound - 1, 'es' if numberOfCardsFound > 2 else '')  #==2 because we subtract 1
+			return replytext
+
+		#Check if we didn't find more matches than we're allowed to show
+		if numberOfCardsFound <= maxCardsToList:
+			cardnames = sorted(cardstore.keys())
 		else:
-			maxCardsToList = 20 if message.isPrivateMessage else 10
-			nameMatchedCardFound = False
-			#If there was a name search, check if the literal name is in the resulting cards
-			# If we need to pick a random card and there's a search query provided, procedure is mostly the same, except displayed card is random
-			if ('name' in searchDict and searchDict['name'] in cardstore) or (searchType.startswith('random') and len(searchDict) > 0):
-				#Pick a random card if a random card was wanted, otherwise use the provided search name (only two options to get here)
-				cardname = random.choice(cardstore.keys()) if searchType.startswith('random') else searchDict['name']
-				#If the search returned a setmatch, it's in a '_match' field, retrieve that
-				setname = cardstore[cardname][1].pop('_match', None)
-				replytext += self.getFormattedCardInfo(cardstore[cardname], addExtendedInfo, setname, len(replytext))
-				del cardstore[cardname]
-				numberOfCardsFound -= 1
-				nameMatchedCardFound = True
-				#Reduce the number of card names displayed, since we're also showing a card's info and we don't want to spam
-				maxCardsToList = 10 if message.isPrivateMessage else 5
+			cardnames = sorted(random.sample(cardstore.keys(), maxCardsToList))
 
-			#Pick some cards to show
-			if numberOfCardsFound <= maxCardsToList:
-				cardnames = sorted(cardstore.keys())
-			else:
-				cardnames = sorted(random.sample(cardstore.keys(), maxCardsToList))
-			cardnameText = ""
-			for cardname in cardnames:
-				cardnameText += cardstore[cardname][0]['name'].encode('utf-8') + "; "
-			cardnameText = cardnameText[:-2]
+		#Create a list of card names
+		cardnameText = ""
+		for cardname in cardnames:
+			cardnameText += cardstore[cardname][0]['name'].encode('utf-8') + "; "
+		cardnameText = cardnameText[:-2]
 
-			if nameMatchedCardFound:
-				replytext += " ({:,} more match{} found: ".format(numberOfCardsFound, 'es' if numberOfCardsFound > 1 else '')
-			else:
-				replytext += "Your search returned {:,} cards: ".format(numberOfCardsFound)
-			replytext += cardnameText
-			if numberOfCardsFound > maxCardsToList:
-				replytext += " and {:,} more".format(numberOfCardsFound - maxCardsToList)
-			#Since the extra results list is bracketed when a literal match was also found, it needs a closing bracket
-			if nameMatchedCardFound:
-				replytext += ")"
-
-		re.purge()  #Clear the stored regexes, since we don't need them anymore
-		message.reply(replytext)
+		replytext += "Your search returned {:,} cards: ".format(numberOfCardsFound)
+		replytext += cardnameText
+		if numberOfCardsFound > maxCardsToList:
+			replytext += " and {:,} more".format(numberOfCardsFound - maxCardsToList)
+		return replytext
 
 	@staticmethod
 	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None, startingLength=0):
