@@ -1,5 +1,7 @@
 ﻿import logging, os
 
+import gevent
+
 from DideRobot import DideRobot
 import GlobalStore
 
@@ -20,7 +22,7 @@ class BotHandler:
 			self.shutdown()
 		else:		
 			for serverfolder in serverfolderList:
-				self.startBot(serverfolder)
+				gevent.spawn(self.startBot, serverfolder)
 
 	def startBot(self, serverfolder):
 		if serverfolder in self.bots:
