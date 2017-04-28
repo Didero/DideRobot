@@ -456,6 +456,9 @@ class DideRobot(object):
 			self.logger.debug("|{}| > {}".format(self.serverfolder, lineToSend))
 		self.ircSocket.send(lineToSend + "\r\n")
 
+	def irc_ERR_NOTEXTTOSEND(self, prefix, params):
+		self.logger.error("|{}| We just sent an empty line to the server, which is probably a bug in a module!".format(self.serverfolder))
+
 	@staticmethod
 	def formatCtcpMessage(ctcpType, messageText):
 		return "{delim}{ctcpType} {msg}{delim}".format(delim=Constants.CTCP_DELIMITER, ctcpType=ctcpType, msg=messageText)
