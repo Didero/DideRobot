@@ -145,17 +145,22 @@ class DideRobot(object):
 			# Open a connection
 			self.ircSocket = gevent.socket.socket(gevent.socket.AF_INET, gevent.socket.SOCK_STREAM)
 			self.logger.info("Connecting to {} ({} on port {})".format(self.serverfolder, self.settings['server'], self.settings['port']))
-			self.ircSocket.connect((self.settings['server'], self.settings['port']))
-			#Connecting was successful, authenticate
-			if 'password' in self.settings and len(self.settings['password']) > 0:
-				self.sendLineToServer("PASS " + self.settings['password'])
-			self.sendLineToServer("NICK {}".format(self.settings['nickname']))
-			#Use the specified realname, or fall back to the username if none is provided
-			realname = self.settings.get('realname', self.settings['nickname'])
-			self.sendLineToServer("USER {} 4 * :{}".format(self.settings['nickname'], realname))  #The '4' means we want WALLOPS messages but not invisibility
+			try:
+				self.ircSocket.connect((self.settings['server'], self.settings['port']))
+			except Exception:
+				self.logger.error("Connection to server '{}' ({}:{}) timed out!".format(self.serverfolder, self.settings['server'], self.settings['port']))
+			else:
+				#Connecting was successful, authenticate
+				if 'password' in self.settings and len(self.settings['password']) > 0:
+					self.sendLineToServer("PASS " + self.settings['password'])
+				self.sendLineToServer("NICK {}".format(self.settings['nickname']))
+				#Use the specified realname, or fall back to the username if none is provided
+				realname = self.settings.get('realname', self.settings['nickname'])
+				self.sendLineToServer("USER {} 4 * :{}".format(self.settings['nickname'], realname))  #The '4' means we want WALLOPS messages but not invisibility
 
-			#Start listening for replies
-			self.handleConnection()
+				#Start listening for replies
+				self.handleConnection()
+				self.logger.info("Lost connection to server '{}', reconnecting".format(self.serverfolder))
 
 			# We lost the connection, so close the socket and store that we lost connection
 			self.ircSocket.shutdown(gevent.socket.SHUT_RDWR)
@@ -172,8 +177,6 @@ class DideRobot(object):
 				self.logger.info("Reached max connection retry attempts ({}) for '{}', closing".format(self.maxConnectionRetries, self.serverfolder))
 				break
 
-			#Re-establish the connection
-			self.logger.info("Lost connection to server '{}', reconnecting".format(self.serverfolder))
 			#If we've exceeded the allowed number of attempts, give up
 			if self.reconnectionAttempCount is None:
 				self.reconnectionAttempCount = 1
