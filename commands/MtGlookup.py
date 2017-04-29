@@ -825,9 +825,9 @@ class Command(CommandTemplate):
 			setsfile.write(json.dumps(setstore))
 
 		#We don't need the card info in memory anymore, saves memory for the definitions update later
-		downloadedCardstore = None
-		newcardstore = None
-		setstore = None
+		del downloadedCardstore
+		del newcardstore
+		del setstore
 
 		#Store the new version data
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
