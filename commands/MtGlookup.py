@@ -50,7 +50,6 @@ class Command(CommandTemplate):
 				self.updateCardFile(True)
 				return
 
-		addExtendedInfo = message.trigger == 'mtgf'
 		searchType = message.messageParts[0].lower()
 
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
@@ -76,7 +75,7 @@ class Command(CommandTemplate):
 
 		#We can also search for definitions
 		elif searchType == 'define':
-			message.reply(self.getDefinition(message, addExtendedInfo))
+			message.reply(self.getDefinition(message, message.trigger.endswith('f')))
 			return
 
 		elif searchType == 'booster' or message.trigger == 'mtgb':
@@ -104,8 +103,8 @@ class Command(CommandTemplate):
 		del regexDict
 		re.purge()
 		#Done, show the formatted result
-		message.reply(self.formatSearchResult(matchingCards, addExtendedInfo, searchType.startswith('random'), 20 if message.isPrivateMessage else 10,
-														searchDict.get('name', None), len(searchDict) > 0))
+		message.reply(self.formatSearchResult(matchingCards, message.trigger.endswith('f'), searchType.startswith('random'),
+											  20 if message.isPrivateMessage else 10, searchDict.get('name', None), len(searchDict) > 0))
 
 	@staticmethod
 	def parseSearchParameters(searchType, message):
@@ -394,7 +393,8 @@ class Command(CommandTemplate):
 		replytext = replytext.rstrip(separator).rstrip().encode('utf-8')
 		return replytext
 
-	def getDefinition(self, message, addExtendedInfo=False):
+	@staticmethod
+	def getDefinition(message, addExtendedInfo=False):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
 			definitions = json.load(definitionsFile)
 
@@ -601,7 +601,7 @@ class Command(CommandTemplate):
 
 	def getLatestVersionNumber(self):
 		try:
-			latestVersion = requests.get("http://mtgjson.com/json/version.json", timeout=10.0).text.replace('"', '')
+			latestVersion = requests.get("http://mtgjson.com/json/version.json", timeout=10.0).text
 		except requests.exceptions.Timeout:
 			self.logError("[MTG] Fetching card version timed out")
 			return (False, "Fetching online card version took too long")
