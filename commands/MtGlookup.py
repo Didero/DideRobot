@@ -663,6 +663,7 @@ class Command(CommandTemplate):
 
 		newcardstore = {}
 		setstore = {'_setsWithBoosterpacks': []}
+		setKeysToRemove = ('border', 'magicRaritiesCodes', 'mkm_id', 'mkm_name', 'oldCode', 'onlineOnly', 'translations')
 		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
 		layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme')
 		numberKeysToMakeString = ('cmc', 'hand', 'life', 'loyalty', 'multiverseid')
@@ -688,6 +689,10 @@ class Command(CommandTemplate):
 			setcode, setData = downloadedCardstore.popitem()
 			#Put the cardlist in a separate variable, so we can store all the set information easily
 			cardlist = setData.pop('cards')
+			#Clean up the set data a bit
+			for setKeyToRemove in setKeysToRemove:
+				if setKeyToRemove in setData:
+					del setData[setKeyToRemove]
 			#The 'booster' set field is a bit verbose, make that shorter and easier to use
 			if 'booster' in setData:
 				originalBoosterList = setData.pop('booster')
