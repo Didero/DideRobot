@@ -396,13 +396,6 @@ class Command(CommandTemplate):
 		return replytext
 
 	def getDefinition(self, message, addExtendedInfo=False):
-		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')):
-			if self.areCardfilesInUse:
-				return "I'm sorry, but my definitions file seems to missing. Don't worry, I'm making up-I mean reading up on the rules as we speak. Try again in a bit!"
-			else:
-				gevent.spawn(self.updateDefinitions)
-				return "I'm sorry, I don't seem to have my definitions file. I'll go retrieve it now, try again in a couple of seconds"
-
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
 			definitions = json.load(definitionsFile)
 
