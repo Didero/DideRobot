@@ -58,10 +58,10 @@ class CommandTemplate(object):
 		self.logInfo("Executing looping function every {} seconds".format(self.scheduledFunctionTime))
 		try:
 			while self.scheduledFunctionTime and self.scheduledFunctionTime > 0:
-				gevent.sleep(self.scheduledFunctionTime)
 				self.scheduledFunctionIsExecuting = True
 				self.executeScheduledFunction()
 				self.scheduledFunctionIsExecuting = False
+				gevent.sleep(self.scheduledFunctionTime)
 		except gevent.GreenletExit:
 			self.logInfo("Scheduled function loop got killed")
 		else:
