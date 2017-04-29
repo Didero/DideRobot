@@ -162,6 +162,15 @@ class DideRobot(object):
 				self.handleConnection()
 
 				self.logger.info("Lost connection to server '{}'".format(self.serverfolder))
+
+				#Check if we were still sending messages
+				if self.lineSendingGreenlet:
+					# Kill the message sending greenlet to prevent errors
+					self.lineSendingGreenlet.kill()
+					self.lineSendingGreenlet = None
+					#Also clear the message queue, just in case something in there caused the disconnect
+					self.linesToSend = None
+
 				#Shutdown here because it only makes sense if we have been connected previously
 				self.ircSocket.shutdown(gevent.socket.SHUT_RDWR)
 
