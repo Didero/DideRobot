@@ -22,7 +22,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '3.4.3'
+	dataFormatVersion = '4.0'
 
 	def executeScheduledFunction(self):
 		if not self.areCardfilesInUse and self.shouldUpdate():
@@ -185,51 +185,50 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def searchCardStore(regexDict):
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
-			cardstore = json.load(jsonfile)
-
 		#Get the 'setname' search separately, so we can iterate over the rest later
 		setRegex = regexDict.pop('set', None)
-
 		setKeys = ('flavor', 'rarity')
-		for cardname in cardstore.keys():
-			carddata = cardstore[cardname]
 
-			#First check if we need to see if the sets match
-			if setRegex:
-				setMatchFound = False
-				for setname in carddata[1]:
-					if setRegex.search(setname):
-						setMatchFound = True
-						carddata[1]['_match'] = setname
-						break
-				if not setMatchFound:
-					del cardstore[cardname]
-					continue
+		matchingCards = {}
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
+			for cardline in jsonfile:
+				cardDict = json.loads(cardline)
+				cardname = cardDict.keys()[0]
 
-			#Then check if the rest of the attributes match
-			for attrib in regexDict:
-				#Some data is stored in the card data, some in the set data, because it differs per set (rarity e.d.)
-				if attrib in setKeys:
-					matchesFound = []
-					for setname, setdata in carddata[1].iteritems():
-						if attrib in setdata and regexDict[attrib].search(setdata[attrib]):
-							matchesFound.append(setname)
-					#No matches found, throw out the card and move on
-					if len(matchesFound) == 0:
-						del cardstore[cardname]
-						break
-					#Store the fact that we found a match in a particular set, for future lookup
+				#First check if we need to see if the sets match
+				if setRegex:
+					setMatchFound = False
+					for setname in cardDict[cardname][1]:
+						if setRegex.search(setname):
+							setMatchFound = True
+							cardDict[cardname][1]['_match'] = setname
+							break
+					if not setMatchFound:
+						continue
+
+				#Then check if the rest of the attributes match
+				for attrib in regexDict:
+					#Some data is stored in the card data, some in the set data, because it differs per set (rarity e.d.)
+					if attrib in setKeys:
+						matchesFound = []
+						for setname, setdata in cardDict[cardname][1].iteritems():
+							if attrib in setdata and regexDict[attrib].search(setdata[attrib]):
+								matchesFound.append(setname)
+						#No matches found, move on
+						if len(matchesFound) == 0:
+							break
+						#Store the fact that we found a match in a particular set, for future lookup
+						else:
+							cardDict[cardname][1]['_match'] = random.choice(matchesFound)
+					#Most data is stored as general card data
 					else:
-						carddata[1]['_match'] = random.choice(matchesFound)
-				#Most data is stored as general card data
+						if attrib not in cardDict[cardname][0] or not regexDict[attrib].search(cardDict[cardname][0][attrib]):
+							#If the wanted attribute is either not in the card, or it doesn't match, move on
+							break
 				else:
-					if attrib not in carddata[0] or not regexDict[attrib].search(carddata[0][attrib]):
-						#If the wanted attribute is either not in the card, or it doesn't match, throw it out
-						del cardstore[cardname]
-						#No need to keep looking either
-						break
-		return cardstore
+					#If we didn't break from the loop, then the card matched all search criteria. Store it
+					matchingCards[cardname] = cardDict[cardname]
+		return matchingCards
 
 	def formatSearchResult(self, cardstore, addExtendedCardInfo, pickRandomCard, maxCardsToList=10, nameToMatch=None, addResultCount=True):
 		replytext = ""
@@ -534,29 +533,29 @@ class Command(CommandTemplate):
 				typesToCollect.append((rarity, re.compile(rarity, re.IGNORECASE)))
 		collectTypes = True if len(typesToCollect) > 0 else False
 
-		#Get all cards from that set
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), 'r') as jsonfile:
-			cardstore = json.load(jsonfile)
 		#A dictionary with the found cards, sorted by rarity
 		possibleCards = {}
 		#First fill in the required rarities
 		for rarity in boosterRarities:
 			possibleCards[rarity.lower()] = []
-		for i in xrange(0, len(cardstore)):
-			cardname, carddata = cardstore.popitem()
-			if properSetname not in carddata[1]:
-				continue
-			#Skip cards whose number ends with 'b', since they're the backside of doublefaced cards or the upside-down part of split cards
-			if 'number' in carddata[0] and carddata[0]['number'].endswith('b'):
-				continue
-			if collectTypes:
-				for typeName, typeRegex in typesToCollect:
-					if typeRegex.search(carddata[0]['type']):
-						possibleCards[typeName].append(carddata[0]['name'])
-						continue
-			rarity = carddata[1][properSetname]['rarity'].lower()
-			if rarity in boosterRarities:
-				possibleCards[rarity].append(carddata[0]['name'])
+
+		#Get all cards from that set
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), 'r') as jsonfile:
+			for cardline in jsonfile:
+				cardname, carddata = json.loads(cardline).popitem()
+				if properSetname not in carddata[1]:
+					continue
+				#Skip cards whose number ends with 'b', since they're the backside of doublefaced cards or the upside-down part of split cards
+				if 'number' in carddata[0] and carddata[0]['number'].endswith('b'):
+					continue
+				if collectTypes:
+					for typeName, typeRegex in typesToCollect:
+						if typeRegex.search(carddata[0]['type']):
+							possibleCards[typeName].append(carddata[0]['name'])
+							continue
+				rarity = carddata[1][properSetname]['rarity'].lower()
+				if rarity in boosterRarities:
+					possibleCards[rarity].append(carddata[0]['name'])
 
 		#Some sets don't have basic lands, but need them in their boosterpacks (Gatecrash f.i.) Fix that
 		#TODO: Handle rarities properly, a 'land' shouldn't be a 'basic land' but a land from that set
@@ -817,8 +816,10 @@ class Command(CommandTemplate):
 			os.remove(setStoreFilename)
 		#Save the new databases to disk
 		with open(cardStoreFilename, 'w') as cardfile:
-			#json.dump(cards, cardfile) #This is dozens of seconds slower than below
-			cardfile.write(json.dumps(newcardstore))
+			#Write each card on a separate line, so we can stream each line instead of loading in the entire file
+			for i in xrange(len(newcardstore)):
+				cardname, carddata = newcardstore.popitem()
+				cardfile.write(json.dumps({cardname: carddata}) + '\n')
 		with open(setStoreFilename, 'w') as setsfile:
 			setsfile.write(json.dumps(setstore))
 
