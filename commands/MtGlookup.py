@@ -619,7 +619,7 @@ class Command(CommandTemplate):
 	def shouldUpdate(self):
 		basepath = os.path.join(GlobalStore.scriptfolder, 'data')
 		#If one of the required files doesn't exist, we should update
-		for filename in ('MTGversion', 'MTGcards', 'MTGsets'):
+		for filename in ('MTGversion', 'MTGcards', 'MTGsets', 'MTGdefinitions'):
 			if not os.path.exists(os.path.join(basepath, filename + '.json')):
 				return True
 		with open(os.path.join(basepath, 'MTGversion.json'), 'r') as versionfile:
