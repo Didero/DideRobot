@@ -43,12 +43,11 @@ class Command(CommandTemplate):
 			return
 
 		#Check if we have all the files we need
-		for fn in ('cards', 'definitions', 'sets', 'version'):
-			if not os.path.isfile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTG{}.json'.format(fn))):
-				message.reply("Whoops, I don't seem to have all the files I need. I'll update now, retry again in like 15 seconds. Sorry!", "say")
-				self.resetScheduledFunctionGreenlet()
-				self.updateCardFile(True)
-				return
+		if not self.doNeededFilesExist():
+			message.reply("Whoops, I don't seem to have all the files I need. I'll update now, try again in like 15 seconds. Sorry!", "say")
+			self.resetScheduledFunctionGreenlet()
+			self.updateCardFile(True)
+			return
 
 		searchType = message.messageParts[0].lower()
 
@@ -608,12 +607,18 @@ class Command(CommandTemplate):
 		latestVersion = latestVersion.replace('"', '')  #Version is a quoted string, remove the quotes
 		return (True, latestVersion)
 
+	@staticmethod
+	def doNeededFilesExist():
+		for fn in ('cards', 'definitions', 'sets', 'version'):
+			if not os.path.isfile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTG{}.json'.format(fn))):
+				return False
+		return True
+
 	def shouldUpdate(self):
 		basepath = os.path.join(GlobalStore.scriptfolder, 'data')
 		#If one of the required files doesn't exist, we should update
-		for filename in ('MTGversion', 'MTGcards', 'MTGsets', 'MTGdefinitions'):
-			if not os.path.exists(os.path.join(basepath, filename + '.json')):
-				return True
+		if not self.doNeededFilesExist():
+			return True
 		with open(os.path.join(basepath, 'MTGversion.json'), 'r') as versionfile:
 			versiondata = json.load(versionfile)
 		#We should fix the files if the version file is missing keys we need
