@@ -8,43 +8,45 @@ import GlobalStore
 from CommandHandler import CommandHandler
 from BotHandler import BotHandler
 
-#First make sure everything is gevent-compatible
-gevent.monkey.patch_all()
 
-#Set up fancy argument parsing
-argparser = argparse.ArgumentParser()
-argparser.add_argument("serverlist", help="The comma-separated list of folders in serverSettings that you want to load the config from and start")
-args = argparser.parse_args()
+if __name__ == '__main__':
+	#First make sure everything is gevent-compatible
+	gevent.monkey.patch_all()
 
-#Store where in the filesystem we are for future reference
-GlobalStore.scriptfolder = os.path.dirname(os.path.abspath(__file__))
+	#Set up fancy argument parsing
+	argparser = argparse.ArgumentParser()
+	argparser.add_argument("serverlist", help="The comma-separated list of folders in serverSettings that you want to load the config from and start")
+	args = argparser.parse_args()
 
-#Set up error and debug logging
-logger = logging.getLogger('DideRobot')
-logger.setLevel(logging.DEBUG)
-loggingFormatter = logging.Formatter('%(asctime)s (%(levelname)s) %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+	#Store where in the filesystem we are for future reference
+	GlobalStore.scriptfolder = os.path.dirname(os.path.abspath(__file__))
 
-#Log everything to a file. New file each day, keep 2 days
-loggingFileHandler = logging.handlers.TimedRotatingFileHandler(os.path.join(GlobalStore.scriptfolder, 'Program.log'), when='midnight', backupCount=2, delay=True, utc=True)
-loggingFileHandler.setLevel(logging.DEBUG)
-loggingFileHandler.setFormatter(loggingFormatter)
-logger.addHandler(loggingFileHandler)
+	#Set up error and debug logging
+	logger = logging.getLogger('DideRobot')
+	logger.setLevel(logging.DEBUG)
+	loggingFormatter = logging.Formatter('%(asctime)s (%(levelname)s) %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
 
-#Also print everything to the console
-loggingStreamHandler = logging.StreamHandler(sys.stdout)
-loggingStreamHandler.setLevel(logging.DEBUG)
-loggingStreamHandler.setFormatter(loggingFormatter)
-logger.addHandler(loggingStreamHandler)
+	#Log everything to a file. New file each day, keep 2 days
+	loggingFileHandler = logging.handlers.TimedRotatingFileHandler(os.path.join(GlobalStore.scriptfolder, 'Program.log'), when='midnight', backupCount=2, delay=True, utc=True)
+	loggingFileHandler.setLevel(logging.DEBUG)
+	loggingFileHandler.setFormatter(loggingFormatter)
+	logger.addHandler(loggingFileHandler)
 
-#Start up the CommandHandler and have it load in all the modules
-GlobalStore.commandhandler = CommandHandler()
-GlobalStore.commandhandler.loadCommands()
+	#Also print everything to the console
+	loggingStreamHandler = logging.StreamHandler(sys.stdout)
+	loggingStreamHandler.setLevel(logging.DEBUG)
+	loggingStreamHandler.setFormatter(loggingFormatter)
+	logger.addHandler(loggingStreamHandler)
 
-#Get the config files we need to load from the argument parser
-serverfolderList = args.serverlist.split(',')
-#Start up the bots
-bothandler = BotHandler(serverfolderList)
+	#Start up the CommandHandler and have it load in all the modules
+	GlobalStore.commandhandler = CommandHandler()
+	GlobalStore.commandhandler.loadCommands()
 
-#Only quit once every bot and command finishes running
-gevent.wait()
-logger.info("All bots quit and all commands unloaded, exiting")
+	#Get the config files we need to load from the argument parser
+	serverfolderList = args.serverlist.split(',')
+	#Start up the bots
+	bothandler = BotHandler(serverfolderList)
+
+	#Only quit once every bot and command finishes running
+	gevent.wait()
+	logger.info("All bots quit and all commands unloaded, exiting")
