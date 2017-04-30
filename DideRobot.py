@@ -184,7 +184,7 @@ class DideRobot(object):
 				self.logger.info("Connection to '{}' closed, shouldn't reconnecting, shutting down".format(self.serverfolder))
 				break
 			#If we reached the maximum reconnection attempts, abort
-			if self.reconnectionAttempCount and self.maxConnectionRetries and self.reconnectionAttempCount > self.maxConnectionRetries:
+			if self.reconnectionAttempCount and self.maxConnectionRetries and self.reconnectionAttempCount >= self.maxConnectionRetries:
 				self.logger.info("Reached max connection retry attempts ({}) for '{}', closing".format(self.maxConnectionRetries, self.serverfolder))
 				break
 
