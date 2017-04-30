@@ -109,7 +109,7 @@ class Command(CommandTemplate):
 													minTempF=celsiusToFahrenheit(day['temp']['min']), maxTempF=celsiusToFahrenheit(day['temp']['max']),
 													humidity=day['humidity'], windSpeed=day['speed'], windDir=getWindDirection(day['deg']), weatherType=day['weather'][0]['description'])
 							forecasts.append(forecast)
-						replytext += SharedFunctions.addSeparatorsToString(forecasts)
+						replytext += SharedFunctions.joinWithSeparator(forecasts)
 
 
 		message.bot.sendMessage(message.source, replytext)

@@ -178,7 +178,7 @@ class Command(CommandTemplate):
 				#Add a list of all the games found
 				for priceType in ('PWYW', 'BTA', 'Fixed'):
 					if len(gamePriceCategories[priceType]) > 0:
-						replytext += u" {}: {}".format(SharedFunctions.makeTextBold(priceType), SharedFunctions.addSeparatorsToString(gamePriceCategories[priceType]))
+						replytext += u" {}: {}".format(SharedFunctions.makeTextBold(priceType), SharedFunctions.joinWithSeparator(gamePriceCategories[priceType]))
 				if not message.isPrivateMessage and len(replytext) > maxMessageLength:
 					replytext = replytext[:maxMessageLength-5] + u"[...]"
 				replytext += u" (itemlist may be wrong)"

@@ -47,7 +47,7 @@ class Command(CommandTemplate):
 				replytext = u"One new commit: {}".format(commitMessages[0])
 			else:
 				commitMessages.reverse()  #Otherwise the messages are ordered new to old
-				replytext = u"{:,} new commits: {}".format(linecount, SharedFunctions.addSeparatorsToString(commitMessages))
+				replytext = u"{:,} new commits: {}".format(linecount, SharedFunctions.joinWithSeparator(commitMessages))
 				if linecount > maxUpdatesToDisplay:
 					replytext += u"; {:,} older ones".format(linecount - maxUpdatesToDisplay)
 			#Set the last mentioned hash to the newest one

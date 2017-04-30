@@ -202,7 +202,7 @@ def stringToDict(string, removeStartAndEndQuotes=True):
 		dictionary[key] = item
 	return dictionary
 
-def addSeparatorsToString(listOfStrings, separator=None):
+def joinWithSeparator(listOfStrings, separator=None):
 	if not separator:
 		separator = Constants.GREY_SEPARATOR
 	return separator.join(listOfStrings)

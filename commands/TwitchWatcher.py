@@ -167,7 +167,7 @@ class Command(CommandTemplate):
 					for streamername, streamerdata in result.iteritems():
 						reportStrings.append(u"{displaynameBold}: {status} [{game}] ({url})".format(displaynameBold=SharedFunctions.makeTextBold(streamerdata['channel']['display_name']),
 																							 **streamerdata['channel']))
-				message.reply(SharedFunctions.addSeparatorsToString(reportStrings), "say")
+				message.reply(SharedFunctions.joinWithSeparator(reportStrings), "say")
 		else:
 			message.reply("I don't know what to do with the parameter '{}', sorry. Maybe you made a typo? Or you could try (re)reading the help text".format(parameter))
 
@@ -242,7 +242,7 @@ class Command(CommandTemplate):
 				for streamdata in streamdatalist:
 					reportStrings.append(u"{streamernameBolded}: {1} [{2}] ({3})".format(streamernameBolded=SharedFunctions.makeTextBold(streamdata[0]), *streamdata))
 			#Now make the bot say it
-			GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer(s) went live: " + SharedFunctions.addSeparatorsToString(reportStrings), "say")
+			GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer(s) went live: " + SharedFunctions.joinWithSeparator(reportStrings), "say")
 
 
 	@staticmethod

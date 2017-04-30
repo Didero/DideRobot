@@ -350,7 +350,7 @@ class Command(CommandTemplate):
 			else:
 				names.append(u"{} {}".format(firstName, lastName))
 
-		return SharedFunctions.addSeparatorsToString(names)
+		return SharedFunctions.joinWithSeparator(names)
 
 
 	def generateWord(self, parameters=None):
@@ -539,4 +539,4 @@ class Command(CommandTemplate):
 				gamename = gamename.replace(random.choice(words), replacementText, 1)
 			gamenames.append(gamename)
 
-		return SharedFunctions.addSeparatorsToString(gamenames)
+		return SharedFunctions.joinWithSeparator(gamenames)
