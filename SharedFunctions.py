@@ -197,26 +197,10 @@ def stringToDict(string, removeStartAndEndQuotes=True):
 		key = parts[0].strip()
 		item = parts[1].strip()
 		if removeStartAndEndQuotes:
-			key = removeCharactersFromStringEnds(key, '"', "'").strip()
-			item = removeCharactersFromStringEnds(item, '"', "'").strip()
+			key = key.strip("'\" \t")
+			item = item.strip("'\" \t")
 		dictionary[key] = item
 	return dictionary
-
-
-def removeCharactersFromStringEnds(string, *chars):
-	charRemoved = True
-	#Keep removing characters until there's nothing left to remove
-	while charRemoved:
-		charRemoved = False
-		for char in chars:
-			charLength = len(char)
-			while string.startswith(char):
-				charRemoved = True
-				string = string[charLength:]
-			while string.endswith(char):
-				charRemoved = True
-				string = string[:-charLength]
-	return string
 
 def addSeparatorsToString(listOfStrings, separator=None):
 	if not separator:
