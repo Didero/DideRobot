@@ -224,7 +224,7 @@ class DideRobot(object):
 						messageSource = messageSource[1:]
 					messageType = lineParts[1]
 					#Convert numerical replies to human-readable ones, if applicable
-					messageType = Constants.IRC_numeric_to_name.get(messageType, messageType)
+					messageType = Constants.IRC_NUMERIC_TO_NAME.get(messageType, messageType)
 					#Check if we have a function to deal with this type of message
 					messageTypeFunction = getattr(self, "irc_" + messageType, None)
 					#The IRC protocol uses ':' to denote the start of a multi-word string. Join those here too, for easier parsing later
