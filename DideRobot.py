@@ -392,6 +392,20 @@ class DideRobot(object):
 				self.messageLogger.log("NICK CHANGE: {oldnick} changed their nick to {newnick}".format(oldnick=oldnick, newnick=newnick), channel)
 		GlobalStore.commandhandler.handleMessage(message)
 
+	def irc_MODE(self, prefix, params):
+		#There are two possible MODE commands
+		# The first is server-wide. Here the prefix is our user address, the first param is our username, and the second param is the mode change
+		if len(params) == 2:
+			self.logger.info("|{}| Our mode got set to '{}'".format(self.serverfolder, params[1]))
+		# The second is channel-specific. Here the prefix is who or what is making the change, the first param is the channel,
+		#  the second param is the mode change, and the rest of the params are the nicks whose mode got changed
+		else:
+			#It's not always a user making the change, check if it's a user address
+			modeChanger = prefix
+			if '!' in modeChanger:
+				modeChanger = modeChanger.split('!', 1)[0]
+			self.messageLogger.log("{} set mode to '{}' of user(s) {}".format(modeChanger, params[1], ", ".join(params[2:])), params[0])
+
 	def irc_TOPIC(self, prefix, params):
 		self.logger.debug("irc_TOPIC called, prefix is '{}', params is '{}'".format(prefix, params))
 
