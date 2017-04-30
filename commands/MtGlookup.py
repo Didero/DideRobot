@@ -484,12 +484,20 @@ class Command(CommandTemplate):
 			except re.error:
 				askedSetnameRegex = re.compile(re.escape(askedSetname), re.IGNORECASE)
 			for setname in setdata:
+				#Skip the list of the sets that have boosterpacks
 				if setname == '_setsWithBoosterpacks':
 					continue
 				if askedSetnameRegex.search(setname):
 					#Match found! If we hadn't found a match previously, store this name
 					if properSetname == u'':
 						properSetname = setname
+					#If we previously found a set and the current set doesn't have a booster, don't claim we found two sets
+					elif 'booster' not in setdata[setname]:
+						continue
+					#If the previously found set doesn't have a booster but this one does, store the current set as the found one
+					elif 'booster' not in setdata[properSetname]:
+						properSetname = setname
+					#Both matching sets we found contain boosters. Inform the user of the conflict
 					else:
 						#A match has been found previously. We can't make a boosterpack from two sets, so show an error
 						return (False, u"That setname matches at least two sets, '{}' and '{}'. I can't make a boosterpack from more than one set. "
