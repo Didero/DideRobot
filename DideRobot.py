@@ -194,9 +194,10 @@ class DideRobot(object):
 			else:
 				self.reconnectionAttempCount += 1
 			#Wait increasingly long between reconnection attempts, to give the server a chance to restart
-			self.logger.info("Reconnecting to '{}', attempt {}, max is {}".format(self.serverfolder, self.reconnectionAttempCount,
-																				  self.maxConnectionRetries if self.maxConnectionRetries else "not set"))
-			gevent.sleep(self.reconnectionAttempCount ** 3)
+			sleepTime = self.reconnectionAttempCount ** 3
+			self.logger.info("Will try reconnecting to '{}' for attempt {} in {} seconds, max attempts is {}".format(
+				self.serverfolder, self.reconnectionAttempCount, sleepTime, self.maxConnectionRetries if self.maxConnectionRetries else "not set"))
+			gevent.sleep(sleepTime)
 		#If we ever leave this loop, the bot is shut down. Unregister ourselves
 		GlobalStore.bothandler.unregisterBot(self.serverfolder)
 
