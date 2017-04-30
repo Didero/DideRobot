@@ -3,6 +3,7 @@ import json
 import requests
 
 from CommandTemplate import CommandTemplate
+import Constants
 import GlobalStore
 import SharedFunctions
 
@@ -73,7 +74,7 @@ class Command(CommandTemplate):
 					replytext = replytext[:lastSpaceIndex]
 				replytext += ' [...]'
 			#Add the URL
-			replytext += u'{}http://en.wikipedia.org/wiki/{}'.format(SharedFunctions.getGreySeparator(), pagedata['title'].replace(u' ', u'_'))
+			replytext += u'{}http://en.wikipedia.org/wiki/{}'.format(Constants.GREY_SEPARATOR, pagedata['title'].replace(u' ', u'_'))
 			return (True, replytext)
 
 

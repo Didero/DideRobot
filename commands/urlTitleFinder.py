@@ -4,6 +4,7 @@ import HTMLParser
 import requests
 
 from CommandTemplate import CommandTemplate
+import Constants
 import GlobalStore
 import SharedFunctions
 from IrcMessage import IrcMessage
@@ -59,7 +60,7 @@ class Command(CommandTemplate):
 
 			#Finally, display the result of all the hard work, if there was any
 			if title is not None:
-				title = title.replace('\n', SharedFunctions.getGreySeparator()).strip()
+				title = title.replace('\n', Constants.GREY_SEPARATOR).strip()
 				#Convert weird characters like &#39 back into normal ones like '
 				title = HTMLParser.HTMLParser().unescape(title)
 				#Make sure titles aren't too long

@@ -539,4 +539,4 @@ class Command(CommandTemplate):
 				gamename = gamename.replace(random.choice(words), replacementText, 1)
 			gamenames.append(gamename)
 
-		return SharedFunctions.getGreySeparator().join(gamenames)
+		return SharedFunctions.addSeparatorsToString(gamenames)

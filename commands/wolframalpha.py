@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ElementTree
 import requests
 
 from CommandTemplate import CommandTemplate
+import Constants
 import GlobalStore
 import SharedFunctions
 from IrcMessage import IrcMessage
@@ -102,7 +103,7 @@ class Command(CommandTemplate):
 					if text is None or text.startswith('\n'):
 						continue
 					if cleanUpText:
-						text = text.replace('\n', SharedFunctions.getGreySeparator()).strip()
+						text = text.replace('\n', Constants.GREY_SEPARATOR).strip()
 					#If there's no text in this pod (for instance if it's just an image)
 					if len(text) == 0:
 						continue
@@ -130,6 +131,6 @@ class Command(CommandTemplate):
 			#If the message would get too long, shorten the result URL
 			if len(replystring) + len(searchUrl) > 300:
 				searchUrl = SharedFunctions.shortenUrl(searchUrl)[1]
-			replystring += "{}{}".format(SharedFunctions.getGreySeparator(), searchUrl)
+			replystring += "{}{}".format(Constants.GREY_SEPARATOR, searchUrl)
 			
 		return replystring

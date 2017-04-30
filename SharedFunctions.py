@@ -2,7 +2,7 @@ import base64, codecs, json, logging, os, random, re
 
 import requests
 
-import GlobalStore
+import Constants, GlobalStore
 
 logger = logging.getLogger('DideRobot')
 
@@ -204,12 +204,8 @@ def stringToDict(string, removeStartAndEndQuotes=True):
 
 def addSeparatorsToString(listOfStrings, separator=None):
 	if not separator:
-		separator = getGreySeparator()
+		separator = Constants.GREY_SEPARATOR
 	return separator.join(listOfStrings)
-
-def getGreySeparator():
-	#Since a grey separator is often used to separate parts of a message, provide an easy way to get one
-	return u' \x0314|\x0f '  #'\x03' is the 'color' control char, 14 is grey, and '\x0f' is the 'reset' character ending any decoration
 
 def makeTextBold(s):
 	return '\x02' + s + '\x0f'  #\x02 is the 'bold' control character, '\x0f' cancels all decorations

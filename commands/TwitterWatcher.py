@@ -2,6 +2,7 @@ import datetime, json, os
 import HTMLParser
 
 from CommandTemplate import CommandTemplate
+import Constants
 import GlobalStore
 import SharedFunctions
 from IrcMessage import IrcMessage
@@ -225,7 +226,7 @@ class Command(CommandTemplate):
 			tweetAge = ''
 		tweetUrl = "http://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
 		#Remove newlines
-		formattedTweetText = tweetData['text'].replace('\n\n', '\n').replace('\n', SharedFunctions.getGreySeparator())
+		formattedTweetText = tweetData['text'].replace('\n\n', '\n').replace('\n', Constants.GREY_SEPARATOR)
 		#Fix special characters (convert '&amp;' to '&' for instance)
 		formattedTweetText = HTMLParser.HTMLParser().unescape(formattedTweetText)
 		#Remove the link to the photo at the end, but mention that there is one
@@ -235,7 +236,7 @@ class Command(CommandTemplate):
 				formattedTweetText += u"(has {})".format(mediaItem['type'])
 		#Add in all the text around the tweet now, so we get a better sense of message length
 		formattedTweetText = u"{name}: {text}{age}{sep}{url}".format(name=SharedFunctions.makeTextBold(self.getDisplayName(username)), text=formattedTweetText,
-																	 age=tweetAge, sep=SharedFunctions.getGreySeparator(), url=tweetUrl)
+																	 age=tweetAge, sep=Constants.GREY_SEPARATOR, url=tweetUrl)
 		#Expand URLs (if it'd fit)
 		if 'urls' in tweetData['entities']:
 			for urldata in tweetData['entities']['urls']:

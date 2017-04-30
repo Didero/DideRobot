@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import gevent
 
 from CommandTemplate import CommandTemplate
+import Constants
 import GlobalStore
 import SharedFunctions
 from IrcMessage import IrcMessage
@@ -342,8 +343,7 @@ class Command(CommandTemplate):
 					break
 
 		#FILL THAT SHIT IN (encoded properly)
-		separator = SharedFunctions.getGreySeparator()
-		separatorLength = len(separator)
+		separatorLength = len(Constants.GREY_SEPARATOR)
 		#Keep adding parts to the output until an entire block wouldn't fit on one line, then start a new message
 		replytext = u''
 		messageLength = startingLength
@@ -361,7 +361,7 @@ class Command(CommandTemplate):
 					replytext += '\n'
 					messageLength = 0
 				#Add a separator
-				replytext += separator
+				replytext += Constants.GREY_SEPARATOR
 				messageLength += separatorLength
 			else:
 				#If we would exceed max message length, cut off at the highest space and continue in a new message
@@ -389,7 +389,7 @@ class Command(CommandTemplate):
 				messageLength = 0
 
 		#Remove the separator at the end, and make sure it's a string and not unicode
-		replytext = replytext.rstrip(separator).rstrip().encode('utf-8')
+		replytext = replytext.rstrip(Constants.GREY_SEPARATOR).rstrip().encode('utf-8')
 		return replytext
 
 	@staticmethod
@@ -573,7 +573,7 @@ class Command(CommandTemplate):
 							   u"I need {:,}, but I only found {:,}".format(properSetname, rarity, boosterRarities[rarity], len(possibleCards[rarity])))
 
 		#Draw the cards!
-		replytext = "{}{}".format(properSetname.encode('utf-8'), SharedFunctions.getGreySeparator())
+		replytext = "{}{}".format(properSetname.encode('utf-8'), Constants.GREY_SEPARATOR)
 		for rarity, count in boosterRarities.iteritems():
 			cardlist = "; ".join(random.sample(possibleCards[rarity], count)).encode('utf-8')
 			replytext += "{}: {}. ".format(SharedFunctions.makeTextBold(rarity.encode('utf-8').capitalize()), cardlist)

@@ -3,7 +3,7 @@ import json, urllib
 import requests
 
 from CommandTemplate import CommandTemplate
-import GlobalStore
+import Constants
 import SharedFunctions
 
 
@@ -62,7 +62,7 @@ class Command(CommandTemplate):
 					if len(replytext) + len(definition) < maxMessageLength:
 						#Add a separator if this isn't the first definition
 						if hasAddedDefinition:
-							replytext += SharedFunctions.getGreySeparator()
+							replytext += Constants.GREY_SEPARATOR
 						#Prefix with the word type (verb, noun, etc.)
 						if 'part_of_speech' in definitionEntry:
 							wordType = definitionEntry['part_of_speech']
