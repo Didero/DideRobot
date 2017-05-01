@@ -664,14 +664,14 @@ class Command(CommandTemplate):
 
 		#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
 		with open(cardDatasetFilename, 'r') as newcardfile:
-			downloadedCardstore = json.load(newcardfile)
+			#Keep numbers as strings, saves on converting them back later
+			downloadedCardstore = json.load(newcardfile, parse_int=lambda x: x, parse_float=lambda x: x)
 
 		newcardstore = {}
 		setstore = {'_setsWithBoosterpacks': []}
 		setKeysToRemove = ('border', 'magicRaritiesCodes', 'mkm_id', 'mkm_name', 'oldCode', 'onlineOnly', 'translations')
 		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
 		layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme')
-		numberKeysToMakeString = ('cmc', 'hand', 'life', 'loyalty', 'multiverseid')
 		listKeysToMakeString = ('colors', 'names')
 		keysToFormatNicer = ('flavor', 'manacost', 'text')
 		raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
@@ -791,9 +791,6 @@ class Command(CommandTemplate):
 						card['names'].remove(card['name'])
 
 					#Make sure all stored values are strings, that makes searching later much easier
-					for attrib in numberKeysToMakeString:
-						if attrib in card:
-							card[attrib] = unicode(card[attrib])
 					for attrib in listKeysToMakeString:
 						if attrib in card:
 							card[attrib] = u"; ".join(card[attrib])
