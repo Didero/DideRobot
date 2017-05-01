@@ -820,7 +820,7 @@ class Command(CommandTemplate):
 				newcardstore[cardname][1][setData['name']] = cardSetInfo
 
 			#Don't hog the execution thread for too long, give it up after each set
-			gevent.sleep(0)
+			gevent.idle()
 
 		#First delete the original files
 		if os.path.exists(cardStoreFilename):
@@ -927,7 +927,7 @@ class Command(CommandTemplate):
 						#Finally, add the term and definition!
 						definitions[term] = definition
 			#Let other code execute after every set
-			gevent.sleep(0)
+			gevent.idle()
 
 		#Then get possibly missed keyword definitions and slang term meanings from other sites
 		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content"),

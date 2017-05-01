@@ -342,7 +342,7 @@ class Command(CommandTemplate):
 			#Don't hog the execution thread
 			cardcount += 1
 			if cardcount == 200:
-				gevent.sleep(0)
+				gevent.idle()
 				cardcount = 0
 
 		#Save the carddata to file
