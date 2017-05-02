@@ -23,7 +23,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.0'
+	dataFormatVersion = '4.1'
 
 	def executeScheduledFunction(self):
 		if not self.areCardfilesInUse and self.shouldUpdate():
@@ -186,7 +186,7 @@ class Command(CommandTemplate):
 	def searchCardStore(regexDict):
 		#Get the 'setname' search separately, so we can iterate over the rest later
 		setRegex = regexDict.pop('set', None)
-		setKeys = ('flavor', 'rarity')
+		setKeys = ('artist', 'flavor', 'rarity')
 
 		matchingCards = {}
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
@@ -818,7 +818,7 @@ class Command(CommandTemplate):
 					newcardstore[cardname] = (card, {})
 
 				#New and already listed cards need their set info stored
-				cardSetInfo = {'rarity': card.pop('rarity')}
+				cardSetInfo = {'artist': card.pop('artist'), 'rarity': card.pop('rarity')}
 				if 'flavor' in card:
 					cardSetInfo['flavor'] = formatNicer(card.pop('flavor'))
 				newcardstore[cardname][1][setData['name']] = cardSetInfo
