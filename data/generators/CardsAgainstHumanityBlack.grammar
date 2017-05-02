@@ -1,0 +1,7 @@
+{
+"_name": "Cards Against Humanity Card Combinator - Custom Black Card Edition",
+"_description": "Picks a random black card or uses the one provided by the user, and fills it in with one or multiple white cards",
+"_triggers": ["cahb", "cardsagainsthumanityblack"],
+"_start": "<_hasparams|<_replace/|_params/|_/|<whitecard//>/>|<_file/|CardsAgainstHumanityBlackCards.txt/>>",
+"whitecard": "<_file|CardsAgainstHumanityWhiteCards.txt|bold>"
+}
