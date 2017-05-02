@@ -669,6 +669,7 @@ class Command(CommandTemplate):
 
 		newcardstore = {}
 		setstore = {'_setsWithBoosterpacks': []}
+		definitions = {}
 		setKeysToRemove = ('border', 'magicRaritiesCodes', 'mkm_id', 'mkm_name', 'oldCode', 'onlineOnly', 'translations')
 		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
 		layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme')
@@ -800,9 +801,15 @@ class Command(CommandTemplate):
 						card['manacost'] = card['manaCost']
 						del card['manaCost']
 
+					#Get possible term definitions from this card's text, if needed
+					if shouldUpdateDefinitions and 'text' in card:
+						self.parseKeywordDefinitionsFromCardText(card['text'], card['name'], definitions)
+
+					#Clean text up a bit to make it display better
 					for keyToFormat in keysToFormatNicer:
 						if keyToFormat in card:
 							card[keyToFormat] = formatNicer(card[keyToFormat])
+
 					#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
 					if 'text' not in card:
 						card['text'] = u""
@@ -833,7 +840,7 @@ class Command(CommandTemplate):
 		with open(setStoreFilename, 'w') as setsfile:
 			setsfile.write(json.dumps(setstore))
 
-		#We don't need the card info in memory anymore, saves memory for the definitions update later
+		#We don't need the card info in memory anymore, hopefully this way the memory used get freed
 		del downloadedCardstore
 		del newcardstore
 		del setstore
@@ -842,10 +849,19 @@ class Command(CommandTemplate):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
 			versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': self.getLatestVersionNumber()[1], 'lastUpdateTime': time.time()}))
 
-		replytext = "MtG card database successfully updated (Changelog: http://mtgjson.com/changelog.html). "
+		replytext = "MtG card database successfully updated (Changelog: http://mtgjson.com/changelog.html)"
 		if shouldUpdateDefinitions:
-			#Have the definitions updated too
-			replytext += self.updateDefinitions(cardDatasetFilename)[1]
+			#Download the definitions too, and add them to the definitions we found in the card texts
+			success, definitions = self.downloadDefinitions(definitions)
+			if success:
+				replytext += ", definitions also updated"
+			else:
+				replytext += ", but an error occurred when trying to download the definitions, check the logs for the error"
+			#Save the definitions to file
+			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'w') as definitionsFile:
+				definitionsFile.write(json.dumps(definitions))
+			#And (try to) clean up the memory used
+			del definitions
 
 		#Since we don't need the cardfile anymore now, delete it
 		os.remove(cardDatasetFilename)
@@ -858,73 +874,50 @@ class Command(CommandTemplate):
 		self.logInfo("[MtG] updating database took {} seconds".format(time.time() - starttime))
 		return (True, "Successfully updated the card database")
 
-	def updateDefinitions(self, cardstoreLocation=None):
-		starttime = time.time()
-		self.areCardfilesInUse = True
+	@staticmethod
+	def parseKeywordDefinitionsFromCardText(cardtext, cardname, definitions):
+		#Go through all the lines of the card text, since each line could have a definition
+		lines = cardtext.splitlines()
+		for line in lines:
+			if '(' not in line:
+				continue
+			term, definition = line.split('(', 1)
+			if term.count(' ') > 2:  # Make sure there aren't any sentences in there
+				continue
+			if ',' in term or ';' in term:  # Some cards list multiple keywords, ignore those since they're listed individually on other cards
+				continue
+			if '{' in term:
+				#Get the term without any mana costs
+				term = term.split('{', 1)[0]
+			if u'\u2014' in term:  # This is the special dash, which is sometimes used in costs too
+				term = term.split(u'\u2014', 1)[0]
+			term = term.rstrip().lower()
+			if len(term) == 0:
+				continue
+			# Check to see if the term ends with mana costs. If it does, strip that off
+			if ' ' in term:
+				end = term.split(' ')[-1]
+				if end.isdigit() or end == 'x':
+					term = term.rsplit(" ", 1)[0]
+			#For some keywords, the card description just doesn't work that well. Ignore those, and get those from Wikipedia later on
+			if term in ('bolster', 'kicker', 'multikicker'):
+				continue
+			if term not in definitions:
+				print u"Using card '{}' to define '{}'".format(cardname, term)
+				#If this is a new definition, add it, after cleaning it up a bit
+				definition = definition.rstrip(')')
+				#Some definitions start with a cost, remove that
+				if definition.startswith('{'):
+					definition = definition[definition.find(':') + 1:]
+				definition = definition.strip()
+				#Some explanations mention the current card name. Generalize the definition
+				definition = definition.replace(cardname, 'this card')
+				#Finally, add the term and definition!
+				definitions[term] = definition
 
-		if cardstoreLocation is None:
-			#Download the file ourselves
-			success, result = self.downloadCardDataset()
-			if not success:
-				self.logError("[MTG] Error occurred while downloading file to update definitions!")
-				return (False, "Sorry, I couldn't download the card file to get the definitions from")
-			else:
-				cardstoreLocation = result
-				deleteCardstore = True
-		else:
-			deleteCardstore = False
-
-		definitions = {}
-		with open(cardstoreLocation, 'r') as cardfile:
-			cardstore = json.load(cardfile)
-		if deleteCardstore:
-			os.remove(cardstoreLocation)
-
-		#Go through all the cards to get the reminder text
-		for setcount in xrange(0, len(cardstore)):
-			setcode, setdata = cardstore.popitem()
-			for cardcount in xrange(0, len(setdata['cards'])):
-				card = setdata['cards'].pop()
-				if 'text' not in card or '(' not in card['text']:
-					continue
-				lines = card.pop('text').splitlines()
-				for line in lines:
-					if '(' not in line:
-						continue
-					term, definition = line.split('(', 1)
-					if term.count(' ') > 2:  # Make sure there aren't any sentences in there
-						continue
-					if ',' in term or ';' in term:  # Some cards list multiple keywords, ignore those since they're listed individually on other cards
-						continue
-					if '{' in term:
-						#Get the term without any mana costs
-						term = term.split('{', 1)[0]
-					if u'\u2014' in term:  # This is the special dash, which is sometimes used in costs too
-						term = term.split(u'\u2014', 1)[0]
-					term = term.rstrip().lower()
-					if len(term) == 0:
-						continue
-					# Check to see if the term ends with mana costs. If it does, strip that off
-					if ' ' in term:
-						end = term.split(' ')[-1]
-						if end.isdigit() or end == 'x':
-							term = term.rsplit(" ", 1)[0]
-					#For some keywords, the card description just doesn't work that well. Ignore those, and get those from Wikipedia later on
-					if term in ('bolster', 'kicker', 'multikicker'):
-						continue
-					if term not in definitions:
-						#If this is a new definition, add it, after cleaning it up a bit
-						definition = definition.rstrip(')')
-						#Some definitions start with a cost, remove that
-						if definition.startswith('{'):
-							definition = definition[definition.find(':') + 1:]
-						definition = definition.strip()
-						#Some explanations mention the current card name. Generalize the definition
-						definition = definition.replace(card['name'], 'this card')
-						#Finally, add the term and definition!
-						definitions[term] = definition
-			#Let other code execute after every set
-			gevent.idle()
+	def downloadDefinitions(self, definitions=None):
+		if not definitions:
+			definitions = {}
 
 		#Then get possibly missed keyword definitions and slang term meanings from other sites
 		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content"),
@@ -951,8 +944,6 @@ class Command(CommandTemplate):
 					if len(paragraphText) == 0:
 						self.logWarning("[MTG] Definition for '{}' is empty, skipping".format(keyword))
 						continue
-
-					#Split the found text into a short definition and a longer description
 					definitions[keyword] = paragraphText
 		except Exception as e:
 			self.logError("[MTG] [DefinitionsUpdate] An error ({}) occurred: {}".format(type(e), e.message))
@@ -962,16 +953,5 @@ class Command(CommandTemplate):
 				self.logError("[MTG] request headers:", e.request.headers)
 			except AttributeError:
 				self.logError(" no request attribute found")
-			replytext = "Definitions file NOT entirely updated, check the log for errors"
-		else:
-			replytext = "Definitions file successfully updated"
-		finally:
-			#If we got called without a cardfile, we're the only one updating. Since we're done, turn off the update flag
-			if deleteCardstore:
-				self.areCardfilesInUse = False
-
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'w') as defsFile:
-			defsFile.write(json.dumps(definitions))
-
-		self.logInfo("[MTG] Updating definitions took {} seconds".format(time.time() - starttime))
-		return (True, replytext)
+			return (False, definitions)
+		return (True, definitions)
