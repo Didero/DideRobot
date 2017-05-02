@@ -26,7 +26,7 @@ class Command(CommandTemplate):
 		#Check if a command has been passed as argument
 		command = None
 		if message.messagePartsLength > 0:
-			command = message.message.lower()
+			command = message.messageParts[0].lower()
 			#Remove the command prefix if it's there, because the lookup doesn't have it
 			if command.startswith(message.bot.commandPrefix):
 					command = command[message.bot.commandPrefixLength:]
