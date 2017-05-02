@@ -266,6 +266,14 @@ class Command(CommandTemplate):
 						#The parameters will be strings. Convert them to unicode
 						replacement = " ".join(parameters)
 						replacement = replacement.decode("utf-8", errors="replace")
+				elif fieldKey == u"_replace":
+					# <_replace|string|whatToReplace|whatToReplaceItWith>
+					if len(arguments) != 4:
+						return u"Error: Not enough parameters for '_replace' in field '{}'. Need 4, found {}".format(field, len(arguments))
+					replacement = arguments[1]
+					if replacement == u"_params":
+						replacement = " ".join(parameters).decode("utf-8", errors="replace")
+					replacement = replacement.replace(arguments[2], arguments[3])
 				elif fieldKey == u"_" or fieldKey == u"_dummy":
 					replacement = u""
 				else:
