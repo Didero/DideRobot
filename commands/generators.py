@@ -234,6 +234,16 @@ class Command(CommandTemplate):
 						replacement = arguments[2]
 					else:
 						replacement = arguments[3]
+				elif fieldKey == u"_ifcontains":
+					#<_ifcontains|string|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
+					if len(arguments) != 5:
+						return u"Error: Not enough parameters in 'ifcontains' of field '{}'".format(field)
+					if arguments[1] == u"_params":
+						arguments[1] = " ".join(parameters).decode("utf-8", errors="replace")
+					if arguments[2] in arguments[1]:
+						replacement = arguments[3]
+					else:
+						replacement = arguments[4]
 				elif fieldKey == u"_hasparameters" or fieldKey == u"_hasparams":
 					#<_hasparams|stringIfHasParams|stringIfDoesntHaveParams>"
 					#Checks if there are any parameters provided
