@@ -903,7 +903,6 @@ class Command(CommandTemplate):
 			if term in ('bolster', 'kicker', 'multikicker'):
 				continue
 			if term not in definitions:
-				print u"Using card '{}' to define '{}'".format(cardname, term)
 				#If this is a new definition, add it, after cleaning it up a bit
 				definition = definition.rstrip(')')
 				#Some definitions start with a cost, remove that
