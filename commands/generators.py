@@ -181,9 +181,8 @@ class Command(CommandTemplate):
 
 		#Start the parsing!
 		sentence = grammar["_start"]
-		optionSeparator = u"|"
 		tagFinderPattern = re.compile(r"<(.+?[^/])>", re.UNICODE)
-		argumentSplitterPattern = re.compile("(?<!/)" + re.escape(optionSeparator), re.UNICODE)
+		argumentSplitterPattern = re.compile(r"(?<!/)\|", re.UNICODE)
 		while True:
 			tagmatch = tagFinderPattern.search(sentence)
 			if not tagmatch:
@@ -320,7 +319,7 @@ class Command(CommandTemplate):
 				closingBracketIndex = replacement.find('>')
 				if closingBracketIndex > -1:
 					orgReplacement = replacement
-					replacement = replacement[:closingBracketIndex] + optionSeparator + optionSeparator.join(arguments[1:]) + replacement[closingBracketIndex:]
+					replacement = replacement[:closingBracketIndex] + u"|" + u"|".join(arguments[1:]) + replacement[closingBracketIndex:]
 					self.logDebug(u"[Gen] Replaced '{}' with '{}'".format(orgReplacement, replacement))
 
 			#To allow for escaping < and > in <_if> for instance, remove one escape in the iteration so it does get parsed next round
