@@ -157,9 +157,15 @@ class Command(CommandTemplate):
 		if not variableDict:
 			variableDict = {}
 
-		#Load the file and parse any options it needs
+		#Load the file
 		with open(os.path.join(self.filesLocation, grammarFilename), "r") as grammarfile:
 			grammar = json.load(grammarfile)
+
+		#First check if the starting field exists
+		if '_start' not in grammar:
+			return u"Error: No '_start' field found in '{}'!".format(grammarFilename)
+
+		#Parse any options specified
 		if '_options' in grammar:
 			# Parse arguments
 			if u'parseGender' in grammar['_options']:
