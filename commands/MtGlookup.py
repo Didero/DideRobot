@@ -657,7 +657,6 @@ class Command(CommandTemplate):
 		#Download the wrongly-formatted (for our purposes) card data
 		success, result = self.downloadCardDataset()
 		if not success:
-			self.logError("[MTG] An error occurred while trying to download the card file: " + result.message)
 			return (False, result)
 		else:
 			cardDatasetFilename = result
