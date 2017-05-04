@@ -588,23 +588,13 @@ class Command(CommandTemplate):
 		return (True, replytext)
 
 	def downloadCardDataset(self):
-		url = "http://mtgjson.com/json/AllSets.json.zip"  # Use the small dataset, since we don't use the rulings anyway and this way RAM usage is WAY down
+		url = "http://mtgjson.com/json/AllSetFilesWindows.zip"  # Use the Windows version to keep it multi-platform (Windows can't handle files named 'CON')
 		cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 		success, extraInfo = SharedFunctions.downloadFile(url, cardzipFilename)
 		if not success:
 			self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo.message)
 			return (False, "Something went wrong while trying to download the card file.")
-
-		# Since it's a zip, extract it
-		zipWithJson = zipfile.ZipFile(cardzipFilename, 'r')
-		newcardfilename = os.path.join(GlobalStore.scriptfolder, 'data', zipWithJson.namelist()[0])
-		if os.path.exists(newcardfilename):
-			os.remove(newcardfilename)
-		zipWithJson.extractall(os.path.join(GlobalStore.scriptfolder, 'data'))
-		zipWithJson.close()
-		# We don't need the zip anymore
-		os.remove(cardzipFilename)
-		return (True, newcardfilename)
+		return (True, extraInfo)
 
 	def getLatestVersionNumber(self):
 		try:
@@ -661,14 +651,11 @@ class Command(CommandTemplate):
 		else:
 			cardDatasetFilename = result
 
-		#Load in the new file so we can save it in our preferred format (not per set, but just a dict of cards)
-		with open(cardDatasetFilename, 'r') as newcardfile:
-			#Keep numbers as strings, saves on converting them back later
-			downloadedCardstore = json.load(newcardfile, parse_int=lambda x: x, parse_float=lambda x: x)
-
+		#Set up the dicts we're going to store our data in
 		newcardstore = {}
 		setstore = {'_setsWithBoosterpacks': []}
 		definitions = {}
+		#Lists of what to do with certain set and card keys
 		setKeysToRemove = ('border', 'magicRaritiesCodes', 'mkm_id', 'mkm_name', 'oldCode', 'onlineOnly', 'translations')
 		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
 		layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme')
@@ -677,6 +664,7 @@ class Command(CommandTemplate):
 		raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
 		raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s'}  #Non-standard rarities are interpreted as regexes for type
 		rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls
+
 		# This function will be called on the 'keysToFormatNicer' keys
 		#  Made into a function, because it's used in two places
 		def formatNicer(text):
@@ -689,141 +677,145 @@ class Command(CommandTemplate):
 			text = re.sub(' {2,}', ' ', text).strip()
 			return text
 
-		#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
-		for setcount in xrange(0, len(downloadedCardstore)):
-			setcode, setData = downloadedCardstore.popitem()
-			#Put the cardlist in a separate variable, so we can store all the set information easily
-			cardlist = setData.pop('cards')
-			#Clean up the set data a bit
-			for setKeyToRemove in setKeysToRemove:
-				if setKeyToRemove in setData:
-					del setData[setKeyToRemove]
-			#The 'booster' set field is a bit verbose, make that shorter and easier to use
-			if 'booster' in setData:
-				originalBoosterList = setData.pop('booster')
-				countedBoosterData = {}
-				try:
-					for rarity in originalBoosterList:
-						#If the entry is a list, it's a list of possible choices for that card
-						#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
-						if isinstance(rarity, list):
-							#Remove useless options here too
-							for rarityToRemove in raritiesToRemove:
-								if rarityToRemove in rarity:
-									rarity.remove(rarityToRemove)
-							#Rename 'wrongly' named rarites
-							for r in raritiesToRename:
-								if r in rarity:
-									rarity.remove(r)
-									rarity.append(raritiesToRename[r])
-							#Check if any of the choices have a prefix that needs to be removed (use a copy so we can delete elements in the loop)
-							for choice in rarity[:]:
-								for rp in rarityPrefixesToRemove:
-									if choice.startswith(rp):
-										#Remove the original choice...
-										rarity.remove(choice)
-										newRarity = choice[rarityPrefixesToRemove[rp]:]
-										#...and put in the choice without the prefix, if it's not there already
-										if newRarity not in rarity:
-											rarity.append(newRarity)
-							#If we removed all options and just have an empty list now, replace it with a rare
-							if len(rarity) == 0:
-								rarity = 'rare'
-							#If we've removed all but one option, it's not a choice anymore, so treat it like a 'normal' rarity
-							elif len(rarity) == 1:
-								rarity = rarity[0]
-							else:
-								#If it's still a list, keep it like that
-								if '_choice' not in countedBoosterData:
-									countedBoosterData['_choice'] = [rarity]
+		#Go through each file in the sets zip (Saves memory compared to downloading the single file with all the sets)
+		with zipfile.ZipFile(cardDatasetFilename, 'r') as setfilesZip:
+			#Go through each file in the sets zip
+			for setfilename in setfilesZip.namelist():
+				# Keep numbers as strings, saves on converting them back later
+				setData = json.loads(setfilesZip.read(setfilename), parse_int=lambda x: x, parse_float=lambda x: x)
+				#Put the cardlist in a separate variable, so we can store all the set information easily
+				cardlist = setData.pop('cards')
+				#Clean up the set data a bit
+				for setKeyToRemove in setKeysToRemove:
+					if setKeyToRemove in setData:
+						del setData[setKeyToRemove]
+				#The 'booster' set field is a bit verbose, make that shorter and easier to use
+				if 'booster' in setData:
+					originalBoosterList = setData.pop('booster')
+					countedBoosterData = {}
+					try:
+						for rarity in originalBoosterList:
+							#If the entry is a list, it's a list of possible choices for that card
+							#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
+							if isinstance(rarity, list):
+								#Remove useless options here too
+								for rarityToRemove in raritiesToRemove:
+									if rarityToRemove in rarity:
+										rarity.remove(rarityToRemove)
+								#Rename 'wrongly' named rarites
+								for r in raritiesToRename:
+									if r in rarity:
+										rarity.remove(r)
+										rarity.append(raritiesToRename[r])
+								#Check if any of the choices have a prefix that needs to be removed (use a copy so we can delete elements in the loop)
+								for choice in rarity[:]:
+									for rp in rarityPrefixesToRemove:
+										if choice.startswith(rp):
+											#Remove the original choice...
+											rarity.remove(choice)
+											newRarity = choice[rarityPrefixesToRemove[rp]:]
+											#...and put in the choice without the prefix, if it's not there already
+											if newRarity not in rarity:
+												rarity.append(newRarity)
+								#If we removed all options and just have an empty list now, replace it with a rare
+								if len(rarity) == 0:
+									rarity = 'rare'
+								#If we've removed all but one option, it's not a choice anymore, so treat it like a 'normal' rarity
+								elif len(rarity) == 1:
+									rarity = rarity[0]
 								else:
-									countedBoosterData['_choice'].append(rarity)
-								#...but don't do any of the other stuff
+									#If it's still a list, keep it like that
+									if '_choice' not in countedBoosterData:
+										countedBoosterData['_choice'] = [rarity]
+									else:
+										countedBoosterData['_choice'].append(rarity)
+									#...but don't do any of the other stuff
+									continue
+							#Some keys are dumb and useless ('marketing'). Ignore those
+							if rarity in raritiesToRemove:
 								continue
-						#Some keys are dumb and useless ('marketing'). Ignore those
-						if rarity in raritiesToRemove:
-							continue
-						#Here the rarity for a basic land is called 'land', while in the cards themselves it's 'basic land'. Correct that
-						for rarityToRename in raritiesToRename:
-							if rarity == rarityToRename:
-								rarity = raritiesToRename[rarity]
-						#Remove any useless prefixes like 'foil'
-						for rp in rarityPrefixesToRemove:
-							if rarity.startswith(rp):
-								rarity = rarity[rarityPrefixesToRemove[rp]:]
-						#Finally, count the rarity
-						if rarity not in countedBoosterData:
-							countedBoosterData[rarity] = 1
-						else:
-							countedBoosterData[rarity] += 1
-				except Exception as e:
-					self.logError("Error while parsing booster field of set '{}' ({}): {!r}".format(setData['name'], setcode, e))
-				else:
-					#If no parsing error occurred, add the parsed booster data
-					setData['booster'] = countedBoosterData
-					# Keep a list of sets that have booster packs
-					setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
-			setstore[setData['name'].lower()] = setData
+							#Here the rarity for a basic land is called 'land', while in the cards themselves it's 'basic land'. Correct that
+							for rarityToRename in raritiesToRename:
+								if rarity == rarityToRename:
+									rarity = raritiesToRename[rarity]
+							#Remove any useless prefixes like 'foil'
+							for rp in rarityPrefixesToRemove:
+								if rarity.startswith(rp):
+									rarity = rarity[rarityPrefixesToRemove[rp]:]
+							#Finally, count the rarity
+							if rarity not in countedBoosterData:
+								countedBoosterData[rarity] = 1
+							else:
+								countedBoosterData[rarity] += 1
+					except Exception as e:
+						self.logError("Error while parsing booster field of set '{}' ({}): {!r}".format(setData['name'], setfilename, e))
+					else:
+						#If no parsing error occurred, add the parsed booster data
+						setData['booster'] = countedBoosterData
+						# Keep a list of sets that have booster packs
+						setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
+				setstore[setData['name'].lower()] = setData
 
-			#Again, pop off cards when we need them, to save on memory
-			for cardcount in xrange(0, len(cardlist)):
-				card = cardlist.pop()
-				cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
+				#Again, pop off cards when we need them, to save on memory
+				for cardcount in xrange(0, len(cardlist)):
+					card = cardlist.pop()
+					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
 
-				#If the card isn't in the store yet, parse its data
-				if cardname not in newcardstore:
-					#Remove some useless data to save some space, memory and time
-					for keyToRemove in keysToRemove:
-						if keyToRemove in card:
-							del card[keyToRemove]
+					#If the card isn't in the store yet, parse its data
+					if cardname not in newcardstore:
+						#Remove some useless data to save some space, memory and time
+						for keyToRemove in keysToRemove:
+							if keyToRemove in card:
+								del card[keyToRemove]
 
-					#No need to store there's nothing special about the card's layout or if the special-ness is already evident from the text
-					if card['layout'] in layoutTypesToRemove:
-						del card['layout']
+						#No need to store there's nothing special about the card's layout or if the special-ness is already evident from the text
+						if card['layout'] in layoutTypesToRemove:
+							del card['layout']
 
-					#The 'Colors' field benefits from some ordering, for readability.
-					if 'colors' in card:
-						card['colors'] = sorted(card['colors'])
+						#The 'Colors' field benefits from some ordering, for readability.
+						if 'colors' in card:
+							card['colors'] = sorted(card['colors'])
 
-					#Remove the current card from the list of names this card also contains (for flip cards)
-					# (Saves on having to remove it later, and the presence of this field shows it's in there too)
-					if 'names' in card:
-						card['names'].remove(card['name'])
+						#Remove the current card from the list of names this card also contains (for flip cards)
+						# (Saves on having to remove it later, and the presence of this field shows it's in there too)
+						if 'names' in card:
+							card['names'].remove(card['name'])
 
-					#Make sure all stored values are strings, that makes searching later much easier
-					for attrib in listKeysToMakeString:
-						if attrib in card:
-							card[attrib] = u"; ".join(card[attrib])
+						#Make sure all stored values are strings, that makes searching later much easier
+						for attrib in listKeysToMakeString:
+							if attrib in card:
+								card[attrib] = u"; ".join(card[attrib])
 
-					#Make 'manaCost' lowercase, since we make the searchstring lowercase too, and we don't want to miss this
-					if 'manaCost' in card:
-						card['manacost'] = card['manaCost']
-						del card['manaCost']
+						#Make 'manaCost' lowercase, since we make the searchstring lowercase too, and we don't want to miss this
+						if 'manaCost' in card:
+							card['manacost'] = card['manaCost']
+							del card['manaCost']
 
-					#Get possible term definitions from this card's text, if needed
-					if shouldUpdateDefinitions and 'text' in card:
-						self.parseKeywordDefinitionsFromCardText(card['text'], card['name'], definitions)
+						#Get possible term definitions from this card's text, if needed
+						if shouldUpdateDefinitions and 'text' in card:
+							self.parseKeywordDefinitionsFromCardText(card['text'], card['name'], definitions)
 
-					#Clean text up a bit to make it display better
-					for keyToFormat in keysToFormatNicer:
-						if keyToFormat in card:
-							card[keyToFormat] = formatNicer(card[keyToFormat])
+						#Clean text up a bit to make it display better
+						for keyToFormat in keysToFormatNicer:
+							if keyToFormat in card:
+								card[keyToFormat] = formatNicer(card[keyToFormat])
 
-					#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
-					if 'text' not in card:
-						card['text'] = u""
+						#To make searching easier later, without all sorts of key checking, make sure the 'text' key always exists
+						if 'text' not in card:
+							card['text'] = u""
 
-					#Add the card as a new entry, as a tuple with the card data first and set data second
-					newcardstore[cardname] = (card, {})
+						#Add the card as a new entry, as a tuple with the card data first and set data second
+						newcardstore[cardname] = (card, {})
 
-				#New and already listed cards need their set info stored
-				cardSetInfo = {'artist': card.pop('artist'), 'rarity': card.pop('rarity')}
-				if 'flavor' in card:
-					cardSetInfo['flavor'] = formatNicer(card.pop('flavor'))
-				newcardstore[cardname][1][setData['name']] = cardSetInfo
+					#New and already listed cards need their set info stored
+					#TODO: Some sets have multiple cards with the same name but a different artist (f.i. land cards). Handle that
+					cardSetInfo = {'artist': card.pop('artist'), 'rarity': card.pop('rarity')}
+					if 'flavor' in card:
+						cardSetInfo['flavor'] = formatNicer(card.pop('flavor'))
+					newcardstore[cardname][1][setData['name']] = cardSetInfo
 
-			#Don't hog the execution thread for too long, give it up after each set
-			gevent.idle()
+				#Don't hog the execution thread for too long, give it up after each set
+				gevent.idle()
 
 		#First delete the original files
 		if os.path.exists(cardStoreFilename):
@@ -840,8 +832,6 @@ class Command(CommandTemplate):
 			setsfile.write(json.dumps(setstore))
 
 		#We don't need the card info in memory anymore, hopefully this way the memory used get freed
-		del downloadedCardstore
-		del newcardstore
 		del setstore
 
 		#Store the new version data
