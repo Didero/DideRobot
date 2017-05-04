@@ -23,7 +23,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.1'
+	dataFormatVersion = '4.2'
 
 	def executeScheduledFunction(self):
 		if not self.areCardfilesInUse and self.shouldUpdate():
@@ -186,7 +186,7 @@ class Command(CommandTemplate):
 	def searchCardStore(regexDict):
 		#Get the 'setname' search separately, so we can iterate over the rest later
 		setRegex = regexDict.pop('set', None)
-		setKeys = ('artist', 'flavor', 'rarity')
+		setKeys = ('artist', 'flavor', 'multiverseid', 'number', 'rarity', 'watermark')
 
 		matchingCards = {}
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
@@ -665,7 +665,7 @@ class Command(CommandTemplate):
 		keysToFormatNicer = ('flavor', 'manacost', 'text')
 		layoutTypesToRemove = ('phenomenon', 'plane', 'scheme', 'vanguard')
 		listKeysToMakeString = ('colors', 'names')
-		setSpecificCardKeys = ('artist', 'flavor', 'rarity')
+		setSpecificCardKeys = ('artist', 'flavor', 'multiverseid', 'number', 'rarity', 'watermark')
 
 		# This function will be called on the 'keysToFormatNicer' keys
 		#  Made into a function, because it's used in two places
@@ -812,7 +812,7 @@ class Command(CommandTemplate):
 					#Make flavor text read better
 					if 'flavor' in card:
 						card['flavor'] = formatNicer(card['flavor'])
-						
+					
 					#New and already listed cards need their set info stored
 					#TODO: Some sets have multiple cards with the same name but a different artist (f.i. land cards). Handle that
 					cardSetInfo = {}
