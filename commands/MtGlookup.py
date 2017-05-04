@@ -665,6 +665,7 @@ class Command(CommandTemplate):
 		keysToFormatNicer = ('flavor', 'manacost', 'text')
 		layoutTypesToRemove = ('phenomenon', 'plane', 'scheme', 'vanguard')
 		listKeysToMakeString = ('colors', 'names')
+		setSpecificCardKeys = ('artist', 'flavor', 'rarity')
 
 		# This function will be called on the 'keysToFormatNicer' keys
 		#  Made into a function, because it's used in two places
@@ -808,11 +809,17 @@ class Command(CommandTemplate):
 						#Add the card as a new entry, as a tuple with the card data first and set data second
 						newcardstore[cardname] = (card, {})
 
+					#Make flavor text read better
+					if 'flavor' in card:
+						card['flavor'] = formatNicer(card['flavor'])
+						
 					#New and already listed cards need their set info stored
 					#TODO: Some sets have multiple cards with the same name but a different artist (f.i. land cards). Handle that
-					cardSetInfo = {'artist': card.pop('artist'), 'rarity': card.pop('rarity')}
-					if 'flavor' in card:
-						cardSetInfo['flavor'] = formatNicer(card.pop('flavor'))
+					cardSetInfo = {}
+					for setSpecificKey in setSpecificCardKeys:
+						if setSpecificKey in card:
+							cardSetInfo[setSpecificKey] = card.pop(setSpecificKey)
+
 					newcardstore[cardname][1][setData['name']] = cardSetInfo
 
 				#Don't hog the execution thread for too long, give it up after each set
