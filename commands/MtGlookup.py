@@ -655,15 +655,16 @@ class Command(CommandTemplate):
 		newcardstore = {}
 		setstore = {'_setsWithBoosterpacks': []}
 		definitions = {}
-		#Lists of what to do with certain set and card keys
+		#Lists of what to do with certain set keys
 		setKeysToRemove = ('border', 'magicRaritiesCodes', 'mkm_id', 'mkm_name', 'oldCode', 'onlineOnly', 'translations')
-		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
-		layoutTypesToRemove = ('phenomenon', 'vanguard', 'plane', 'scheme')
-		listKeysToMakeString = ('colors', 'names')
-		keysToFormatNicer = ('flavor', 'manacost', 'text')
-		raritiesToRemove = ('marketing', 'checklist', 'foil', 'power nine', 'draft-matters', 'timeshifted purple', 'double faced')
+		raritiesToRemove = ('checklist', 'double faced', 'draft-matters', 'foil', 'marketing', 'power nine', 'timeshifted purple')
 		raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s'}  #Non-standard rarities are interpreted as regexes for type
 		rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls
+		#Lists of what to do with certain card keys
+		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
+		keysToFormatNicer = ('flavor', 'manacost', 'text')
+		layoutTypesToRemove = ('phenomenon', 'plane', 'scheme', 'vanguard')
+		listKeysToMakeString = ('colors', 'names')
 
 		# This function will be called on the 'keysToFormatNicer' keys
 		#  Made into a function, because it's used in two places
