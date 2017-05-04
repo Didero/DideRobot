@@ -687,7 +687,7 @@ class Command(CommandTemplate):
 			#Replace newlines with spaces. If the sentence ends in a letter, add a period
 			text = re.sub('(?<=\w)\n', '. ', text).replace('\n', ' ')
 			#Prevent double spaces
-			text = text.replace('  ', ' ').strip()
+			text = re.sub(' {2,}', ' ', text).strip()
 			return text
 
 		#Use the keys instead of iteritems() so we can pop off the set we need, to reduce memory usage
