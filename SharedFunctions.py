@@ -94,7 +94,7 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 	return (True, tweets)
 
 def downloadTweet(username, tweetId):
-	downloadedTweet =  downloadTweets(username, maxTweetCount=1, downloadNewerThanId=tweetId-1, downloadOlderThanId=tweetId+1)
+	downloadedTweet = downloadTweets(username, maxTweetCount=1, downloadNewerThanId=tweetId-1, downloadOlderThanId=tweetId+1)
 	#If something went wrong, pass on the error
 	if not downloadedTweet[0]:
 		return downloadedTweet
