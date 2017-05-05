@@ -162,8 +162,6 @@ class DideRobot(object):
 				#Start listening for replies
 				self.handleConnection()
 
-				self.logger.info("Lost connection to server '{}'".format(self.serverfolder))
-
 				#Check if we were still sending messages
 				if self.lineSendingGreenlet:
 					# Kill the message sending greenlet to prevent errors
@@ -182,11 +180,11 @@ class DideRobot(object):
 
 			#If the connection couldn't be established or got closed, check if we need to re-establish it
 			if not self.shouldReconnect:
-				self.logger.info("Connection to '{}' closed, shouldn't reconnecting, shutting down".format(self.serverfolder))
+				self.logger.info("|{}| Connection to closed, shouldn't reconnecting, closing down this bot".format(self.serverfolder))
 				break
 			#If we reached the maximum reconnection attempts, abort
 			if self.reconnectionAttempCount and self.maxConnectionRetries and self.reconnectionAttempCount >= self.maxConnectionRetries:
-				self.logger.info("Reached max connection retry attempts ({}) for '{}', closing".format(self.maxConnectionRetries, self.serverfolder))
+				self.logger.info("|{}| Reached max connection retry attempts ({}), closing".format(self.maxConnectionRetries, self.serverfolder))
 				break
 
 			#If we've exceeded the allowed number of attempts, give up
@@ -215,6 +213,7 @@ class DideRobot(object):
 				return
 			# A closed connection just makes recv return an empty string. Check for that
 			if incomingData == "":
+				self.logger.info("|{}| Server closed the connection".format(self.serverfolder))
 				return
 			# Handle all completely sent messages (delimited by \r\n), leave any unfinished messages for the next loop
 			while '\r\n' in incomingData:
@@ -233,8 +232,6 @@ class DideRobot(object):
 					messageType = lineParts[1]
 					#Convert numerical replies to human-readable ones, if applicable
 					messageType = Constants.IRC_NUMERIC_TO_NAME.get(messageType, messageType)
-					#Check if we have a function to deal with this type of message
-					messageTypeFunction = getattr(self, "irc_" + messageType, None)
 					#The IRC protocol uses ':' to denote the start of a multi-word string. Join those here too, for easier parsing later
 					messageParts = lineParts[2:]
 					for messagePartIndex, messagePart in enumerate(messageParts):
@@ -244,6 +241,8 @@ class DideRobot(object):
 							messageParts[messagePartIndex] = wordgroup
 							messageParts = messageParts[:messagePartIndex+1]
 							break
+					#Check if we have a function to deal with this type of message
+					messageTypeFunction = getattr(self, "irc_" + messageType, None)
 					if messageTypeFunction:
 						messageTypeFunction(messageSource, messageParts)
 					else:
