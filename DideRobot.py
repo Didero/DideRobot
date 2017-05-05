@@ -170,6 +170,10 @@ class DideRobot(object):
 					#Also clear the message queue, just in case something in there caused the disconnect
 					self.linesToSend = None
 
+				#Clear the channels and users lists
+				self.channelsUserList = {}
+				self.isUpdatingChannelsUserList = False
+
 				#Shutdown here because it only makes sense if we have been connected previously
 				self.ircSocket.shutdown(gevent.socket.SHUT_RDWR)
 
