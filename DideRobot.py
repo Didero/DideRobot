@@ -144,6 +144,7 @@ class DideRobot(object):
 		while True:
 			# Open a connection
 			self.ircSocket = gevent.socket.socket(gevent.socket.AF_INET, gevent.socket.SOCK_STREAM)
+			self.ircSocket.settimeout(20.0)  #Set the timout to establishing a connection, gets increased when we successfully connect
 			self.logger.info("Connecting to {} ({} on port {})".format(self.serverfolder, self.settings['server'], self.settings['port']))
 			try:
 				self.ircSocket.connect((self.settings['server'], self.settings['port']))
@@ -204,8 +205,14 @@ class DideRobot(object):
 	def handleConnection(self):
 		#Keep reading for possible incoming messages
 		incomingData = ""
+		# Set the timeout to 10 minutes, so if our computer loses connection to the server/internet, we notice
+		self.ircSocket.settimeout(600)
 		while True:
-			incomingData += self.ircSocket.recv(2048)
+			try:
+				incomingData += self.ircSocket.recv(2048)
+			except gevent.socket.timeout:
+				self.logger.warning("|{}| Our connection to the server timed out".format(self.serverfolder))
+				return
 			# A closed connection just makes recv return an empty string. Check for that
 			if incomingData == "":
 				return
