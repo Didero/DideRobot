@@ -111,17 +111,21 @@ def getLineCount(filename):
 			continue
 	return linecount + 1  #'enumerate()' starts at 0, so add one
 
+def getLineFromFile(filename, wantedLineNumber):
+	if not filename.startswith(GlobalStore.scriptfolder):
+		filename = os.path.join(GlobalStore.scriptfolder, filename)
+	with codecs.open(filename, 'r', 'utf-8') as f:
+		for lineNumber, line in enumerate(f):
+			if lineNumber == wantedLineNumber:
+				return line.rstrip()
+	return None
+
 def getRandomLineFromFile(filename, linecount=None):
 	if not filename.startswith(GlobalStore.scriptfolder):
 		filename = os.path.join(GlobalStore.scriptfolder, filename)
 	if not linecount:
 		linecount = getLineCount(filename)
-	chosenLineNumber = random.randrange(0, linecount)
-	with codecs.open(filename, 'r', 'utf-8') as f:
-		for lineNumber, line in enumerate(f):
-			if lineNumber == chosenLineNumber:
-				return line.rstrip()
-	return ""
+	return getLineFromFile(filename, random.randrange(0, linecount))
 
 def getAllLinesFromFile(filename):
 	if not os.path.exists(filename):
