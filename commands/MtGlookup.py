@@ -86,6 +86,14 @@ class Command(CommandTemplate):
 			message.reply(self.openBoosterpack(setname)[1])
 			return
 
+		elif searchType == 'random' and message.messagePartsLength == 1:
+			#Just pick a random card from all available ones
+			#Special case to prevent it having to load in all the cards before picking one
+			card = json.loads(SharedFunctions.getRandomLineFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')))
+			cardname, carddata = card.popitem()
+			message.reply(self.getFormattedCardInfo(carddata, message.trigger == 'mtgf', False))
+			return
+
 		#Check if the user passed valid search terms
 		parseSuccess, searchDict = self.parseSearchParameters(searchType, message)
 		if not parseSuccess:
@@ -812,7 +820,7 @@ class Command(CommandTemplate):
 					#Make flavor text read better
 					if 'flavor' in card:
 						card['flavor'] = formatNicer(card['flavor'])
-					
+
 					#New and already listed cards need their set info stored
 					#TODO: Some sets have multiple cards with the same name but a different artist (f.i. land cards). Handle that
 					cardSetInfo = {}
