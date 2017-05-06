@@ -132,8 +132,7 @@ def getAllLinesFromFile(filename):
 		filename = os.path.join(GlobalStore.scriptfolder, filename)
 	#Get all the lines!
 	with codecs.open(filename, 'r', 'utf-8') as linesfile:
-		lines = linesfile.readlines()
-	return lines
+		return linesfile.readlines()
 
 
 def parseIsoDate(isoString, formatstring=""):
