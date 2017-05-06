@@ -101,9 +101,27 @@ def downloadTweet(username, tweetId):
 	#Otherwise, make the single-item tweet list just the tweet
 	return (True, downloadedTweet[1][0])
 
-def getRandomLineFromFile(filename):
-	lines = getAllLinesFromFile(filename)
-	return random.choice(lines).rstrip()
+def getLineCount(filename):
+	#Set a default in case the file has no lines
+	linecount = -1  #'-1' so with the +1 at the end it ends up a 0 for an empty file
+	if not filename.startswith(GlobalStore.scriptfolder):
+		filename = os.path.join(GlobalStore.scriptfolder, filename)
+	with codecs.open(filename, 'r', 'utf-8') as f:
+		for linecount, line in enumerate(f):
+			continue
+	return linecount + 1  #'enumerate()' starts at 0, so add one
+
+def getRandomLineFromFile(filename, linecount=None):
+	if not filename.startswith(GlobalStore.scriptfolder):
+		filename = os.path.join(GlobalStore.scriptfolder, filename)
+	if not linecount:
+		linecount = getLineCount(filename)
+	chosenLineNumber = random.randrange(0, linecount)
+	with codecs.open(filename, 'r', 'utf-8') as f:
+		for lineNumber, line in enumerate(f):
+			if lineNumber == chosenLineNumber:
+				return line.rstrip()
+	return ""
 
 def getAllLinesFromFile(filename):
 	if not os.path.exists(filename):
