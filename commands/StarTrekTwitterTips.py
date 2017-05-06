@@ -15,7 +15,6 @@ class Command(CommandTemplate):
 						'quark': 'QuarkTips', 'riker': 'RikerTips', 'rikergoogling': 'RikerGoogling', 'worf': 'WorfTips', 'worfemail': 'WorfEmail'}
 	# Not all 'tips' are actually tips. This is a list of a replacement term to use if 'tip' is not accurate. It replaces the entire part before the colon
 	resultPrefix = {'rikergoogling': "Riker searched", 'worfemail': "Worf's Outbox"}
-	isUpdating = False
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunctions(__file__, 'getStarTrekTip', self.getTip)
@@ -27,7 +26,7 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 
-		if self.isUpdating:
+		if self.scheduledFunctionIsExecuting:
 			message.reply("Sorry, but I'm updating my data (hah) at the moment. Try again in a bit!", "say")
 			return
 
