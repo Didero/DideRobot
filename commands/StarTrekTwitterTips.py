@@ -97,7 +97,6 @@ class Command(CommandTemplate):
 
 	def executeScheduledFunction(self):
 		starttime = time.time()
-		self.isUpdating = True
 		#First load all the stored tweet data, if it exists
 		twitterInfoFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', 'metadata.json')
 		if os.path.exists(twitterInfoFilename):
@@ -139,5 +138,4 @@ class Command(CommandTemplate):
 		with open(twitterInfoFilename, 'w') as twitterFile:
 			twitterFile.write(json.dumps(storedInfo))
 
-		self.isUpdating = False
 		self.logInfo("[STtip] Updating tweets took {} seconds".format(time.time() - starttime))
