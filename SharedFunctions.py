@@ -110,7 +110,7 @@ def getAllLinesFromFile(filename):
 		logger.error(u"Can't read lines from file '{}'; it does not exist".format(filename))
 		return None
 	#Make sure it's an absolute filename
-	if GlobalStore.scriptfolder not in filename:
+	if not filename.startswith(GlobalStore.scriptfolder):
 		filename = os.path.join(GlobalStore.scriptfolder, filename)
 	#Get all the lines!
 	with codecs.open(filename, 'r', 'utf-8') as linesfile:
