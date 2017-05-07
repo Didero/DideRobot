@@ -1,7 +1,7 @@
 DideRobot
 =========
 
-A modular IRC bot built on Twisted
+A modular IRC bot built on Gevent
 Based on:
 - http://newcoder.io/~drafts/networks/intro/
 - https://github.com/MatthewCox/PyMoronBot (and vice versa)
