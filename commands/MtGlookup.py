@@ -274,8 +274,7 @@ class Command(CommandTemplate):
 			cardnameText += cardstore[cardname][0]['name'].encode('utf-8') + "; "
 		cardnameText = cardnameText[:-2]
 
-		replytext += "Your search returned {:,} cards: ".format(numberOfCardsFound)
-		replytext += cardnameText
+		replytext += "Your search returned {:,} cards: {}".format(numberOfCardsFound, cardnameText)
 		if numberOfCardsFound > maxCardsToList:
 			replytext += " and {:,} more".format(numberOfCardsFound - maxCardsToList)
 		return replytext
