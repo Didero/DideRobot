@@ -196,19 +196,23 @@ class Command(CommandTemplate):
 		setRegex = regexDict.pop('set', None)
 		setKeys = ('artist', 'flavor', 'multiverseid', 'number', 'rarity', 'watermark')
 
+		# A dict with cardname as key, and a list as value
+		#  First item in the list is line number of the card in the cardfile, last item is the matching setname (if any)
 		matchingCards = {}
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
-			for cardline in jsonfile:
+			for cardlineNumber, cardline in enumerate(jsonfile):
 				cardDict = json.loads(cardline)
 				cardname = cardDict.keys()[0]
+				setNameMatch = None
 
 				#First check if we need to see if the set name matches
 				if setRegex:
 					for setname in cardDict[cardname][1]:
 						if setRegex.search(setname):
-							cardDict[cardname][1]['_match'] = setname
+							setNameMatch = setname
 							break
 					else:
+						#No set name matched, skip this card
 						continue
 
 				#Then check if the rest of the attributes match
@@ -224,7 +228,7 @@ class Command(CommandTemplate):
 							break
 						#Store the fact that we found a match in a particular set, for future lookup
 						else:
-							cardDict[cardname][1]['_match'] = random.choice(matchesFound)
+							setNameMatch = random.choice(matchesFound)
 					#Most data is stored as general card data
 					else:
 						if attrib not in cardDict[cardname][0] or not regexDict[attrib].search(cardDict[cardname][0][attrib]):
@@ -232,11 +236,12 @@ class Command(CommandTemplate):
 							break
 				else:
 					#If we didn't break from the loop, then the card matched all search criteria. Store it
-					matchingCards[cardname] = cardDict[cardname]
+					# Use the formatted name so displaying them is easier later
+					cardname = cardDict[cardname][0]['name']
+					matchingCards[cardname] = (cardlineNumber, setNameMatch)
 		return matchingCards
 
 	def formatSearchResult(self, cardstore, addExtendedCardInfo, pickRandomCard, maxCardsToList=10, nameToMatch=None, addResultCount=True):
-		replytext = ""
 		numberOfCardsFound = len(cardstore)
 
 		if numberOfCardsFound == 0:
@@ -248,18 +253,24 @@ class Command(CommandTemplate):
 		#If the name we have to match is in there literally, lift it out
 		# (For instance, a search for 'Mirror Entity' returns 'Mirror Entity' and 'Mirror Entity Avatar'.
 		# Show the full info on 'Mirror Entity' but also report we found more matches)
-		elif nameToMatch and nameToMatch in cardstore:
-			cardstore = {nameToMatch: cardstore[nameToMatch]}
+		elif nameToMatch:
+			nameToMatch = nameToMatch.lower()
+			for cardname, cardtuple in cardstore.iteritems():
+				if cardname.lower() == nameToMatch:
+					cardstore = {cardname: cardtuple}
+					break
 
 		#If there's only one card found, just display it
 		# Use 'len()' instead of 'numberOfCardsFound' because 'pickRandomCard' or 'nameToMatch' could've changed it,
 		# and we need the cardcount var to show how many cards we found at the end
 		if len(cardstore) == 1:
-			setname = cardstore[cardstore.keys()[0]][1].pop('_match', None)
-			replytext += self.getFormattedCardInfo(cardstore[cardstore.keys()[0]], addExtendedCardInfo, setname, len(replytext))
+			#Retrieve the full info on the card we found
+			linenumber, setname = cardstore.values()[0]
+			cardname, carddata = json.loads(SharedFunctions.getLineFromFile(os.path.join("data", "MTGcards.json"), linenumber)).popitem()
+			replytext = self.getFormattedCardInfo(carddata, addExtendedCardInfo, setname)
 			#We may have culled the cardstore list, so there may have been more matches initially. List a count of those
 			if addResultCount and numberOfCardsFound > 1:
-				replytext += " ({:,} more match{} found)".format(numberOfCardsFound - 1, 'es' if numberOfCardsFound > 2 else '')  #==2 because we subtract 1
+				replytext += " ({:,} more match{} found)".format(numberOfCardsFound - 1, 'es' if numberOfCardsFound > 2 else '')  #>2 because we subtract 1
 			return replytext
 
 		#Check if we didn't find more matches than we're allowed to show
@@ -268,15 +279,9 @@ class Command(CommandTemplate):
 		else:
 			cardnames = sorted(random.sample(cardstore.keys(), maxCardsToList))
 
-		#Create a list of card names
-		cardnameText = ""
-		for cardname in cardnames:
-			cardnameText += cardstore[cardname][0]['name'].encode('utf-8') + "; "
-		cardnameText = cardnameText[:-2]
-
-		replytext += "Your search returned {:,} cards: {}".format(numberOfCardsFound, cardnameText)
+		replytext = u"Your search returned {:,} cards: {}".format(numberOfCardsFound, u"; ".join(cardnames))
 		if numberOfCardsFound > maxCardsToList:
-			replytext += " and {:,} more".format(numberOfCardsFound - maxCardsToList)
+			replytext += u" and {:,} more".format(numberOfCardsFound - maxCardsToList)
 		return replytext
 
 	@staticmethod
