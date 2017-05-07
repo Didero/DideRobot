@@ -202,15 +202,13 @@ class Command(CommandTemplate):
 				cardDict = json.loads(cardline)
 				cardname = cardDict.keys()[0]
 
-				#First check if we need to see if the sets match
+				#First check if we need to see if the set name matches
 				if setRegex:
-					setMatchFound = False
 					for setname in cardDict[cardname][1]:
 						if setRegex.search(setname):
-							setMatchFound = True
 							cardDict[cardname][1]['_match'] = setname
 							break
-					if not setMatchFound:
+					else:
 						continue
 
 				#Then check if the rest of the attributes match
