@@ -23,7 +23,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.2'
+	dataFormatVersion = '4.2.1'
 
 	def executeScheduledFunction(self):
 		if not self.areCardfilesInUse and self.shouldUpdate():
@@ -674,7 +674,7 @@ class Command(CommandTemplate):
 		#Lists of what to do with certain card keys
 		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
 		keysToFormatNicer = ('flavor', 'manacost', 'text')
-		layoutTypesToRemove = ('phenomenon', 'plane', 'scheme', 'vanguard')
+		layoutTypesToRemove = ('normal', 'phenomenon', 'plane', 'scheme', 'vanguard')
 		listKeysToMakeString = ('colors', 'names')
 		setSpecificCardKeys = ('artist', 'flavor', 'multiverseid', 'number', 'rarity', 'watermark')
 
