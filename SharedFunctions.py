@@ -112,6 +112,7 @@ def getLineCount(filename):
 	return linecount + 1  #'enumerate()' starts at 0, so add one
 
 def getLineFromFile(filename, wantedLineNumber):
+	"""Returns the specified line number from the provided file (line number starts at 0)"""
 	if not filename.startswith(GlobalStore.scriptfolder):
 		filename = os.path.join(GlobalStore.scriptfolder, filename)
 	with codecs.open(filename, 'r', 'utf-8') as f:
