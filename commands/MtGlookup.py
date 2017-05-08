@@ -648,6 +648,7 @@ class Command(CommandTemplate):
 	def updateCardFile(self, shouldUpdateDefinitions=True):
 		starttime = time.time()
 		cardStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
+		gamewideCardStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards_gamewide.json')
 		setStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
 		#Now let's check if we need to update the cards
@@ -688,6 +689,11 @@ class Command(CommandTemplate):
 			#Prevent double spaces
 			text = re.sub(' {2,}', ' ', text).strip()
 			return text
+
+		#Reference to a temporary file where we will store gamewide JSON-parsed card info (Like card text, CMC)
+		# This way we don't have to keep that in memory during the entire loop
+		# Keys will be lower()'ed cardnames, values will be a dict of the card's fields that are true regardless of the set the card is in
+		gamewideCardStoreFile = open(gamewideCardStoreFilename, 'w')
 
 		#Go through each file in the sets zip (Saves memory compared to downloading the single file with all the sets)
 		with zipfile.ZipFile(cardDatasetFilename, 'r') as setfilesZip:
@@ -768,10 +774,22 @@ class Command(CommandTemplate):
 						setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
 				setstore[setData['name'].lower()] = setData
 
-				#Again, pop off cards when we need them, to save on memory
+				#Pop off cards when we need them, to save on memory
 				for cardcount in xrange(0, len(cardlist)):
 					card = cardlist.pop()
 					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
+
+					#Make flavor text read better
+					if 'flavor' in card:
+						card['flavor'] = formatNicer(card['flavor'])
+					#New and already listed cards need their set info stored
+					#TODO: Some sets have multiple cards with the same name but a different artist (f.i. land cards). Handle that
+					setSpecificCardData = {}
+					for setSpecificKey in setSpecificCardKeys:
+						if setSpecificKey in card:
+							setSpecificCardData[setSpecificKey] = card.pop(setSpecificKey)
+					#Don't add it to newcardstore yet, so we can check if it's in there already or not
+					# But do the loop now so the set-specific keys are removed from the card dict
 
 					#If the card isn't in the store yet, parse its data
 					if cardname not in newcardstore:
@@ -816,24 +834,21 @@ class Command(CommandTemplate):
 						if 'text' not in card:
 							card['text'] = u""
 
-						#Add the card as a new entry, as a tuple with the card data first and set data second
-						newcardstore[cardname] = (card, {})
+						#Save the data to file for now, we'll add all the set-specific data later
+						gamewideCardStoreFile.write(json.dumps({cardname: card}))
+						gamewideCardStoreFile.write('\n')
 
-					#Make flavor text read better
-					if 'flavor' in card:
-						card['flavor'] = formatNicer(card['flavor'])
+						#Store that we already parsed the gamewide card data, and make a dict for the set-specific data
+						newcardstore[cardname] = {}
 
-					#New and already listed cards need their set info stored
-					#TODO: Some sets have multiple cards with the same name but a different artist (f.i. land cards). Handle that
-					cardSetInfo = {}
-					for setSpecificKey in setSpecificCardKeys:
-						if setSpecificKey in card:
-							cardSetInfo[setSpecificKey] = card.pop(setSpecificKey)
-
-					newcardstore[cardname][1][setData['name']] = cardSetInfo
+					#NOW store the set-specific info in the cardstore, so we can be sure the dict exists
+					newcardstore[cardname][setData['name']] = setSpecificCardData
 
 				#Don't hog the execution thread for too long, give it up after each set
 				gevent.idle()
+
+		#Make sure all the data is flushed to disk
+		gamewideCardStoreFile.close()
 
 		#First delete the original files
 		if os.path.exists(cardStoreFilename):
@@ -842,12 +857,19 @@ class Command(CommandTemplate):
 			os.remove(setStoreFilename)
 		#Save the new databases to disk
 		with open(cardStoreFilename, 'w') as cardfile:
-			#Write each card on a separate line, so we can stream each line instead of loading in the entire file
-			for i in xrange(len(newcardstore)):
-				cardname, carddata = newcardstore.popitem()
-				cardfile.write(json.dumps({cardname: carddata}) + '\n')
+			gamewideCardStoreFile = open(gamewideCardStoreFilename, 'r')
+			#Go through each card's game-wide data and append the set-specific data to it
+			for line in gamewideCardStoreFile:
+				cardname, gamewideCardData = json.loads(line).popitem()
+				#Write each card's as a separate JSON file so we can go through it line by line instead of having to load it all at once
+				cardfile.write(json.dumps({cardname: [gamewideCardData, newcardstore.pop(cardname)]}))
+				cardfile.write('\n')
+			gamewideCardStoreFile.close()
 		with open(setStoreFilename, 'w') as setsfile:
 			setsfile.write(json.dumps(setstore))
+
+		#We don't need the temporary gamewide card data file anymore
+		os.remove(gamewideCardStoreFilename)
 
 		#We don't need the card info in memory anymore, hopefully this way the memory used get freed
 		del setstore
