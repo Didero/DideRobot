@@ -307,10 +307,13 @@ class DideRobot(object):
 
 	def quit(self, quitMessage=None):
 		self.shouldReconnect = False
-		if quitMessage:
-			self.sendLineToServer("QUIT :" + quitMessage)
-		else:
-			self.sendLineToServer("QUIT")
+		#If we're not connected (yet?), just making sure we don't reconnect is fine
+		#If we ARE connected, let the server know we want to quit
+		if self.connectedAt is not None:
+			if quitMessage:
+				self.sendLineToServer("QUIT :" + quitMessage)
+			else:
+				self.sendLineToServer("QUIT")
 
 
 	#MESSAGE TYPE HANDLING FUNCTIONS
