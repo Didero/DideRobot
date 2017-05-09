@@ -161,6 +161,7 @@ class DideRobot(object):
 
 				#Start listening for replies
 				self.handleConnection()
+				#If we reach here, 'handleConnection' returned, so we apparently lost the connection (either accidentally or intentionally)
 
 				#Check if we were still sending messages
 				if self.lineSendingGreenlet:
