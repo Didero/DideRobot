@@ -657,7 +657,7 @@ class Command(CommandTemplate):
 		gamewideCardStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards_gamewide.json')
 		setStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 
-		#Now let's check if we need to update the cards
+		#Inform everything that we're going to be changing the card files
 		self.areCardfilesInUse = True
 		self.logInfo("[MtG] Updating card database!")
 
