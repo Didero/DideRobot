@@ -446,9 +446,12 @@ class Command(CommandTemplate):
 					# If it's in a public channel, send the message via notices
 					else:
 						counter = 1
+						secondsBetweenMessages = message.bot.secondsBetweenLineSends
+						if not secondsBetweenMessages:
+							secondsBetweenMessages = 0.2
 						while len(textRemainder) > 0:
-							gevent.spawn_later(0.2 * counter, message.bot.sendMessage, message.userNickname,
-														  u"({}) {}".format(counter + 1, textRemainder[:maxMessageLength]), 'notice')
+							gevent.spawn_later(secondsBetweenMessages * counter, message.bot.sendMessage, message.userNickname,
+											   u"({}) {}".format(counter + 1, textRemainder[:maxMessageLength]), 'notice')
 							textRemainder = textRemainder[maxMessageLength:]
 							counter += 1
 		#Multiple matching definitions found
