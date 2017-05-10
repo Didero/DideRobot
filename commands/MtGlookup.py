@@ -437,7 +437,7 @@ class Command(CommandTemplate):
 			if len(replytext) > maxMessageLength:
 				splitIndex = replytext[:maxMessageLength].rfind(' ')
 				textRemainder = replytext[splitIndex+1:]
-				replytext = replytext[:splitIndex] + ' [...]'
+				replytext = replytext[:splitIndex]
 				#If we do need to add the full definition, split it up properly
 				if addExtendedInfo:
 					#If it's a private message, we don't have to worry about spamming, so just dump the full thing
@@ -445,10 +445,13 @@ class Command(CommandTemplate):
 						gevent.spawn_later(0.2, message.bot.sendMessage, message.userNickname, textRemainder)
 					# If it's in a public channel, send the message via notices
 					else:
-						counter = 1
+						#Since we'll be sending the rest of the definition in notices, add an indication that it's not the whole message
+						replytext += ' [...]'
+						#Don't send messages too quickly
 						secondsBetweenMessages = message.bot.secondsBetweenLineSends
 						if not secondsBetweenMessages:
 							secondsBetweenMessages = 0.2
+						counter = 1
 						while len(textRemainder) > 0:
 							gevent.spawn_later(secondsBetweenMessages * counter, message.bot.sendMessage, message.userNickname,
 											   u"({}) {}".format(counter + 1, textRemainder[:maxMessageLength]), 'notice')
