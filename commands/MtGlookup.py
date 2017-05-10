@@ -467,7 +467,8 @@ class Command(CommandTemplate):
 		#Multiple matching definitions found
 		else:
 			if searchterm in possibleDefinitions:
-				replytext = "{}: {}".format(SharedFunctions.makeTextBold(searchterm), SharedFunctions.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm]))
+				definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm])).values()[0]
+				replytext = "{}: {}".format(SharedFunctions.makeTextBold(searchterm), definition)
 				if len(replytext) > maxMessageLength - 18:  #-18 to account for the added text later
 					replytext = replytext[:maxMessageLength-24] + ' [...]'
 				replytext += " ({:,} more matches)".format(possibleDefinitionsCount-1)
