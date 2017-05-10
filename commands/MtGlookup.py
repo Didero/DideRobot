@@ -664,6 +664,7 @@ class Command(CommandTemplate):
 		cardStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
 		gamewideCardStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards_gamewide.json')
 		setStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
+		definitionsFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')
 
 		#Inform everything that we're going to be changing the card files
 		self.areCardfilesInUse = True
@@ -679,7 +680,8 @@ class Command(CommandTemplate):
 		#Set up the dicts we're going to store our data in
 		newcardstore = {}
 		setstore = {'_setsWithBoosterpacks': []}
-		definitions = {}
+		#Since definitions from cards get written to file immediately, just keep a list of which keywords we already stored
+		definitions = []
 		#Lists of what to do with certain set keys
 		setKeysToRemove = ('border', 'magicRaritiesCodes', 'mkm_id', 'mkm_name', 'oldCode', 'onlineOnly', 'translations')
 		raritiesToRemove = ('checklist', 'double faced', 'draft-matters', 'foil', 'marketing', 'power nine', 'timeshifted purple')
@@ -708,6 +710,10 @@ class Command(CommandTemplate):
 		# This way we don't have to keep that in memory during the entire loop
 		# Keys will be lower()'ed cardnames, values will be a dict of the card's fields that are true regardless of the set the card is in
 		gamewideCardStoreFile = open(gamewideCardStoreFilename, 'w')
+
+		#Write each keyword we find to the definitions file so we don't have to keep it in memory
+		if shouldUpdateDefinitions:
+			definitionsFile = open(definitionsFilename, 'w')
 
 		#Go through each file in the sets zip (Saves memory compared to downloading the single file with all the sets)
 		with zipfile.ZipFile(cardDatasetFilename, 'r') as setfilesZip:
@@ -837,7 +843,12 @@ class Command(CommandTemplate):
 
 						#Get possible term definitions from this card's text, if needed
 						if shouldUpdateDefinitions and 'text' in card:
-							self.parseKeywordDefinitionsFromCardText(card['text'], card['name'], definitions)
+							definitionsFromCard = self.parseKeywordDefinitionsFromCardText(card['text'], card['name'], definitions)
+							#Write the found definitions to file immediately, and store that we found them
+							for term, definition in definitionsFromCard.iteritems():
+								definitionsFile.write(json.dumps({term: definition}))
+								definitionsFile.write('\n')
+								definitions.append(term)
 
 						#Clean text up a bit to make it display better
 						for keyToFormat in keysToFormatNicer:
@@ -895,18 +906,18 @@ class Command(CommandTemplate):
 		replytext = "MtG card database successfully updated (Changelog: http://mtgjson.com/changelog.html)"
 		if shouldUpdateDefinitions:
 			#Download the definitions too, and add them to the definitions we found in the card texts
-			success, definitions = self.downloadDefinitions(definitions)
+			success, downloadedDefinitions = self.downloadDefinitions(definitions)
 			if success:
 				replytext += ", definitions also updated"
 			else:
 				replytext += ", but an error occurred when trying to download the definitions, check the logs for the error"
 			#Save the definitions to file
-			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'w') as definitionsFile:
-				for term, definition in definitions.iteritems():
-					definitionsFile.write(json.dumps({term: definition}))
-					definitionsFile.write('\n')
+			for term, definition in downloadedDefinitions.iteritems():
+				definitionsFile.write(json.dumps({term: definition}))
+				definitionsFile.write('\n')
 			#And (try to) clean up the memory used
 			del definitions
+			del downloadedDefinitions
 
 		#Since we don't need the cardfile anymore now, delete it
 		os.remove(cardDatasetFilename)
@@ -920,7 +931,8 @@ class Command(CommandTemplate):
 		return (True, replytext)
 
 	@staticmethod
-	def parseKeywordDefinitionsFromCardText(cardtext, cardname, definitions):
+	def parseKeywordDefinitionsFromCardText(cardtext, cardname, existingDefinitions=None):
+		newDefinitions = {}
 		#Go through all the lines of the card text, since each line could have a definition
 		lines = cardtext.splitlines()
 		for line in lines:
@@ -947,23 +959,25 @@ class Command(CommandTemplate):
 			#For some keywords, the card description just doesn't work that well. Ignore those, and get those from Wikipedia later on
 			if term in ('bolster', 'kicker', 'multikicker'):
 				continue
-			if term not in definitions:
-				#If this is a new definition, add it, after cleaning it up a bit
-				definition = definition.rstrip(')')
-				#Some definitions start with a cost, remove that
-				if definition.startswith('{'):
-					definition = definition[definition.find(':') + 1:]
-				definition = definition.strip()
-				#Some explanations mention the current card name. Generalize the definition
-				definition = definition.replace(cardname, 'this card')
-				#Finally, add the term and definition!
-				definitions[term] = definition
+			#If the term is already stored, skip it
+			if existingDefinitions and term in existingDefinitions:
+				continue
+			#This is a new definition, add it, after cleaning it up a bit
+			definition = definition.rstrip(')')
+			#Some definitions start with a cost, remove that
+			if definition.startswith('{'):
+				definition = definition[definition.find(':') + 1:]
+			definition = definition.strip()
+			#Some explanations mention the current card name. Generalize the definition
+			definition = definition.replace(cardname, 'this card')
+			#Finally, store the term and definition!
+			newDefinitions[term] = definition
+		return newDefinitions
 
-	def downloadDefinitions(self, definitions=None):
-		if not definitions:
-			definitions = {}
+	def downloadDefinitions(self, existingDefinitions=None):
+		newDefinitions = {}
 
-		#Then get possibly missed keyword definitions and slang term meanings from other sites
+		#Get keyword definitions and slang term meanings from other sites
 		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content"),
 			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-body")]
 		try:
@@ -974,21 +988,21 @@ class Command(CommandTemplate):
 					#On MTGSalvation, sections are sorted into alphabetized subsections. Ignore the letter headers
 					if len(keyword) <= 1:
 						continue
-					#Don't overwrite any definitions
-					if keyword in definitions:
+					#Don't store any definitions that are already stored
+					if existingDefinitions and keyword in existingDefinitions:
 						continue
 					#Cycle through all the paragraphs following the header
 					currentParagraph = defHeader.next_sibling
 					paragraphText = u""
 					#If there's no next_sibling, 'currentParagraph' is set to None. Check for that
-					while currentParagraph and currentParagraph.name in ['p', 'ul', 'dl', 'ol']:
+					while currentParagraph and currentParagraph.name in ('p', 'ul', 'dl', 'ol'):
 						paragraphText += u" " + currentParagraph.text
 						currentParagraph = currentParagraph.next_sibling
 					paragraphText = re.sub(" ?\[\d+?]", "", paragraphText).lstrip().rstrip(' .')  #Remove the reference links ('[1]')
 					if len(paragraphText) == 0:
 						self.logWarning("[MTG] Definition for '{}' is empty, skipping".format(keyword))
 						continue
-					definitions[keyword] = paragraphText
+					newDefinitions[keyword] = paragraphText
 		except Exception as e:
 			self.logError("[MTG] [DefinitionsUpdate] An error ({}) occurred: {}".format(type(e), e.message))
 			traceback.print_exc()
@@ -997,5 +1011,5 @@ class Command(CommandTemplate):
 				self.logError("[MTG] request headers:", e.request.headers)
 			except AttributeError:
 				self.logError(" no request attribute found")
-			return (False, definitions)
-		return (True, definitions)
+			return (False, newDefinitions)
+		return (True, newDefinitions)
