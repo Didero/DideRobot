@@ -23,7 +23,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.2.1'
+	dataFormatVersion = '4.3'
 
 	def executeScheduledFunction(self):
 		if not self.areCardfilesInUse and self.shouldUpdate():
@@ -404,35 +404,42 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def getDefinition(message, addExtendedInfo=False):
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'r') as definitionsFile:
-			definitions = json.load(definitionsFile)
+		definitionsFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')
 
 		maxMessageLength = 300
-		possibleDefinitions = []
+		possibleDefinitions = {}  #Keys are the matching terms found, values are the line they're found at for easy lookup
 
 		searchterm = " ".join(message.messageParts[1:]).lower()
 		if searchterm == 'random':
-			possibleDefinitions = [random.choice(definitions.keys())]
+			randomLineNumber = random.randrange(0, SharedFunctions.getLineCount(definitionsFilename))
+			term = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, randomLineNumber)).keys()[0]
+			possibleDefinitions = {term: randomLineNumber}
 		else:
 			try:
 				searchRegex = re.compile(searchterm)
 			except re.error:
 				return "That is not valid regex. Please check for typos, and try again"
 
-			for term in definitions:
-				if re.search(searchRegex, term):
-					possibleDefinitions.append(term)
-			if len(possibleDefinitions) == 0:
-				#If nothing was found, search again, but this time check the definitions themselves
-				for term, definition in definitions.iteritems():
-					if re.search(searchRegex, definition):
-						possibleDefinitions.append(term)
+			with open(definitionsFilename, 'r') as definitionsFile:
+				for linecount, line in enumerate(definitionsFile):
+					term, definition = json.loads(line).popitem()
+					if re.search(searchRegex, term):
+						possibleDefinitions[term] = linecount
+				if len(possibleDefinitions) == 0:
+					#If nothing was found, search again, but this time check the definitions themselves
+					definitionsFile.seek(0)
+					for linecount, line in enumerate(definitionsFile):
+						term, definition = json.loads(line).popitem()
+						if re.search(searchRegex, definition):
+							possibleDefinitions[term] = linecount
 
 		possibleDefinitionsCount = len(possibleDefinitions)
 		if possibleDefinitionsCount == 0:
 			return "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
 		elif possibleDefinitionsCount == 1:
-			replytext = "{}: {}".format(SharedFunctions.makeTextBold(possibleDefinitions[0]), definitions[possibleDefinitions[0]])
+			term, linenumber = possibleDefinitions.popitem()
+			definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, linenumber)).values()[0]
+			replytext = "{}: {}".format(SharedFunctions.makeTextBold(term), definition)
 			#Limit the message length
 			if len(replytext) > maxMessageLength:
 				splitIndex = replytext[:maxMessageLength].rfind(' ')
@@ -460,14 +467,14 @@ class Command(CommandTemplate):
 		#Multiple matching definitions found
 		else:
 			if searchterm in possibleDefinitions:
-				replytext = "{}: {}".format(SharedFunctions.makeTextBold(searchterm), definitions[searchterm])
+				replytext = "{}: {}".format(SharedFunctions.makeTextBold(searchterm), SharedFunctions.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm]))
 				if len(replytext) > maxMessageLength - 18:  #-18 to account for the added text later
 					replytext = replytext[:maxMessageLength-24] + ' [...]'
 				replytext += " ({:,} more matches)".format(possibleDefinitionsCount-1)
 			else:
 				replytext = "Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
 				if possibleDefinitionsCount < 10:
-					replytext += ": {}".format(u"; ".join(possibleDefinitions))
+					replytext += ": {}".format(u"; ".join(sorted(possibleDefinitions.keys())))
 		return replytext
 
 
@@ -894,7 +901,9 @@ class Command(CommandTemplate):
 				replytext += ", but an error occurred when trying to download the definitions, check the logs for the error"
 			#Save the definitions to file
 			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json'), 'w') as definitionsFile:
-				definitionsFile.write(json.dumps(definitions))
+				for term, definition in definitions.iteritems():
+					definitionsFile.write(json.dumps({term: definition}))
+					definitionsFile.write('\n')
 			#And (try to) clean up the memory used
 			del definitions
 
