@@ -916,7 +916,7 @@ class Command(CommandTemplate):
 
 		self.areCardfilesInUse = False
 		self.logInfo("[MtG] updating database took {} seconds".format(time.time() - starttime))
-		return (True, "Successfully updated the card database")
+		return (True, replytext)
 
 	@staticmethod
 	def parseKeywordDefinitionsFromCardText(cardtext, cardname, definitions):
