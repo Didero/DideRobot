@@ -66,5 +66,5 @@ class IrcMessage(object):
 	def reply(self, replytext, messagetype=None):
 		if not messagetype:
 			#Reply with a notice to a user's notice (not a channel one!), and with a 'say' to anything else
-			messagetype = 'notice' if self.messageType == 'notice' and not self.source.startswith('#') else 'say'
+			messagetype = 'notice' if self.messageType == 'notice' and self.source[0] not in Constants.CHANNEL_PREFIXES else 'say'
 		self.bot.sendMessage(self.source, replytext, messagetype)
