@@ -449,17 +449,24 @@ class DideRobot(object):
 		# If the actual message (past the first colon) starts with 'chr(1)', it means it's a special CTCP message (like an action)
 		if len(messageParts[1]) > 0 and messageParts[1][0] == Constants.CTCP_DELIMITER:
 			#First section is the CTCP type
-			ctcpType, messageParts[1] = messageParts[1].split(" ", 1)
+			ctcpType = messageParts[1]
+			messageText = None
+			#Sometimes a message is appended (like for an ACTION), check for that
+			if " " in ctcpType:
+				ctcpType, messageText = messageParts[1].split(" ", 1)
+				#The message could also end with a 'chr(1)', remove that
+				if messageText.endswith(Constants.CTCP_DELIMITER):
+					messageText = messageText[:-1]
+			#The CTCP type could end with the CTCP delimiter
+			if ctcpType.endswith(Constants.CTCP_DELIMITER):
+				ctcpType = ctcpType[:-1]
 			ctcpType = ctcpType[1:]  #Remove the CTCP delimiter
-			#The message should also end with a 'chr(1)', remove that
-			if messageParts[1].endswith(Constants.CTCP_DELIMITER):
-				messageParts[1] = messageParts[1][:-1]
 			#Check if we have a function to handle this type of CTCP message, otherwise fall back on a default
 			ctcpFunction = getattr(self, "ctcp_" + ctcpType, None)
 			if ctcpFunction:
-				ctcpFunction(user, messageTarget, messageParts[1])
+				ctcpFunction(user, messageTarget, messageText)
 			else:
-				self.ctcp_unknown_message_type(ctcpType, user, messageTarget, messageParts[1])
+				self.ctcp_unknown_message_type(ctcpType, user, messageTarget, messageText)
 		#Normal message
 		else:
 			self.handleMessage(user, messageTarget, messageParts[1], "say")
