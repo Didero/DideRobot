@@ -16,7 +16,7 @@ class Command(CommandTemplate):
 		else:
 			channel = message.messageParts[0].lower()
 			#Strip all possible channel prefixes
-			channelWithoutPrefix = channel.lstrip("#&!+.~")
+			channelWithoutPrefix = channel.lstrip(Constants.CHANNEL_PREFIXES)
 
 			if channel in message.bot.channelsUserList or '#' + channelWithoutPrefix in message.bot.channelsUserList:
 				replytext = "I'm already there, waiting for you. You're welcome!"

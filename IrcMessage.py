@@ -1,5 +1,8 @@
 import time
 
+import Constants
+
+
 class IrcMessage(object):
 	"""Parses incoming messages into usable parts like the command trigger"""
 
@@ -20,7 +23,7 @@ class IrcMessage(object):
 
 		#Info about the source the message came from, either a channel, or a PM from a user
 		#If there is no source provided, or the source isn't a channel, assume it's a PM
-		if not source or not source.startswith('#'):
+		if not source or source[0] not in Constants.CHANNEL_PREFIXES:
 			self.source = self.userNickname
 			self.isPrivateMessage = True
 		else:
