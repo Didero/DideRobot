@@ -22,7 +22,7 @@ class Command(CommandTemplate):
 		replytext = u""
 		if 'paste.ee' not in GlobalStore.commandhandler.apikeys:
 			replytext = u"The Paste.ee API key was not found. Please tell my owner so they can fix this"
-		elif not message.source.startswith('#'):
+		elif message.isPrivateMessage:
 			replytext = u"A log of a private conversation? That could lead to all kinds of privacy concerns..."
 		elif not message.bot.messageLogger.shouldKeepChannelLogs:
 			replytext = u"I'm sorry, I was told not to keep logs for this channel"
