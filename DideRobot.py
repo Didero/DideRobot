@@ -441,6 +441,31 @@ class DideRobot(object):
 		self.logger.info("|{}| Userlist for channels {} collected".format(self.serverfolder, ", ".join(self.channelsUserList.keys())))
 
 
+	#CTCP FUNCTIONS
+	def ctcp_ACTION(self, user, messageSource, messageText):
+		self.handleMessage(user, messageSource, messageText, 'action')
+
+	def ctcp_PING(self, user, messageSource, messageText):
+		self.messageLogger.log("Received PING request from '{}'".format(user), messageSource)
+		usernick = user.split('!', 1)[0]
+		self.sendMessage(usernick, "PING " + messageText if messageText else str(time.time()), 'notice')
+
+	def ctcp_SOURCE(self, user, messageSource, messageText):
+		self.messageLogger.log("Received SOURCE request from '{}'".format(user), messageSource)
+		usernick = user.split('!', 1)[0]
+		self.sendMessage(usernick, "Thanks for the interest! You can read through my innards at https://github.com/Didero/DideRobot", 'notice')
+
+	def ctcp_TIME(self, user, messageSource, messageText):
+		self.messageLogger.log("Received TIME request from '{}'".format(user), messageSource)
+		usernick = user.split('!', 1)[0]
+		self.sendMessage(usernick, time.strftime("%a %d-%m-%Y %H:%M:%S %Z"), 'notice')
+
+	def ctcp_VERSION(self, user, messageSource, messageText):
+		self.messageLogger.log("Received VERSION request from '{}'".format(user), messageSource)
+		usernick = user.split('!', 1)[0]
+		self.sendMessage(usernick, "I don't have a set version, since I'm updated pretty frequently. I appreciate the interest though!", 'notice')
+
+
 	#HUMAN COMMUNICATION FUNCTIONS
 	def irc_PRIVMSG(self, user, messageParts):
 		# First part of the messageParts is the channel the message came in from, or the user if it was a PM
@@ -473,9 +498,6 @@ class DideRobot(object):
 
 	def irc_NOTICE(self, user, messageParts):
 		self.handleMessage(user, messageParts[0], messageParts[1], 'notice')
-
-	def ctcp_ACTION(self, user, messageTarget, message):
-		self.handleMessage(user, messageTarget, message, 'action')
 
 	def handleMessage(self, user, channel, messageText, messageType="say"):
 		"""Called when the bot receives a message, which can be either in a channel or in a private message, as text or an action."""
