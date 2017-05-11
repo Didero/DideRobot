@@ -445,7 +445,7 @@ class DideRobot(object):
 	def irc_PRIVMSG(self, user, messageParts):
 		# First part of the messageParts is the channel the message came in from, or the user if it was a PM
 		# Second part is the actual message
-		messageTarget = messageParts[0]
+		messageSource = messageParts[0]
 		# If the actual message (past the first colon) starts with 'chr(1)', it means it's a special CTCP message (like an action)
 		if len(messageParts[1]) > 0 and messageParts[1][0] == Constants.CTCP_DELIMITER:
 			#First section is the CTCP type
@@ -464,12 +464,12 @@ class DideRobot(object):
 			#Check if we have a function to handle this type of CTCP message, otherwise fall back on a default
 			ctcpFunction = getattr(self, "ctcp_" + ctcpType, None)
 			if ctcpFunction:
-				ctcpFunction(user, messageTarget, messageText)
+				ctcpFunction(user, messageSource, messageText)
 			else:
-				self.ctcp_unknown_message_type(ctcpType, user, messageTarget, messageText)
+				self.ctcp_unknown_message_type(ctcpType, user, messageSource, messageText)
 		#Normal message
 		else:
-			self.handleMessage(user, messageTarget, messageParts[1], "say")
+			self.handleMessage(user, messageSource, messageParts[1], "say")
 
 	def irc_NOTICE(self, user, messageParts):
 		self.handleMessage(user, messageParts[0], messageParts[1], 'notice')
