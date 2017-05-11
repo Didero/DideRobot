@@ -2,6 +2,7 @@ import json, socket
 
 import requests
 
+import Constants
 from CommandTemplate import CommandTemplate
 import GlobalStore
 from IrcMessage import IrcMessage
@@ -43,7 +44,7 @@ class Command(CommandTemplate):
 				#A channel name was provided, only search that channel
 				if message.messagePartsLength >= 2:
 					channelname = message.messageParts[1]
-					if not channelname.startswith('#'):
+					if not channelname[0] in Constants.CHANNEL_PREFIXES:
 						channelname = '#' + channelname
 				if channelname not in message.bot.channelsUserList:
 					replytext = u"I'm not familiar with the channel '{}', sorry".format(channelname)

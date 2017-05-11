@@ -275,7 +275,7 @@ class DideRobot(object):
 				self.joinChannel(channel)
 
 	def joinChannel(self, channelname):
-		if not channelname.startswith("#"):
+		if channelname[0] not in Constants.CHANNEL_PREFIXES:
 			channelname = "#" + channelname
 		if channelname in self.channelsUserList:
 			self.logger.warning("|{}| Asked to join '{}' but I'm already there".format(self.serverfolder, channelname))
@@ -567,7 +567,7 @@ class DideRobot(object):
 
 	def sendMessage(self, target, messageText, messageType='say'):
 		#Only say something if we're not muted, or if it's a private message or a notice
-		if not self.isMuted or not target.startswith('#') or messageType == 'notice':
+		if not self.isMuted or target[0] not in Constants.CHANNEL_PREFIXES or messageType == 'notice':
 			#Make sure we're not trying to send Unicode
 			if isinstance(messageText, unicode):
 				try:
@@ -600,7 +600,7 @@ class DideRobot(object):
 				else:
 					extraLines.insert(0, line[Constants.MAX_MESSAGE_LENGTH:])
 				line = line[:Constants.MAX_MESSAGE_LENGTH]
-			if not target.startswith('#'):
+			if target[0] not in Constants.CHANNEL_PREFIXES:
 				#If it's a PM, bypass the message queue
 				self.sendLineToServer(line)
 			else:

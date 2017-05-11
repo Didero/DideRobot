@@ -1,3 +1,4 @@
+import Constants
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 
@@ -31,11 +32,11 @@ class Command(CommandTemplate):
 				messageText = "Set the default to what?"
 			else:
 				defaultTarget = message.messageParts[1]
-				if defaultTarget.startswith('#') and defaultTarget not in message.bot.channelsUserList:
+				if defaultTarget[0] in Constants.CHANNEL_PREFIXES and defaultTarget not in message.bot.channelsUserList:
 					messageText = "I'm sorry, I'm not in that channel, so I can't set that as the default"
 				else:
 					self.defaultTargets[message.bot.serverfolder] = defaultTarget
-					if defaultTarget.startswith('#'):
+					if defaultTarget[0] in Constants.CHANNEL_PREFIXES:
 						messageText = "Sure, all future Say messages will be sent to the channel '{}'".format(defaultTarget)
 					else:
 						messageText = "Ok, if you want to keep pestering user '{}' easily, I'll allow it, but I hope you know what you're doing".format(defaultTarget)
@@ -77,7 +78,7 @@ class Command(CommandTemplate):
 				messageText = " ".join(message.messageParts[1:])
 
 			#If we should end up having to say something in a channel we're not in, tell the original source that we can't do that
-			if messageTarget.startswith('#') and messageTarget not in message.bot.channelsUserList:
+			if messageTarget[0] in Constants.CHANNEL_PREFIXES and messageTarget not in message.bot.channelsUserList:
 				messageText = "I'm not in channel '{}', so I can't say anything there. Sorry".format(messageTarget)
 				messageTarget = message.source
 				messageType = 'say'

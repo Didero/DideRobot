@@ -1,5 +1,6 @@
 import datetime, logging, os
 
+import Constants
 import GlobalStore
 
 class MessageLogger(object):
@@ -34,10 +35,10 @@ class MessageLogger(object):
 		#First check if we're even supposed to log
 		if source == "system" and not self.shouldKeepSystemLogs:
 			return
-		elif source.startswith('#') and not self.shouldKeepChannelLogs:
+		elif source[0] in Constants.CHANNEL_PREFIXES and not self.shouldKeepChannelLogs:
 			return
 		#Private messages don't start with a #
-		elif not source.startswith('#') and not self.shouldKeepPrivateLogs:
+		elif source[0] not in Constants.CHANNEL_PREFIXES and not self.shouldKeepPrivateLogs:
 			return
 
 		now = datetime.datetime.now()
