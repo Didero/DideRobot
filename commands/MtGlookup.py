@@ -201,19 +201,18 @@ class Command(CommandTemplate):
 		matchingCards = {}
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
 			for cardlineNumber, cardline in enumerate(jsonfile):
-				cardDict = json.loads(cardline)
-				cardname = cardDict.keys()[0]
+				cardname, carddata = json.loads(cardline).popitem()
 
 				#Store how much sets we started with, so we know at the end if any sets got removed
-				setCountAtStart = len(cardDict[cardname][1])
+				setCountAtStart = len(carddata[1])
 
 				#First check if we need to see if the set name matches
 				if setRegex:
-					for setname in cardDict[cardname][1].keys():
+					for setname in carddata[1].keys():
 						#If the setname didn't match, remove it from the set list
 						if not setRegex.search(setname):
-							del cardDict[cardname][1][setname]
-					if len(cardDict[cardname][1]) == 0:
+							del carddata[1][setname]
+					if len(carddata[1]) == 0:
 						#No set name matched, skip this card
 						continue
 
@@ -221,24 +220,24 @@ class Command(CommandTemplate):
 				for attrib in regexDict:
 					#Some data is stored in the card data, some in the set data, because it differs per set (rarity etc)
 					if attrib in setKeys:
-						for setname in cardDict[cardname][1].keys():
+						for setname in carddata[1].keys():
 							#If this attribute doesn't fit the search criteria, remove this set
-							if not regexDict[attrib].search(cardDict[cardname][1][setname][attrib]):
-								del cardDict[cardname][1][setname]
+							if not regexDict[attrib].search(carddata[1][setname][attrib]):
+								del carddata[1][setname]
 						#No matching sets left, skip this card
-						if len(cardDict[cardname][1]) == 0:
+						if len(carddata[1]) == 0:
 							break
 					#Most data is stored as general card data
 					else:
-						if attrib not in cardDict[cardname][0] or not regexDict[attrib].search(cardDict[cardname][0][attrib]):
+						if attrib not in carddata[0] or not regexDict[attrib].search(carddata[0][attrib]):
 							#If the wanted attribute is either not in the card, or it doesn't match, move on to the next card
 							break
 				else:
 					#If we didn't break from the loop, then the card matched all search criteria. Store it
 					# If all sets matched, don't store that. Otherwise, store a list of the sets that did match
-					setNameMatches = None if len(cardDict[cardname][1]) == setCountAtStart else cardDict[cardname][1].keys()
+					setNameMatches = None if len(carddata[1]) == setCountAtStart else carddata[1].keys()
 					# Use the formatted name so displaying them is easier later
-					matchingCards[cardDict[cardname][0]['name']] = (cardlineNumber, setNameMatches)
+					matchingCards[carddata[0]['name']] = (cardlineNumber, setNameMatches)
 		return matchingCards
 
 	def formatSearchResult(self, cardstore, addExtendedCardInfo, pickRandomCard, maxCardsToList=10, nameToMatch=None, addResultCount=True):
