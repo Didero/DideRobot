@@ -203,42 +203,42 @@ class Command(CommandTemplate):
 			for cardlineNumber, cardline in enumerate(jsonfile):
 				cardDict = json.loads(cardline)
 				cardname = cardDict.keys()[0]
-				setNameMatch = None
+
+				#Store how much sets we started with, so we know at the end if any sets got removed
+				setCountAtStart = len(cardDict[cardname][1])
 
 				#First check if we need to see if the set name matches
 				if setRegex:
-					for setname in cardDict[cardname][1]:
-						if setRegex.search(setname):
-							setNameMatch = setname
-							break
-					else:
+					for setname in cardDict[cardname][1].keys():
+						#If the setname didn't match, remove it from the set list
+						if not setRegex.search(setname):
+							del cardDict[cardname][1][setname]
+					if len(cardDict[cardname][1]) == 0:
 						#No set name matched, skip this card
 						continue
 
 				#Then check if the rest of the attributes match
 				for attrib in regexDict:
-					#Some data is stored in the card data, some in the set data, because it differs per set (rarity e.d.)
+					#Some data is stored in the card data, some in the set data, because it differs per set (rarity etc)
 					if attrib in setKeys:
-						matchesFound = []
-						for setname, setdata in cardDict[cardname][1].iteritems():
-							if attrib in setdata and regexDict[attrib].search(setdata[attrib]):
-								matchesFound.append(setname)
-						#No matches found, move on
-						if len(matchesFound) == 0:
+						for setname in cardDict[cardname][1].keys():
+							#If this attribute doesn't fit the search criteria, remove this set
+							if not regexDict[attrib].search(cardDict[cardname][1][setname][attrib]):
+								del cardDict[cardname][1][setname]
+						#No matching sets left, skip this card
+						if len(cardDict[cardname][1]) == 0:
 							break
-						#Store the fact that we found a match in a particular set, for future lookup
-						else:
-							setNameMatch = random.choice(matchesFound)
 					#Most data is stored as general card data
 					else:
 						if attrib not in cardDict[cardname][0] or not regexDict[attrib].search(cardDict[cardname][0][attrib]):
-							#If the wanted attribute is either not in the card, or it doesn't match, move on
+							#If the wanted attribute is either not in the card, or it doesn't match, move on to the next card
 							break
 				else:
 					#If we didn't break from the loop, then the card matched all search criteria. Store it
+					# If all sets matched, don't store that. Otherwise, store a list of the sets that did match
+					setNameMatches = None if len(cardDict[cardname][1]) == setCountAtStart else cardDict[cardname][1].keys()
 					# Use the formatted name so displaying them is easier later
-					cardname = cardDict[cardname][0]['name']
-					matchingCards[cardname] = (cardlineNumber, setNameMatch)
+					matchingCards[cardDict[cardname][0]['name']] = (cardlineNumber, setNameMatches)
 		return matchingCards
 
 	def formatSearchResult(self, cardstore, addExtendedCardInfo, pickRandomCard, maxCardsToList=10, nameToMatch=None, addResultCount=True):
@@ -321,6 +321,11 @@ class Command(CommandTemplate):
 		if len(card['text']) > 0:
 			cardInfoList.append(card['text'])
 		if addExtendedInfo:
+			#'setname' can either be a string of the setname, or a list of matching setnames
+			# Since we need it as a string later, make sure it is one
+			if setname and isinstance(setname, (list, tuple)):
+				setname = random.choice(setname)
+			#If it's an invalid setname, pick a random one that is valid
 			if not setname or setname not in sets:
 				setname = random.choice(sets.keys())
 			if 'flavor' in sets[setname]:
