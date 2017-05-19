@@ -242,7 +242,7 @@ class Command(CommandTemplate):
 				elif fieldKey == u"_ifcontains":
 					#<_ifcontains|string|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
 					if len(arguments) != 5:
-						return u"Error: Not enough parameters in 'ifcontains' of field '{}'".format(field)
+						return u"Error: Not enough parameters in 'ifcontains' of field '{}'. 5 fields required, found {}".format(field, len(arguments))
 					if arguments[1] == u"_params":
 						arguments[1] = " ".join(parameters).decode("utf-8", errors="replace")
 					if arguments[2] in arguments[1]:
