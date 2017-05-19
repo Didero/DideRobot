@@ -169,11 +169,12 @@ class Command(CommandTemplate):
 		if '_options' in grammar:
 			# Parse arguments
 			if u'parseGender' in grammar['_options']:
-				gender = ''
-				for param in parameters:
-					if self.isGenderParameter(param):
-						gender = param
-				variableDict.update(self.getGenderWords(gender))
+				gender = None
+				if parameters:
+					for param in parameters:
+						if self.isGenderParameter(param):
+							gender = param
+				variableDict.update(self.getGenderWords(gender))  #If no gender was provided, 'getGenderWords' will pick a random one
 			if u'generateName' in grammar['_options']:
 				#If a gender was provided or requested, use that to generate a name
 				if 'gender' in variableDict:
