@@ -355,7 +355,7 @@ class Command(CommandTemplate):
 
 		#If no gender parameter was passed, pick a random one
 		if not genderDict:
-			genderDict = self.getGenderWords('', False)
+			genderDict = self.getGenderWords(None, False)
 
 		names = []
 		for i in xrange(namecount):
