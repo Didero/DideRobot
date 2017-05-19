@@ -125,7 +125,7 @@ class Command(CommandTemplate):
 	def getGenderWords(genderString, allowUnspecified=True):
 		if genderString is not None:
 			genderString = genderString.lower()
-		if not genderString or genderString == '':
+		if not genderString:
 			# No gender specified, pick one on our own
 			roll = random.randint(1, 100)
 			if allowUnspecified and roll <= 45 or roll <= 50:
