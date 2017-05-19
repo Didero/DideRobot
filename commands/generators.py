@@ -341,7 +341,11 @@ class Command(CommandTemplate):
 		genderDict = None
 		namecount = 1
 		#Determine if a specific gender name and/or number of names was requested
-		if parameters and len(parameters) > 0:
+		if parameters:
+			#Make sure parameters is a list, so we don't iterate over each letter in a string accidentally
+			if not isinstance(parameters, (tuple, list)):
+				parameters = [parameters]
+			#Go through all parameters to see if they're either a gender specifier or a name count number
 			for param in parameters:
 				if self.isGenderParameter(param):
 					genderDict = self.getGenderWords(param, False)
