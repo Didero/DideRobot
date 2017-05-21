@@ -152,9 +152,8 @@ class Command(CommandTemplate):
 		return {"gender": "misc", "genderNoun": "Person", "genderNounYoung": "Kid", "pronoun": "they",
 								 "possessivePronoun": "their", "personalPronoun": "them"}
 
-
-	def parseGrammarFile(self, grammarFilename, variableDict=None, parameters=None):
-		if not variableDict:
+	def parseGrammarFile(self, grammarFilename, parameters=None, variableDict=None):
+		if variableDict is None:
 			variableDict = {}
 
 		#Load the file
@@ -187,155 +186,196 @@ class Command(CommandTemplate):
 				variableDict['lastname'] = nameparts[-1]
 
 		#Start the parsing!
-		sentence = grammar["_start"]
-		tagFinderPattern = re.compile(r"<(.+?[^/])>", re.UNICODE)
-		argumentSplitterPattern = re.compile(r"(?<!/)\|", re.UNICODE)
-		while True:
-			tagmatch = tagFinderPattern.search(sentence)
-			if not tagmatch:
-				break
-			field = tagmatch.group(1)
-			replacement = u""
+		return self.parseGrammarString(grammar['_start'], grammar, parameters, variableDict)
 
-			#Special commands start with an underscore
-			arguments = argumentSplitterPattern.split(field)
-			fieldKey = arguments[0]
-			if fieldKey.startswith(u"_"):
-				if fieldKey == u"_randint" or fieldKey == u"_randintasword":
-					value = random.randint(int(arguments[1]), int(arguments[2]))
-					if fieldKey == u"_randint":
-						replacement = unicode(value)
-					elif fieldKey == u"_randintasword":
-						replacement = self.numberToText(value)
-				elif fieldKey == u"_file":
-					#Load a sentence from the specified file. Useful for not cluttering up the grammar file with a lot of options
-					newFilename = arguments[1]
-					replacement = self.getRandomLine(newFilename)
-				elif fieldKey == u"_setvar":
-					#<_setvar|varname|value>
-					variableDict[arguments[1]] = arguments[2]
-				elif fieldKey == u"_remvar":
-					if arguments[1] in variableDict:
-						del variableDict[arguments[1]]
-				elif fieldKey == u"_hasvar":
-					#<_hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
-					if arguments[1] in variableDict:
-						replacement = arguments[2]
-					else:
-						replacement = arguments[3]
-				elif fieldKey == u"_variable" or fieldKey == u"_var":
-					#Variable, fill it in if it's in the variable dictionary
-					if arguments[1] not in variableDict:
-						return u"Error: Referenced undefined variable '{}' in field '{}'".format(arguments[1], field)
-					else:
-						replacement = variableDict[arguments[1]]
-				elif fieldKey == u"_if":
-					#<_if|varname=string|stringIfTrue|stringIfFalse>
-					firstArgumentParts = arguments[1].split('=')
-					if len(arguments) < 4:
-						return u"Error: Not enough arguments in 'if' for field '{}'".format(field)
-					if firstArgumentParts[0] not in variableDict:
-						return u"Error: Referenced undefined variable '{}' in 'if' of field '{}'".format(firstArgumentParts[0], field)
-					if variableDict[firstArgumentParts[0]] == firstArgumentParts[1]:
-						replacement = arguments[2]
-					else:
-						replacement = arguments[3]
-				elif fieldKey == u"_ifcontains":
-					#<_ifcontains|string|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
-					if len(arguments) != 5:
-						return u"Error: Not enough parameters in 'ifcontains' of field '{}'. 5 fields required, found {}".format(field, len(arguments))
-					if arguments[1] == u"_params":
-						arguments[1] = " ".join(parameters).decode("utf-8", errors="replace")
-					if arguments[2] in arguments[1]:
-						replacement = arguments[3]
-					else:
-						replacement = arguments[4]
-				elif fieldKey == u"_hasparameters" or fieldKey == u"_hasparams":
-					#<_hasparams|stringIfHasParams|stringIfDoesntHaveParams>"
-					#Checks if there are any parameters provided
-					if parameters and len(parameters) > 0:
-						replacement = arguments[1]
-					else:
-						replacement = arguments[2]
-				elif fieldKey == u"_hasparameter" or fieldKey == u"_hasparam":
-					#<_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
-					#Used to check if the literal parameter was passed in the message calling this generator
-					if arguments[1] in parameters:
-						replacement = arguments[2]
-					else:
-						replacement = arguments[3]
-				elif fieldKey == u"_params":
-					#Fill in the provided parameter(s) in this field
-					if not parameters:
-						replacement = u""
-					else:
-						#The parameters will be strings. Convert them to unicode
-						replacement = " ".join(parameters)
-						replacement = replacement.decode("utf-8", errors="replace")
-				elif fieldKey == u"_replace":
-					# <_replace|string|whatToReplace|whatToReplaceItWith>
-					if len(arguments) != 4:
-						return u"Error: Not enough parameters for '_replace' in field '{}'. Need 4, found {}".format(field, len(arguments))
-					replacement = arguments[1]
-					if replacement == u"_params":
-						replacement = " ".join(parameters).decode("utf-8", errors="replace")
-					replacement = replacement.replace(arguments[2], arguments[3])
-				elif fieldKey == u"_" or fieldKey == u"_dummy":
+
+	def parseGrammarString(self, grammarString, grammar, parameters=None, variableDict=None):
+		if variableDict is None:
+			variableDict = {}
+
+		outputString = grammarString
+		while True:
+			try:
+				outputString, bracketString = re.split(r"(?<!/)<", outputString, maxsplit=1)
+			except ValueError:
+				#No more bracketed parts found, done
+				return outputString
+
+			grammarParts = [""]
+			grammarPartIndex = 0
+			nestedBracketLevel = 0
+			characterIsEscaped = False
+			#Go through all the characters to divide the bracketed string up in parts for parsing
+			for characterIndex, character in enumerate(bracketString):
+				if nestedBracketLevel == 0 and not characterIsEscaped:
+					if character == "|":
+						#New section, write any new characters to the new section
+						grammarParts.append("")
+						grammarPartIndex += 1
+						continue
+					elif character == ">":
+						#End of this bracket block. Parse the block, and append the rest of the string to it
+						success, parsedBracketString = self.parseGrammarBlock(grammarParts, grammar, parameters, variableDict)
+						if not success:
+							#If parsing failed, return the error
+							return parsedBracketString
+						else:
+							#Otherwise, insert it into the output string and try to parse it again until all the brackets are filled in
+							outputString += parsedBracketString + bracketString[characterIndex+1:]
+							break
+				#Store the character
+				grammarParts[grammarPartIndex] += character
+				#Make sure if this character is escaped, the next one won't be
+				if characterIsEscaped:
+					characterIsEscaped = False
+				#If this character isn't escaped, parse it if necessary
+				else:
+					if character == "/":
+						# Escape character. Save the next character without parsing it
+						characterIsEscaped = True
+					elif character == "<":
+						# Start of a bracketed part that we need to store
+						nestedBracketLevel += 1
+					elif character == ">":
+						# End of a bracketed part
+						nestedBracketLevel -= 1
+
+	def parseGrammarBlock(self, grammarParts, grammar, parameters=None, variableDict=None):
+		fieldKey = grammarParts.pop(0)
+		replacement = u""
+
+		if fieldKey.startswith(u"_"):
+			if fieldKey == u"_randint" or fieldKey == u"_randintasword":
+				try:
+					value = random.randint(int(grammarParts[0]), int(grammarParts[1]))
+				except ValueError:
+					return (False, u"Invalid argument provided to '{}', '{}' or '{}' couldn't be parsed as a number".format(fieldKey, grammarParts[0], grammarParts[1]))
+				if fieldKey == u"_randint":
+					replacement = unicode(value)
+				elif fieldKey == u"_randintasword":
+					replacement = self.numberToText(value)
+			elif fieldKey == u"_file":
+				# Load a sentence from the specified file. Useful for not cluttering up the grammar file with a lot of options
+				replacement = self.getRandomLine(grammarParts[0])
+			elif fieldKey == u"_setvar":
+				# <_setvar|varname|value>
+				variableDict[grammarParts[0]] = grammarParts[1]
+			elif fieldKey == u"_remvar":
+				if grammarParts[0] in variableDict:
+					del variableDict[grammarParts[0]]
+			elif fieldKey == u"_hasvar":
+				# <_hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
+				if grammarParts[0] in variableDict:
+					replacement = grammarParts[1]
+				else:
+					replacement = grammarParts[2]
+			elif fieldKey == u"_variable" or fieldKey == u"_var":
+				# Variable, fill it in if it's in the variable dictionary
+				if grammarParts[0] not in variableDict:
+					return (False, u"Error: Referenced undefined variable '{}' in field '<{}|{}>'".format(grammarParts[0], fieldKey, u"|".join(grammarParts)))
+				else:
+					replacement = variableDict[grammarParts[0]]
+			elif fieldKey == u"_if":
+				# <_if|varname=string|stringIfTrue|stringIfFalse>
+				firstArgumentParts = grammarParts[0].split('=')
+				if len(grammarParts) < 3:
+					return (False, u"Error: Not enough arguments in 'if' for field '<{}|{}>', found {}, expected 3".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
+				if firstArgumentParts[0] not in variableDict:
+					return (False, u"Error: Referenced undefined variable '{}' in field '<{}|{}>'".format(firstArgumentParts[0], fieldKey, u"|".join(grammarParts)))
+				if variableDict[firstArgumentParts[0]] == firstArgumentParts[1]:
+					replacement = grammarParts[1]
+				else:
+					replacement = grammarParts[2]
+			elif fieldKey == u"_ifcontains":
+				# <_ifcontains|string|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
+				if len(grammarParts) < 4:
+					return (False, u"Error: Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
+				if grammarParts[0] == u"_params":
+					grammarParts[0] = " ".join(parameters).decode("utf-8", errors="replace")
+				if grammarParts[1] in grammarParts[0]:
+					replacement = grammarParts[2]
+				else:
+					replacement = grammarParts[3]
+			elif fieldKey == u"_hasparameters" or fieldKey == u"_hasparams":
+				# <_hasparams|stringIfHasParams|stringIfDoesntHaveParams>"
+				# Checks if there are any parameters provided
+				if parameters and len(parameters) > 0:
+					replacement = grammarParts[0]
+				else:
+					replacement = grammarParts[1]
+			elif fieldKey == u"_hasparameter" or fieldKey == u"_hasparam":
+				# <_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
+				# Used to check if the literal parameter was passed in the message calling this generator
+				if parameters and grammarParts[0] in parameters:
+					replacement = grammarParts[1]
+				else:
+					replacement = grammarParts[2]
+			elif fieldKey == u"_params":
+				# Fill in the provided parameter(s) in this field
+				if not parameters:
 					replacement = u""
 				else:
-					return u"Error: Unknown command '{}' in field '{}' found!".format(fieldKey, field)
-			#No command, so check if it's a valid key
-			elif fieldKey not in grammar:
-				return u"Error: Field '{}' not found in grammar file!".format(field)
-			#All's well, fill it in
+					# The parameters will be strings. Convert them to unicode
+					replacement = " ".join(parameters).decode("utf-8", errors="replace")
+			elif fieldKey == u"_replace":
+				# <_replace|string|whatToReplace|whatToReplaceItWith>
+				if len(grammarParts) < 3:
+					return (False, u"Error: Not enough parameters in field '<{}|{}>'. Need 3, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
+				replacement = grammarParts[0]
+				if replacement == u"_params":
+					replacement = " ".join(parameters).decode("utf-8", errors="replace")
+				replacement = replacement.replace(grammarParts[1], grammarParts[2])
+			elif fieldKey == u"_" or fieldKey == u"_dummy":
+				replacement = u""
 			else:
-				if isinstance(grammar[fieldKey], list):
-					#It's a list! Just pick a random entry
-					replacement = random.choice(grammar[fieldKey])
-				elif isinstance(grammar[fieldKey], dict):
-					#Dictionary! The keys are chance percentages, the values are the replacement strings
-					roll = random.randint(1, 100)
-					for chance in sorted(grammar[fieldKey].keys()):
-						if roll <= int(chance):
-							replacement = grammar[fieldKey][chance]
-							break
-				elif isinstance(grammar[fieldKey], basestring):
-					#If it's a string (either the string class or the unicode class), just dump it in
-					replacement = grammar[fieldKey]
+				return (False, u"Error: Unknown command '{key}' in field '<{key}|{args}>' found!".format(key=fieldKey, args=u"|".join(grammarParts)))
+		# No command, so check if it's a valid key
+		elif fieldKey not in grammar:
+			return u"Error: Field '{}' not found in grammar file!".format(fieldKey)
+		# All's well, fill it in
+		else:
+			if isinstance(grammar[fieldKey], list):
+				# It's a list! Just pick a random entry
+				replacement = random.choice(grammar[fieldKey])
+			elif isinstance(grammar[fieldKey], dict):
+				# Dictionary! The keys are chance percentages, the values are the replacement strings
+				roll = random.randint(1, 100)
+				for chance in sorted(grammar[fieldKey].keys()):
+					if roll <= int(chance):
+						replacement = grammar[fieldKey][chance]
+						break
+			elif isinstance(grammar[fieldKey], basestring):
+				# If it's a string (either the string class or the unicode class), just dump it in
+				replacement = grammar[fieldKey]
+			else:
+				return u"Error: No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey)
+
+		# Process the possible arguments that can be provided
+		for grammarPart in grammarParts:
+			if grammarPart == 'lowercase':
+				replacement = replacement.lower()
+			elif grammarPart == 'uppercase':
+				replacement = replacement.upper()
+			elif grammarPart == 'camelcase' or grammarPart == 'titlecase':
+				replacement = replacement.title()
+			elif grammarPart == 'firstletteruppercase':
+				if len(replacement) > 1:
+					replacement = replacement[0].upper() + replacement[1:]
 				else:
-					return u"Error: No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey)
-
-			#Process the possible arguments that can be provided
-			for argument in arguments[1:]:
-				if argument == 'lowercase':
-					replacement = replacement.lower()
-				elif argument == 'uppercase':
 					replacement = replacement.upper()
-				elif argument == 'camelcase' or argument == 'titlecase':
-					replacement = replacement.title()
-				elif argument == 'firstletteruppercase':
-					if len(replacement) > 1:
-						replacement = replacement[0].upper() + replacement[1:]
-					else:
-						replacement = replacement.upper()
-				elif argument == 'bold':
-					replacement = SharedFunctions.makeTextBold(replacement)
+			elif grammarPart == 'bold':
+				replacement = SharedFunctions.makeTextBold(replacement)
 
-			#Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
-			if len(arguments) > 1 and not fieldKey.startswith('_') and replacement.startswith('<'):
-				closingBracketIndex = replacement.find('>')
-				if closingBracketIndex > -1:
-					orgReplacement = replacement
-					replacement = replacement[:closingBracketIndex] + u"|" + u"|".join(arguments[1:]) + replacement[closingBracketIndex:]
-					self.logDebug(u"[Gen] Replaced '{}' with '{}'".format(orgReplacement, replacement))
+		# Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
+		if len(grammarParts) > 0 and not fieldKey.startswith('_') and replacement.startswith('<'):
+			closingBracketIndex = replacement.find('>')
+			if closingBracketIndex > -1:
+				orgReplacement = replacement
+				replacement = replacement[:closingBracketIndex] + u"|" + u"|".join(grammarParts) + replacement[closingBracketIndex:]
+				self.logDebug(u"[Gen] Replaced '{}' with '{}'".format(orgReplacement, replacement))
 
-			#To allow for escaping < and > in <_if> for instance, remove one escape in the iteration so it does get parsed next round
-			replacement = replacement.replace('/<', '<').replace('/>', '>').replace('/|', '|')
-
-			sentence = sentence.replace(u"<{}>".format(field), replacement, 1).strip()
-		#Exited from loop, return the fully filled-in sentence
-		return sentence
-
+		#Done!
+		return (True, replacement)
 
 	def generateName(self, parameters=None):
 		genderDict = None
