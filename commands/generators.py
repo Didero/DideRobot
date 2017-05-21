@@ -239,6 +239,9 @@ class Command(CommandTemplate):
 					elif character == ">":
 						# End of a bracketed part
 						nestedBracketLevel -= 1
+			else:
+				#If we didn't break out of the character loop, we didn't find the end bracket. Complain about that
+				return u"Error: Missing closing bracket"
 
 	def parseGrammarBlock(self, grammarParts, grammar, parameters=None, variableDict=None):
 		fieldKey = grammarParts.pop(0)
