@@ -31,9 +31,11 @@ class IrcMessage(object):
 			self.isPrivateMessage = False
 
 		#Handle the text component, including seeing if it starts with the bot's command character
-		self.rawText = rawText.strip()
+		self.rawText = rawText
+		if self.rawText:
+			self.rawText = self.rawText.strip()
 		#There isn't always text
-		if self.rawText == "":
+		if not self.rawText:
 			self.trigger = None
 			self.message = ""
 			self.messageParts = []
