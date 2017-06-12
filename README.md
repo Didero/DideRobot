@@ -1,25 +1,21 @@
-DideRobot
-=========
+# DideRobot
 
 A modular IRC bot built on Gevent
 
-1) Initial Setup
--------------
+### 1) Initial Setup
 1. In the 'serverSettings' folder, make a copy of 'globalsettings.json.example'
 2. Rename the copy to 'globalsettings.json'
 3. Open the file in your favourite text editor
 4. Set all values the way you want them. (See section 3 for an explanation of what each setting does). These will be the default values for new server setting files you create later
 
-2) Adding A New Server To Connect To
----------------------------------
+### 2) Adding A New Server To Connect To
 1. In the 'serverSettings' folder, create a new folder. Name it whatever you want (but no spaces). You will use this name later to make the bot connect to this server, so make it something you can remember
 2. In your new folder, create a new file called 'settings.json' (or copy over 'globalsettings.json' and rename it, so you don't have to remember all the field names)
 3. Open the new 'settings.json' in your favourite text editor
 4. Add or change the settings you want (See section 3 for setting explanations). If the value would be the same as in 'globalsettings.json', you can delete the line, which will make the setting default back to the global value
 5. The 'server' field is required. It's also smart to add at least one user address and/or nickname to the 'admins' list, so you can control the bot
 
-3) Settings Explanation
---------------------------------
+### 3) Settings Explanation
 * server: The URL of the IRC server this bot should connect to (For instance 'irc.example.com')
 * port: The port number the bot should use for the connection. If you're unsure, just leave it at the default of 6667
 * serverpassword: Some IRC servers require you to send a password before you're allowed to connect. Set that here, or leave it empty if no password is required (Most servers don't require one)
@@ -36,13 +32,11 @@ A modular IRC bot built on Gevent
 * commandWhitelist: Only the commands in this list are allowed to respond to messages on this server. Should be the exact same name as the command filename. Supercedes the blacklist
 * commandBlacklist: The commands are not allowed to respond to messages on this server. Should be the exact same name as the command filename. If a command whitelist is also provided, this field is ignored
 
-4) Starting The Bot
-----------------
+### 4) Starting The Bot
 1. Navigate to the 'DideRobot' folder
 2. Call 'start.py' with a single argument: a comma-separated list of server settings folders. For each folder specified, it will (try to) connect to the URL specified in the 'server' field of the corresponding 'settings.json' file, and join all channels specified in the 'joinChannels' list, if any
 
-5) Stopping The Bot
-----------------
+### 5) Stopping The Bot
 0. Connect to a server the bot is connected to, if you're not connected already
 1. Either in a channel the bot is in, or in a private message, type the specified command character, followed by either 'quit' to make the bot leave just that server, or 'shutdown' to make the bot disconnect from all servers it is connected to. (Make sure the settings file for the bot specifies you as an admin, because only bot admins can make the bot quit or shut down)
 2. Once DideRobot isn't connected to any server (Either because it quit from the last server it was connected to, or because of a 'shutdown' call), the program will exit
