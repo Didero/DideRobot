@@ -82,24 +82,38 @@ class Command(CommandTemplate):
 						if 'deg' in data['wind']:
 							windString += u", " + getWindDirection(data['wind']['deg'])
 
-						#Not all replies include a placename
-						if 'name' in data and len(data['name']) > 0:
-							replytext += u"{city} ({country}): "
-						elif 'country' in data['sys'] and len(data['sys']['country']) > 0:
-							replytext += u"Somewhere in {country}: "
-						replytext += u"{tempC:.1f}°C / {tempF:.1f}°F, {weatherType}. Wind: {windString}. Humidity of {humidity}% (Data is {dataAge})"
-						replytext = replytext.format(city=data['name'], country=data['sys']['country'], tempC=data['main']['temp'], tempF=celsiusToFahrenheit(data['main']['temp']),
-													 weatherType=data['weather'][0]['description'], windString=windString,
-													 humidity=data['main']['humidity'], dataAge=dataAgeDisplay)
+						#Not all replies include a placename or a countryname
+						placename = data['name'] if 'name' in data and len(data['name']) > 0 else None
+						countryname = data['sys']['country'] if 'sys' in data and 'country' in data['sys'] and len(data['sys']['country']) > 0 else None
+						if placename and countryname:
+							replytext = u"{} ({})".format(placename, countryname)
+						elif placename:
+							replytext = u"{}".format(placename)
+						elif countryname:
+							replytext = u"Somewhere in {}".format(countryname)
+						else:
+							replytext = u"Somewhere unknown"
+
+						#Add the actual weather info
+						replytext += u": {tempC:.1f}°C / {tempF:.1f}°F, {weatherType}. Wind: {windString}. Humidity of {humidity}% (Data is {dataAge})"
+						replytext = replytext.format(tempC=data['main']['temp'], tempF=celsiusToFahrenheit(data['main']['temp']), weatherType=data['weather'][0]['description'],
+													 windString=windString, humidity=data['main']['humidity'], dataAge=dataAgeDisplay)
 
 					else:
 						#Forecast
+						placename = data['city']['name'] if 'city' in data and 'name' in data['city'] and len(data['city']['name']) > 0 else None
+						countryname = data['city']['country'] if 'city' in data and 'country' in data['city'] and len(data['city']['country']) > 0 else None
 						replytext = u"Forecast for "
-						if 'name' in data['city'] and len(data['city']['name']) > 0:
-							replytext += u"{city} ({country}). "
+						if placename and countryname:
+							replytext += u"{} ({})".format(placename, countryname)
+						elif placename:
+							replytext += placename
+						elif countryname:
+							replytext += countryname
 						else:
-							replytext += u"{country}. "
-						replytext = replytext.format(city=data['city']['name'], country=data['city']['country'])
+							replytext += u"somewhere unknown"
+						replytext += u": "
+
 						forecasts = []
 						for day in data['list']:
 							dayname = datetime.datetime.utcfromtimestamp(day['dt']).strftime(u"%a").upper()
