@@ -178,7 +178,7 @@ class Command(CommandTemplate):
 																							 **streamerdata['channel']))
 				message.reply(SharedFunctions.joinWithSeparator(reportStrings), "say")
 		else:
-			message.reply("I don't know what to do with the parameter '{}', sorry. Maybe you made a typo? Or you could try (re)reading the help text".format(parameter))
+			message.reply("I don't know what to do with the parameter '{}', sorry. Maybe you made a typo? Or you could try (re)reading the help text".format(parameter), "say")
 
 
 	def executeScheduledFunction(self):
