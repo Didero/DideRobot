@@ -9,7 +9,8 @@ from CommandTemplate import CommandTemplate
 class Command(CommandTemplate):
 	triggers = ['twitchwatcher', 'twitchwatch']
 	helptext = "Follows Twitch streamers. '<add/remove> [streamername]' to add/remove (add 'autoreport' for automatic live mention). " \
-			   "'<list/live>' to see all or live followed streamers. '<toggle/autoreport> [streamername]' to toggle autoreporting"
+			   "'<list/live>' to see all or live followed streamers. '<toggle/autoreport> [streamername]' to toggle autoreporting. " \
+			   "'<setnick/> [streamername] [nick]' to set a nickname for a streamer, '<removenick> [streamername]' to remove it"
 	scheduledFunctionTime = 300
 	callInThread = True
 
@@ -63,6 +64,10 @@ class Command(CommandTemplate):
 		if parameter == "list":
 			followedStreamers = []
 			for streamername, streamerdata in self.watchedStreamersData.iteritems():
+				#Get the streamer's nickname, if any
+				if 'nicknames' in streamerdata and serverChannelString in streamerdata['nicknames']:
+					streamername = u"{}({})".format(streamerdata['nicknames'][serverChannelString], streamername)
+				#Check to see if this streamer is followed in the channel the command came from
 				if serverChannelString in streamerdata['followChannels']:
 					followedStreamers.append(streamername)
 				elif serverChannelString in streamerdata['reportChannels']:
@@ -155,6 +160,44 @@ class Command(CommandTemplate):
 						streamerdata['followChannels'].append(serverChannelString)
 						message.reply(u"Ok, I'll stop mentioning every time {} goes live. But don't blame me if you miss a stream of them!".format(streamername), "say")
 					self.saveWatchedStreamerData()
+		elif parameter == "setnick":
+			if message.messagePartsLength < 3:
+				message.reply(u"I'm not going to make up a nick! Please add a nickname too", "say")
+				return
+			#Set a nickname for a streamer, since their nick in the channel and their Twitch nick don't always match
+			streamername = message.messageParts[1].lower()
+			streamerdata = self.watchedStreamersData.get(streamername, None)
+			if not streamerdata or (serverChannelString not in streamerdata['followChannels'] and serverChannelString not in streamerdata['reportChannels']):
+				message.reply(u"I don't even follow {}, so setting a nickname is slightly premature. Please introduce me to them first with the 'add' parameter".format(streamername), "say")
+				return
+			if 'nicknames' not in streamerdata:
+				streamerdata['nicknames'] = {}
+			streamerdata['nicknames'][serverChannelString] = message.messageParts[2]
+			self.saveWatchedStreamerData()
+			message.reply(u"All right, I'll call {} '{}' from now on".format(streamername, message.messageParts[2]), "say")
+		elif parameter == "removenick":
+			if message.messagePartsLength == 1:
+				message.reply("I'm not going to delete everybody's nickname! Add the name of the streamer whose nick you want removed", "say")
+				return
+			streamername = message.messageParts[1].lower()
+			streamerdata = self.watchedStreamersData.get(streamername, None)
+			#Maybe they entered the nickname instead of the streamer name. Check if we can find it
+			if not streamerdata:
+				for streamername, streamerdata in self.watchedStreamersData.iteritems():
+					if 'nicknames' in streamerdata and serverChannelString in streamerdata['nicknames'] and streamername == streamerdata['nicknames'][serverChannelString].lower():
+						#Found a match. If we break now, streamername and streamerdata will be set correctly
+						break
+				else:
+					message.reply(u"I'm sorry, I don't know who {} is. Maybe you made a typo, or you forgot to add the streamer with the 'add' parameter?".format(message.messageParts[1]), "say")
+					return
+			if 'nicknames' not in streamerdata or serverChannelString not in streamerdata['nicknames']:
+				message.reply(u"I don't have a nickname stored for {}, so mission accomplished, I guess?".format(streamername), "say")
+				return
+			message.reply(u"Ok, I removed the nickname '{}', I'll call them by their Twitch username '{}'".format(streamerdata['nicknames'][serverChannelString], streamername))
+			del streamerdata['nicknames'][serverChannelString]
+			if len(streamerdata['nicknames']) == 0:
+				del streamerdata['nicknames']
+			self.saveWatchedStreamerData()
 		elif parameter == "live":
 			streamerIdsToCheck = []
 			for streamername, streamerdata in self.watchedStreamersData.iteritems():
