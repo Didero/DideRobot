@@ -114,20 +114,26 @@ class Command(CommandTemplate):
 				message.reply("I'm not going to remove all the streamers I watch! Please be more specific", "say")
 			else:
 				streamername = message.messageParts[1].lower()
-				if streamername not in self.watchedStreamersData or (serverChannelString not in self.watchedStreamersData[streamername]['followChannels']
-																	 and serverChannelString not in self.watchedStreamersData[streamername]['reportChannels']):
+				streamerdata = self.watchedStreamersData.get(streamername, None)
+				if not streamerdata:
+					message.reply(u"I don't even know who {} is. So task completed, I guess?".format(streamername), "say")
+					return
+				#Determine if the streamer is followed or autoreported
+				channelType = None
+				if serverChannelString in streamerdata['followChannels']:
+					channelType = 'followChannels'
+				elif serverChannelString in streamerdata['reportChannels']:
+					channelType = 'reportChannels'
+				if not channelType:
 					message.reply(u"I'm already not watching {}. You're welcome!".format(streamername), "say")
-				else:
-
-					if serverChannelString in self.watchedStreamersData[streamername]['followChannels']:
-						self.watchedStreamersData[streamername]['followChannels'].remove(serverChannelString)
-					elif serverChannelString in self.watchedStreamersData[streamername]['reportChannels']:
-						self.watchedStreamersData[streamername]['reportChannels'].remove(serverChannelString)
-					#If there's no channel watching this streamer anymore, remove it entirely
-					if len(self.watchedStreamersData[streamername]['followChannels']) == 0 and len(self.watchedStreamersData[streamername]['reportChannels']) == 0:
-						del self.watchedStreamersData[streamername]
-					self.saveWatchedStreamerData()
-					message.reply(u"Ok, I'll stop watching {} then".format(streamername), "say")
+					return
+				#The streamer is being followed. Remove it from the channel type list it was in
+				streamerdata[channelType].remove(serverChannelString)
+				#If there's no channel watching this streamer anymore, remove it entirely
+				if len(streamerdata['followChannels']) == 0 and len(streamerdata['reportChannels']) == 0:
+					del self.watchedStreamersData[streamername]
+				self.saveWatchedStreamerData()
+				message.reply(u"Ok, I'll stop watching {} then".format(streamername), "say")
 		elif parameter == "toggle" or parameter == "autoreport":
 			#Toggle auto-reporting
 			if message.messagePartsLength < 2:
