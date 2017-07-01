@@ -134,6 +134,7 @@ class CommandHandler:
 			#Since the module may already have been loaded in the past, make sure we have the latest version
 			reload(loadedModule)
 			command = loadedModule.Command()
+			self.commands[name] = command
 			return (True, "Successfully loaded file '{}'".format(name))
 		except Exception as e:
 			self.logger.error("An error occurred while trying to load command '{}'".format(name), exc_info=True)
