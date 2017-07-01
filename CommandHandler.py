@@ -130,11 +130,10 @@ class CommandHandler:
 			self.logger.warning("File '{}' does not exist, aborting".format(commandFilename))
 			return (False, "File '{}' does not exist".format(name))
 		try:
-			module = importlib.import_module(folder + '.' + name)
+			loadedModule = importlib.import_module(folder + '.' + name)
 			#Since the module may already have been loaded in the past, make sure we have the latest version
-			reload(module)
-			command = module.Command()
-			self.commands[name] = command
+			reload(loadedModule)
+			command = loadedModule.Command()
 			return (True, "Successfully loaded file '{}'".format(name))
 		except Exception as e:
 			self.logger.error("An error occurred while trying to load command '{}'".format(name), exc_info=True)
