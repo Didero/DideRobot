@@ -134,17 +134,17 @@ class Command(CommandTemplate):
 				message.reply(u"I can't toggle autoreporting for everybody, that'd get confusing! Please provide a streamer name too", "say")
 			else:
 				streamername = message.messageParts[1].lower()
-				if streamername not in self.watchedStreamersData or (serverChannelString not in self.watchedStreamersData[streamername]['followChannels'] and
-																	 serverChannelString not in self.watchedStreamersData[streamername]['reportChannels']):
+				streamerdata = self.watchedStreamersData.get(streamername, None)
+				if not streamerdata or (serverChannelString not in streamerdata['followChannels'] and serverChannelString not in streamerdata['reportChannels']):
 					message.reply(u"I'm not following {}, so I can't toggle autoreporting for them either. Maybe you made a typo, or you forgot to add them with 'add'?", "say")
 				else:
-					if serverChannelString in self.watchedStreamersData[streamername]['followChannels']:
-						self.watchedStreamersData[streamername]['followChannels'].remove(serverChannelString)
-						self.watchedStreamersData[streamername]['reportChannels'].append(serverChannelString)
+					if serverChannelString in streamerdata['followChannels']:
+						streamerdata['followChannels'].remove(serverChannelString)
+						streamerdata['reportChannels'].append(serverChannelString)
 						message.reply(u"All right, I'll shout in here when {} goes live. You'll never miss a stream of them again!".format(streamername), "say")
 					else:
-						self.watchedStreamersData[streamername]['reportChannels'].remove(serverChannelString)
-						self.watchedStreamersData[streamername]['followChannels'].append(serverChannelString)
+						streamerdata['reportChannels'].remove(serverChannelString)
+						streamerdata['followChannels'].append(serverChannelString)
 						message.reply(u"Ok, I'll stop mentioning every time {} goes live. But don't blame me if you miss a stream of them!".format(streamername), "say")
 					self.saveWatchedStreamerData()
 		elif parameter == "live":
