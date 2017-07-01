@@ -85,7 +85,7 @@ class Command(CommandTemplate):
 					return
 
 				#If we don't have data on this streamer yet, retrieve it
-				if streamername not in self.watchedStreamersData:
+				if not streamerdata:
 					r = requests.get("https://api.twitch.tv/kraken/users", params={"client_id": GlobalStore.commandhandler.apikeys['twitch'],
 																				   "api_version": 5, "login": streamername})
 					twitchData = r.json()
@@ -98,12 +98,14 @@ class Command(CommandTemplate):
 						message.reply(u"That... doesn't match anybody on file. Twitch's file, I mean. Maybe you misspelled the streamer's name?", "say")
 						return
 					#No errors, got the streamer data. Store it
-					self.watchedStreamersData[streamername] = {'clientId': twitchData['users'][0]['_id'], 'followChannels': [], 'reportChannels': [], 'hasBeenReportedLive': False}
+					self.watchedStreamersData[streamername] = {'clientId': twitchData['users'][0]['_id'], 'hasBeenReportedLive': False,
+															   'followChannels': [], 'reportChannels': []}
 
 				#We know we have the basics for the streamer set up, at least, or more if they were already in our files
 				# Add the current server-channel pair in there too
-				self.watchedStreamersData[streamername]['reportChannels' if shouldAutoReport else 'followChannels'].append(serverChannelString)
 				shouldAutoReport = (message.messagePartsLength >= 3 and message.messageParts[-1].lower() == "autoreport")
+				channelType = 'reportChannels' if shouldAutoReport else 'followChannels'
+				streamerdata[channelType].append(serverChannelString)
 				self.saveWatchedStreamerData()
 				replytext = u"All right, I'll keep an eye on {}".format(streamername)
 				if shouldAutoReport:
