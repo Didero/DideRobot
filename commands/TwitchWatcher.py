@@ -78,7 +78,6 @@ class Command(CommandTemplate):
 				message.reply(u"Watch which streamer? I'm on Twitch 26 hours a day so you're going to have to be more specific", "say")
 			else:
 				streamername = message.messageParts[1].lower()
-				shouldAutoReport = (message.messagePartsLength >= 3 and message.messageParts[2].lower() == "autoreport")
 				#Check if they're already being followed
 				if streamername in self.watchedStreamersData and (serverChannelString in self.watchedStreamersData[streamername]['followChannels'] or
 														  serverChannelString in self.watchedStreamersData[streamername]['reportChannels']):
@@ -103,6 +102,7 @@ class Command(CommandTemplate):
 				#We know we have the basics for the streamer set up, at least, or more if they were already in our files
 				# Add the current server-channel pair in there too
 				self.watchedStreamersData[streamername]['reportChannels' if shouldAutoReport else 'followChannels'].append(serverChannelString)
+				shouldAutoReport = (message.messagePartsLength >= 3 and message.messageParts[-1].lower() == "autoreport")
 				self.saveWatchedStreamerData()
 				replytext = u"All right, I'll keep an eye on {}".format(streamername)
 				if shouldAutoReport:
