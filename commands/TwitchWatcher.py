@@ -8,8 +8,8 @@ from CommandTemplate import CommandTemplate
 
 class Command(CommandTemplate):
 	triggers = ['twitchwatcher', 'twitchwatch']
-	helptext = "Follows streamers on Twitch, with optional autoreporting when they go live. '<add/remove> [streamername]' to add/remove " \
-			   "(add 'autoreport' for automatic live mention) '<list/live>' to see all or live followed streamers. '<toggle/autoreport> [streamername]' to toggle autoreporting"
+	helptext = "Follows Twitch streamers. '<add/remove> [streamername]' to add/remove (add 'autoreport' for automatic live mention). " \
+			   "'<list/live>' to see all or live followed streamers. '<toggle/autoreport> [streamername]' to toggle autoreporting"
 	scheduledFunctionTime = 300
 	callInThread = True
 
