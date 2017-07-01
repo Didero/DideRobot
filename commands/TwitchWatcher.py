@@ -78,11 +78,12 @@ class Command(CommandTemplate):
 				message.reply(u"Watch which streamer? I'm on Twitch 26 hours a day so you're going to have to be more specific", "say")
 			else:
 				streamername = message.messageParts[1].lower()
+				streamerdata = self.watchedStreamersData.get(streamername, None)
 				#Check if they're already being followed
-				if streamername in self.watchedStreamersData and (serverChannelString in self.watchedStreamersData[streamername]['followChannels'] or
-														  serverChannelString in self.watchedStreamersData[streamername]['reportChannels']):
+				if streamerdata and (serverChannelString in streamerdata['followChannels'] or serverChannelString in streamerdata['reportChannels']):
 					message.reply(u"I'm already following {}. Seems you're not the only who likes them!".format(streamername), "say")
 					return
+
 				#If we don't have data on this streamer yet, retrieve it
 				if streamername not in self.watchedStreamersData:
 					r = requests.get("https://api.twitch.tv/kraken/users", params={"client_id": GlobalStore.commandhandler.apikeys['twitch'],
