@@ -105,6 +105,8 @@ class Command(CommandTemplate):
 					#No errors, got the streamer data. Store it
 					self.watchedStreamersData[streamername] = {'clientId': twitchData['users'][0]['_id'], 'hasBeenReportedLive': False,
 															   'followChannels': [], 'reportChannels': []}
+					#Update the convenience variable too since that's 'None' now
+					streamerdata = self.watchedStreamersData[streamername]
 
 				#We know we have the basics for the streamer set up, at least, or more if they were already in our files
 				# Add the current server-channel pair in there too
