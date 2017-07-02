@@ -267,7 +267,10 @@ class Command(CommandTemplate):
 				#Add this stream's data to the channel's reporting output
 				if serverChannelString not in channelMessages:
 					channelMessages[serverChannelString] = []
-				channelMessages[serverChannelString].append((channeldata['display_name'], channeldata['status'], channeldata['game'], channeldata['url']))
+				displayname = channeldata['display_name']
+				if 'nicknames' in self.watchedStreamersData[streamername] and serverChannelString in self.watchedStreamersData[streamername]['nicknames']:
+					displayname = self.watchedStreamersData[streamername]['nicknames'][serverChannelString]
+				channelMessages[serverChannelString].append((displayname, channeldata['status'], channeldata['game'], channeldata['url']))
 
 		#Now we've got all the stream data we need!
 		# First set the offline streams to offline
