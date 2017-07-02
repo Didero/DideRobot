@@ -212,12 +212,15 @@ class Command(CommandTemplate):
 				message.reply("Nobody's live, it seems. Time for videogames and/or random streams, I guess!", "say")
 			else:
 				reportStrings = []
-				if len(result) >= 4:
-					for streamername, streamerdata in result.iteritems():
-						reportStrings.append(u"{display_name} ({url})".format(**streamerdata['channel']))
-				else:
-					for streamername, streamerdata in result.iteritems():
-						reportStrings.append(u"{displaynameBold}: {status} [{game}] ({url})".format(displaynameBold=SharedFunctions.makeTextBold(streamerdata['channel']['display_name']),
+				shouldUseShortReportString = len(result) >= 4  #Use shorter report strings if there's 4 or more people live
+				for streamername, streamerdata in result.iteritems():
+					displayname = streamerdata['channel']['display_name']
+					if 'nicknames' in self.watchedStreamersData[streamername] and serverChannelString in self.watchedStreamersData[streamername]['nicknames']:
+						displayname = self.watchedStreamersData[streamername]['nicknames'][serverChannelString]
+					if shouldUseShortReportString:
+						reportStrings.append(u"{} ({})".format(displayname, streamerdata['channel']['url']))
+					else:
+						reportStrings.append(u"{displaynameBold}: {status} [{game}] ({url})".format(displaynameBold=SharedFunctions.makeTextBold(displayname),
 																							 **streamerdata['channel']))
 				message.reply(SharedFunctions.joinWithSeparator(reportStrings), "say")
 		else:
