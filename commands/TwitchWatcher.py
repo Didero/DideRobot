@@ -38,6 +38,9 @@ class Command(CommandTemplate):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'TwitchWatcherData.json'), 'w') as datafile:
 			datafile.write(json.dumps(self.watchedStreamersData))
 
+	def doesStreamerHaveNickname(self, streamername, serverChannelString):
+		return 'nicknames' in self.watchedStreamersData[streamername] and serverChannelString in self.watchedStreamersData[streamername]['nicknames']
+
 	def execute(self, message):
 		"""
 		:type message: IrcMessage.IrcMessage
@@ -65,7 +68,7 @@ class Command(CommandTemplate):
 			followedStreamers = []
 			for streamername, streamerdata in self.watchedStreamersData.iteritems():
 				#Get the streamer's nickname, if any
-				if 'nicknames' in streamerdata and serverChannelString in streamerdata['nicknames']:
+				if self.doesStreamerHaveNickname(streamername, serverChannelString):
 					streamername = u"{}({})".format(streamerdata['nicknames'][serverChannelString], streamername)
 				#Check to see if this streamer is followed in the channel the command came from
 				if serverChannelString in streamerdata['followChannels']:
@@ -186,13 +189,13 @@ class Command(CommandTemplate):
 			#Maybe they entered the nickname instead of the streamer name. Check if we can find it
 			if not streamerdata:
 				for streamername, streamerdata in self.watchedStreamersData.iteritems():
-					if 'nicknames' in streamerdata and serverChannelString in streamerdata['nicknames'] and streamername == streamerdata['nicknames'][serverChannelString].lower():
+					if self.doesStreamerHaveNickname(streamername, serverChannelString) and streamername == streamerdata['nicknames'][serverChannelString].lower():
 						#Found a match. If we break now, streamername and streamerdata will be set correctly
 						break
 				else:
 					message.reply(u"I'm sorry, I don't know who {} is. Maybe you made a typo, or you forgot to add the streamer with the 'add' parameter?".format(message.messageParts[1]), "say")
 					return
-			if 'nicknames' not in streamerdata or serverChannelString not in streamerdata['nicknames']:
+			if not self.doesStreamerHaveNickname(streamername, serverChannelString):
 				message.reply(u"I don't have a nickname stored for {}, so mission accomplished, I guess?".format(streamername), "say")
 				return
 			message.reply(u"Ok, I removed the nickname '{}', I'll call them by their Twitch username '{}'".format(streamerdata['nicknames'][serverChannelString], streamername))
@@ -217,7 +220,7 @@ class Command(CommandTemplate):
 				shouldUseShortReportString = len(result) >= 4  #Use shorter report strings if there's 4 or more people live
 				for streamername, streamerdata in result.iteritems():
 					displayname = streamerdata['channel']['display_name']
-					if 'nicknames' in self.watchedStreamersData[streamername] and serverChannelString in self.watchedStreamersData[streamername]['nicknames']:
+					if self.doesStreamerHaveNickname(streamername, serverChannelString):
 						displayname = self.watchedStreamersData[streamername]['nicknames'][serverChannelString]
 					if shouldUseShortReportString:
 						reportStrings.append(u"{} ({})".format(displayname, streamerdata['channel']['url']))
@@ -273,7 +276,7 @@ class Command(CommandTemplate):
 				if serverChannelString not in channelMessages:
 					channelMessages[serverChannelString] = []
 				displayname = channeldata['display_name']
-				if 'nicknames' in self.watchedStreamersData[streamername] and serverChannelString in self.watchedStreamersData[streamername]['nicknames']:
+				if self.doesStreamerHaveNickname(streamername, serverChannelString):
 					displayname = self.watchedStreamersData[streamername]['nicknames'][serverChannelString]
 				channelMessages[serverChannelString].append((displayname, channeldata['status'], channeldata['game'], channeldata['url']))
 
