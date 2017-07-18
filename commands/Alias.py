@@ -173,7 +173,7 @@ class Command(CommandTemplate):
 			index = int(regexMatchObject.group(1)) - 1
 			if index >= message.messagePartsLength:
 				# If there aren't enough message parts, just leave text as-is
-				return format(regexMatchObject.group(0))
+				return regexMatchObject.group(0)
 			# If there's a second group, a '+' or '-' was added after the number
 			# '+' means all args starting with the index, '-' is all args until the index
 			if regexMatchObject.group(2):
