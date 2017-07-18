@@ -52,20 +52,20 @@ class Command(CommandTemplate):
 			print request.content
 			return
 
-		replytext = "{} ({} players, {} minutes, {}): ".format(SharedFunctions.makeTextBold(item.find('name').attrib['value']), self.getValueRangeDescription(item, 'minplayers', 'maxplayers'),
+		replytext = u"{} ({} players, {} minutes, {}): ".format(SharedFunctions.makeTextBold(item.find('name').attrib['value']), self.getValueRangeDescription(item, 'minplayers', 'maxplayers'),
 															   self.getValueRangeDescription(item, 'minplaytime', 'maxplaytime'), item.find('yearpublished').attrib['value'])
-		url = " (http://boardgamegeek.com/boardgame/{})".format(gameId)
+		url = u" (http://boardgamegeek.com/boardgame/{})".format(gameId)
 		#Fit in as much of the description as we can
 		lengthLeft = 295 - len(replytext) - len(url)
 		description = HTMLParser.HTMLParser().unescape(item.find('description').text)
 		#Some descriptions start with a disclaimer that it's from the publisher, remove that to save space
-		if description.startswith("Game description from the publisher") or description.startswith("From the manufacturer's website"):
+		if description.startswith(u"Game description from the publisher") or description.startswith(u"From the manufacturer's website"):
 			description = description.split('\n', 1)[1].lstrip()
 		#Remove newlines
 		description = description.replace('\n', ' ')
 		#Slice it so it fits in the available space, cut at the last word separator
 		description = description[:lengthLeft]
-		description = description[:description.rfind(' ')] + '[...]'
+		description = description[:description.rfind(' ')] + u'[...]'
 		#Show the result
 		replytext += description + url
 		message.reply(replytext, "say")
