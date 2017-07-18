@@ -168,7 +168,7 @@ class Command(CommandTemplate):
 		def fillInNumberedMessageParts(regexMatchObject):
 			# group(0) is the whole match, group(1) is the first bracketed match, so the \d+
 			index = int(regexMatchObject.group(1)) - 1
-			if index == 0:
+			if index == -1:  #$0, so the entire message
 				return message.message
 			if index >= message.messagePartsLength:
 				# If there aren't enough message parts, just leave text as-is
