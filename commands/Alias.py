@@ -162,15 +162,14 @@ class Command(CommandTemplate):
 		if isinstance(newMessageText, unicode):
 			newMessageText = newMessageText.encode('utf-8', errors='replace')
 
-		# $0 is the whole provided message,
-		newMessageText = re.sub(r"(?<!\\)\$0", message.message, newMessageText)
-
 		# $n is a specific message part (so $1 is the first index, so messageParts[0])
 		# $n+ would fill in everything starting at $n and all the parts after it ($2+ is messageParts[1:])
 		# $n- is for everything until $n (so $3- is messageParts[:2])
 		def fillInNumberedMessageParts(regexMatchObject):
 			# group(0) is the whole match, group(1) is the first bracketed match, so the \d+
 			index = int(regexMatchObject.group(1)) - 1
+			if index == 0:
+				return message.message
 			if index >= message.messagePartsLength:
 				# If there aren't enough message parts, just leave text as-is
 				return regexMatchObject.group(0)
