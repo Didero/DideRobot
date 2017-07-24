@@ -305,7 +305,8 @@ class Command(CommandTemplate):
 				for streamdata in streamdatalist:
 					reportStrings.append(u"{streamernameBolded}: {1} [{2}] ({3})".format(streamernameBolded=SharedFunctions.makeTextBold(streamdata[0]), *streamdata))
 			#Now make the bot say it
-			GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer(s) went live: " + SharedFunctions.joinWithSeparator(reportStrings), "say")
+			GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
+															SharedFunctions.joinWithSeparator(reportStrings), "say")
 
 
 	@staticmethod
