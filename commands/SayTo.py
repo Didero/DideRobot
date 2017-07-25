@@ -5,8 +5,8 @@ from IrcMessage import IrcMessage
 
 class Command(CommandTemplate):
 	triggers = ['sayto', 'doto', 'noticeto', 'saydef', 'dodef', 'noticedef']
-	helptext = "Makes the bot say the provided text in the provided channel  (format 'say [channel/user] [text]'). " \
-			   "Set a default with 'say setdefault [default]', and use 'saydef [default]' to use that default to save on typing"
+	helptext = "Makes the bot say the provided text in the provided channel  (format 'sayto [channel/user] [text]'). " \
+			   "Set a default with 'sayto setdefault [default]', and use 'saydef [text]' to use that default to save on typing"
 	adminOnly = True
 	showInCommandList = False
 
