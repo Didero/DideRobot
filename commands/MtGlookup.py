@@ -986,7 +986,7 @@ class Command(CommandTemplate):
 			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-body")]
 		try:
 			for url, section in definitionSources:
-				defHeaders = BeautifulSoup(requests.get(url).text.replace('\n', ''), 'html.parser').find(class_=section).find_all(['h3', 'h4'])
+				defHeaders = BeautifulSoup(requests.get(url, timeout=10.0).text.replace('\n', ''), 'html.parser').find(class_=section).find_all(['h3', 'h4'])
 				for defHeader in defHeaders:
 					keyword = defHeader.find(class_='mw-headline').text.lower()
 					#On MTGSalvation, sections are sorted into alphabetized subsections. Ignore the letter headers

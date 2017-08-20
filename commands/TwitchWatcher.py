@@ -94,8 +94,12 @@ class Command(CommandTemplate):
 
 				#If we don't have data on this streamer yet, retrieve it
 				if not streamerdata:
-					r = requests.get("https://api.twitch.tv/kraken/users", params={"client_id": GlobalStore.commandhandler.apikeys['twitch'],
-																				   "api_version": 5, "login": streamername})
+					try:
+						r = requests.get("https://api.twitch.tv/kraken/users", params={"client_id": GlobalStore.commandhandler.apikeys['twitch'],
+																				   "api_version": 5, "login": streamername}, timeout=10.0)
+					except requests.exceptions.Timeout:
+						message.reply(u"Apparently Twitch is distracted by its own streams, because it's too slow to respond. Try again in a bit?")
+						return
 					twitchData = r.json()
 					if 'error' in twitchData:
 						self.logError(u"[TwitchWatch] Something went wrong when trying to find the clientID of user '{}'. {}".format(streamername,
@@ -312,8 +316,11 @@ class Command(CommandTemplate):
 	@staticmethod
 	def retrieveStreamDataForIds(idList):
 		# Add a 'limit' parameter in case we need to check more streamers than the default limit allows
-		r = requests.get("https://api.twitch.tv/kraken/streams/", params={"client_id": GlobalStore.commandhandler.apikeys['twitch'], "api_version": 5,
-								 "limit": len(idList), "stream_type": "live", "channel": ",".join(idList)})
+		try:
+			r = requests.get("https://api.twitch.tv/kraken/streams/", params={"client_id": GlobalStore.commandhandler.apikeys['twitch'], "api_version": 5,
+								 "limit": len(idList), "stream_type": "live", "channel": ",".join(idList)}, timeout=10.0)
+		except requests.exceptions.Timeout:
+			return (False, "Twitch took too long to respond")
 		apireply = r.json()
 		if "error" in apireply:
 			errormessage = apireply["message"] if "message" in apireply else u"No error message provided"

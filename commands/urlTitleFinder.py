@@ -223,7 +223,7 @@ class Command(CommandTemplate):
 		else:
 			#User page
 			twitterUrl = u"https://api.twitter.com/1.1/users/show.json?screen_name={name}".format(name=tweetMatches.group('name'))
-			twitterDataPage = requests.get(twitterUrl, headers=headers)
+			twitterDataPage = requests.get(twitterUrl, headers=headers, timeout=timeout)
 			twitterdata = json.loads(twitterDataPage.text.encode('utf-8'))
 
 			title = u"{name} (@{screen_name}): {description} ({statuses_count:,} tweets posted, {followers_count:,} followers, following {friends_count:,})"

@@ -32,7 +32,12 @@ class Command(CommandTemplate):
 				lang = 'en|' + lang
 
 			params = {'q': ' '.join(message.messageParts[1:]), 'langpair': lang, 'of': 'json'}
-			result = json.loads(requests.get('http://api.mymemory.translated.net/get', params=params).text)
+			try:
+				result = json.loads(requests.get('http://api.mymemory.translated.net/get', params=params, timeout=15.0).text)
+			except requests.exceptions.Timeout:
+				message.reply("Apparently that's such a difficult {} the translation API had some trouble with it and/or has given up. "
+							  "Either way the API took too long to respond, sorry".format('sentence' if ' ' in params['q'] else 'word'))
+				return
 			if result['responseStatus'] != 200:
 				#Something went wrong, the error is in 'responseDetails' (though sometimes that field is not there)
 				#  It's in all-caps though, so reduce the shouting a bit

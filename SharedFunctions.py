@@ -251,9 +251,9 @@ def shortenUrl(longUrl):
 		# 'longUrl' usually contains the original URL, but sometimes it is also the result of redirects or canonization
 		return (True, data['id'], data['longUrl'])
 
-def downloadFile(url, targetFilename):
+def downloadFile(url, targetFilename, timeout=30.0):
 	try:
-		r = requests.get(url, headers={'user-agent': 'DideRobot (http://github.com/Didero/DideRobot)'})
+		r = requests.get(url, headers={'user-agent': 'DideRobot (http://github.com/Didero/DideRobot)'}, timeout=timeout)
 		with open(targetFilename, 'wb') as f:
 			for chunk in r.iter_content(4096):
 				f.write(chunk)

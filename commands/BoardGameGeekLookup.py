@@ -23,7 +23,11 @@ class Command(CommandTemplate):
 			return
 
 		#Since the API's search is a bit crap and doesn't sort properly, scrape the web search page
-		request = requests.get("https://boardgamegeek.com/geeksearch.php", params={"action": "search", "objecttype": "boardgame", "q": message.message})
+		try:
+			request = requests.get("https://boardgamegeek.com/geeksearch.php", params={"action": "search", "objecttype": "boardgame", "q": message.message}, timeout=10.0)
+		except requests.exceptions.Timeout:
+			message.reply("Either your search query was too extensive for BoardGameGeek, or they're distracted by a boardgame. Either way, they took too long to respond, sorry")
+			return
 		if request.status_code != 200:
 			message.reply("Something seems to have gone wrong. At BoardGameGeek, I mean, because I never make mistaks. Try again in a little while", "say")
 			return
@@ -39,7 +43,11 @@ class Command(CommandTemplate):
 		gameId = row.find('a')['href'].split('/', 3)[2]
 
 		#Now query the API to get info on this game
-		request = requests.get("https://www.boardgamegeek.com/xmlapi2/thing", params={'id': gameId})
+		try:
+			request = requests.get("https://www.boardgamegeek.com/xmlapi2/thing", params={'id': gameId}, timeout=10.0)
+		except requests.exceptions.Timeout:
+			message.reply("I know you need some patience for boardgames, but not for info about boardgames. BoardGameGeek took too long to respond, sorry")
+			return
 		try:
 			xml = ElementTree.fromstring(request.content)
 		except ElementTree.ParseError:
