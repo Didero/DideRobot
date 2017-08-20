@@ -18,14 +18,20 @@ class Command(CommandTemplate):
 								'getWikipediaArticle', self.getArticleText, 'getRandomWikipediaArticle', self.getRandomWikipediaArticle)
 
 	def getRandomWikipediaArticle(self, addExtendedText=False):
-		page = requests.get('http://en.m.wikipedia.org/wiki/Special:Random/#/random')
+		try:
+			page = requests.get('http://en.m.wikipedia.org/wiki/Special:Random/#/random', timeout=10.0)
+		except requests.exceptions.Timeout:
+			return (False, "Apparently Wikipedia couldn't pick between all of its interesting articles, so it took too long to reply. Sorry!")
 		self.logDebug("[wiki] Random page url: {}".format(page.url))
 		articleName = page.url.split('/wiki/', 1)[1]  #Get the part of the URL that is the article title
 		return self.getArticleText(articleName, addExtendedText)
 
 	def searchWikipedia(self, searchterm, addExtendedText=False):
 		url = u'https://en.wikipedia.org/w/api.php?format=json&utf8=1&action=query&list=search&srwhat=nearmatch&srlimit=1&srsearch={}&srprop='.format(searchterm)
-		result = requests.get(url)
+		try:
+			result = requests.get(url, timeout=10.0)
+		except requests.exceptions.Timeout:
+			return (False, "Either that's a difficult search query, or Wikipedia is tired. Either way, that search took too long, sorry")
 		result = json.loads(result.text)
 		if 'error' in result:
 			self.logError("[wiki] An error occurred while searching. Search term: '{}'; Search url: '{}'; error: '{}'".format(searchterm, url, result['error']['info']))
@@ -48,7 +54,10 @@ class Command(CommandTemplate):
 		#Otherwise just get the first sentence
 		else:
 			params['exsentences'] = '1'
-		apireply = requests.get(url, params=params)
+		try:
+			apireply = requests.get(url, params=params, timeout=10.0)
+		except requests.exceptions.Timeout:
+			return (False, "Article retrieval took too long, sorry")
 		result = json.loads(apireply.text)
 		if 'error' in result:
 			self.logError("[wiki] An error occurred while retrieving an article. Page name: '{}'; url: '{}'; error: '{}'".format(pagename, url, result['error']['info']))
