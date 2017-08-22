@@ -148,8 +148,8 @@ class DideRobot(object):
 			self.logger.info("Connecting to {} ({} on port {})".format(self.serverfolder, self.settings['server'], self.settings['port']))
 			try:
 				self.ircSocket.connect((self.settings['server'], self.settings['port']))
-			except gevent.socket.timeout:
-				self.logger.error("Connection to server '{}' ({}:{}) timed out!".format(self.serverfolder, self.settings['server'], self.settings['port']))
+			except (gevent.socket.timeout, gevent.socket.error, gevent.socket.herror, gevent.socket.gaierror) as e:
+				self.logger.error("Unable to connect to server '{}' ({}:{}), reason: {}".format(self.serverfolder, self.settings['server'], self.settings['port'], e))
 			else:
 				#Connecting was successful, authenticate
 				if 'password' in self.settings and len(self.settings['password']) > 0:
