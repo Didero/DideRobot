@@ -185,7 +185,7 @@ class DideRobot(object):
 
 			#If the connection couldn't be established or got closed, check if we need to re-establish it
 			if not self.shouldReconnect:
-				self.logger.info("|{}| Connection to closed, shouldn't reconnecting, closing down this bot".format(self.serverfolder))
+				self.logger.info("|{}| Connection closed, shouldn't reconnect, closing down this bot".format(self.serverfolder))
 				break
 			#If we reached the maximum reconnection attempts, abort
 			if self.reconnectionAttempCount and self.maxConnectionRetries and self.reconnectionAttempCount >= self.maxConnectionRetries:
