@@ -79,7 +79,12 @@ class Command(CommandTemplate):
 	def getRandomLine(self, filename, filelocation=None):
 		if not filelocation:
 			filelocation = self.filesLocation
-		return SharedFunctions.getRandomLineFromFile(os.path.join(filelocation, filename))
+		line = SharedFunctions.getRandomLineFromFile(os.path.join(filelocation, filename))
+		if not line:
+			#The line function encountered an error, so it returned None
+			# Since we expect a string, provide an empty one
+			return "[File error]"
+		return line
 
 	@staticmethod
 	def numberToText(number):
