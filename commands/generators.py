@@ -79,7 +79,13 @@ class Command(CommandTemplate):
 	def getRandomLine(self, filename, filelocation=None):
 		if not filelocation:
 			filelocation = self.filesLocation
-		line = SharedFunctions.getRandomLineFromFile(os.path.join(filelocation, filename))
+		filepath = os.path.abspath(os.path.join(GlobalStore.scriptfolder, filelocation, filename))
+		#Check if the provided file is in our 'generator' folder
+		if not filepath.startswith(self.filesLocation):
+			#Trying to get out of the 'generators' folder
+			self.logWarning("[Gen] User is trying to access files outside the 'generators' folder with filename '{}'".format(filename))
+			return "[Access error]"
+		line = SharedFunctions.getRandomLineFromFile(filepath)
 		if not line:
 			#The line function encountered an error, so it returned None
 			# Since we expect a string, provide an empty one
