@@ -328,6 +328,9 @@ class Command(CommandTemplate):
 				else:
 					# The parameters will be strings. Convert them to unicode
 					replacement = " ".join(parameters).decode("utf-8", errors="replace")
+					#Prevent file access
+					if u"<_file" in replacement:
+						return (False, u"Error: File access from parameters is not allowed")
 			elif fieldKey == u"_replace":
 				# <_replace|string|whatToReplace|whatToReplaceItWith>
 				if len(grammarParts) < 3:
