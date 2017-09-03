@@ -143,6 +143,8 @@ def getRandomLineFromFile(filename, linecount=None):
 		filename = os.path.join(GlobalStore.scriptfolder, filename)
 	if not linecount:
 		linecount = getLineCount(filename)
+	if linecount <= 0:
+		return None
 	return getLineFromFile(filename, random.randrange(0, linecount))
 
 def getAllLinesFromFile(filename):
