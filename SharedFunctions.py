@@ -115,6 +115,8 @@ def getLineCount(filename):
 	linecount = -1  #'-1' so with the +1 at the end it ends up a 0 for an empty file
 	if not filename.startswith(GlobalStore.scriptfolder):
 		filename = os.path.join(GlobalStore.scriptfolder, filename)
+	if not os.path.isfile(filename):
+		return -1
 	with codecs.open(filename, 'r', 'utf-8') as f:
 		for linecount, line in enumerate(f):
 			continue
@@ -127,7 +129,7 @@ def getLineFromFile(filename, wantedLineNumber):
 	#Check if it's an allowed path
 	if not isAllowedPath(filename):
 		return None
-	if not os.path.exists(filename):
+	if not os.path.isfile(filename):
 		logger.error(u"Can't read line {} from file '{}'; file does not exist".format(wantedLineNumber, filename))
 		return None
 	with codecs.open(filename, 'r', 'utf-8') as f:
