@@ -194,12 +194,14 @@ class Command(CommandTemplate):
 			variableDict = {}
 
 		outputString = grammarString
-		while True:
+		loopcount = 0
+		while loopcount < 150:
+			loopcount += 1
 			try:
 				outputString, bracketString = re.split(r"(?<!/)<", outputString, maxsplit=1)
 			except ValueError:
 				#No more bracketed parts found, done
-				return outputString
+				break
 
 			grammarParts = [""]
 			grammarPartIndex = 0
@@ -242,6 +244,12 @@ class Command(CommandTemplate):
 			else:
 				#If we didn't break out of the character loop, we didn't find the end bracket. Complain about that
 				return u"Error: Missing closing bracket"
+		else:
+			#We reached the loop limit, so there's probably an infinite loop. Report that
+			return u"Error: Loop limit reached, there's probably an infinite loop in the grammar file"
+
+		#Done, return what we have
+		return outputString
 
 	def parseGrammarBlock(self, grammarParts, grammar, parameters=None, variableDict=None):
 		fieldKey = grammarParts.pop(0)
