@@ -334,7 +334,7 @@ class Command(CommandTemplate):
 				return (False, u"Error: Unknown command '{key}' in field '<{key}|{args}>' found!".format(key=fieldKey, args=u"|".join(grammarParts)))
 		# No command, so check if it's a valid key
 		elif fieldKey not in grammar:
-			return u"Error: Field '{}' not found in grammar file!".format(fieldKey)
+			return (False, u"Error: Field '{}' not found in grammar file!".format(fieldKey))
 		# All's well, fill it in
 		else:
 			if isinstance(grammar[fieldKey], list):
@@ -351,7 +351,7 @@ class Command(CommandTemplate):
 				# If it's a string (either the string class or the unicode class), just dump it in
 				replacement = grammar[fieldKey]
 			else:
-				return u"Error: No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey)
+				return (False, u"Error: No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey))
 
 		# Process the possible arguments that can be provided
 		for grammarPart in grammarParts:
@@ -372,7 +372,7 @@ class Command(CommandTemplate):
 				#Store the replacement under the provided variable name
 				# (format 'storeas:[varname]')
 				if ':' not in grammarPart:
-					return u"Error: Invalid 'storeas' argument for field '<{}|{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarParts))
+					return (False, u"Error: Invalid 'storeas' argument for field '<{}|{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarParts)))
 				varname = grammarPart.split(":")[1]
 				variableDict[varname] = replacement
 
