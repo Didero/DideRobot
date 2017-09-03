@@ -368,6 +368,13 @@ class Command(CommandTemplate):
 					replacement = replacement.upper()
 			elif grammarPart == 'bold':
 				replacement = SharedFunctions.makeTextBold(replacement)
+			elif grammarPart.startswith("storeas"):
+				#Store the replacement under the provided variable name
+				# (format 'storeas:[varname]')
+				if ':' not in grammarPart:
+					return u"Error: Invalid 'storeas' argument for field '<{}|{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarParts))
+				varname = grammarPart.split(":")[1]
+				variableDict[varname] = replacement
 
 		# Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
 		if len(grammarParts) > 0 and not fieldKey.startswith('_') and replacement.startswith('<'):
