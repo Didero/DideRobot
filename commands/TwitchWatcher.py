@@ -94,24 +94,12 @@ class Command(CommandTemplate):
 
 				#If we don't have data on this streamer yet, retrieve it
 				if not streamerdata:
-					try:
-						r = requests.get("https://api.twitch.tv/kraken/users", params={"client_id": GlobalStore.commandhandler.apikeys['twitch'],
-																				   "api_version": 5, "login": streamername}, timeout=10.0)
-					except requests.exceptions.Timeout:
-						message.reply(u"Apparently Twitch is distracted by its own streams, because it's too slow to respond. Try again in a bit?")
-						return
-					twitchData = r.json()
-					if 'error' in twitchData:
-						self.logError(u"[TwitchWatch] Something went wrong when trying to find the clientID of user '{}'. {}".format(streamername,
-																				twitchData['message'] if 'message' in twitchData else "No error message provided"))
-						message.reply(u"Sorry, something went wrong when trying to look up info on that user. Please try again in a bit, maybe it'll go better then", "say")
-						return
-					if twitchData['_total'] != 1:
-						message.reply(u"That... doesn't match anybody on file. Twitch's file, I mean. Maybe you misspelled the streamer's name?", "say")
+					isSuccess, result = self.retrieveStreamerId(streamername)
+					if not isSuccess:
+						message.reply(result)
 						return
 					#No errors, got the streamer data. Store it
-					self.watchedStreamersData[streamername] = {'clientId': twitchData['users'][0]['_id'], 'hasBeenReportedLive': False,
-															   'followChannels': [], 'reportChannels': []}
+					self.watchedStreamersData[streamername] = {'clientId': result, 'hasBeenReportedLive': False, 'followChannels': [], 'reportChannels': []}
 					#Update the convenience variable too since that's 'None' now
 					streamerdata = self.watchedStreamersData[streamername]
 
@@ -312,6 +300,21 @@ class Command(CommandTemplate):
 			GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
 															SharedFunctions.joinWithSeparator(reportStrings), "say")
 
+	def retrieveStreamerId(self, streamername):
+		try:
+			r = requests.get("https://api.twitch.tv/kraken/users", params={"client_id": GlobalStore.commandhandler.apikeys['twitch'],
+																		   "api_version": 5, "login": streamername}, timeout=10.0)
+		except requests.exceptions.Timeout:
+			return (False, u"Apparently Twitch is distracted by its own streams, because it's too slow to respond. Try again in a bit?")
+		twitchData = r.json()
+		if 'error' in twitchData:
+			self.logError(u"[TwitchWatch] Something went wrong when trying to find the clientID of user '{}'. {}".format(streamername,
+																														 twitchData['message'] if 'message' in twitchData else "No error message provided"))
+			return (False, u"Sorry, something went wrong when trying to look up info on that user. Please try again in a bit, maybe it'll go better then")
+		if twitchData['_total'] != 1:
+			return (False, u"That... doesn't match anybody on file. Twitch's file, I mean. Maybe you misspelled the streamer's name?")
+		# No errors, got the streamer data. Return it
+		return (True, twitchData['users'][0]['_id'])
 
 	@staticmethod
 	def retrieveStreamDataForIds(idList):
