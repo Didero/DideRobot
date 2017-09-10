@@ -10,7 +10,8 @@ class Command(CommandTemplate):
 	triggers = ['twitchwatcher', 'twitchwatch']
 	helptext = "Follows Twitch streamers. '<add/remove> [streamername]' to add/remove (add 'autoreport' for automatic live mention). " \
 			   "'<list/live>' to see all or live followed streamers. '<toggle/autoreport> [streamername]' to toggle autoreporting. " \
-			   "'<setnick/> [streamername] [nick]' to set a nickname for a streamer, '<removenick> [streamername]' to remove it"
+			   "'<setnick> [streamername] [nick]' to set a nickname for a streamer, '<removenick> [streamername]' to remove it. " \
+			   "Any other parameter is interpreted as a streamer name and will return stream info, if they're live."
 	scheduledFunctionTime = 300
 	callInThread = True
 
@@ -221,8 +222,31 @@ class Command(CommandTemplate):
 																							 **streamerdata['channel']))
 				message.reply(SharedFunctions.joinWithSeparator(reportStrings), "say")
 		else:
-			message.reply("I don't know what to do with the parameter '{}', sorry. Maybe you made a typo? Or you could try (re)reading the help text".format(parameter), "say")
+			#Either the user wants info on the streamername in the first message part, or they did a 'lookup' command followed by a streamername
+			if parameter == 'lookup' and message.messagePartsLength > 1:
+				streamername = message.messageParts[1].lower()
+			else:
+				streamername = parameter
 
+			#Check if we happen to have the streamer's ID on file, saves retrieving it
+			if streamername in self.watchedStreamersData:
+				streamerId = self.watchedStreamersData[streamername]['clientId']
+			else:
+				isSuccess, result = self.retrieveStreamerId(streamername)
+				if not isSuccess:
+					message.reply(result)
+					return
+				streamerId = result
+
+			#Get stream info
+			isSuccess, result = self.retrieveStreamDataForIds([streamerId])
+			if not isSuccess:
+				message.reply(result)
+				return
+			if len(result) == 0:
+				message.reply(u"{0} doesn't appear to be streaming at the moment. Maybe they've got some old streams you can watch though, here: https://www.twitch.tv/{0}/videos/all".format(streamername))
+				return
+			message.reply(u"{display_name}: {status} [{game}] ({url})".format(**result[streamername]['channel']))
 
 	def executeScheduledFunction(self):
 		#Go through all our stored streamers, and see if we need to report online status somewhere
