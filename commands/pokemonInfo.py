@@ -35,6 +35,9 @@ class Command(CommandTemplate):
 				else:
 					#Encode the url name properly
 					pokemondata['urlname'] = pokemondata['name'].replace(' ', '_')
+					#Not all Pokémon list a species
+					if 'species' not in pokemondata:
+						pokemondata['species'] = "Pokémon of unknown species,"
 					#Let's turn the collected data into something presentable!
 					replytext = "{name} ({generation} nr {Pokédex number}) is a {species} of type '{type}'."
 					if 'evolves from' in pokemondata:
