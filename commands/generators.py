@@ -204,6 +204,14 @@ class Command(CommandTemplate):
 		if variableDict is None:
 			variableDict = {}
 
+		#Parse the parameters as a string (if there are any) in such a way that users don't have access to special fields
+		# This to prevent abuse like infinite loops or creating heavy load
+		if parameters:
+			parameterString = " ".join(parameters).decode("utf-8", errors="replace")
+			parameterString = parameterString.replace("/", "//").replace("<", "/<")
+		else:
+			parameterString = None
+
 		outputString = grammarString
 		loopcount = 0
 		while loopcount < 150:
@@ -228,7 +236,7 @@ class Command(CommandTemplate):
 						continue
 					elif character == ">":
 						#End of this bracket block. Parse the block, and append the rest of the string to it
-						success, parsedBracketString = self.parseGrammarBlock(grammarParts, grammar, parameters, variableDict)
+						success, parsedBracketString = self.parseGrammarBlock(grammarParts, grammar, parameterString, variableDict)
 						if not success:
 							#If parsing failed, return the error
 							return parsedBracketString
@@ -259,10 +267,12 @@ class Command(CommandTemplate):
 			#We reached the loop limit, so there's probably an infinite loop. Report that
 			return u"Error: Loop limit reached, there's probably an infinite loop in the grammar file"
 
+		#Remove any escapes we put in to prevent abuse
+		outputString = outputString.replace("/<", "<").replace("//", "/")
 		#Done, return what we have
 		return outputString
 
-	def parseGrammarBlock(self, grammarParts, grammar, parameters=None, variableDict=None):
+	def parseGrammarBlock(self, grammarParts, grammar, parameterString=None, variableDict=None):
 		fieldKey = grammarParts.pop(0)
 		replacement = u""
 
@@ -313,7 +323,7 @@ class Command(CommandTemplate):
 				if len(grammarParts) < 4:
 					return (False, u"Error: Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
 				if grammarParts[0] == u"_params":
-					grammarParts[0] = " ".join(parameters).decode("utf-8", errors="replace")
+					grammarParts[0] = parameterString
 				if grammarParts[1] in grammarParts[0]:
 					replacement = grammarParts[2]
 				else:
@@ -321,24 +331,24 @@ class Command(CommandTemplate):
 			elif fieldKey == u"_hasparameters" or fieldKey == u"_hasparams":
 				# <_hasparams|stringIfHasParams|stringIfDoesntHaveParams>"
 				# Checks if there are any parameters provided
-				if parameters and len(parameters) > 0:
+				if parameterString:
 					replacement = grammarParts[0]
 				else:
 					replacement = grammarParts[1]
 			elif fieldKey == u"_hasparameter" or fieldKey == u"_hasparam":
 				# <_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 				# Used to check if the literal parameter was passed in the message calling this generator
-				if parameters and grammarParts[0] in parameters:
+				if parameterString:
 					replacement = grammarParts[1]
 				else:
 					replacement = grammarParts[2]
 			elif fieldKey == u"_params":
 				# Fill in the provided parameter(s) in this field
-				if not parameters:
+				if not parameterString:
 					replacement = u""
 				else:
 					# The parameters will be strings. Convert them to unicode
-					replacement = " ".join(parameters).decode("utf-8", errors="replace")
+					replacement = parameterString
 					#Prevent file access
 					if u"<_file" in replacement:
 						return (False, u"Error: File access from parameters is not allowed")
@@ -348,7 +358,7 @@ class Command(CommandTemplate):
 					return (False, u"Error: Not enough parameters in field '<{}|{}>'. Need 3, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
 				replacement = grammarParts[0]
 				if replacement == u"_params":
-					replacement = " ".join(parameters).decode("utf-8", errors="replace")
+					replacement = parameterString
 				replacement = replacement.replace(grammarParts[1], grammarParts[2])
 			elif fieldKey == u"_" or fieldKey == u"_dummy":
 				replacement = u""
