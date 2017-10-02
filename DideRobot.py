@@ -308,14 +308,21 @@ class DideRobot(object):
 
 	def quit(self, quitMessage=None):
 		self.shouldReconnect = False
-		#If we're not connected (yet?), just making sure we don't reconnect is fine
-		#If we ARE connected, let the server know we want to quit
+		#If we are connected to a server, let it know we want to quit
 		if self.connectedAt is not None:
 			if quitMessage:
 				self.sendLineToServer("QUIT :" + quitMessage)
 			else:
 				self.sendLineToServer("QUIT")
-
+		# If we're not connected (yet?), stop trying to connect
+		elif self.connectionManagerGreenlet:
+			self.logger.info("|{}| Asked to quit, but not connected. Stopping wait before next connection attempt".format(self.serverfolder))
+			self.connectionManagerGreenlet.kill()
+			GlobalStore.bothandler.unregisterBot(self.serverfolder)
+		else:
+			#I don't know how we'd end up without a connection greenlet, but best handle it anyway
+			self.logger.info("|{}| Asked to quit and don't have a connection greenlet. Unregistering".format(self.serverfolder))
+			GlobalStore.bothandler.unregisterBot(self.serverfolder)
 
 	#MESSAGE TYPE HANDLING FUNCTIONS
 	def irc_unknown_message_type(self, source, messageType, messageParts):
