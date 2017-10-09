@@ -279,6 +279,8 @@ class Command(CommandTemplate):
 
 		if fieldKey.startswith(u"_"):
 			if fieldKey == u"_randint" or fieldKey == u"_randintasword":
+				if len(grammarParts) < 2:
+					return (False, u"Error: Not enough parameters to the '{}' call. Need 2, found {}".format(fieldKey, len(grammarParts)))
 				try:
 					value = random.randint(int(grammarParts[0]), int(grammarParts[1]))
 				except ValueError:
