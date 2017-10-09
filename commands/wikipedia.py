@@ -27,6 +27,8 @@ class Command(CommandTemplate):
 		return self.getArticleText(articleName, addExtendedText)
 
 	def searchWikipedia(self, searchterm, addExtendedText=False):
+		if not isinstance(searchterm, unicode):
+			searchterm = searchterm.decode('utf-8', errors='replace')
 		url = u'https://en.wikipedia.org/w/api.php?format=json&utf8=1&action=query&list=search&srwhat=nearmatch&srlimit=1&srsearch={}&srprop='.format(searchterm)
 		try:
 			result = requests.get(url, timeout=10.0)
