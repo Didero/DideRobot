@@ -326,7 +326,7 @@ class Command(CommandTemplate):
 				if len(grammarParts) < 4:
 					return (False, u"Error: Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
 				if grammarParts[0] == u"_params":
-					grammarParts[0] = parameterString
+					grammarParts[0] = parameterString if parameterString else ""
 				if grammarParts[1] in grammarParts[0]:
 					replacement = grammarParts[2]
 				else:
