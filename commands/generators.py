@@ -29,6 +29,9 @@ class Command(CommandTemplate):
 		self.helptext += ", ".join(self.getAvailableTriggers())
 		self.logDebug("[Generators] Loaded {:,} generators".format(len(self.generators)))
 
+		#Make the grammar parsing function available to other modules
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'parseGrammarDict', self.parseGrammarDict)
+
 	def execute(self, message):
 		"""
 		:type message: IrcMessage
@@ -62,7 +65,9 @@ class Command(CommandTemplate):
 			#The generator can either be a module function, or a string pointing to a grammar file. Check which it is
 			if isinstance(wantedGenerator, basestring):
 				#Grammar file! Send it to the parser
-				message.reply(self.parseGrammarFile(wantedGenerator, parameters=parameters))
+				with open(os.path.join(self.filesLocation, wantedGenerator), "r") as grammarfile:
+					grammarDict = json.load(grammarfile)
+					message.reply(self.parseGrammarDict(grammarDict, parameters=parameters))
 			else:
 				#Function! Just call it, with the message so it can figure it out from there itself
 				message.reply(wantedGenerator(parameters))
@@ -163,29 +168,25 @@ class Command(CommandTemplate):
 		return {"gender": "misc", "genderNoun": "Person", "genderNounYoung": "Kid", "pronoun": "they",
 								 "possessivePronoun": "their", "personalPronoun": "them"}
 
-	def parseGrammarFile(self, grammarFilename, parameters=None, variableDict=None):
+	def parseGrammarDict(self, grammarDict, parameters=None, variableDict=None):
 		if variableDict is None:
 			variableDict = {}
 
-		#Load the file
-		with open(os.path.join(self.filesLocation, grammarFilename), "r") as grammarfile:
-			grammar = json.load(grammarfile)
-
 		#First check if the starting field exists
-		if '_start' not in grammar:
-			return u"Error: No '_start' field found in '{}'!".format(grammarFilename)
+		if '_start' not in grammarDict:
+			return u"Error: No '_start' field found!"
 
 		#Parse any options specified
-		if '_options' in grammar:
+		if '_options' in grammarDict:
 			# Parse arguments
-			if u'parseGender' in grammar['_options']:
+			if u'parseGender' in grammarDict['_options']:
 				gender = None
 				if parameters:
 					for param in parameters:
 						if self.isGenderParameter(param):
 							gender = param
 				variableDict.update(self.getGenderWords(gender))  #If no gender was provided, 'getGenderWords' will pick a random one
-			if u'generateName' in grammar['_options']:
+			if u'generateName' in grammarDict['_options']:
 				#If a gender was provided or requested, use that to generate a name
 				if 'gender' in variableDict:
 					variableDict['name'] = self.generateName([variableDict['gender']])
@@ -197,7 +198,7 @@ class Command(CommandTemplate):
 				variableDict['lastname'] = nameparts[-1]
 
 		#Start the parsing!
-		return self.parseGrammarString(grammar['_start'], grammar, parameters, variableDict)
+		return self.parseGrammarString(grammarDict['_start'], grammarDict, parameters, variableDict)
 
 
 	def parseGrammarString(self, grammarString, grammar, parameters=None, variableDict=None):
