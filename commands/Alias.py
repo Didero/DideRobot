@@ -168,7 +168,7 @@ class Command(CommandTemplate):
 			aliasDict[str(i+1)] = message.messageParts[i] if i < message.messagePartsLength else ""
 		aliasDict['nick'] = message.userNickname
 		aliasDict['CP'] = message.bot.commandPrefix
-		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, parameters=message.message)
+		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, parameters=message.messageParts)
 
 		# Allow for newlines in aliases, each a new message
 		for newMessageLine in newMessageText.split("\\n"):
