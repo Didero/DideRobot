@@ -156,79 +156,19 @@ class Command(CommandTemplate):
 			self.logWarning("[Alias] Asked to parse alias in message '{}' but that alias doesn't exist".format(message.rawText))
 			return
 
-		# Fill in the special values
-		newMessageText = aliasText
-		# Modules won't expect incoming messages to be unicode, and the regex module doesn't like it. Best convert it
-		if isinstance(newMessageText, unicode):
-			newMessageText = newMessageText.encode('utf-8', errors='replace')
+		# Modules won't expect incoming messages to be unicode. Best convert it
+		if isinstance(aliasText, unicode):
+			aliasText = aliasText.encode('utf-8', errors='replace')
 
-		# $n is a specific message part (so $1 is the first index, so messageParts[0])
-		# $n+ would fill in everything starting at $n and all the parts after it ($2+ is messageParts[1:])
-		# $n- is for everything until $n (so $3- is messageParts[:2])
-		def fillInNumberedMessageParts(regexMatchObject):
-			# group(0) is the whole match, group(1) is the first bracketed match, so the \d+
-			index = int(regexMatchObject.group(1)) - 1
-			if index == -1:  #$0, so the entire message
-				return message.message
-			if index >= message.messagePartsLength:
-				# If there aren't enough message parts, just leave text as-is
-				return regexMatchObject.group(0)
-			# If there's a second group, a '+' or '-' was added after the number
-			# '+' means all args starting with the index, '-' is all args until the index
-			if regexMatchObject.group(2):
-				if regexMatchObject.group(2) == "+":
-					return " ".join(message.messageParts[index:])
-				else:
-					# If it's not +, it's -
-					return " ".join(message.messageParts[:index])
-			return message.messageParts[index]
-
-		newMessageText = re.sub(r"(?<!\\)\$(\d+)(\+|-)?", fillInNumberedMessageParts, newMessageText)
-		# The replacements may have left some trailing spaces if they couldn't fill in the parameters. Remove those
-		newMessageText = newMessageText.rstrip()
-
-		#Replace '$nick' with the nickname of the person calling the alias
-		newMessageText = re.sub(r"(?<!\\)\$nick", message.userNickname, newMessageText)
-
-		# Parse all possible alias commands
-		def executeAliasCommand(regexMatchObject):
-			command = regexMatchObject.group(1).lower()
-			args = re.split(r", *", regexMatchObject.group(2))
-			if command == "random":
-				#'$random(lowerbound,higherbound)' returns a random integer between the lower bound (inclusive) and the upper bound (exclusive)
-				try:
-					lowerbound = int(args[0])
-					upperbound = int(args[1])
-				except ValueError:
-					return "ERROR: 'random' only accepts number"
-				except IndexError:
-					return "ERROR: 'random' needs 2 arguments"
-				#Flip bounds if lowerbound is larger than upperbound, to prevent errors and weird behaviour
-				if lowerbound > upperbound:
-					temp = lowerbound
-					lowerbound = upperbound
-					upperbound = temp
-				try:
-					return str(random.randrange(lowerbound, upperbound))
-				except ValueError:
-					return "ERROR: Invalid values for 'random'"
-			elif command == "choose" or command == "choice":
-				return random.choice(args)
-			else:
-				return "ERROR: Unknown command '{}'".format(command)
-		changeCount = 1
-		while changeCount != 0:
-			#Substitute the right-most command:	No escaped $'s	get command		get args, if present	Not followed by other commands
-			newMessageText, changeCount = re.subn(r"(?<!\\)\$(?P<command>\w+?)\((?P<args>[\w,% ]*?)\)(?=[^$]*$)", executeAliasCommand, newMessageText)
-
-		# $cp is the command prefix
-		newMessageText = re.sub(r"(?<!\\)\$CP", message.bot.commandPrefix, newMessageText, flags=re.IGNORECASE)
-		#Since all commands (so far) only fire if the message starts with the command prefix, add it if it's not there
-		if not newMessageText.startswith(message.bot.commandPrefix):
-			newMessageText = message.bot.commandPrefix + newMessageText
-
-		#Turn escaped dollar signs into normal ones, since we're done replacing
-		newMessageText = newMessageText.replace("\\$", "$")
+		#Create a grammar dictionary out of the alias text
+		aliasDict = {'_start': aliasText}
+		#Numbered fields refer to message parts.
+		#  Fill in enough fields for aliases that use numbered fields not to error out
+		for i in xrange(0, 11):
+			aliasDict[str(i+1)] = message.messageParts[i] if i < message.messagePartsLength else ""
+		aliasDict['nick'] = message.userNickname
+		aliasDict['CP'] = message.bot.commandPrefix
+		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, parameters=message.message)
 
 		# Allow for newlines in aliases, each a new message
 		for newMessageLine in newMessageText.split("\\n"):
