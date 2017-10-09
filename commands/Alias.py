@@ -143,7 +143,7 @@ class Command(CommandTemplate):
 				message.reply(u"Ok, successfully removed the alias '{}'".format(aliasname), "say")
 
 		else:
-			message.reply("I don't know what to do with the parameter '{}'. Please (re)read the help text for info on how to use this module, or poke my owner(s) if you have questions")
+			message.reply("I don't know what to do with the parameter '{}'. Please (re)read the help text for info on how to use this module, or poke my owner(s) if you have questions".format(parameter))
 
 	def parseAndSendAlias(self, server, serverChannelString, message):
 		# Alias called, create a new IrcMessage and send it to the CommandHandler
