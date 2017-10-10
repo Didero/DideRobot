@@ -169,6 +169,8 @@ class Command(CommandTemplate):
 		aliasDict['nick'] = message.userNickname
 		aliasDict['CP'] = message.bot.commandPrefix
 		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, parameters=message.messageParts)
+		#Aliases that use parameters can end with whitespace at the end. Remove that
+		newMessageText = newMessageText.rstrip()
 
 		# Allow for newlines in aliases, each a new message
 		for newMessageLine in newMessageText.split("\\n"):
