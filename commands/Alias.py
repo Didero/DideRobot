@@ -163,6 +163,8 @@ class Command(CommandTemplate):
 		#Create a grammar dictionary out of the alias text
 		aliasDict = {'_start': aliasText}
 		#Numbered fields refer to message parts.
+		# Use '<0>' to refer to the whole message (grammar also accepts '<_params>' but this is for completion's sake
+		aliasDict['0'] = message.message if message.messagePartsLength > 0 else ""
 		#  Fill in enough fields for aliases that use numbered fields not to error out
 		for i in xrange(0, 11):
 			aliasDict[str(i+1)] = message.messageParts[i] if i < message.messagePartsLength else ""
