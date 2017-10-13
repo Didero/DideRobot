@@ -46,7 +46,7 @@ class Command(CommandTemplate):
 					with open(os.path.join(self.filesLocation, generator), 'r') as grammarFile:
 						grammarDict = json.load(grammarFile)
 						if '_description' in grammarDict:
-							return u"{}, {}".format(requestedTrigger, grammarDict['_description'])
+							return u"{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, grammarDict['_description'])
 						else:
 							return "The '{}' generator file didn't specify a help text, sorry!".format(requestedTrigger)
 				#Match is one of the built-in functions
@@ -59,7 +59,7 @@ class Command(CommandTemplate):
 								 "and replacement words that will get inserted into the generated name"
 					elif requestedTrigger == 'word' or requestedTrigger == 'word2':
 						helptext = "Generates a random word, or tries to. Add a number to make it generate that many words, increasing the chance one of them is pronounceable"
-					return "'{}', {}".format(requestedTrigger, helptext)
+					return "{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, helptext)
 		#No matching generator trigger was found
 		return "I'm not familiar with the '{}' generator, though if you think it would make a good one, feel free to inform my owner(s), maybe they'll create it!".format(requestedTrigger)
 
