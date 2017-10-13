@@ -32,6 +32,37 @@ class Command(CommandTemplate):
 		#Make the grammar parsing function available to other modules
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'parseGrammarDict', self.parseGrammarDict)
 
+	def getHelp(self, message):
+		#If there's no parameters provided, just show the generic module help text
+		if message.messagePartsLength <= 1:
+			return CommandTemplate.getHelp(self, message)
+		#Check if the parameter matches one of our generator triggers
+		requestedTrigger = message.messageParts[1].lower()
+		for generator, triggers in self.generators.iteritems():
+			#If the triggers is a single string check if it's identical, otherwise check if it's in the list
+			if (isinstance(triggers, basestring) and requestedTrigger == triggers) or requestedTrigger in triggers:
+				#Trigger match! If the match is a grammar file, retrieve its description
+				if isinstance(generator, basestring):
+					with open(os.path.join(self.filesLocation, generator), 'r') as grammarFile:
+						grammarDict = json.load(grammarFile)
+						if '_description' in grammarDict:
+							return u"{}, {}".format(requestedTrigger, grammarDict['_description'])
+						else:
+							return "The '{}' generator file didn't specify a help text, sorry!".format(requestedTrigger)
+				#Match is one of the built-in functions
+				else:
+					helptext = "No helptext was set for this generator, sorry"
+					if requestedTrigger == 'name':
+						helptext = "Generates a random first and last name. You can provide a parameter to specify the gender"
+					elif requestedTrigger == 'game' or requestedTrigger == 'videogame':
+						helptext = "Generates random video game names. You can provide a number to make it generate that many game names, " \
+								 "and replacement words that will get inserted into the generated name"
+					elif requestedTrigger == 'word' or requestedTrigger == 'word2':
+						helptext = "Generates a random word, or tries to. Add a number to make it generate that many words, increasing the chance one of them is pronounceable"
+					return "'{}', {}".format(requestedTrigger, helptext)
+		#No matching generator trigger was found
+		return "I'm not familiar with the '{}' generator, though if you think it would make a good one, feel free to inform my owner(s), maybe they'll create it!".format(requestedTrigger)
+
 	def execute(self, message):
 		"""
 		:type message: IrcMessage
