@@ -42,8 +42,19 @@ class CommandTemplate(object):
 		pass
 
 	def getHelp(self, message):
-		return self.helptext.format(commandPrefix=message.bot.commandPrefix)
-		
+		#Will be formatted like '!help, !helpfull'
+		if self.triggers:
+			replytext = "{commandPrefix}" + ", {commandPrefix}".join(self.triggers)
+		else:
+			replytext = "(no command trigger)"
+		#Some commands can only be used by people in the admins list. Inform users of that
+		if self.adminOnly:
+			replytext += " [admin-only]"
+		replytext += ": " + self.helptext
+		# Since some modules have '{commandPrefix}' in their helptext, turn that into the actual command prefix
+		replytext = replytext.format(commandPrefix=message.bot.commandPrefix)
+		return replytext
+
 	def shouldExecute(self, message):
 		#Check if we need to respond, ordered from cheapest to most expensive check
 		#  (the allowedMessageTypes list is usually short, most likely shorter than the triggers list)
