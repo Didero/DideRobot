@@ -156,10 +156,6 @@ class Command(CommandTemplate):
 			self.logWarning("[Alias] Asked to parse alias in message '{}' but that alias doesn't exist".format(message.rawText))
 			return
 
-		# Modules won't expect incoming messages to be unicode. Best convert it
-		if isinstance(aliasText, unicode):
-			aliasText = aliasText.encode('utf-8', errors='replace')
-
 		#Create a grammar dictionary out of the alias text
 		aliasDict = {'_start': aliasText}
 		#Numbered fields refer to message parts.
@@ -173,6 +169,10 @@ class Command(CommandTemplate):
 		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, parameters=message.messageParts)
 		#Aliases that use parameters can end with whitespace at the end. Remove that
 		newMessageText = newMessageText.rstrip()
+
+		# Modules won't expect incoming messages to be unicode. Best convert it
+		if isinstance(newMessageText, unicode):
+			newMessageText = newMessageText.encode('utf-8', errors='replace')
 
 		# Allow for newlines in aliases, each a new message
 		for newMessageLine in newMessageText.split("\\n"):
