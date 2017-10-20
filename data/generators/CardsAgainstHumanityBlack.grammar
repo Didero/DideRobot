@@ -6,5 +6,5 @@
 "paramscheck": "<_ifcontains|_params|_|<usercardWithUnderscore>|<usercardWithoutUnderscore>>",
 "usercardWithUnderscore": "<_replace|_params|_|<whitecard>>",
 "usercardWithoutUnderscore": "<_params> <whitecard>",
-"whitecard": "<_file|CardsAgainstHumanityWhiteCards.txt|bold>"
+"whitecard": "<_file|CardsAgainstHumanityWhiteCards.txt|&bold>"
 }

@@ -308,6 +308,12 @@ class Command(CommandTemplate):
 		fieldKey = grammarParts.pop(0)
 		replacement = u""
 
+		#If the last field starts with '&', it specifies special options, like making text bold.
+		# Multiple options are separated by commas. Retrieve those options
+		extraOptions = []
+		if grammarParts and grammarParts[-1].startswith(u'&'):
+			extraOptions = grammarParts.pop()[1:].split(u',')
+
 		if fieldKey.startswith(u"_"):
 			if fieldKey == u"_randint" or fieldKey == u"_randintasword":
 				if len(grammarParts) < 2:
@@ -419,36 +425,41 @@ class Command(CommandTemplate):
 			else:
 				return (False, u"Error: No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey))
 
-		# Process the possible arguments that can be provided
-		for grammarPart in grammarParts:
-			if grammarPart == 'lowercase':
+		# Process the possible extra options that can be provided, in the specified order
+		for option in extraOptions:
+			if option == u'lowercase':
 				replacement = replacement.lower()
-			elif grammarPart == 'uppercase':
+			elif option == u'uppercase':
 				replacement = replacement.upper()
-			elif grammarPart == 'camelcase' or grammarPart == 'titlecase':
+			elif option == u'camelcase' or option == u'titlecase':
 				replacement = replacement.title()
-			elif grammarPart == 'firstletteruppercase':
+			elif option == u'firstletteruppercase':
 				if len(replacement) > 1:
 					replacement = replacement[0].upper() + replacement[1:]
 				else:
 					replacement = replacement.upper()
-			elif grammarPart == 'bold':
+			elif option == u'bold':
 				replacement = SharedFunctions.makeTextBold(replacement)
-			elif grammarPart.startswith("storeas"):
+			elif option.startswith(u'storeas'):
 				#Store the replacement under the provided variable name
 				# (format 'storeas:[varname]')
-				if ':' not in grammarPart:
-					return (False, u"Error: Invalid 'storeas' argument for field '<{}|{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarParts)))
-				varname = grammarPart.split(":")[1]
+				if u':' not in option:
+					return (False, u"Error: Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarParts), u",".join(extraOptions)))
+				varname = option.split(u':', 1)[1]
 				variableDict[varname] = replacement
 
 		# Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
-		if len(grammarParts) > 0 and not fieldKey.startswith('_') and replacement.startswith('<'):
-			closingBracketIndex = replacement.find('>')
+		if len(extraOptions) > 0 and not fieldKey.startswith(u'_') and replacement.startswith(u'<'):
+			closingBracketIndex = replacement.find(u'>')
 			if closingBracketIndex > -1:
+				# Only pass on the case changes
+				optionsToPassOn = []
+				for option in extraOptions:
+					if option.endswith(u'case'):
+						optionsToPassOn.append(option)
 				orgReplacement = replacement
-				replacement = replacement[:closingBracketIndex] + u"|" + u"|".join(grammarParts) + replacement[closingBracketIndex:]
-				self.logDebug(u"[Gen] Replaced '{}' with '{}'".format(orgReplacement, replacement))
+				replacement = replacement[:closingBracketIndex] + u"|&" + u",".join(optionsToPassOn) + replacement[closingBracketIndex:]
+				self.logDebug(u"[Gen] Passed on case option, replaced '{}' with '{}'".format(orgReplacement, replacement))
 
 		#Done!
 		return (True, replacement)

@@ -4,7 +4,7 @@
 "_triggers": ["samandmax"],
 "_start": "<_hasparameter|original|<_file|SamsOriginalSentences.txt>|<sentence>>",
 "sentenceStart": ["Holy", "Sweet", "Great", "By the", "Mighty"],
-"sentence": {"95": "<sentenceStart> <adjective> <subject><affixes>!", "100": "<adjective|firstletteruppercase> <subject><affixes>!"},
+"sentence": {"95": "<sentenceStart> <adjective> <subject><affixes>!", "100": "<adjective|&firstletteruppercase> <subject><affixes>!"},
 "adjective": ["jumping", "mother of", "gouts of", "cap-wearing", "suffering", "grinning", "head of", "gin-running", "thundering", "two-timing", "mace-wielding", "domesticated", "fat-free", "caffeine-addled", "sacred", "knuckle-cracking", "ruby-red", "bloody-nosed", "rampaging", "heaping helpings of"],
 "subject": ["god", "mercy", "saints-a-plenty", "steaming magma", "double jeopardy", "catfish", "saint Sebastian", "John the Baptist", "Greek Godess Selene", "George A. Romero", "weasel fritters", "pearl", "Sister Mary Francis", "all things hairy and disgusting", "jellyfish", "alligator dentures", "carbonated beverages", "vehicular homicide", "brains", "rodent eating disorders", "underpants", "lab rats", "tap dancers", "jellyfish paste", "quiz show schandals", "chipmunk arias", "minotaur kings", "ursines", "cow", "highway hotpants", "second mortages on a summer home", "bleary-eyed gambling addiction", "curdled goat's milk", "ptomaine", "carp", "modern technology gone horribly horribly awry", "high fructose corn syrup", "dingo", "sideburns of Isaac Asimov", "Kringles", "goiters of Rube Goldberg", "Kamehameha", "Euclid", "Roy Neary", "mole sauce", "Tachyons", "transmogrifying vapor wolves of Rigel 17", "Herodotus"],
 "affixes": {"5": "", "38": " <singleAffix>", "97": " <twoAffixes>", "100": " <threeAffixes>"},

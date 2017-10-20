@@ -3,5 +3,5 @@
 "_description": "Picks a random black card, and fills it in with one or multiple white cards, optionally one entered by the user",
 "_triggers": ["cahw", "cardsagainsthumanitywhite"],
 "_start": "<_hasparams|<_setvar|customwhitecard|true>|><_file|CardsAgainstHumanityBlackCards.txt>",
-"whitecard": "<_hasvar|customwhitecard|<_remvar|customwhitecard><_params|bold|storeas:lastwhitecard>|<_file|CardsAgainstHumanityWhiteCards.txt|bold|storeas:lastwhitecard>>"
+"whitecard": "<_hasvar|customwhitecard|<_remvar|customwhitecard><_params|&storeas:lastwhitecard,bold>|<_file|CardsAgainstHumanityWhiteCards.txt|&storeas:lastwhitecard,bold>>"
 }
