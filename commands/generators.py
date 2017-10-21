@@ -331,6 +331,8 @@ class Command(CommandTemplate):
 				replacement = self.getRandomLine(grammarParts[0])
 			elif fieldKey == u"_setvar":
 				# <_setvar|varname|value>
+				if len(grammarParts) < 2:
+					return (False, u"Error: Not enough parameters to the '{}' call, need at least 2, only found {}".format(fieldKey, len(grammarParts)))
 				variableDict[grammarParts[0]] = grammarParts[1]
 			elif fieldKey == u"_remvar":
 				if grammarParts[0] in variableDict:
