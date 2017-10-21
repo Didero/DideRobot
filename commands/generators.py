@@ -334,6 +334,11 @@ class Command(CommandTemplate):
 				if len(grammarParts) < 2:
 					return (False, u"Error: Not enough parameters to the '{}' call, need at least 2, only found {}".format(fieldKey, len(grammarParts)))
 				variableDict[grammarParts[0]] = grammarParts[1]
+			elif fieldKey == u"_setvarrandom":
+				# <_setvarrandom|varname|value1|value2|value3> to pick a random value and set the variable to that
+				if len(grammarParts) < 2:
+					return (False, u"Error: Not enough parameters to the '{}' call, need at least 2, only found {}".format(fieldKey, len(grammarParts)))
+				variableDict[grammarParts[0]] = random.choice(grammarParts[1:])
 			elif fieldKey == u"_remvar":
 				if grammarParts[0] in variableDict:
 					del variableDict[grammarParts[0]]
