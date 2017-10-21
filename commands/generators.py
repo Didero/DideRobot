@@ -375,6 +375,23 @@ class Command(CommandTemplate):
 					replacement = grammarParts[2]
 				else:
 					replacement = grammarParts[3]
+			elif fieldKey == u"_switch":
+				# <_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|_default:stringIfNoCaseMatch>
+				# The '_default' field is not mandatory, if it's missing an empty string will be returned
+				caseDict = {}
+				for caseString in grammarParts[1:]:
+					case, stringIfCase = caseString.split(u':', 1)
+					caseDict[case] = stringIfCase
+				if grammarParts[0] == u"_params" and parameterString in caseDict:
+					replacement = caseDict[parameterString]
+				elif grammarParts[0] not in variableDict:
+					return (False, u"Error: variable '{}' was specified in a '{}' call, but it isn't set".format(grammarParts[0], fieldKey))
+				elif variableDict[grammarParts[0]] in caseDict:
+					replacement = caseDict[variableDict[grammarParts[0]]]
+				elif u'_default' in caseDict:
+					replacement = caseDict[u'_default']
+				else:
+					replacement = u""
 			elif fieldKey == u"_hasparameters" or fieldKey == u"_hasparams":
 				# <_hasparams|stringIfHasParams|stringIfDoesntHaveParams>"
 				# Checks if there are any parameters provided
