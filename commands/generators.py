@@ -204,32 +204,32 @@ class Command(CommandTemplate):
 			variableDict = {}
 
 		#First check if the starting field exists
-		if '_start' not in grammarDict:
+		if u'_start' not in grammarDict:
 			return u"Error: No '_start' field found!"
 
 		#Parse any options specified
-		if '_options' in grammarDict:
+		if u'_options' in grammarDict:
 			# Parse arguments
-			if u'parseGender' in grammarDict['_options']:
+			if u'parseGender' in grammarDict[u'_options']:
 				gender = None
 				if parameters:
 					for param in parameters:
 						if self.isGenderParameter(param):
 							gender = param
 				variableDict.update(self.getGenderWords(gender))  #If no gender was provided, 'getGenderWords' will pick a random one
-			if u'generateName' in grammarDict['_options']:
+			if u'generateName' in grammarDict[u'_options']:
 				#If a gender was provided or requested, use that to generate a name
-				if 'gender' in variableDict:
-					variableDict['name'] = self.generateName([variableDict['gender']])
+				if u'gender' in variableDict:
+					variableDict[u'name'] = self.generateName([variableDict[u'gender']])
 				#Otherwise have the function decide
 				else:
-					variableDict['name'] = self.generateName()
-				nameparts = variableDict['name'].split(' ')
-				variableDict['firstname'] = nameparts[0]
-				variableDict['lastname'] = nameparts[-1]
+					variableDict[u'name'] = self.generateName()
+				nameparts = variableDict[u'name'].split(' ')
+				variableDict[u'firstname'] = nameparts[0]
+				variableDict[u'lastname'] = nameparts[-1]
 
 		#Start the parsing!
-		return self.parseGrammarString(grammarDict['_start'], grammarDict, parameters, variableDict)
+		return self.parseGrammarString(grammarDict[u'_start'], grammarDict, parameters, variableDict)
 
 
 	def parseGrammarString(self, grammarString, grammar, parameters=None, variableDict=None):
@@ -240,33 +240,38 @@ class Command(CommandTemplate):
 		# This to prevent abuse like infinite loops or creating heavy load
 		if parameters:
 			parameterString = " ".join(parameters).decode("utf-8", errors="replace")
-			parameterString = parameterString.replace("/", "//").replace("<", "/<")
+			parameterString = parameterString.replace(u"/", u"//").replace(u"<", u"/<")
 		else:
 			parameterString = None
+
+		#Make sure the input string is Unicode, since that's what we expect
+		if not isinstance(grammarString, unicode):
+			grammarString = grammarString.decode("utf-8", errors="replace")
+			print "Converting to unicode, grammarString is now", type(grammarString)
 
 		outputString = grammarString
 		loopcount = 0
 		while loopcount < 150:
 			loopcount += 1
 			try:
-				outputString, bracketString = re.split(r"(?<!/)<", outputString, maxsplit=1)
+				outputString, bracketString = re.split(ur"(?<!/)<", outputString, maxsplit=1)
 			except ValueError:
 				#No more bracketed parts found, done
 				break
 
-			grammarParts = [""]
+			grammarParts = [u""]
 			grammarPartIndex = 0
 			nestedBracketLevel = 0
 			characterIsEscaped = False
 			#Go through all the characters to divide the bracketed string up in parts for parsing
 			for characterIndex, character in enumerate(bracketString):
 				if nestedBracketLevel == 0 and not characterIsEscaped:
-					if character == "|":
+					if character == u"|":
 						#New section, write any new characters to the new section
-						grammarParts.append("")
+						grammarParts.append(u"")
 						grammarPartIndex += 1
 						continue
-					elif character == ">":
+					elif character == u">":
 						#End of this bracket block. Parse the block, and append the rest of the string to it
 						success, parsedBracketString = self.parseGrammarBlock(grammarParts, grammar, parameterString, variableDict)
 						if not success:
@@ -283,13 +288,13 @@ class Command(CommandTemplate):
 					characterIsEscaped = False
 				#If this character isn't escaped, parse it if necessary
 				else:
-					if character == "/":
+					if character == u"/":
 						# Escape character. Save the next character without parsing it
 						characterIsEscaped = True
-					elif character == "<":
+					elif character == u"<":
 						# Start of a bracketed part that we need to store
 						nestedBracketLevel += 1
-					elif character == ">":
+					elif character == u">":
 						# End of a bracketed part
 						nestedBracketLevel -= 1
 			else:
@@ -300,7 +305,7 @@ class Command(CommandTemplate):
 			return u"Error: Loop limit reached, there's probably an infinite loop in the grammar file"
 
 		#Remove any escapes we put in to prevent abuse
-		outputString = outputString.replace("/<", "<").replace("//", "/")
+		outputString = outputString.replace(u"/<", u"<").replace(u"//", u"/")
 		#Done, return what we have
 		return outputString
 
@@ -484,6 +489,10 @@ class Command(CommandTemplate):
 				orgReplacement = replacement
 				replacement = replacement[:closingBracketIndex] + u"|&" + u",".join(optionsToPassOn) + replacement[closingBracketIndex:]
 				self.logDebug(u"[Gen] Passed on case option, replaced '{}' with '{}'".format(orgReplacement, replacement))
+
+		#The parser expects unicode, so make sure our replacement is unicode
+		if not isinstance(replacement, unicode):
+			replacement = replacement.decode("utf-8", errors="replace")
 
 		#Done!
 		return (True, replacement)
