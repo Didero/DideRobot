@@ -115,7 +115,9 @@ class Command(CommandTemplate):
 	def getRandomLine(self, filename, filelocation=None):
 		if not filelocation:
 			filelocation = self.filesLocation
-		filepath = os.path.abspath(os.path.join(GlobalStore.scriptfolder, filelocation, filename))
+		elif not filelocation.startswith(GlobalStore.scriptfolder):
+			filelocation = os.path.join(GlobalStore.scriptfolder, filelocation)
+		filepath = os.path.abspath(os.path.join(filelocation, filename))
 		#Check if the provided file is in our 'generator' folder
 		if not filepath.startswith(self.filesLocation):
 			#Trying to get out of the 'generators' folder
