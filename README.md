@@ -3,10 +3,11 @@
 A modular Python 2 IRC bot built with Gevent
 
 ### 1) Initial Setup
-1. In the 'serverSettings' folder, make a copy of 'globalsettings.json.example'
-2. Rename the copy to 'globalsettings.json'
-3. Open the file in your favourite text editor
-4. Set all values the way you want them. (See section 3 for an explanation of what each setting does). These will be the default values for new server setting files you create later
+1. Install the libraries listed in 'requirements.txt', either manually or (preferably) by pointing pip to it with 'pip install -r requirements.txt'
+2. In the 'serverSettings' folder, make a copy of 'globalsettings.json.example'
+3. Rename the copy to 'globalsettings.json'
+4. Open the file in your favourite text editor
+5. Set all values the way you want them. (See section 3 for an explanation of what each setting does). These will be the default values for new server setting files you create later
 
 ### 2) Adding A New Server To Connect To
 1. In the 'serverSettings' folder, create a new folder. Name it whatever you want (but no spaces). You will use this name later to make the bot connect to this server, so make it something you can remember
