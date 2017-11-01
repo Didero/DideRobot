@@ -1,6 +1,6 @@
 # DideRobot
 
-A modular IRC bot built on Gevent
+A modular Python 2 IRC bot built with Gevent
 
 ### 1) Initial Setup
 1. In the 'serverSettings' folder, make a copy of 'globalsettings.json.example'
