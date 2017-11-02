@@ -301,9 +301,11 @@ class Command(CommandTemplate):
 						nestedBracketLevel -= 1
 			else:
 				#If we didn't break out of the character loop, we didn't find the end bracket. Complain about that
+				self.logWarning(u"[Gen] Grammar '{}' is missing a closing bracket in line '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
 				return u"Error: Missing closing bracket"
 		else:
 			#We reached the loop limit, so there's probably an infinite loop. Report that
+			self.logWarning(u"[Gen] Grammar '{}' has an infinite loop in line '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
 			return u"Error: Loop limit reached, there's probably an infinite loop in the grammar file"
 
 		#Remove any escapes we put in to prevent abuse
