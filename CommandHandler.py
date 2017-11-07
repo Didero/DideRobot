@@ -75,21 +75,25 @@ class CommandHandler:
 		"""
 		:type message: IrcMessage
 		"""
-		if not message.bot.shouldUserBeIgnored(message.user, message.userNickname, message.userAddress):
-			for commandname, command in self.commands.iteritems():
-				if not self.isCommandAllowedForBot(message.bot, commandname):
-					continue
+		#First check if this user is even allowed to call commands
+		if message.bot.shouldUserBeIgnored(message.user, message.userNickname, message.userAddress):
+			return
 
-				if command.shouldExecute(message):
-					if command.adminOnly and not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-						message.reply("Sorry, this command is admin-only", "say")
+		#Then check whether any of our loaded commands need to react to this message
+		for commandname, command in self.commands.iteritems():
+			if not self.isCommandAllowedForBot(message.bot, commandname):
+				continue
+
+			if command.shouldExecute(message):
+				if command.adminOnly and not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
+					message.reply("Sorry, this command is admin-only", "say")
+				else:
+					if command.callInThread:
+						gevent.spawn(self.executeCommand, commandname, message)
 					else:
-						if command.callInThread:
-							gevent.spawn(self.executeCommand, commandname, message)
-						else:
-							self.executeCommand(commandname, message)
-						if command.stopAfterThisCommand:
-							break
+						self.executeCommand(commandname, message)
+					if command.stopAfterThisCommand:
+						break
 
 	def executeCommand(self, commandname, message):
 		try:
