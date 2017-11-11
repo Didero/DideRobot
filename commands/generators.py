@@ -233,7 +233,6 @@ class Command(CommandTemplate):
 		#Start the parsing!
 		return self.parseGrammarString(grammarDict[u'_start'], grammarDict, parameters, variableDict)
 
-
 	def parseGrammarString(self, grammarString, grammar, parameters=None, variableDict=None):
 		if variableDict is None:
 			variableDict = {}
@@ -253,64 +252,66 @@ class Command(CommandTemplate):
 
 		outputString = grammarString
 		loopcount = 0
+		startIndex = 0
 		while loopcount < 150:
 			loopcount += 1
-			try:
-				outputString, bracketString = re.split(ur"(?<!/)<", outputString, maxsplit=1)
-			except ValueError:
-				#No more bracketed parts found, done
-				break
 
-			grammarParts = [u""]
-			grammarPartIndex = 0
 			nestedBracketLevel = 0
 			characterIsEscaped = False
-			#Go through all the characters to divide the bracketed string up in parts for parsing
-			for characterIndex, character in enumerate(bracketString):
-				if nestedBracketLevel == 0 and not characterIsEscaped:
-					if character == u"|":
-						#New section, write any new characters to the new section
-						grammarParts.append(u"")
-						grammarPartIndex += 1
-						continue
-					elif character == u">":
-						#End of this bracket block. Parse the block, and append the rest of the string to it
-						success, parsedBracketString = self.parseGrammarBlock(grammarParts, grammar, parameterString, variableDict)
-						if not success:
-							#If parsing failed, return the error
-							return parsedBracketString
-						else:
-							#Otherwise, insert it into the output string and try to parse it again until all the brackets are filled in
-							outputString += parsedBracketString + bracketString[characterIndex+1:]
-							break
-				#Store the character
-				grammarParts[grammarPartIndex] += character
-				#Make sure if this character is escaped, the next one won't be
-				if characterIsEscaped:
-					characterIsEscaped = False
-				#If this character isn't escaped, parse it if necessary
-				else:
-					if character == u"/":
-						# Escape character. Save the next character without parsing it
-						characterIsEscaped = True
-					elif character == u"<":
-						# Start of a bracketed part that we need to store
+			grammarParts = [u""]
+			#Go through the string to find the first bracketed section
+			for index in xrange(startIndex, len(outputString)):
+				character = outputString[index]
+
+				#Handle character escaping first, since that overrides everything else
+				if characterIsEscaped or character == u"/":
+					characterIsEscaped = not characterIsEscaped  #Only escape one character, so flip it back. Or it's the escape character, so flip to True
+					if nestedBracketLevel > 0:
+						grammarParts[-1] += character
+					continue
+
+				if nestedBracketLevel == 0 and character == u"<":
+					#Store this position for the next loop, so we don't needlessly check bracket-less text multiple times
+					startIndex = index
+					#And go up a level
+					nestedBracketLevel = 1
+				elif nestedBracketLevel == 1 and character == u"|":
+					#Start a new gramamr part
+					grammarParts.append(u"")
+				elif nestedBracketLevel == 1 and character == u">":
+					#We found the end of the grammar block. Have it parsed
+					success, parsedGrammarBlock = self.parseGrammarBlock(grammarParts, grammar, parameterString, variableDict)
+					if not success:
+						#If something went wrong, it returned an error message. Stop parsing and report that error
+						return parsedGrammarBlock
+					#Everything went fine, replace the grammar block with the output
+					outputString = outputString[:startIndex] + parsedGrammarBlock + outputString[index + 1:]
+					#Done with this parsing loop, start a new one! (break out of the for-loop to start a new while-loop iteration)
+					break
+				#Don't append characters if we're not inside a grammar block
+				elif nestedBracketLevel > 0:
+					#We always want to append the character now
+					grammarParts[-1] += character
+					#Keep track of how many levels deep we are
+					if character == u"<":
 						nestedBracketLevel += 1
 					elif character == u">":
-						# End of a bracketed part
 						nestedBracketLevel -= 1
 			else:
-				#If we didn't break out of the character loop, we didn't find the end bracket. Complain about that
-				self.logWarning(u"[Gen] Grammar '{}' is missing a closing bracket in line '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
-				return u"Error: Missing closing bracket"
+				#We reached the end of the output string. If we're not at top level, the gramamr block isn't closed
+				if nestedBracketLevel > 0:
+					self.logWarning(u"[Gen] Grammar '{}' is missing a closing bracket in line '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
+					return u"Error: Missing closing bracket"
+				#Otherwise, we're done! Break out of the while-loop
+				break
 		else:
 			#We reached the loop limit, so there's probably an infinite loop. Report that
 			self.logWarning(u"[Gen] Grammar '{}' has an infinite loop in line '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
 			return u"Error: Loop limit reached, there's probably an infinite loop in the grammar file"
 
-		#Remove any escapes we put in to prevent abuse
-		outputString = outputString.replace(u"/<", u"<").replace(u"//", u"/")
-		#Done, return what we have
+		#Unescape escaped characters so they display properly
+		outputString = re.sub(ur"/(.)", ur"\1", outputString)
+		#Done!
 		return outputString
 
 	def parseGrammarBlock(self, grammarParts, grammar, parameterString=None, variableDict=None):
