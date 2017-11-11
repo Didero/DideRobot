@@ -211,7 +211,7 @@ class Command(CommandTemplate):
 		elif u'start' in grammarDict:
 			startString = grammarDict[u'start']
 		else:
-			return u"Error: No '_start' field found!"
+			return u"Error: No 'start' field found!"
 
 		#Parse any options specified
 		if u'_options' in grammarDict:
