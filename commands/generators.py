@@ -206,7 +206,11 @@ class Command(CommandTemplate):
 			variableDict = {}
 
 		#First check if the starting field exists
-		if u'_start' not in grammarDict:
+		if u'_start' in grammarDict:
+			startString = grammarDict[u'_start']
+		elif u'start' in grammarDict:
+			startString = grammarDict[u'start']
+		else:
 			return u"Error: No '_start' field found!"
 
 		#Parse any options specified
@@ -231,7 +235,7 @@ class Command(CommandTemplate):
 				variableDict[u'lastname'] = nameparts[-1]
 
 		#Start the parsing!
-		return self.parseGrammarString(grammarDict[u'_start'], grammarDict, parameters, variableDict)
+		return self.parseGrammarString(startString, grammarDict, parameters, variableDict)
 
 	def parseGrammarString(self, grammarString, grammar, parameters=None, variableDict=None):
 		if variableDict is None:
