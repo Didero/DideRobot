@@ -211,6 +211,7 @@ class Command(CommandTemplate):
 		elif u'start' in grammarDict:
 			startString = grammarDict[u'start']
 		else:
+			self.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
 			return u"Error: No 'start' field found!"
 
 		#Parse any options specified
