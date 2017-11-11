@@ -439,6 +439,12 @@ class Command(CommandTemplate):
 				if replacement == u"_params":
 					replacement = parameterString
 				replacement = replacement.replace(grammarParts[1], grammarParts[2])
+			elif fieldKey == u"_choose":
+				# <_choose|option1|option2|...>
+				#Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for them
+				if len(grammarParts) == 0:
+					return (False, u"Error: '{}' field doesn't specify any choices".format(fieldKey))
+				replacement = random.choice(grammarParts)
 			elif fieldKey == u"_" or fieldKey == u"_dummy":
 				replacement = u""
 			else:
