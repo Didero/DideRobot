@@ -431,14 +431,21 @@ class Command(CommandTemplate):
 					#Prevent file access
 					if u"<_file" in replacement:
 						return (False, u"Error: File access from parameters is not allowed")
-			elif fieldKey == u"_replace":
-				# <_replace|string|whatToReplace|whatToReplaceItWith>
+			elif fieldKey == u"_replace" or fieldKey == u"_regexreplace":
+				# <_replace|stringToReplaceIn|whatToReplace|whatToReplaceItWith>
+				# <_regexreplace|stringToReplaceIn|regexOfWhatToReplace|whatToReplaceItWith>
 				if len(grammarParts) < 3:
 					return (False, u"Error: Not enough parameters in field '<{}|{}>'. Need 3, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
 				replacement = grammarParts[0]
 				if replacement == u"_params":
 					replacement = parameterString
-				replacement = replacement.replace(grammarParts[1], grammarParts[2])
+				if fieldKey == u"_replace":
+					replacement = replacement.replace(grammarParts[1], grammarParts[2])
+				else:
+					try:
+						replacement = re.sub(re.compile(grammarParts[1]), grammarParts[2], replacement)
+					except re.error as e:
+						return (False, u"Error while parsing regular expression '{}' with replacement string '{}' ({})".format(grammarParts[1], grammarParts[2], e.message))
 			elif fieldKey == u"_choose":
 				# <_choose|option1|option2|...>
 				#Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for them
