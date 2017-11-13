@@ -351,7 +351,7 @@ class Command(CommandTemplate):
 			cardInfoList.append(setlistString)
 		#No extra set info, but still add a warning if it's in a non-legal set
 		else:
-			for illegalSet in ('Happy Holidays', 'Unglued', 'Unhinged'):
+			for illegalSet in (u'Happy Holidays', u'Unglued', u'Unhinged', u'Unstable'):
 				if illegalSet in sets:
 					cardInfoList.append(u"in illegal set \x0304{illegalSet}\x0f!".format(illegalSet=illegalSet))  #color-code the setname red
 					break
