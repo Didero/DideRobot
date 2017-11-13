@@ -25,6 +25,9 @@ class Command(CommandTemplate):
 	areCardfilesInUse = False
 	dataFormatVersion = '4.3'
 
+	def onLoad(self):
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.searchCards)
+
 	def executeScheduledFunction(self):
 		if not self.areCardfilesInUse and self.shouldUpdate():
 			self.updateCardFile()
@@ -86,55 +89,55 @@ class Command(CommandTemplate):
 			message.reply(self.openBoosterpack(setname)[1])
 			return
 
-		elif searchType == 'random' and message.messagePartsLength == 1:
+		#Default search
+		message.reply(self.searchCards(searchType, " ".join(message.messageParts[1:]), message.trigger.endswith('f'), 20 if message.isPrivateMessage else 10), "say")
+
+	def searchCards(self, searchType, searchString, extendedInfo=False, resultListLength=10):
+		#Special case to prevent it having to load in all the cards before picking one
+		if searchType == 'random' and len(searchString) == 0:
 			#Just pick a random card from all available ones
-			#Special case to prevent it having to load in all the cards before picking one
 			card = json.loads(SharedFunctions.getRandomLineFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')))
 			cardname, carddata = card.popitem()
-			message.reply(self.getFormattedCardInfo(carddata, message.trigger == 'mtgf', False))
-			return
+			return self.getFormattedCardInfo(carddata, extendedInfo)
 
 		#Check if the user passed valid search terms
-		parseSuccess, searchDict = self.parseSearchParameters(searchType, message)
+		parseSuccess, searchDict = self.parseSearchParameters(searchType, searchString)
 		if not parseSuccess:
 			#If an error occurred, the second returned parameter isn't the searchdict but an error message
-			message.reply(searchDict, "say")
-			return
+			return searchDict
 		#Check if the entered search terms can be converted to the regex we need
 		parseSuccess, regexDict = self.searchDictToRegexDict(searchDict)
 		if not parseSuccess:
 			#Again, 'regexDict' is the error string if an error occurred
-			message.reply(regexDict)
-			return
+			return regexDict
 		matchingCards = self.searchCardStore(regexDict)
 		#Clear the stored regexes, since we don't need them anymore
 		del regexDict
 		re.purge()
 		#Done, show the formatted result
-		message.reply(self.formatSearchResult(matchingCards, message.trigger.endswith('f'), searchType.startswith('random'),
-											  20 if message.isPrivateMessage else 10, searchDict.get('name', None), len(searchDict) > 0))
+		return self.formatSearchResult(matchingCards, extendedInfo, searchType.startswith('random'), resultListLength, searchDict.get('name', None), len(searchDict) > 0)
 
 	@staticmethod
-	def parseSearchParameters(searchType, message):
+	def parseSearchParameters(searchType, searchString):
 		#If we reached here, we're gonna search through the card store
 		searchDict = {}
 		# If there is an actual search (with colon key-value separator OR a random card is requested with specific search requirements
-		if (searchType == 'search' and ':' in message.message) or (searchType in ('random', 'randomcommander') and message.messagePartsLength > 1):
+		if (searchType == 'search' and ':' in searchString) or (searchType in ('random', 'randomcommander') and len(searchString) > 0):
 			#Advanced search!
-			if message.messagePartsLength <= 1:
+			if len(searchString) == 0:
 				return (False, "Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. "
 							  "Look on http://mtgjson.com/documentation.html#cards for available fields, though not all of them may work. "
 							  "The values support regular expressions as well")
 
 			#Turn the search string (not the argument) into a usable dictionary, case-insensitive,
-			searchDict = SharedFunctions.stringToDict(" ".join(message.messageParts[1:]).lower(), True)
+			searchDict = SharedFunctions.stringToDict(searchString.lower(), True)
 			if len(searchDict) == 0:
 				return (False, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
 							  "For a list of valid keys, see http://mtgjson.com/documentation.html#cards (though not all keys may be available)")
 		#If the searchtype is just 'random', don't set a 'name' field so we don't go through all the cards first
 		#  Otherwise, set the whole message as the 'name' search, since that's the default search
 		elif not searchType.startswith('random'):
-			searchDict['name'] = message.message.lower()
+			searchDict['name'] = searchString.lower()
 
 		#Commander search. Regardless of everything else, it has to be a legendary creature
 		if searchType == 'randomcommander':
