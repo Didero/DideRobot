@@ -452,7 +452,7 @@ class Command(CommandTemplate):
 					replacement = replacement.replace(grammarParts[1], grammarParts[2])
 				else:
 					try:
-						replacement = re.sub(re.compile(grammarParts[1]), grammarParts[2], replacement)
+						replacement = re.sub(re.compile(grammarParts[1], flags=re.DOTALL), grammarParts[2], replacement)  #DOTALL so it can handle newlines in messages properly
 					except re.error as e:
 						return (False, u"Error while parsing regular expression '{}' with replacement string '{}' ({})".format(grammarParts[1], grammarParts[2], e.message))
 			elif fieldKey == u"_choose":
