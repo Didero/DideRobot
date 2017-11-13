@@ -383,9 +383,14 @@ class Command(CommandTemplate):
 				# <_ifcontains|string|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
 				if len(grammarParts) < 4:
 					return (False, u"Error: Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
+				#Check if we need the parameters, a variable, or literally the entered string
+				stringToCheck = grammarParts[0]
 				if grammarParts[0] == u"_params":
-					grammarParts[0] = parameterString if parameterString else ""
-				if grammarParts[1] in grammarParts[0]:
+					stringToCheck = parameterString if parameterString else ""
+				elif grammarParts[0] in variableDict:
+					stringToCheck = variableDict[grammarParts[0]]
+				#Now do the 'contains' check
+				if grammarParts[1] in stringToCheck:
 					replacement = grammarParts[2]
 				else:
 					replacement = grammarParts[3]
