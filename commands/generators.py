@@ -436,9 +436,14 @@ class Command(CommandTemplate):
 				# <_regexreplace|stringToReplaceIn|regexOfWhatToReplace|whatToReplaceItWith>
 				if len(grammarParts) < 3:
 					return (False, u"Error: Not enough parameters in field '<{}|{}>'. Need 3, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
-				replacement = grammarParts[0]
-				if replacement == u"_params":
+				#Check if the string wants the parameters or a variable name, otherwise use the provided string as-is
+				if grammarParts[0] == u"_params":
 					replacement = parameterString
+				elif grammarParts[0] in variableDict:
+					replacement = variableDict[grammarParts[0]]
+				else:
+					replacement = grammarParts[0]
+				#Now replace what we need to replace
 				if fieldKey == u"_replace":
 					replacement = replacement.replace(grammarParts[1], grammarParts[2])
 				else:
