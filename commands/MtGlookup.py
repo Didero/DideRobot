@@ -161,16 +161,16 @@ class Command(CommandTemplate):
 		regexDict = {}
 		errors = []
 		for attrib, query in searchDict.iteritems():
+			# Since the query is probably a string, and the card data is unicode, convert the query to unicode before turning it into a regex
+			# This fixes the module not finding a literal search for 'Ætherling', for instance
+			if not isinstance(query, unicode):
+				query = unicode(query, encoding='utf8', errors='replace')
 			try:
-				#Since the query is probably a string, and the card data is unicode, convert the query to unicode before turning it into a regex
-				# This fixes the module not finding a literal search for 'Ætherling', for instance
-				if not isinstance(query, unicode):
-					query = unicode(query, encoding='utf8')
 				regex = re.compile(query, re.IGNORECASE)
 			except (re.error, SyntaxError):
 				#Try parsing the string again as an escaped string, so mismatched brackets for instance aren't a problem
 				try:
-					regex = re.compile(unicode(re.escape(query), encoding='utf8'), re.IGNORECASE)
+					regex = re.compile(re.escape(query), re.IGNORECASE)
 				except re.error as e:
 					self.logDebug("[MTG] Regex error when trying to parse '{}': {}".format(query, e))
 					errors.append(attrib)
