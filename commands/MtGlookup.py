@@ -137,7 +137,7 @@ class Command(CommandTemplate):
 		#If the searchtype is just 'random', don't set a 'name' field so we don't go through all the cards first
 		#  Otherwise, set the whole message as the 'name' search, since that's the default search
 		elif not searchType.startswith('random'):
-			searchDict['name'] = searchString.lower()
+			searchDict['name'] = "{} {}".format(searchType, searchString.lower()).rstrip()
 
 		#Commander search. Regardless of everything else, it has to be a legendary creature
 		if searchType == 'randomcommander':
