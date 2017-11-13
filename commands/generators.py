@@ -253,7 +253,6 @@ class Command(CommandTemplate):
 		#Make sure the input string is Unicode, since that's what we expect
 		if not isinstance(grammarString, unicode):
 			grammarString = grammarString.decode("utf-8", errors="replace")
-			print "Converting to unicode, grammarString is now", type(grammarString)
 
 		outputString = grammarString
 		loopcount = 0
