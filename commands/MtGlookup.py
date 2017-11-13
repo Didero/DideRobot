@@ -159,9 +159,11 @@ class Command(CommandTemplate):
 		errors = []
 		for attrib, query in searchDict.iteritems():
 			try:
-				#Since the query is a string, and the card data is unicode, convert the query to unicode before turning it into a regex
+				#Since the query is probably a string, and the card data is unicode, convert the query to unicode before turning it into a regex
 				# This fixes the module not finding a literal search for 'Ætherling', for instance
-				regex = re.compile(unicode(query, encoding='utf8'), re.IGNORECASE)
+				if not isinstance(query, unicode):
+					query = unicode(query, encoding='utf8')
+				regex = re.compile(query, re.IGNORECASE)
 			except (re.error, SyntaxError):
 				#Try parsing the string again as an escaped string, so mismatched brackets for instance aren't a problem
 				try:
