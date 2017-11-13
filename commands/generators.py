@@ -492,6 +492,9 @@ class Command(CommandTemplate):
 					return (False, u"Error: Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarParts), u",".join(extraOptions)))
 				varname = option.split(u':', 1)[1]
 				variableDict[varname] = replacement
+			elif option == u"hide":
+				#Completely hides the replacement text. Useful in combination with 'storeas', if you don't want to store but not display the output
+				replacement = u""
 
 		# Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
 		if len(extraOptions) > 0 and not fieldKey.startswith(u'_') and replacement.startswith(u'<'):
