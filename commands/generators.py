@@ -207,7 +207,10 @@ class Command(CommandTemplate):
 
 		#First check if the starting field exists
 		if u'_start' in grammarDict:
-			startString = u"<_start>"
+			#Force the old '_start' into 'start' to prevent 'unknown command' errors
+			grammarDict[u'start'] = grammarDict[u'_start']
+			del grammarDict[u'_start']
+			startString = u"<start>"
 		elif u'start' in grammarDict:
 			startString = u"<start>"
 		else:
