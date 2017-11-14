@@ -206,12 +206,12 @@ class Command(CommandTemplate):
 			variableDict = {}
 
 		#First check if the starting field exists
-		if u'_start' in grammarDict:
+		if u'start' in grammarDict:
+			startString = u"<start>"
+		elif u'_start' in grammarDict:
 			#Force the old '_start' into 'start' to prevent 'unknown command' errors
 			grammarDict[u'start'] = grammarDict[u'_start']
 			del grammarDict[u'_start']
-			startString = u"<start>"
-		elif u'start' in grammarDict:
 			startString = u"<start>"
 		else:
 			self.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
