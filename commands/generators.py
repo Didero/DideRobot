@@ -394,6 +394,26 @@ class Command(CommandTemplate):
 					replacement = grammarParts[2]
 				else:
 					replacement = grammarParts[3]
+			elif fieldKey == u"_ifmatch":
+				# <_ifmatch|string/varname|regexToMatch|stringIfMatch|stringIfNoMatch>
+				if len(grammarParts) < 4:
+					return (False, u"Error: Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
+				if grammarParts[0] == u"_params":
+					stringToMatchAgainst = parameterString if parameterString else u""
+				elif grammarParts[0] in variableDict:
+					stringToMatchAgainst = variableDict[grammarParts[0]]
+				else:
+					stringToMatchAgainst = grammarParts[0]
+				#Make sure we un-escape the regex, so it can use characters like < and | without messing up our parsing
+				regex = re.compile(re.sub(r"/(.)", r"\1", grammarParts[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
+				try:
+					if re.search(regex, stringToMatchAgainst):
+						replacement = grammarParts[2]
+					else:
+						replacement = grammarParts[3]
+				except re.error as e:
+					self.logWarning(u"[Gen] Regex error in regex '{}' ({})".format(grammarParts[1], e.message))
+					return (False, u"Error: Invalid regex '{}' ({})".format(grammarParts[1], e.message))
 			elif fieldKey == u"_switch":
 				# <_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|_default:stringIfNoCaseMatch>
 				# The '_default' field is not mandatory, if it's missing an empty string will be returned
