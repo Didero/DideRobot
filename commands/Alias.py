@@ -157,7 +157,7 @@ class Command(CommandTemplate):
 			return
 
 		#Create a grammar dictionary out of the alias text
-		aliasDict = {u'_start': aliasText}
+		aliasDict = {u'start': aliasText}
 		#Numbered fields refer to message parts.
 		# Use '<0>' to refer to the whole message (grammar also accepts '<_params>' but this is for completion's sake
 		aliasDict[u'0'] = message.message if message.messagePartsLength > 0 else u""
