@@ -515,7 +515,7 @@ class Command(CommandTemplate):
 			elif fieldKey == u"_" or fieldKey == u"_dummy":
 				replacement = u""
 			else:
-				return (False, u"Error: Unknown command '{key}' in field '<{key}|{args}>' found!".format(key=fieldKey, args=u"|".join(grammarParts)))
+				return (False, u"Error: Unknown command '{key}' in field '<{key}{args}>' found!".format(key=fieldKey, args=u"|" + u"|".join(grammarParts) if grammarParts else u""))
 		# No command, so check if it's a valid key
 		elif fieldKey not in grammar:
 			return (False, u"Error: Field '{}' not found in grammar file!".format(fieldKey))
