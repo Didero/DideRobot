@@ -483,6 +483,35 @@ class Command(CommandTemplate):
 				if len(grammarParts) == 0:
 					return (False, u"Error: '{}' field doesn't specify any choices".format(fieldKey))
 				replacement = random.choice(grammarParts)
+			elif fieldKey == u"_modulecommand":
+				#<_modulecommand|commandName|argument1|argument2|key1=value1|key2=value2|...>
+				#Call commandFunctions from different modules
+				if not GlobalStore.commandhandler.hasCommandFunction(grammarParts[0]):
+					return (False, u"Error: Unknown module command '{}'".format(grammarParts[0]))
+				#Turn the arguments into something we can call a function with
+				arguments = []
+				keywordArguments = {}
+				for grammarPart in grammarParts[1:]:
+					#Make sure they're all converted from unicode to string, since that's what functions will expect
+					grammarPart = grammarPart.encode('utf-8', errors='replace')
+					#Remove any character escaping (so arguments can contain '<' without messing up)
+					grammarPart = re.sub(r"/(.)", r"\1", grammarPart)
+					if '=' not in grammarPart:
+						arguments.append(grammarPart)
+					else:
+						key, value = grammarPart.split('=', 1)
+						keywordArguments[key] = value
+				#Call the module function!
+				replacement = GlobalStore.commandhandler.runCommandFunction(grammarParts[0], u"", *arguments, **keywordArguments)
+				#Make sure the replacement is a unicode string
+				if isinstance(replacement, str):
+					replacement = replacement.decode('utf-8', errors='replace')
+				elif isinstance(replacement, list):
+					replacement = u", ".join(replacement)
+				elif isinstance(replacement, dict):
+					SharedFunctions.dictToString(replacement)
+				else:
+					return (False, u"Error: Module command '{}' returned non-text object".format(grammarParts[0]))
 			elif fieldKey == u"_" or fieldKey == u"_dummy":
 				replacement = u""
 			else:
