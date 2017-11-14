@@ -28,7 +28,7 @@ class Command(CommandTemplate):
 		if output.startswith("Already up-to-date."):
 			replytext = u"No new updates"
 		else:
-			maxUpdatesToDisplay = 15
+			maxUpdatesToDisplay = 5
 			#New files, new updates! Check what they are
 			output = subprocess.check_output(['git', 'log', '--format=oneline'])
 			outputLines = output.splitlines()
