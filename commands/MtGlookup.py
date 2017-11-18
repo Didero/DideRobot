@@ -100,6 +100,10 @@ class Command(CommandTemplate):
 			cardname, carddata = card.popitem()
 			return self.getFormattedCardInfo(carddata, extendedInfo)
 
+		#Make sure the search string is an actual string, and not None or something
+		if searchString is None:
+			searchString = ""
+
 		#Check if the user passed valid search terms
 		parseSuccess, searchDict = self.parseSearchParameters(searchType, searchString)
 		if not parseSuccess:
