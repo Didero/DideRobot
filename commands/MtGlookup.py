@@ -127,13 +127,7 @@ class Command(CommandTemplate):
 		searchDict = {}
 		# If there is an actual search (with colon key-value separator OR a random card is requested with specific search requirements
 		if (searchType == 'search' and ':' in searchString) or (searchType in ('random', 'randomcommander') and len(searchString) > 0):
-			#Advanced search!
-			if len(searchString) == 0:
-				return (False, "Please provide an advanced search query too, in JSON format, so 'key1: value1, key2: value2'. "
-							  "Look on http://mtgjson.com/documentation.html#cards for available fields, though not all of them may work. "
-							  "The values support regular expressions as well")
-
-			#Turn the search string (not the argument) into a usable dictionary, case-insensitive,
+			#Advanced search! Turn the search string (not the argument) into a usable dictionary
 			searchDict = SharedFunctions.stringToDict(searchString.lower(), True)
 			if len(searchDict) == 0:
 				return (False, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
