@@ -90,7 +90,15 @@ class Command(CommandTemplate):
 			return
 
 		#Default search
-		message.reply(self.searchCards(searchType, " ".join(message.messageParts[1:]), message.trigger.endswith('f'), 20 if message.isPrivateMessage else 10), "say")
+		else:
+			#Check if a proper search type was provided
+			if searchType in ('search', 'random', 'randomcommander'):
+				searchString = " ".join(message.messageParts[1:])
+			else:
+				#Unknown searchtype, just assume the entire entered text is a name search
+				searchType = 'search'
+				searchString = message.message
+			message.reply(self.searchCards(searchType, searchString, message.trigger.endswith('f'), 20 if message.isPrivateMessage else 10), "say")
 
 	def searchCards(self, searchType, searchString, extendedInfo=False, resultListLength=10):
 		#Special case to prevent it having to load in all the cards before picking one
@@ -132,10 +140,9 @@ class Command(CommandTemplate):
 			if len(searchDict) == 0:
 				return (False, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
 							  "For a list of valid keys, see http://mtgjson.com/documentation.html#cards (though not all keys may be available)")
-		#If the searchtype is just 'random', don't set a 'name' field so we don't go through all the cards first
-		#  Otherwise, set the whole message as the 'name' search, since that's the default search
-		elif not searchType.startswith('random'):
-			searchDict['name'] = "{} {}".format(searchType, searchString.lower()).rstrip()
+		#Not a special search, just set the whole message as a 'name' search, since that's the most common search
+		elif searchString:
+			searchDict['name'] = searchString.lower()
 
 		#Commander search. Regardless of everything else, it has to be a legendary creature
 		if searchType == 'randomcommander':
