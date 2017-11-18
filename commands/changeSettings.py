@@ -57,7 +57,7 @@ class Command(CommandTemplate):
 
 			#All other commands require a third parameter, the new value
 			if message.messagePartsLength == 2:
-				return message.reply(u"Please add a new value to change '{}' to".format(message.messageParts[1]))
+				return message.reply(u"There seems to be a missing parameter. The format of this command is '{} [field name] [value]".format(message.messageParts[1]))
 
 			newSettingValue = " ".join(message.messageParts[2:])
 
