@@ -131,11 +131,12 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def parseSearchParameters(searchType, searchString):
-		#If we reached here, we're gonna search through the card store
 		searchDict = {}
-		# If there is an actual search (with colon key-value separator OR a random card is requested with specific search requirements
-		if (searchType == 'search' and ':' in searchString) or (searchType in ('random', 'randomcommander') and len(searchString) > 0):
-			#Advanced search! Turn the search string (not the argument) into a usable dictionary
+		if searchType == 'search' and not searchString:
+			return (False, "Error: 'search' parameter requires a search query too")
+		#Check if there is an actual search (with colon as key-value separator)
+		elif ':' in searchString:
+			#Advanced search! Turn the search string into a usable dictionary
 			searchDict = SharedFunctions.stringToDict(searchString.lower(), True)
 			if len(searchDict) == 0:
 				return (False, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
