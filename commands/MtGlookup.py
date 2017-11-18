@@ -94,7 +94,7 @@ class Command(CommandTemplate):
 
 	def searchCards(self, searchType, searchString, extendedInfo=False, resultListLength=10):
 		#Special case to prevent it having to load in all the cards before picking one
-		if searchType == 'random' and len(searchString) == 0:
+		if searchType == 'random' and not searchString:
 			#Just pick a random card from all available ones
 			card = json.loads(SharedFunctions.getRandomLineFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')))
 			cardname, carddata = card.popitem()
