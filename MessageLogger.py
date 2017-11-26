@@ -1,4 +1,4 @@
-import datetime, logging, os
+import datetime, logging, os, re
 
 import Constants
 import GlobalStore
@@ -50,6 +50,12 @@ class MessageLogger(object):
 
 		timestamp = now.strftime("%H:%M:%S")
 		print "[MessageLogger] |{0}| {1} [{2}] {3}".format(self.bot.serverfolder, source, timestamp, msg)
+
+		#Remove invalid characters from the source name (like '|')
+		oldSource = source
+		source, replacementCount = re.subn(r"[^a-zA-Z0-9_]", "_", source)
+		if replacementCount > 0:
+			self.logger.debug("[MessageLogger] Replaced source '{}' with '{}' to prevent illegal-character error (changecount: {})".format(oldSource, source, replacementCount))
 
 		#If no file has been opened for this source, open it
 		if source not in self.logfiles:
