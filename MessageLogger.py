@@ -57,7 +57,7 @@ class MessageLogger(object):
 			try:
 				self.logfiles[source] = open(os.path.join(self.logfolder, logfilename), 'a')
 			except IOError as e:
-				self.logger.error("[MessageLogger] Error while trying to open logfile '{}': {}".format(logfilename, e.message))
+				self.logger.error("[MessageLogger] Error while trying to open logfile '{}': {} [error number {}]".format(logfilename, e.strerror, e.errno))
 				return
 		self.logfiles[source].write("[{0}] {1}\n".format(timestamp, msg))
 		self.logfiles[source].flush()
