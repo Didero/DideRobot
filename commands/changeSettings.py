@@ -47,13 +47,20 @@ class Command(CommandTemplate):
 			elif param == 'delete':
 				if settingsKey not in settings:
 					return message.reply(u"The key '{}' does not exist".format(settingsKey))
+				#Store the value in case we need to add it back in
+				value = settings[settingsKey]
 				del settings[settingsKey]
-				if message.bot.verifySettings():
+				verifyResult, verifyMessage = message.bot.verifySettings()
+				if verifyResult:
 					message.bot.saveSettings()
 					message.bot.parseSettings()
 					return message.reply(u"Successfully removed setting '{}'".format(settingsKey))
 				else:
-					return message.reply(u"Something went wrong with parsing the settings file after deletion. Please check the logs")
+					#Add the deleted key back in
+					settings[settingsKey] = value
+					#Inform the user something went wrong
+					return message.reply(u"Something went wrong with parsing the settings file after deletion. "
+										 u"The deleted key-value pair has been added back in. Please check the logs for the error that occurred")
 
 			#All other commands require a third parameter, the new value
 			if message.messagePartsLength == 2:
