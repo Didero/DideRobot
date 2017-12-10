@@ -192,7 +192,6 @@ class DideRobot(object):
 				self.logger.info("|{}| Reached max connection retry attempts ({}), closing".format(self.maxConnectionRetries, self.serverfolder))
 				break
 
-			#If we've exceeded the allowed number of attempts, give up
 			if self.reconnectionAttempCount is None:
 				self.reconnectionAttempCount = 1
 			else:
