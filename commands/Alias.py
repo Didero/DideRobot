@@ -8,9 +8,9 @@ import GlobalStore
 class Command(CommandTemplate):
 	triggers = ['alias']
 	helptext = "Allows you to make shortcut commands, called aliases. Parameters are 'list' to see which are available, 'show' to see a specific one, " \
-			   "'serveradd' to add a serverwide alias or 'channeladd' for channel-specific, or 'remove' to remove. " \
-			   "Special in-alias values are '$CP' for the command prefix, '$0' for all provided parameters, or '$n' for the nth parameter. " \
-			   "'$random(low,high)' returns a random number between 'low' (inclusive) and 'high' (exclusive)"
+			   "'serveradd' to add a serverwide alias or 'channeladd' for channel-specific, or 'remove' to remove.\n" \
+			   "Uses the same format as Generate's grammar files. Use '<CP>' for the command prefix, '<0>' for the whole message, '<n>' for the nth message part," \
+			   "and '<nick>' for alias caller's nickname. The rest of the Generate module's grammar commands are also available."
 
 	aliases = {}  #Key is either "[server]" or "[server] [channel]", value is a dictionary of "aliasname: aliascommand"
 	aliasNameList = []  #A list of just the alias names, to speed up lookup
