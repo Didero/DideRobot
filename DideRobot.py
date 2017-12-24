@@ -8,6 +8,7 @@ import gevent.socket
 
 import Constants
 import GlobalStore
+from BotSettingsManager import BotSettingsManager
 from IrcMessage import IrcMessage
 from MessageLogger import MessageLogger
 
@@ -19,7 +20,7 @@ class DideRobot(object):
 
 		#Initialize some variables (in init() instead of outside it to prevent object sharing between instances)
 		self.serverfolder = serverfolder
-		self.settings = {}
+		self.settingsManager = None
 		self.ircSocket = None
 		self.nickname = None  # Will get set once we connect, when we know if we have the nickname we want
 		self.channelsUserList = {}  # Will be a dict with joined channels as keys and a list of users in those channels as values
@@ -40,7 +41,9 @@ class DideRobot(object):
 		self.commandPrefixLength = 0  # The length if the prefix is also often needed, prevent constant recalculation
 
 		#Load the settings, and only connect to the server if that succeeded
-		if self.loadSettings(False):
+		self.settings = BotSettingsManager(self.serverfolder)
+		if self.settings.loadedSuccessfully:
+			self.parseSettings()
 			self.messageLogger = MessageLogger(self)
 			self.connectionManagerGreenlet = gevent.spawn(self.keepServerConnectionAlive)
 		else:
@@ -48,60 +51,11 @@ class DideRobot(object):
 			#Also tell the bot manager that we'll stop existing
 			GlobalStore.bothandler.unregisterBot(self.serverfolder)
 
-
-	#SETTINGS FUNCTIONS
-	def verifySettings(self, settings=None):
-		if not settings:
-			settings = self.settings
-		#First make sure the required settings are in there
-		for settingToEnsure in ("server", "port", "nickname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"):
-			if settingToEnsure not in settings:
-				return (False, "Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
-			elif isinstance(settings[settingToEnsure], (list, unicode)) and len(settings[settingToEnsure]) == 0:
-				return (False, "Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder))
-		return (True, "Settings verified")
-
-	def loadSettings(self, updateLogger=True):
-		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", "globalsettings.json")):
-			self.logger.error("globalsettings.json not found!")
-			return False
-		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, "serverSettings", self.serverfolder, "settings.json")):
-			self.logger.error("No settings.json file in '{}' server folder!".format(self.serverfolder))
-			return False
-
-		#First load in the default settings
-		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', "globalsettings.json"), 'r') as globalSettingsFile:
-			settings = json.load(globalSettingsFile)
-		#Then update the defaults with the server-specific ones
-		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, "settings.json"), 'r') as serverSettingsFile:
-			serverSettings = json.load(serverSettingsFile)
-			settings.update(serverSettings)
-
-		verifyResult, verifyMessage = self.verifySettings(settings)
-		if not verifyResult:
-			self.logger.error("|{}| Error in settings file: {}".format(self.serverfolder, verifyMessage))
-			return False
-		self.settings = settings
-
-		self.parseSettings()
-		if updateLogger:
-			self.messageLogger.updateLogSettings()
-		return True
-
 	def parseSettings(self):
-		#All the strings should be strings and not unicode, which makes it a lot easier to use later
-		for key, value in self.settings.iteritems():
-			if isinstance(value, unicode):
-				self.settings[key] = value.encode('utf-8')
-
+		"""Retrieve some frequently-used values, to store them in a more easily-accessible way"""
 		#The command prefix is going to be needed often, as will its length. Put that in an easy-to-reach place
 		self.commandPrefix = self.settings['commandPrefix']
 		self.commandPrefixLength = len(self.commandPrefix)
-
-		# If the command whitelist or blacklist is empty, set that to 'None' so you can easily check if they're filled
-		for l in ('commandWhitelist', 'commandBlacklist'):
-			if self.settings[l] is not None and len(self.settings[l]) == 0:
-				self.settings[l] = None
 
 		#Load in the maximum connection settings to try, if there is any
 		self.maxConnectionRetries = self.settings.get('maxConnectionRetries', -1)
@@ -114,30 +68,13 @@ class DideRobot(object):
 		if self.secondsBetweenLineSends <= 0:
 			self.secondsBetweenLineSends = None
 
-	def saveSettings(self):
-		#First get only the keys that are different from the globalsettings
-		settingsToSave = {}
-		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', 'globalsettings.json'), 'r') as globalSettingsFile:
-			globalsettings = json.load(globalSettingsFile)
-		for key, value in self.settings.iteritems():
-			if key not in globalsettings or value != globalsettings[key]:
-				settingsToSave[key] = value
-
-		settingsFilename = os.path.join(GlobalStore.scriptfolder, 'serverSettings', self.serverfolder, 'settings.json')
-		#Make sure there's no name collision
-		if os.path.exists(settingsFilename + '.new'):
-			os.remove(settingsFilename + '.new')
-		#Save the data to a new file, so we don't end up without a settings file if something goes wrong
-		with open(settingsFilename + '.new', 'w') as f:
-			f.write(json.dumps(settingsToSave, indent=2))
-		#Remove the previous backup file
-		if os.path.exists(settingsFilename + '.old'):
-			os.remove(settingsFilename + '.old')
-		#Keep the old settings file around, just in case we need to put it back
-		os.rename(settingsFilename, settingsFilename + '.old')
-		#Set the new settings file as the in-use one
-		os.rename(settingsFilename + '.new', settingsFilename)
-
+	def reloadSettings(self):
+		self.settings.reloadSettings(True)
+		if self.settings.loadedSuccessfully:
+			self.parseSettings()
+			return True
+		else:
+			return False
 
 	#CONNECTION FUNCTIONS
 	def keepServerConnectionAlive(self):
