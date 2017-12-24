@@ -19,7 +19,7 @@ class Command(CommandTemplate):
 		replytext = u""
 		if message.trigger == 'setting':
 			if message.messagePartsLength == 0:
-				return message.reply(u"Please add what I need to do to the config")
+				return message.reply(u"Please add what I need to do to the settings")
 
 			param = message.messageParts[0].lower()
 
