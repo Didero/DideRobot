@@ -74,7 +74,7 @@ class Command(CommandTemplate):
 				elif param == 'setlist' and settingsKey in settings and settings[settingsKey] is not None and not isinstance(settings[settingsKey], list):
 					return message.reply(u"The '{}' setting is not a list. Use 'set' to change it".format(settingsKey))
 				if param == 'setlist':
-					newSettingValue = newSettingValue.split('; ')
+					newSettingValue = re.split(r"; ?", newSettingValue)
 				#Make sure that keys that should be a number are actually stored as a number
 				if settingsKey in settings and isinstance(settings[settingsKey], (int, float)):
 					try:
