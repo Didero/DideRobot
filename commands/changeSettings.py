@@ -39,11 +39,11 @@ class Command(CommandTemplate):
 			if param == 'get':
 				if settingsKey in settings:
 					if isinstance(settings[settingsKey], list):
-						return message.reply(u"List for '{}: {}".format(settingsKey, u"; ".join(settings[settingsKey])))
+						return message.reply(u"List for setting '{}: {}".format(settingsKey, u"; ".join(settings[settingsKey])))
 					else:
-						return message.reply(u"Value for '{}': {}".format(settingsKey, settings[settingsKey]))
+						return message.reply(u"Value for setting '{}': {}".format(settingsKey, settings[settingsKey]))
 				else:
-					return message.reply(u"The settings key '{}' does not exist".format(settingsKey))
+					return message.reply(u"The setting '{}' does not exist".format(settingsKey))
 			elif param == 'delete':
 				if settingsKey not in settings:
 					return message.reply(u"The key '{}' does not exist".format(settingsKey))
