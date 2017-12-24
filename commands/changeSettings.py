@@ -50,15 +50,12 @@ class Command(CommandTemplate):
 				#Store the value in case we need to add it back in
 				value = settings[settingsKey]
 				del settings[settingsKey]
-				verifyResult, verifyMessage = message.bot.verifySettings()
+				verifyResult, verifyMessage = self.verifyAndParseSettings(message.bot, settingsKey, value)
 				if verifyResult:
-					message.bot.saveSettings()
-					message.bot.parseSettings()
 					return message.reply(u"Successfully removed setting '{}'".format(settingsKey))
 				else:
-					#Add the deleted key back in
-					settings[settingsKey] = value
 					#Inform the user something went wrong
+					self.logWarning(u"[changeSettings] Deleting key '{}' resulted in a failed verification: {}".format(settingsKey, verifyMessage))
 					return message.reply(u"Something went wrong with parsing the settings file after deletion. "
 										 u"The deleted key-value pair has been added back in. Please check the logs for the error that occurred")
 
@@ -84,29 +81,31 @@ class Command(CommandTemplate):
 							newSettingValue = float(newSettingValue)
 					except ValueError:
 						return message.reply(u"'{}' is not a valid number, while the '{}' setting requires a numerical value".format(newSettingValue, settingsKey))
+				oldValue = settings.get(settingsKey, None)
 				settings[settingsKey] = newSettingValue
-				if message.bot.verifySettings():
-					message.bot.saveSettings()
-					message.bot.parseSettings()
+				verifyResult, verifyMessage = self.verifyAndParseSettings(message.bot, settingsKey, oldValue)
+				if verifyResult:
 					return message.reply(u"Successfully changed the value for '{}' to '{}'".format(settingsKey, settings[settingsKey]))
 				else:
+					self.logWarning(u"[changeSettings] Changing setting '{}' from '{}' to '{}' resulted in failed verification: {}".format(settingsKey, oldValue, newSettingValue, verifyMessage))
 					return message.reply(u"Something went wrong when parsing the change of the value for '{}' to '{}'. Please check the logs".format(settingsKey, settings[settingsKey]))
 			elif param == 'add' or param == 'remove':
 				if settingsKey not in settings:
 					return message.reply(u"The setting '{}' does not exist. Check your spelling or use 'setlist' to create the list")
 				if not isinstance(settings[settingsKey], list):
 					return message.reply(u"The setting '{}' is not a list. Use 'set' to change it".format(settingsKey))
+				oldValue = settings[settingsKey]
 				if param == 'add':
 					settings[settingsKey].append(newSettingValue)
 				elif param == 'remove':
 					if newSettingValue not in settings[settingsKey]:
 						return message.reply(u"The setting '{}' does not contain the value '{}', so I cannot remove it".format(settingsKey, newSettingValue))
 					settings[settingsKey].remove(newSettingValue)
-				if message.bot.verifySettings():
-					message.bot.saveSettings()
-					message.bot.parseSettings()
+				verifyResult, verifyMessage = self.verifyAndParseSettings(message.bot, settingsKey, oldValue)
+				if verifyResult:
 					return message.reply(u"Successfully updated the '{}' list".format(settingsKey))
 				else:
+					self.logWarning(u"[changeSettings] Changing list setting '{}' from '{}' to '{}' resulted in failed verification: {}".format(settingsKey, oldValue, newSettingValue, verifyMessage))
 					return message.reply(u"Something went wrong when parsing the new settings. Please check the log for errors")
 
 		elif message.trigger == 'reloadsettings':
@@ -117,7 +116,7 @@ class Command(CommandTemplate):
 			if argument == "all":
 				serversWithReloadFault = []
 				for serverfolder, bot in GlobalStore.bothandler.bots.iteritems():
-					if not bot.loadSettings():
+					if not bot.reloadSettings():
 						serversWithReloadFault.append(serverfolder)
 				replytext = u"Reloaded all settings"
 				if len(serversWithReloadFault) > 0:
@@ -129,16 +128,18 @@ class Command(CommandTemplate):
 					return message.reply("I don't have a backup settings file, sorry", "say")
 				os.rename(settingsFilepath, settingsFilepath + ".new")
 				os.rename(settingsFilepath + ".old", settingsFilepath)
-				if message.bot.loadSettings():
+				if message.bot.reloadSettings():
 					replytext = u"Old settings file successfully reloaded"
 				else:
 					#Loading went wrong, put the other file back
 					os.rename(settingsFilepath, settingsFilepath + ".old")
 					os.rename(settingsFilepath + ".new", settingsFilepath)
+					#And have the bot reload the previous settings
+					message.bot.reloadSettings()
 					replytext = u"Something went wrong when reloading the old settings file, check the log for errors. Original settings file has been reinstated"
 			#Otherwise, just reload the settings of this bot
 			else:
-				if message.bot.loadSettings():
+				if message.bot.reloadSettings():
 					replytext = u"Successfully reloaded settings for this bot"
 				else:
 					replytext = u"An error occurred while trying to reload the settings for this bot, check the debug output for the cause"
@@ -148,3 +149,17 @@ class Command(CommandTemplate):
 			replytext = u"API keys file reloaded"
 
 		message.reply(replytext)
+
+	def verifyAndParseSettings(self, bot, changedKey=None, oldValue=None):
+		verifyResult, verifyMessage = bot.settings.verifySettings()
+		if verifyResult:
+			bot.settings.saveSettings()
+			bot.settings.parseSettings()
+			bot.parseSettings()
+			return (True, "Success")
+		else:
+			if changedKey is not None:
+				bot.settings[changedKey] = oldValue
+				self.verifyAndParseSettings(bot, None, None)
+			return (False, verifyMessage)
+
