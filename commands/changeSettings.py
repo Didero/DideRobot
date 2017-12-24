@@ -1,4 +1,4 @@
-import os
+import os, re
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
