@@ -171,8 +171,8 @@ class DideRobot(object):
 					if messageSource.startswith(":"):
 						messageSource = messageSource[1:]
 					messageType = lineParts[1]
-					#Convert numerical replies to human-readable ones, if applicable
-					messageType = Constants.IRC_NUMERIC_TO_NAME.get(messageType, messageType)
+					#Convert numerical replies to human-readable ones, if applicable. Otherwise make it uppercase, since that's the standard
+					messageType = Constants.IRC_NUMERIC_TO_NAME.get(messageType, messageType.upper())
 					#The IRC protocol uses ':' to denote the start of a multi-word string. Join those here too, for easier parsing later
 					messageParts = lineParts[2:]
 					for messagePartIndex, messagePart in enumerate(messageParts):
@@ -417,7 +417,8 @@ class DideRobot(object):
 		# If the actual message (past the first colon) starts with 'chr(1)', it means it's a special CTCP message (like an action)
 		if len(messageParts[1]) > 0 and messageParts[1][0] == Constants.CTCP_DELIMITER:
 			#First section is the CTCP type
-			ctcpType = messageParts[1]
+			# Make the type uppercase, since that's the standard (also means 'unknown_message_type' can't accidentally be called)
+			ctcpType = messageParts[1].upper()
 			messageText = None
 			#Sometimes a message is appended (like for an ACTION), check for that
 			if " " in ctcpType:
