@@ -20,7 +20,6 @@ class DideRobot(object):
 
 		#Initialize some variables (in init() instead of outside it to prevent object sharing between instances)
 		self.serverfolder = serverfolder
-		self.settingsManager = None
 		self.ircSocket = None
 		self.nickname = None  # Will get set once we connect, when we know if we have the nickname we want
 		self.channelsUserList = {}  # Will be a dict with joined channels as keys and a list of users in those channels as values
