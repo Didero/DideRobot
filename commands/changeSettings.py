@@ -38,7 +38,9 @@ class Command(CommandTemplate):
 			settingsKey = message.messageParts[1]  #Can't make this lower(), because some keys are camelCase
 			if param == 'get':
 				if settingsKey in settings:
-					if isinstance(settings[settingsKey], list):
+					if settings[settingsKey] is None:
+						return message.reply(u"Setting '{}' is set to an empty value".format(settingsKey))
+					elif isinstance(settings[settingsKey], list):
 						if len(settings[settingsKey]) == 0:
 							return message.reply(u"Setting '{}' is an empty list".format(settingsKey))
 						else:
