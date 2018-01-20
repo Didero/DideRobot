@@ -39,7 +39,10 @@ class Command(CommandTemplate):
 			if param == 'get':
 				if settingsKey in settings:
 					if isinstance(settings[settingsKey], list):
-						return message.reply(u"List for setting '{}: {}".format(settingsKey, u"; ".join(settings[settingsKey])))
+						if len(settings[settingsKey]) == 0:
+							return message.reply(u"Setting '{}' is an empty list".format(settingsKey))
+						else:
+							return message.reply(u"List for setting '{}: {}".format(settingsKey, u"; ".join(settings[settingsKey])))
 					else:
 						return message.reply(u"Value for setting '{}': {}".format(settingsKey, settings[settingsKey]))
 				else:
