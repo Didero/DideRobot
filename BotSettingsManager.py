@@ -122,3 +122,6 @@ class BotSettingsManager(object):
 
 	def has_key(self, keyname):
 		return keyname in self.settings
+
+	def keys(self):
+		return self.settings.keys()
