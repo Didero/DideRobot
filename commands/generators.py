@@ -71,6 +71,9 @@ class Command(CommandTemplate):
 		if message.messagePartsLength == 0 or message.messageParts[0].lower() == 'help':
 			return message.reply(self.getHelp(message))
 
+		if len(self.generators) == 0:
+			return message.reply("That's weird, I don't seem to have any generators loaded, sorry. Try updating, reloading this module, or writing your own generator!", "say")
+
 		wantedGeneratorName = message.messageParts[0].lower()
 		wantedGenerator = None
 
