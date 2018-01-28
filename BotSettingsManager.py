@@ -21,7 +21,7 @@ class BotSettingsManager(object):
 		if not os.path.isfile(self._settingsPath):
 			self._logger.critical("|SettingsManager {}| Settings file wasn't found!".format(self.serverfolder))
 		elif not self.loadSettings():
-			self._logger.critical("|SettingsManager {}| Error while loading the settings file")
+			self._logger.critical("|SettingsManager {}| Error while loading the settings file".format(self.serverfolder))
 		else:
 			verifyResult, verifyMessage = self.verifySettings()
 			if not verifyResult:
