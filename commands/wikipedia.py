@@ -5,7 +5,7 @@ import requests
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-import SharedFunctions
+
 
 class Command(CommandTemplate):
 	triggers = ['wikipedia', 'wiki', 'wikirandom']

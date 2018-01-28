@@ -1,4 +1,4 @@
-import json, os, random, re
+import json, os
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
