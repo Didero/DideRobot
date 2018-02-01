@@ -51,14 +51,12 @@ class Command(CommandTemplate):
 							return "The '{}' generator file didn't specify a help text, sorry!".format(requestedTrigger)
 				#Match is one of the built-in functions
 				else:
+					#Show the function's docstring, if it has one, otherwise show an error
 					helptext = "No helptext was set for this generator, sorry"
-					if requestedTrigger == 'name':
-						helptext = "Generates a random first and last name. You can provide a parameter to specify the gender"
-					elif requestedTrigger == 'game' or requestedTrigger == 'videogame':
-						helptext = "Generates random video game names. You can provide a number to make it generate that many game names, " \
-								 "and replacement words that will get inserted into the generated name"
-					elif requestedTrigger == 'word' or requestedTrigger == 'word2':
-						helptext = "Generates a random word, or tries to. Add a number to make it generate that many words, increasing the chance one of them is pronounceable"
+					if generator.__doc__ :
+						helptext = generator.__doc__.strip()
+						#Remove the newlines and tabs
+						helptext = re.sub(r"[\n\t]+", " ", helptext)
 					return "{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, helptext)
 		#No matching generator trigger was found
 		return "I'm not familiar with the '{}' generator, though if you think it would make a good one, feel free to inform my owner(s), maybe they'll create it!".format(requestedTrigger)
@@ -590,6 +588,9 @@ class Command(CommandTemplate):
 		return (True, replacement)
 
 	def generateName(self, parameters=None):
+		"""
+		Generates a random first and last name. You can provide a parameter to specify the gender
+		"""
 		genderDict = None
 		namecount = 1
 		#Determine if a specific gender name and/or number of names was requested
@@ -634,7 +635,9 @@ class Command(CommandTemplate):
 
 
 	def generateWord(self, parameters=None):
-		"""Generate a word by putting letters together in semi-random order. Based on an old mIRC script of mine"""
+		"""
+		Generates a word by putting letters together in semi-random order. Provide a number to generate that many words
+		"""
 		# Initial set-up
 		vowels = ['a', 'e', 'i', 'o', 'u']
 		specialVowels = ['y']
@@ -687,7 +690,9 @@ class Command(CommandTemplate):
 		return u", ".join(words)
 
 	def generateWord2(self, parameters=None):
-		"""Another method to generate a word. Based on a slightly more advanced method, from an old project of mine that didn't go anywhere"""
+		"""
+		Another method to generate a word. Tries to generate pronounceable syllables and puts them together. Provide a number to generate that many words
+		"""
 
 		##Initial set-up
 		#A syllable consists of an optional onset, a nucleus, and an optional coda
@@ -750,6 +755,10 @@ class Command(CommandTemplate):
 		return u", ".join(words)
 
 	def generateVideogame(self, parameters=None):
+		"""
+		Generates random video game names. Optionally provide a number to make it generate that many game names,
+		and replacement words that will get inserted into the generated name
+		"""
 		repeats = 1
 		replacementText = None
 		if parameters and len(parameters) > 0:
