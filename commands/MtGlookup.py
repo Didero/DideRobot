@@ -38,8 +38,7 @@ class Command(CommandTemplate):
 		"""
 		#Immediately check if there's any parameters, to prevent useless work
 		if message.messagePartsLength == 0:
-			message.reply("This command " + self.helptext[0].lower() + self.helptext[1:].format(commandPrefix=message.bot.commandPrefix))
-			return
+			return message.reply(self.getHelp(message), "say")
 
 		#If the card set is currently being updated, we probably shouldn't try loading it
 		if self.areCardfilesInUse:
