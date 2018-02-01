@@ -283,10 +283,11 @@ class Command(CommandTemplate):
 			return replytext
 
 		#Check if we didn't find more matches than we're allowed to show
-		if numberOfCardsFound <= maxCardsToList:
-			cardnames = sorted(cardstore.keys())
-		else:
-			cardnames = sorted(random.sample(cardstore.keys(), maxCardsToList))
+		cardnames = cardstore.keys()
+		if numberOfCardsFound > maxCardsToList:
+			cardnames = random.sample(cardnames, maxCardsToList)
+		#Show them alphabetically
+		cardnames = sorted(cardnames)
 
 		replytext = u"Your search returned {:,} cards: {}".format(numberOfCardsFound, u"; ".join(cardnames))
 		if numberOfCardsFound > maxCardsToList:
