@@ -152,7 +152,7 @@ class Command(CommandTemplate):
 			searchDict['type'] = 'legendary.+creature.*' + searchDict['type']
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
-		searchTermsToCorrect = {'set': ('sets',), 'colors': ('color', 'colour', 'colours'), 'type': ('types', 'supertypes', 'subtypes'), 'flavor': ('flavour',)}
+		searchTermsToCorrect = {'set': ('sets', 'setname'), 'colors': ('color', 'colour', 'colours'), 'type': ('types', 'supertypes', 'subtypes'), 'flavor': ('flavour',)}
 		for correctTerm, listOfWrongterms in searchTermsToCorrect.iteritems():
 			for wrongTerm in listOfWrongterms:
 				if wrongTerm in searchDict:
