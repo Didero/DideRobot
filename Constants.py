@@ -1,5 +1,5 @@
 CTCP_DELIMITER = chr(1)
-MAX_MESSAGE_LENGTH = 450  #Officially 512 including the newline characters, but let's be on the safe side
+MAX_LINE_LENGTH = 450  #Officially 512 bytes including the newline characters, but let's be on the safe side
 CHANNEL_PREFIXES = "#&!+.~"  #All the characters that could possibly indicate something is a channel name (usually just '#' though)
 #Since a grey separator is often used to separate parts of a message, provide an easy way to get one
 GREY_SEPARATOR = u' \x0314|\x0f '  #'\x03' is the 'color' control char, 14 is grey, and '\x0f' is the 'reset' character ending any decoration

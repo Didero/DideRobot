@@ -535,12 +535,12 @@ class DideRobot(object):
 				extraLines = line.splitlines()
 				line = extraLines.pop(0)
 			#Check if the line isn't too long to send
-			if len(line) >= Constants.MAX_MESSAGE_LENGTH:
+			if len(line) >= Constants.MAX_LINE_LENGTH:
 				if not extraLines:
-					extraLines = [line[Constants.MAX_MESSAGE_LENGTH:]]
+					extraLines = [line[Constants.MAX_LINE_LENGTH:]]
 				else:
-					extraLines.insert(0, line[Constants.MAX_MESSAGE_LENGTH:])
-				line = line[:Constants.MAX_MESSAGE_LENGTH]
+					extraLines.insert(0, line[Constants.MAX_LINE_LENGTH:])
+				line = line[:Constants.MAX_LINE_LENGTH]
 			if target[0] not in Constants.CHANNEL_PREFIXES:
 				#If it's a PM, bypass the message queue
 				self.sendLineToServer(line)
