@@ -981,6 +981,9 @@ class Command(CommandTemplate):
 			# Check to see if the term ends with mana costs. If it does, strip that off
 			if ' ' in term:
 				end = term.split(' ')[-1]
+				#Remove any periods from the end
+				if end.endswith('.'):
+					end = end[:-1]
 				if end.isdigit() or end == 'x':
 					term = term.rsplit(" ", 1)[0]
 			#For some keywords, the card description just doesn't work that well. Ignore those, and get those from Wikipedia later on
