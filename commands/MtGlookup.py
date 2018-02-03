@@ -419,6 +419,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def getDefinition(message, addExtendedInfo=False):
+		"""Searches for the definition of the provided MtG-related term. Supports regular expressions as the search term"""
 		definitionsFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')
 
 		maxMessageLength = 300
