@@ -451,7 +451,7 @@ class Command(CommandTemplate):
 
 		possibleDefinitionsCount = len(possibleDefinitions)
 		if possibleDefinitionsCount == 0:
-			return "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s)!"
+			return "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s), maybe they'll add it!"
 		elif possibleDefinitionsCount == 1:
 			term, linenumber = possibleDefinitions.popitem()
 			definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, linenumber)).values()[0]
