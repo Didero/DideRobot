@@ -81,7 +81,7 @@ class Command(CommandTemplate):
 			definitionText = self.getDefinition(" ".join(message.messageParts[1:]), None if message.trigger == 'mtgf' else Constants.MAX_MESSAGE_LENGTH)
 			#Now split the definition up into message-sized chunks and send each of them, if necessary
 			# This is not needed in a private message, since huge blocks of text are less of a problem there
-			if not message.isPrivateMessage and len(definitionText) > Constants.MAX_MESSAGE_LENGTH:
+			if not message.isPrivateMessage and message.trigger == 'mtgf' and len(definitionText) > Constants.MAX_MESSAGE_LENGTH:
 				#Cut it up at a word boundary
 				splitIndex = definitionText[:Constants.MAX_MESSAGE_LENGTH].rfind(' ')
 				textRemainder = definitionText[splitIndex + 1:]
