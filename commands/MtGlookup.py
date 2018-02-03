@@ -77,14 +77,13 @@ class Command(CommandTemplate):
 
 		#We can also search for definitions
 		elif searchType == 'define':
-			maxMessageLength = 300
 			#Get only the first part of the definition if the 'full info' trigger wasn't used, otherwise get the whole definition, which can be really long
-			definitionText = self.getDefinition(" ".join(message.messageParts[1:]), None if message.trigger == 'mtgf' else maxMessageLength)
+			definitionText = self.getDefinition(" ".join(message.messageParts[1:]), None if message.trigger == 'mtgf' else Constants.MAX_MESSAGE_LENGTH)
 			#Now split the definition up into message-sized chunks and send each of them, if necessary
 			# This is not needed in a private message, since huge blocks of text are less of a problem there
-			if not message.isPrivateMessage and len(definitionText) > maxMessageLength:
+			if not message.isPrivateMessage and len(definitionText) > Constants.MAX_MESSAGE_LENGTH:
 				#Cut it up at a word boundary
-				splitIndex = definitionText[:maxMessageLength].rfind(' ')
+				splitIndex = definitionText[:Constants.MAX_MESSAGE_LENGTH].rfind(' ')
 				textRemainder = definitionText[splitIndex + 1:]
 				definitionText = definitionText[:splitIndex]
 				#Since we'll be sending the rest of the definition in notices, add an indication that it's not the whole message
@@ -96,8 +95,8 @@ class Command(CommandTemplate):
 				counter = 1
 				while len(textRemainder) > 0:
 					gevent.spawn_later(secondsBetweenMessages * counter, message.bot.sendMessage, message.userNickname,
-									   u"({}) {}".format(counter + 1, textRemainder[:maxMessageLength]), 'notice')
-					textRemainder = textRemainder[maxMessageLength:]
+									   u"({}) {}".format(counter + 1, textRemainder[:Constants.MAX_MESSAGE_LENGTH]), 'notice')
+					textRemainder = textRemainder[Constants.MAX_MESSAGE_LENGTH:]
 					counter += 1
 			#Present the result!
 			return message.reply(definitionText, "say")

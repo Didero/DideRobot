@@ -42,7 +42,6 @@ class Command(CommandTemplate):
 		replytext = SharedFunctions.makeTextBold(message.message) + ": "
 
 		#Keep adding definitions until we run out of space
-		maxMessageLength = 290  #Be conservative with our max length since we don't take all part lengths into account
 		definitionsSkipped = 0
 		hasAddedDefinition = False
 		fallbackDefinitionEntry = None
@@ -59,7 +58,7 @@ class Command(CommandTemplate):
 					continue
 				#For some reason 'definition' is a list, usually with only one entry
 				for definition in sense['definition']:
-					if len(replytext) + len(definition) < maxMessageLength:
+					if len(replytext) + len(definition) < Constants.MAX_MESSAGE_LENGTH:
 						#Add a separator if this isn't the first definition
 						if hasAddedDefinition:
 							replytext += Constants.GREY_SEPARATOR
@@ -80,8 +79,8 @@ class Command(CommandTemplate):
 			#If we didn't find the literal search query, but we did find at least something, show that
 			if fallbackDefinitionEntry is not None and 'senses' in fallbackDefinitionEntry and 'definition' in fallbackDefinitionEntry['senses'][0]:
 				replytext = "{}: {}".format(SharedFunctions.makeTextBold(fallbackDefinitionEntry['headword']), fallbackDefinitionEntry['senses'][0]['definition'][0])
-				if len(replytext) > maxMessageLength:
-					replytext = replytext[:maxMessageLength-5] + "[...]"
+				if len(replytext) > Constants.MAX_MESSAGE_LENGTH:
+					replytext = replytext[:Constants.MAX_MESSAGE_LENGTH - 5] + "[...]"
 				return message.reply(replytext)
 			else:
 				return message.reply("Sorry, all the definitions I found were either for the wrong word or too long. Maybe try Wiktionary: http://en.wiktionary.org/wiki/Special:Search?search=" + urllib.quote_plus(searchQuery))
