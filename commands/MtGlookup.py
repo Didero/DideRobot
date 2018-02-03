@@ -434,7 +434,7 @@ class Command(CommandTemplate):
 			try:
 				searchRegex = re.compile(searchterm)
 			except re.error:
-				return "That is not valid regex. Please check for typos, and try again"
+				return u"That is not valid regex. Please check for typos, and try again"
 
 			with open(definitionsFilename, 'r') as definitionsFile:
 				for linecount, line in enumerate(definitionsFile):
@@ -451,12 +451,12 @@ class Command(CommandTemplate):
 
 		possibleDefinitionsCount = len(possibleDefinitions)
 		if possibleDefinitionsCount == 0:
-			return "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s), maybe they'll add it!"
+			replytext = u"Sorry, I don't have any info on that term. If you think it's important, poke my owner(s), maybe they'll add it!"
 		elif possibleDefinitionsCount == 1:
 			#Found one definition, return that
 			term, linenumber = possibleDefinitions.popitem()
 			definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, linenumber)).values()[0]
-			replytext = "{}: {}".format(SharedFunctions.makeTextBold(term), definition)
+			replytext = u"{}: {}".format(SharedFunctions.makeTextBold(term), definition)
 			#Limit the message length
 			if len(replytext) > maxMessageLength:
 				splitIndex = replytext[:maxMessageLength].rfind(' ')
@@ -489,11 +489,11 @@ class Command(CommandTemplate):
 				replytext = "{}: {}".format(SharedFunctions.makeTextBold(searchterm), definition)
 				if len(replytext) > maxMessageLength - 18:  #-18 to account for the ' XX more matches' text later
 					replytext = replytext[:maxMessageLength-24] + ' [...]'  #18 + len(' [...]')
-				replytext += " ({:,} more matches)".format(possibleDefinitionsCount-1)
+				replytext += u" ({:,} more matches)".format(possibleDefinitionsCount-1)
 			else:
-				replytext = "Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
+				replytext = u"Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
 				if possibleDefinitionsCount < 10:
-					replytext += ": {}".format(u"; ".join(sorted(possibleDefinitions.keys())))
+					replytext += u": {}".format(u"; ".join(sorted(possibleDefinitions.keys())))
 		return replytext
 
 
