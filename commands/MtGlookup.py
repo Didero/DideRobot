@@ -453,6 +453,7 @@ class Command(CommandTemplate):
 		if possibleDefinitionsCount == 0:
 			return "Sorry, I don't have any info on that term. If you think it's important, poke my owner(s), maybe they'll add it!"
 		elif possibleDefinitionsCount == 1:
+			#Found one definition, return that
 			term, linenumber = possibleDefinitions.popitem()
 			definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, linenumber)).values()[0]
 			replytext = "{}: {}".format(SharedFunctions.makeTextBold(term), definition)
@@ -483,10 +484,11 @@ class Command(CommandTemplate):
 		#Multiple matching definitions found
 		else:
 			if searchterm in possibleDefinitions:
+				#Multiple matches, but one of them is the literal search term. Return that, and how many other matches we found
 				definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm])).values()[0]
 				replytext = "{}: {}".format(SharedFunctions.makeTextBold(searchterm), definition)
-				if len(replytext) > maxMessageLength - 18:  #-18 to account for the added text later
-					replytext = replytext[:maxMessageLength-24] + ' [...]'
+				if len(replytext) > maxMessageLength - 18:  #-18 to account for the ' XX more matches' text later
+					replytext = replytext[:maxMessageLength-24] + ' [...]'  #18 + len(' [...]')
 				replytext += " ({:,} more matches)".format(possibleDefinitionsCount-1)
 			else:
 				replytext = "Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
