@@ -77,8 +77,30 @@ class Command(CommandTemplate):
 
 		#We can also search for definitions
 		elif searchType == 'define':
-			message.reply(self.getDefinition(message, message.trigger.endswith('f')))
-			return
+			maxMessageLength = 300
+			#Get only the first part of the definition if the 'full info' trigger wasn't used, otherwise get the whole definition, which can be really long
+			definitionText = self.getDefinition(" ".join(message.messageParts[1:]), None if message.trigger == 'mtgf' else maxMessageLength)
+			#Now split the definition up into message-sized chunks and send each of them, if necessary
+			# This is not needed in a private message, since huge blocks of text are less of a problem there
+			if not message.isPrivateMessage and len(definitionText) > maxMessageLength:
+				#Cut it up at a word boundary
+				splitIndex = definitionText[:maxMessageLength].rfind(' ')
+				textRemainder = definitionText[splitIndex + 1:]
+				definitionText = definitionText[:splitIndex]
+				#Since we'll be sending the rest of the definition in notices, add an indication that it's not the whole message
+				definitionText += u' [...]'
+				#Don't send messages too quickly
+				secondsBetweenMessages = message.bot.secondsBetweenLineSends
+				if not secondsBetweenMessages:
+					secondsBetweenMessages = 0.2
+				counter = 1
+				while len(textRemainder) > 0:
+					gevent.spawn_later(secondsBetweenMessages * counter, message.bot.sendMessage, message.userNickname,
+									   u"({}) {}".format(counter + 1, textRemainder[:maxMessageLength]), 'notice')
+					textRemainder = textRemainder[maxMessageLength:]
+					counter += 1
+			#Present the result!
+			return message.reply(definitionText, "say")
 
 		elif searchType == 'booster' or message.trigger == 'mtgb':
 			if (searchType == 'booster' and message.messagePartsLength == 1) or (message.trigger == 'mtgb' and message.messagePartsLength == 0):
@@ -418,14 +440,21 @@ class Command(CommandTemplate):
 		return replytext
 
 	@staticmethod
-	def getDefinition(message, addExtendedInfo=False):
-		"""Searches for the definition of the provided MtG-related term. Supports regular expressions as the search term"""
+	def getDefinition(searchterm, maxMessageLength=None):
+		"""
+		Searches for the definition of the provided MtG-related term. Supports regular expressions as the search term
+		:param searchterm The term to find the definition of. Can be a partial match or a regular expression
+		:param maxMessageLength The maximum length of the returned definition. If set to None or to zero or smaller, the full definition will be returned
+		:return The matching term followed by the definition of that term
+		"""
 		definitionsFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')
 
-		maxMessageLength = 300
+		#Make sure maxMessageLength is a valid value
+		if maxMessageLength and maxMessageLength <= 0:
+			maxMessageLength = None
+
 		possibleDefinitions = {}  #Keys are the matching terms found, values are the line they're found at for easy lookup
 
-		searchterm = " ".join(message.messageParts[1:]).lower()
 		if searchterm == 'random':
 			randomLineNumber = random.randrange(0, SharedFunctions.getLineCount(definitionsFilename))
 			term = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, randomLineNumber)).keys()[0]
@@ -458,36 +487,16 @@ class Command(CommandTemplate):
 			definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, linenumber)).values()[0]
 			replytext = u"{}: {}".format(SharedFunctions.makeTextBold(term), definition)
 			#Limit the message length
-			if len(replytext) > maxMessageLength:
+			if maxMessageLength and len(replytext) > maxMessageLength:
 				splitIndex = replytext[:maxMessageLength].rfind(' ')
-				textRemainder = replytext[splitIndex+1:]
-				replytext = replytext[:splitIndex]
-				#If we do need to add the full definition, split it up properly
-				if addExtendedInfo:
-					#If it's a private message, we don't have to worry about spamming, so just dump the full thing
-					if message.isPrivateMessage:
-						gevent.spawn_later(0.2, message.bot.sendMessage, message.userNickname, textRemainder)
-					# If it's in a public channel, send the message via notices
-					else:
-						#Since we'll be sending the rest of the definition in notices, add an indication that it's not the whole message
-						replytext += ' [...]'
-						#Don't send messages too quickly
-						secondsBetweenMessages = message.bot.secondsBetweenLineSends
-						if not secondsBetweenMessages:
-							secondsBetweenMessages = 0.2
-						counter = 1
-						while len(textRemainder) > 0:
-							gevent.spawn_later(secondsBetweenMessages * counter, message.bot.sendMessage, message.userNickname,
-											   u"({}) {}".format(counter + 1, textRemainder[:maxMessageLength]), 'notice')
-							textRemainder = textRemainder[maxMessageLength:]
-							counter += 1
+				replytext = replytext[:splitIndex] + u' [...]'
 		#Multiple matching definitions found
 		else:
 			if searchterm in possibleDefinitions:
 				#Multiple matches, but one of them is the literal search term. Return that, and how many other matches we found
 				definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm])).values()[0]
-				replytext = "{}: {}".format(SharedFunctions.makeTextBold(searchterm), definition)
-				if len(replytext) > maxMessageLength - 18:  #-18 to account for the ' XX more matches' text later
+				replytext = u"{}: {}".format(SharedFunctions.makeTextBold(searchterm), definition)
+				if maxMessageLength and len(replytext) > maxMessageLength - 18:  #-18 to account for the ' XX more matches' text later
 					replytext = replytext[:maxMessageLength-24] + ' [...]'  #18 + len(' [...]')
 				replytext += u" ({:,} more matches)".format(possibleDefinitionsCount-1)
 			else:
