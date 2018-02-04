@@ -64,6 +64,7 @@ class Command(CommandTemplate):
 
 		#All options need this for lookup
 		serverChannelString = "{} {}".format(message.bot.serverfolder, message.source)
+		streamername = None if message.messagePartsLength < 2 else message.messageParts[1]
 
 		if parameter == "list":
 			followedStreamers = []
