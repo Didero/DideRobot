@@ -96,7 +96,7 @@ class Command(CommandTemplate):
 					return message.reply(u"Something went wrong when parsing the change of the value for '{}' to '{}'. Please check the logs".format(settingsKey, settings[settingsKey]))
 			elif param == 'add' or param == 'remove':
 				if settingsKey not in settings:
-					return message.reply(u"The setting '{}' does not exist. Check your spelling or use 'setlist' to create the list")
+					return message.reply(u"The setting '{}' does not exist. Check your spelling or use 'setlist' to create the list".format(settingsKey))
 				if not isinstance(settings[settingsKey], list):
 					return message.reply(u"The setting '{}' is not a list. Use 'set' to change it".format(settingsKey))
 				oldValue = settings[settingsKey]
