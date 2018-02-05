@@ -121,7 +121,10 @@ class Command(CommandTemplate):
 
 		#Make sure we don't spam the channel, keep message length limited
 		#  Shortened URL will be about 25 characters, keep that in mind
-		messageLengthLimit = 270 if includeUrl else 300
+		messageLengthLimit = Constants.MAX_MESSAGE_LENGTH
+		if includeUrl:
+			messageLengthLimit -= 30
+
 		if len(replystring) > messageLengthLimit:
 			replystring = replystring[:messageLengthLimit] + '[...]'
 
@@ -129,7 +132,7 @@ class Command(CommandTemplate):
 		if includeUrl:
 			searchUrl = "http://www.wolframalpha.com/input/?i={}".format(urllib.quote_plus(query))
 			#If the message would get too long, shorten the result URL
-			if len(replystring) + len(searchUrl) > 300:
+			if len(replystring) + len(searchUrl) > Constants.MAX_MESSAGE_LENGTH:
 				searchUrl = SharedFunctions.shortenUrl(searchUrl)[1]
 			replystring += "{}{}".format(Constants.GREY_SEPARATOR, searchUrl)
 			

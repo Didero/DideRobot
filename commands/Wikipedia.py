@@ -45,14 +45,13 @@ class Command(CommandTemplate):
 			return self.getArticleText(result['query']['search'][0]['title'], addExtendedText)
 
 	def getArticleText(self, pagename, addExtendedText=False, limitLength=True):
-		replyLengthLimit = 310
 
 		url = u'https://en.wikipedia.org/w/api.php'
 		params = {'format': 'json', 'utf8': '1', 'action': 'query', 'prop': 'extracts', 'redirects': '1',
 				  'exintro': '1', 'explaintext': '1', 'exsectionformat': 'plain', 'titles': pagename}
 		#If we need to be verbose, get as many characters as we can
 		if addExtendedText:
-			params['exchars'] = replyLengthLimit
+			params['exchars'] = Constants.MAX_MESSAGE_LENGTH
 		#Otherwise just get the first sentence
 		else:
 			params['exsentences'] = '1'
@@ -77,8 +76,8 @@ class Command(CommandTemplate):
 			else:
 				replytext = replytext.replace('\n', ' ').replace('  ', ' ')
 			#Make sure the text isn't too long
-			if limitLength and len(replytext) > replyLengthLimit:
-				replytext = replytext[:replyLengthLimit]
+			if limitLength and len(replytext) > Constants.MAX_MESSAGE_LENGTH:
+				replytext = replytext[:Constants.MAX_MESSAGE_LENGTH]
 				#Try not to chop up words
 				lastSpaceIndex = replytext.rfind(' ')
 				if lastSpaceIndex > -1:
