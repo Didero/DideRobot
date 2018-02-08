@@ -15,7 +15,7 @@
 "resultOfFailure": ["fragments of the crashed seedship", "ruins of the colony"],
 "failureLocation": "<_switch|planetType|ocean:decay at the bottom of the planet-wide ocean|ice:lie embedded in the planet-wide ice sheet|plant:<plantPlanetFailure>|_default:lie on the rocky surface>",
 "plantPlanetFailure": ["are overgrown with alien plants and overrun by alien animals", "are overgrown with alien plants"],
-"descendantInfo": {"50": "", "70": " The colonists' descendants live on as slaves to the intelligent natives, but they have lost all knowledge of Earth.", "80": " Nearby stand monuments built by the planet's native inhabitants to celebrate their victory over the invaders.", "90": " The planet's intelligent natives explore the ruins, but not enough remains for them to learn anything about the extinct human race."},
+"descendantInfo": {"20": " The colonists' descendants live on as slaves to the intelligent natives, but they have lost all knowledge of Earth.", "35": " Nearby stand monuments built by the planet's native inhabitants to celebrate their victory over the invaders.", "50": " The planet's intelligent natives explore the ruins, but not enough remains for them to learn anything about the extinct human race.", "100": ""},
 "successfulColony": "<_setvarrandom|techLevel|high|medium|low>The colonists live in <building> <buildingProtection>, <buildingLocation>. <colonistLifestyle><nativesTreatmentChoice>",
 "building": "<_switch|techLevel|high:<buildingHeight> <buildingTechTypeHigh>|medium:<buildingHeight> <buildingTechTypeMedium>|low:<buildingTechTypeLow>>",
 "buildingHeight": ["towering", "tall", "squat", "low, sprawling"],
