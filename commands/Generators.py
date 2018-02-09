@@ -153,9 +153,6 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def getBasicOrSpecialLetter(vowelOrConsonant, basicLetterChance):
-		basicLetters = []
-		specialLetters = []
-
 		if isinstance(vowelOrConsonant, int):
 			#Assume the provided argument is a chance percentage of vowel
 			if random.randint(1, 100) <= vowelOrConsonant:
