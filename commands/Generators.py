@@ -26,6 +26,8 @@ class Command(CommandTemplate):
 				else:
 					if '_triggers' not in grammarJson:
 						self.logError("[Gen] Grammar file '{}' is missing a '_triggers' field so it can't be called".format(os.path.basename(grammarFilename)))
+					elif isinstance(grammarJson['_triggers'], basestring):
+						self.generators[grammarFilename] = grammarJson['_triggers'].lower()
 					else:
 						#Make sure all the triggers are lower-case, to make matching them easier when this module is called
 						triggers = [trigger.lower() for trigger in grammarJson['_triggers']]
