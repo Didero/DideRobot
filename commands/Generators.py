@@ -24,7 +24,9 @@ class Command(CommandTemplate):
 				except ValueError as e:
 					self.logError("[Generators] Error parsing grammar file '{}', invalid JSON: {}".format(grammarFilename, e.message))
 				else:
-					self.generators[grammarFilename] = tuple(grammarJson['_triggers'])
+					#Make sure all the triggers are lower-case, to make matching them easier when this module is called
+					triggers = [trigger.lower() for trigger in grammarJson['_triggers']]
+					self.generators[grammarFilename] = tuple(triggers)
 		#Add all the available triggers to the module's helptext
 		self.helptext += ", ".join(self.getAvailableTriggers())
 		self.logDebug("[Generators] Loaded {:,} generators".format(len(self.generators)))
