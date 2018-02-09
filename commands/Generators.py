@@ -237,9 +237,10 @@ class Command(CommandTemplate):
 			if u'generateName' in grammarDict[u'_options']:
 				#If a gender was provided or requested, use that to generate a name, otherwise make the function pick a gender
 				variableDict[u'name'] = self.generateName(variableDict.get(u'gender', None))
+				#Make first and last names separately accessible
 				nameparts = variableDict[u'name'].split(' ')
 				variableDict[u'firstname'] = nameparts[0]
-				variableDict[u'lastname'] = nameparts[-1]
+				variableDict[u'lastname'] = nameparts[-1] #Use -1 because names
 
 		#Start the parsing!
 		return self.parseGrammarString(startString, grammarDict, parameters, variableDict)
