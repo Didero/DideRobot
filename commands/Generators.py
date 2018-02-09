@@ -79,14 +79,15 @@ class Command(CommandTemplate):
 			wantedGenerator = random.choice(self.generators.keys())
 		else:
 			#Check to see if it's a registered generator
-			for generator, triggers in self.generators.iteritems():
-				if isinstance(triggers, basestring):
-					triggers = (triggers,)
-				for trigger in triggers:
-					if trigger == wantedGeneratorName:
-						wantedGenerator = generator
-						break
-				if wantedGenerator is not None:
+			for generator, triggerEntry in self.generators.iteritems():
+				#Triggers are either a single string, or a list of strings
+				# So if the trigger is a string AND is equal to the wanted generator, return that
+				if isinstance(triggerEntry, basestring) and wantedGeneratorName == triggerEntry:
+					wantedGenerator = generator
+					break
+				# Otherwise the trigger entry is a list(-alike), check if the wanted name is in that list
+				elif isinstance(triggerEntry, (list,tuple)) and wantedGeneratorName in triggerEntry:
+					wantedGenerator = generator
 					break
 
 		if wantedGenerator is None:
