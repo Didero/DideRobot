@@ -24,9 +24,13 @@ class Command(CommandTemplate):
 				except ValueError as e:
 					self.logError("[Generators] Error parsing grammar file '{}', invalid JSON: {}".format(grammarFilename, e.message))
 				else:
-					#Make sure all the triggers are lower-case, to make matching them easier when this module is called
-					triggers = [trigger.lower() for trigger in grammarJson['_triggers']]
-					self.generators[grammarFilename] = tuple(triggers)
+					if '_triggers' not in grammarJson:
+						self.logError("[Gen] Grammar file '{}' is missing a '_triggers' field so it can't be called".format(os.path.basename(grammarFilename)))
+					else:
+						#Make sure all the triggers are lower-case, to make matching them easier when this module is called
+						triggers = [trigger.lower() for trigger in grammarJson['_triggers']]
+						#Store them so we know which grammar file to parse for which trigger(s)
+						self.generators[grammarFilename] = tuple(triggers)
 		#Add all the available triggers to the module's helptext
 		self.helptext += ", ".join(self.getAvailableTriggers())
 		self.logDebug("[Generators] Loaded {:,} generators".format(len(self.generators)))
