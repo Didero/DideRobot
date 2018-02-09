@@ -432,6 +432,8 @@ class Command(CommandTemplate):
 				# The '_default' field is not mandatory, if it's missing an empty string will be returned
 				caseDict = {}
 				for caseString in grammarParts[1:]:
+					if u":" not in caseString:
+						return (False, u"Missing colon in parameter '{}' to '_switch' field".format(caseString))
 					case, stringIfCase = caseString.split(u':', 1)
 					caseDict[case] = stringIfCase
 				if grammarParts[0] == u"_params" and parameterString in caseDict:
