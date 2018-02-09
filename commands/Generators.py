@@ -235,12 +235,8 @@ class Command(CommandTemplate):
 							gender = param
 				variableDict.update(self.getGenderWords(gender))  #If no gender was provided, 'getGenderWords' will pick a random one
 			if u'generateName' in grammarDict[u'_options']:
-				#If a gender was provided or requested, use that to generate a name
-				if u'gender' in variableDict:
-					variableDict[u'name'] = self.generateName([variableDict[u'gender']])
-				#Otherwise have the function decide
-				else:
-					variableDict[u'name'] = self.generateName()
+				#If a gender was provided or requested, use that to generate a name, otherwise make the function pick a gender
+				variableDict[u'name'] = self.generateName(variableDict.get(u'gender', None))
 				nameparts = variableDict[u'name'].split(' ')
 				variableDict[u'firstname'] = nameparts[0]
 				variableDict[u'lastname'] = nameparts[-1]
