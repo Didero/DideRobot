@@ -370,9 +370,15 @@ class Command(CommandTemplate):
 				else:
 					replacement = grammarParts[2]
 			elif fieldKey == u"_variable" or fieldKey == u"_var":
+				# <_var|varname|[valueIfVarNotSet]>
 				# Variable, fill it in if it's in the variable dictionary
 				if grammarParts[0] not in variableDict:
-					return (False, u"Error: Referenced undefined variable '{}' in field '<{}|{}>'".format(grammarParts[0], fieldKey, u"|".join(grammarParts)))
+					#If a second parameter was passed, use it as a fallback value
+					if len(grammarParts) > 1:
+						replacement = grammarParts[1]
+					#Otherwise, throw an error
+					else:
+						return (False, u"Error: Referenced undefined variable '{}' in field '<{}|{}>'".format(grammarParts[0], fieldKey, u"|".join(grammarParts)))
 				else:
 					replacement = variableDict[grammarParts[0]]
 			elif fieldKey == u"_if":
