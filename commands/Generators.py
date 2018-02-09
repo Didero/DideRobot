@@ -161,11 +161,11 @@ class Command(CommandTemplate):
 				vowelOrConsonant = "consonant"
 
 		if vowelOrConsonant == "vowel":
-			basicLetters = ['a', 'e', 'i', 'o', 'u']
-			specialLetters = ['y']
+			basicLetters = ('a', 'e', 'i', 'o', 'u')
+			specialLetters = ('y',)
 		else:
-			basicLetters = ['b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't']
-			specialLetters = ['j', 'q', 'v', 'w', 'x', 'z']
+			basicLetters = ('b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't')
+			specialLetters = ('j', 'q', 'v', 'w', 'x', 'z')
 
 		if random.randint(1, 100) <= basicLetterChance:
 			return random.choice(basicLetters)
