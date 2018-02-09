@@ -294,7 +294,7 @@ class Command(CommandTemplate):
 					success, parsedGrammarBlock = self.parseGrammarBlock(grammarParts, grammar, parameterString, variableDict)
 					if not success:
 						#If something went wrong, it returned an error message. Stop parsing and report that error
-						return parsedGrammarBlock
+						return u"Error: " + parsedGrammarBlock
 					#Everything went fine, replace the grammar block with the output
 					outputString = outputString[:startIndex] + parsedGrammarBlock + outputString[index + 1:]
 					#Done with this parsing loop, start a new one! (break out of the for-loop to start a new while-loop iteration)
@@ -338,7 +338,7 @@ class Command(CommandTemplate):
 		if fieldKey.startswith(u"_"):
 			if fieldKey == u"_randint" or fieldKey == u"_randintasword":
 				if len(grammarParts) < 2:
-					return (False, u"Error: Not enough parameters to the '{}' call. Need 2, found {}".format(fieldKey, len(grammarParts)))
+					return (False, u"Not enough parameters to the '{}' call. Need 2, found {}".format(fieldKey, len(grammarParts)))
 				try:
 					value = random.randint(int(grammarParts[0]), int(grammarParts[1]))
 				except ValueError:
@@ -353,12 +353,12 @@ class Command(CommandTemplate):
 			elif fieldKey == u"_setvar":
 				# <_setvar|varname|value>
 				if len(grammarParts) < 2:
-					return (False, u"Error: Not enough parameters to the '{}' call, need at least 2, only found {}".format(fieldKey, len(grammarParts)))
+					return (False, u"Not enough parameters to the '{}' call, need at least 2, only found {}".format(fieldKey, len(grammarParts)))
 				variableDict[grammarParts[0]] = grammarParts[1]
 			elif fieldKey == u"_setvarrandom":
 				# <_setvarrandom|varname|value1|value2|value3> to pick a random value and set the variable to that
 				if len(grammarParts) < 2:
-					return (False, u"Error: Not enough parameters to the '{}' call, need at least 2, only found {}".format(fieldKey, len(grammarParts)))
+					return (False, u"Not enough parameters to the '{}' call, need at least 2, only found {}".format(fieldKey, len(grammarParts)))
 				variableDict[grammarParts[0]] = random.choice(grammarParts[1:])
 			elif fieldKey == u"_remvar":
 				if grammarParts[0] in variableDict:
@@ -378,16 +378,16 @@ class Command(CommandTemplate):
 						replacement = grammarParts[1]
 					#Otherwise, throw an error
 					else:
-						return (False, u"Error: Referenced undefined variable '{}' in field '<{}|{}>'".format(grammarParts[0], fieldKey, u"|".join(grammarParts)))
+						return (False, u"Referenced undefined variable '{}' in field '<{}|{}>'".format(grammarParts[0], fieldKey, u"|".join(grammarParts)))
 				else:
 					replacement = variableDict[grammarParts[0]]
 			elif fieldKey == u"_if":
 				# <_if|varname=string|stringIfTrue|stringIfFalse>
 				firstArgumentParts = grammarParts[0].split('=')
 				if len(grammarParts) < 3:
-					return (False, u"Error: Not enough arguments in 'if' for field '<{}|{}>', found {}, expected 3".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
+					return (False, u"Not enough arguments in 'if' for field '<{}|{}>', found {}, expected 3".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
 				if firstArgumentParts[0] not in variableDict:
-					return (False, u"Error: Referenced undefined variable '{}' in field '<{}|{}>'".format(firstArgumentParts[0], fieldKey, u"|".join(grammarParts)))
+					return (False, u"Referenced undefined variable '{}' in field '<{}|{}>'".format(firstArgumentParts[0], fieldKey, u"|".join(grammarParts)))
 				if variableDict[firstArgumentParts[0]] == firstArgumentParts[1]:
 					replacement = grammarParts[1]
 				else:
@@ -395,7 +395,7 @@ class Command(CommandTemplate):
 			elif fieldKey == u"_ifcontains":
 				# <_ifcontains|string|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
 				if len(grammarParts) < 4:
-					return (False, u"Error: Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
+					return (False, u"Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
 				#Check if we need the parameters, a variable, or literally the entered string
 				stringToCheck = grammarParts[0]
 				if grammarParts[0] == u"_params":
@@ -410,7 +410,7 @@ class Command(CommandTemplate):
 			elif fieldKey == u"_ifmatch":
 				# <_ifmatch|string/varname|regexToMatch|stringIfMatch|stringIfNoMatch>
 				if len(grammarParts) < 4:
-					return (False, u"Error: Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
+					return (False, u"Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
 				if grammarParts[0] == u"_params":
 					stringToMatchAgainst = parameterString if parameterString else u""
 				elif grammarParts[0] in variableDict:
@@ -426,7 +426,7 @@ class Command(CommandTemplate):
 						replacement = grammarParts[3]
 				except re.error as e:
 					self.logWarning(u"[Gen] Regex error in regex '{}' ({})".format(grammarParts[1], e.message))
-					return (False, u"Error: Invalid regex '{}' ({})".format(grammarParts[1], e.message))
+					return (False, u"Invalid regex '{}' ({})".format(grammarParts[1], e.message))
 			elif fieldKey == u"_switch":
 				# <_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|_default:stringIfNoCaseMatch>
 				# The '_default' field is not mandatory, if it's missing an empty string will be returned
@@ -437,7 +437,7 @@ class Command(CommandTemplate):
 				if grammarParts[0] == u"_params" and parameterString in caseDict:
 					replacement = caseDict[parameterString]
 				elif grammarParts[0] not in variableDict:
-					return (False, u"Error: variable '{}' was specified in a '{}' call, but it isn't set".format(grammarParts[0], fieldKey))
+					return (False, u"Variable '{}' was specified in a '{}' call, but it isn't set".format(grammarParts[0], fieldKey))
 				elif variableDict[grammarParts[0]] in caseDict:
 					replacement = caseDict[variableDict[grammarParts[0]]]
 				elif u'_default' in caseDict:
@@ -467,12 +467,12 @@ class Command(CommandTemplate):
 					replacement = parameterString
 					#Prevent file access
 					if u"<_file" in replacement:
-						return (False, u"Error: File access from parameters is not allowed")
+						return (False, u"File access from parameters is not allowed")
 			elif fieldKey == u"_replace" or fieldKey == u"_regexreplace":
 				# <_replace|stringToReplaceIn|whatToReplace|whatToReplaceItWith>
 				# <_regexreplace|stringToReplaceIn|regexOfWhatToReplace|whatToReplaceItWith>
 				if len(grammarParts) < 3:
-					return (False, u"Error: Not enough parameters in field '<{}|{}>'. Need 3, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
+					return (False, u"Not enough parameters in field '<{}|{}>'. Need 3, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
 				#Check if the string wants the parameters or a variable name, otherwise use the provided string as-is
 				if grammarParts[0] == u"_params":
 					replacement = parameterString
@@ -489,18 +489,18 @@ class Command(CommandTemplate):
 						regex = re.compile(re.sub(r"/(.)", r"\1", grammarParts[1]), flags=re.DOTALL)  #DOTALL so it can handle newlines in messages properly
 						replacement = re.sub(regex, grammarParts[2], replacement)
 					except re.error as e:
-						return (False, u"Error while parsing regular expression '{}' with replacement string '{}' ({})".format(grammarParts[1], grammarParts[2], e.message))
+						return (False, u"Unable to parse regular expression '{}' with replacement string '{}' ({})".format(grammarParts[1], grammarParts[2], e.message))
 			elif fieldKey == u"_choose":
 				# <_choose|option1|option2|...>
 				#Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for them
 				if len(grammarParts) == 0:
-					return (False, u"Error: '{}' field doesn't specify any choices".format(fieldKey))
+					return (False, u"'{}' field doesn't specify any choices".format(fieldKey))
 				replacement = random.choice(grammarParts)
 			elif fieldKey == u"_modulecommand":
 				#<_modulecommand|commandName|argument1|argument2|key1=value1|key2=value2|...>
 				#Call commandFunctions from different modules
 				if not GlobalStore.commandhandler.hasCommandFunction(grammarParts[0]):
-					return (False, u"Error: Unknown module command '{}'".format(grammarParts[0]))
+					return (False, u"Unknown module command '{}'".format(grammarParts[0]))
 				#Turn the arguments into something we can call a function with
 				arguments = []
 				keywordArguments = {}
@@ -524,14 +524,14 @@ class Command(CommandTemplate):
 				elif isinstance(replacement, dict):
 					SharedFunctions.dictToString(replacement)
 				else:
-					return (False, u"Error: Module command '{}' returned non-text object".format(grammarParts[0]))
+					return (False, u"Module command '{}' returned non-text object".format(grammarParts[0]))
 			elif fieldKey == u"_" or fieldKey == u"_dummy":
 				replacement = u""
 			else:
-				return (False, u"Error: Unknown command '{key}' in field '<{key}{args}>' found!".format(key=fieldKey, args=u"|" + u"|".join(grammarParts) if grammarParts else u""))
+				return (False, u"Unknown command '{key}' in field '<{key}{args}>' found!".format(key=fieldKey, args=u"|" + u"|".join(grammarParts) if grammarParts else u""))
 		# No command, so check if it's a valid key
 		elif fieldKey not in grammar:
-			return (False, u"Error: Field '{}' not found in grammar file!".format(fieldKey))
+			return (False, u"Field '{}' not found in grammar file!".format(fieldKey))
 		# All's well, fill it in
 		else:
 			if isinstance(grammar[fieldKey], list):
@@ -548,7 +548,7 @@ class Command(CommandTemplate):
 				# If it's a string (either the string class or the unicode class), just dump it in
 				replacement = grammar[fieldKey]
 			else:
-				return (False, u"Error: No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey))
+				return (False, u"No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey))
 
 		# Process the possible extra options that can be provided, in the specified order
 		for option in extraOptions:
@@ -569,7 +569,7 @@ class Command(CommandTemplate):
 				#Store the replacement under the provided variable name
 				# (format 'storeas:[varname]')
 				if u':' not in option:
-					return (False, u"Error: Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarParts), u",".join(extraOptions)))
+					return (False, u"Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarParts), u",".join(extraOptions)))
 				varname = option.split(u':', 1)[1]
 				variableDict[varname] = replacement
 			elif option == u"hide":
