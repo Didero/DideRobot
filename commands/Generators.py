@@ -680,8 +680,39 @@ class GrammarCommands(object):
 
 	#Shared internal methods
 	@staticmethod
-	def _constructNotEnoughParametersErrorMessage(commandName, requiredNumber, foundNumber, usageString):
-		return u"'{}' call needs at least {} parameters, only found {}. Usage: {}".format(commandName, requiredNumber, foundNumber, usageString)
+	def _constructNotEnoughParametersErrorMessage(requiredNumber):
+		#Collect some info on what method wants an error message, and how it was called
+		callingFunctionStackTuple = inspect.stack()[1]
+		callingFrameRecord = callingFunctionStackTuple[0]
+
+		#Find the method that called this function
+		methodName = callingFunctionStackTuple[3]  #4th item in that list is the name, the other entries we don't care about here
+		method = getattr(GrammarCommands, methodName)
+
+		#Remove the fallback 'Command' suffix if necessary, for display purposes
+		if methodName.endswith('Command'):
+			methodName = methodName[:-7]
+
+		#Each method should have a usage string as the first line of its docstring
+		usageString = inspect.cleandoc(method.__doc__).splitlines()[0]
+
+		#Get the length of the argument list that the grammar command was called with
+		foundNumber = len(inspect.getargvalues(callingFrameRecord).locals['argumentList'])
+
+		#Display that no parameters were provided in a grammatically correct and sensible way
+		if foundNumber == 0:
+			foundNumberString = u"none were provided"
+		else:
+			foundNumberString = u"only found {}".format(foundNumber)
+
+		#Make sure references to stacks and frames don't linger, otherwise the garbage collector could get confused
+		# See: https://docs.python.org/2/library/inspect.html#the-interpreter-stack
+		del callingFunctionStackTuple
+		del callingFrameRecord
+
+		#Done! Return the results, formatted nicely
+		return u"'{}' call needs at least {} parameter{}, but {}. Command usage: {}".format(methodName, requiredNumber, u's' if requiredNumber > 1 else u'',
+																						   foundNumberString, usageString)
 
 	#Saving and loading variables
 	@staticmethod
@@ -691,7 +722,7 @@ class GrammarCommands(object):
 		Stores a value under the provided name, for future use
 		"""
 		if len(argumentList) < 2:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"setvar", 2, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(2))
 		variableDict[argumentList[0]] = argumentList[1]
 		return (True, u"")
 
@@ -702,7 +733,7 @@ class GrammarCommands(object):
 		Picks one of the provided values at random, and stores it under the provided name, for future use
 		"""
 		if len(argumentList) < 2:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"setvarrandom", 2, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(2))
 		variableDict[argumentList[0]] = random.choice(argumentList[1:])
 		return (True, u"")
 
@@ -713,7 +744,7 @@ class GrammarCommands(object):
 		Checks if the provided variable exists. Returns the first string if it does, and the second one if it doesn't
 		"""
 		if len(argumentList) < 3:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"hasvar", 3, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
 		if argumentList[0] in variableDict:
 			return (True, argumentList[1])
 		else:
@@ -726,7 +757,7 @@ class GrammarCommands(object):
 		Returns the value stored under the provided variable name. The second argument is optional, and if set will be returned if the variable isn't stored
 		"""
 		if len(argumentList) < 1:
-			return (False, u"The call to '_var' doesn't have any parameters")
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(1))
 		# Check if the named variable was stored
 		if argumentList[0] in variableDict:
 			return (True, variableDict[argumentList[0]])
@@ -765,7 +796,7 @@ class GrammarCommands(object):
 		Checks if the variable is set to the specified value. Returns the first string if it is, and the second if it isn't. Use '_params' as varname to check the parameters
 		"""
 		if len(argumentList) < 3:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"if", 3, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
 		if u'=' not in argumentList[0]:
 			return (False, u"The first parameter in an '_if' call should be formatted like '[varname]=string', '=' is missing")
 		#Split up the first parameter into a name and the wanted value
@@ -791,7 +822,7 @@ class GrammarCommands(object):
 		Checks if the variable contains the provided substring. If varname is '_params', the provided parameters will be checked against
 		"""
 		if len(argumentList) < 4:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"ifcontains", 4, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(4))
 		# Check if we need the parameters, a variable, or literally the entered string
 		stringToCheck = argumentList[0]
 		if argumentList[0] == u"_params":
@@ -811,7 +842,7 @@ class GrammarCommands(object):
 		Checks if the variable matches the provided regular expression. If varname is '_params', the provided parameters will be checked against
 		"""
 		if len(argumentList) < 4:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"ifmatch", 4, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(4))
 		if argumentList[0] == u"_params":
 			stringToMatchAgainst = parameterString if parameterString else u""
 		elif argumentList[0] in variableDict:
@@ -836,7 +867,7 @@ class GrammarCommands(object):
 		The '_default' field is not mandatory, if it's missing an empty string will be returned
 		"""
 		if len(argumentList) < 2:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"switch", 2, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(2))
 		#First construct the comparison dict
 		caseDict = {}
 		for caseString in argumentList[1:]:
@@ -870,7 +901,7 @@ class GrammarCommands(object):
 		Checks if there are any parameters provided. Returns the first string if any parameters exist, and the second one if not
 		"""
 		if len(argumentList) < 2:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"hasparams", 2, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(2))
 		if parameterString:
 			return (True, argumentList[0])
 		else:
@@ -884,7 +915,7 @@ class GrammarCommands(object):
 		If no parameter string was provided, the 'doesn't match' string is returned
 		"""
 		if len(argumentList) < 3:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"hasparam", 3, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
 		if parameterString:
 			return (True, argumentList[1])
 		else:
@@ -917,7 +948,7 @@ class GrammarCommands(object):
 		Returns a number between the lower and upper bound, inclusive on both sides
 		"""
 		if len(argumentList) < 2:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"randint", 2, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(2))
 		try:
 			value = random.randint(int(argumentList[0]), int(argumentList[1]))
 		except ValueError:
@@ -931,7 +962,7 @@ class GrammarCommands(object):
 		Returns a number between the lower and upper bound, inclusive on both sides, and converts that to a word (so '2' becomes 'two')
 		"""
 		if len(argumentList) < 2:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"randint", 2, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(2))
 		try:
 			value = random.randint(int(argumentList[0]), int(argumentList[1]))
 		except ValueError:
@@ -945,7 +976,7 @@ class GrammarCommands(object):
 		Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for each of them
 		"""
 		if len(argumentList) == 0:
-			return (False, u"'_choose' field doesn't specify any choices")
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(1))
 		return (True, random.choice(argumentList))
 
 	@staticmethod
@@ -956,7 +987,7 @@ class GrammarCommands(object):
 		The file has to exists in the same directory the grammar file is in
 		"""
 		if len(argumentList) == 0:
-			return (False, u"Call to '_file' doesn't specify a filename")
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(1))
 		return (True, Command.getRandomLine(argumentList[0]))
 
 
@@ -968,7 +999,7 @@ class GrammarCommands(object):
 		Returns the provided string but with part of it replaced. The substring 'whatToReplace' is replaced by 'whatToReplaceItBy'. String can be a varname or '_params' too
 		"""
 		if len(argumentList) < 3:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"replace", 3, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
 		# Check if the string wants the parameters or a variable name, otherwise use the provided string as-is
 		stringToReplaceIn = argumentList[0]
 		if argumentList[0] == u"_params":
@@ -985,7 +1016,7 @@ class GrammarCommands(object):
 		Returns the provided string with part of it replaced. The part to replaced is determined wit the provided regular expression. The string can be a varname or '_params' too
 		"""
 		if len(argumentList) < 3:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"regexreplace", 3, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
 		# Check if the string wants the parameters or a variable name, otherwise use the provided string as-is
 		stringToReplaceIn = argumentList[0]
 		if argumentList[0] == u"_params":
@@ -1007,7 +1038,7 @@ class GrammarCommands(object):
 		Runs a shared command in another bot module. The first parameter is the name of that command, the rest are unnamed and named parameters to pass on, and are all optional
 		"""
 		if len(argumentList) < 1:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"modulecommand", 1, len(argumentList)))
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(1))
 		# Call commandFunctions from different modules
 		if not GlobalStore.commandhandler.hasCommandFunction(argumentList[0]):
 			return (False, u"Unknown module command '{}'".format(argumentList[0]))
