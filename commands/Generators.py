@@ -1,4 +1,4 @@
-import glob, json, os, random, re
+import glob, inspect, json, os, random, re
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
@@ -61,10 +61,9 @@ class Command(CommandTemplate):
 				else:
 					#Show the function's docstring, if it has one, otherwise show an error
 					helptext = "No helptext was set for this generator, sorry"
-					if generator.__doc__ :
-						helptext = generator.__doc__.strip()
-						#Remove the newlines and tabs
-						helptext = re.sub(r"[\n\t]+", " ", helptext)
+					if generator.__doc__:
+						#Get the docstring, with the newlines and tabs removed
+						helptext = inspect.cleandoc(generator.__doc__).replace('\n', ' ')
 					return "{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, helptext)
 		#No matching generator trigger was found
 		return "I'm not familiar with the '{}' generator, though if you think it would make a good one, feel free to inform my owner(s), maybe they'll create it!".format(requestedTrigger)
