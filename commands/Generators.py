@@ -666,6 +666,7 @@ class GrammarCommands(object):
 	"""
 	A class to hold all the commands that can be called from grammar files
 	Each function should have the same name as it has in the grammar file, including case
+	If that name is a reserved Python keyword, append 'Command' to it
 	The parameters a function accepts should always be the same:
 	-argumentList, which is a list of the arguments provided to the function
 	-grammarDict, the entire grammar dictionary, in case a field from that is needed. Should not be changed
