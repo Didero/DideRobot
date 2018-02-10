@@ -337,199 +337,19 @@ class Command(CommandTemplate):
 			extraOptions = grammarParts.pop()[1:].split(u',')
 
 		if fieldKey.startswith(u"_"):
-			if fieldKey == u"_randint" or fieldKey == u"_randintasword":
-				if len(grammarParts) < 2:
-					return (False, u"Not enough parameters to the '{}' call. Need 2, found {}".format(fieldKey, len(grammarParts)))
-				try:
-					value = random.randint(int(grammarParts[0]), int(grammarParts[1]))
-				except ValueError:
-					return (False, u"Invalid argument provided to '{}', '{}' or '{}' couldn't be parsed as a number".format(fieldKey, grammarParts[0], grammarParts[1]))
-				if fieldKey == u"_randint":
-					replacement = unicode(value)
-				elif fieldKey == u"_randintasword":
-					replacement = self.numberToText(value)
-			elif fieldKey == u"_file":
-				# Load a sentence from the specified file. Useful for not cluttering up the grammar file with a lot of options
-				replacement = self.getRandomLine(grammarParts[0])
-			elif fieldKey == u"_setvar":
-				# <_setvar|varname|value>
-				if len(grammarParts) < 2:
-					return (False, u"Not enough parameters to the '{}' call, need at least 2, only found {}".format(fieldKey, len(grammarParts)))
-				variableDict[grammarParts[0]] = grammarParts[1]
-			elif fieldKey == u"_setvarrandom":
-				# <_setvarrandom|varname|value1|value2|value3> to pick a random value and set the variable to that
-				if len(grammarParts) < 2:
-					return (False, u"Not enough parameters to the '{}' call, need at least 2, only found {}".format(fieldKey, len(grammarParts)))
-				variableDict[grammarParts[0]] = random.choice(grammarParts[1:])
-			elif fieldKey == u"_remvar":
-				if grammarParts[0] in variableDict:
-					del variableDict[grammarParts[0]]
-			elif fieldKey == u"_hasvar":
-				# <_hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
-				if grammarParts[0] in variableDict:
-					replacement = grammarParts[1]
-				else:
-					replacement = grammarParts[2]
-			elif fieldKey == u"_variable" or fieldKey == u"_var":
-				# <_var|varname|[valueIfVarNotSet]>
-				# Variable, fill it in if it's in the variable dictionary
-				if grammarParts[0] not in variableDict:
-					#If a second parameter was passed, use it as a fallback value
-					if len(grammarParts) > 1:
-						replacement = grammarParts[1]
-					#Otherwise, throw an error
-					else:
-						return (False, u"Referenced undefined variable '{}' in field '<{}|{}>'".format(grammarParts[0], fieldKey, u"|".join(grammarParts)))
-				else:
-					replacement = variableDict[grammarParts[0]]
-			elif fieldKey == u"_if":
-				# <_if|varname=string|stringIfTrue|stringIfFalse>
-				firstArgumentParts = grammarParts[0].split('=')
-				if len(grammarParts) < 3:
-					return (False, u"Not enough arguments in 'if' for field '<{}|{}>', found {}, expected 3".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
-				if firstArgumentParts[0] not in variableDict:
-					return (False, u"Referenced undefined variable '{}' in field '<{}|{}>'".format(firstArgumentParts[0], fieldKey, u"|".join(grammarParts)))
-				if variableDict[firstArgumentParts[0]] == firstArgumentParts[1]:
-					replacement = grammarParts[1]
-				else:
-					replacement = grammarParts[2]
-			elif fieldKey == u"_ifcontains":
-				# <_ifcontains|string|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
-				if len(grammarParts) < 4:
-					return (False, u"Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
-				#Check if we need the parameters, a variable, or literally the entered string
-				stringToCheck = grammarParts[0]
-				if grammarParts[0] == u"_params":
-					stringToCheck = parameterString if parameterString else ""
-				elif grammarParts[0] in variableDict:
-					stringToCheck = variableDict[grammarParts[0]]
-				#Now do the 'contains' check
-				if grammarParts[1] in stringToCheck:
-					replacement = grammarParts[2]
-				else:
-					replacement = grammarParts[3]
-			elif fieldKey == u"_ifmatch":
-				# <_ifmatch|string/varname|regexToMatch|stringIfMatch|stringIfNoMatch>
-				if len(grammarParts) < 4:
-					return (False, u"Not enough parameters in field '<{}|{}>'. 4 fields required, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
-				if grammarParts[0] == u"_params":
-					stringToMatchAgainst = parameterString if parameterString else u""
-				elif grammarParts[0] in variableDict:
-					stringToMatchAgainst = variableDict[grammarParts[0]]
-				else:
-					stringToMatchAgainst = grammarParts[0]
-				#Make sure we un-escape the regex, so it can use characters like < and | without messing up our parsing
-				regex = re.compile(re.sub(r"/(.)", r"\1", grammarParts[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
-				try:
-					if re.search(regex, stringToMatchAgainst):
-						replacement = grammarParts[2]
-					else:
-						replacement = grammarParts[3]
-				except re.error as e:
-					self.logWarning(u"[Gen] Regex error in regex '{}' ({})".format(grammarParts[1], e.message))
-					return (False, u"Invalid regex '{}' ({})".format(grammarParts[1], e.message))
-			elif fieldKey == u"_switch":
-				# <_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|_default:stringIfNoCaseMatch>
-				# The '_default' field is not mandatory, if it's missing an empty string will be returned
-				caseDict = {}
-				for caseString in grammarParts[1:]:
-					if u":" not in caseString:
-						return (False, u"Missing colon in parameter '{}' to '_switch' field".format(caseString))
-					case, stringIfCase = caseString.split(u':', 1)
-					caseDict[case] = stringIfCase
-				if grammarParts[0] == u"_params" and parameterString in caseDict:
-					replacement = caseDict[parameterString]
-				elif grammarParts[0] not in variableDict:
-					return (False, u"Variable '{}' was specified in a '{}' call, but it isn't set".format(grammarParts[0], fieldKey))
-				elif variableDict[grammarParts[0]] in caseDict:
-					replacement = caseDict[variableDict[grammarParts[0]]]
-				elif u'_default' in caseDict:
-					replacement = caseDict[u'_default']
-				else:
-					replacement = u""
-			elif fieldKey == u"_hasparameters" or fieldKey == u"_hasparams":
-				# <_hasparams|stringIfHasParams|stringIfDoesntHaveParams>"
-				# Checks if there are any parameters provided
-				if parameterString:
-					replacement = grammarParts[0]
-				else:
-					replacement = grammarParts[1]
-			elif fieldKey == u"_hasparameter" or fieldKey == u"_hasparam":
-				# <_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
-				# Used to check if the literal parameter was passed in the message calling this generator
-				if parameterString:
-					replacement = grammarParts[1]
-				else:
-					replacement = grammarParts[2]
-			elif fieldKey == u"_params":
-				# Fill in the provided parameter(s) in this field
-				if not parameterString:
-					replacement = u""
-				else:
-					# The parameters will be strings. Convert them to unicode
-					replacement = parameterString
-					#Prevent file access
-					if u"<_file" in replacement:
-						return (False, u"File access from parameters is not allowed")
-			elif fieldKey == u"_replace" or fieldKey == u"_regexreplace":
-				# <_replace|stringToReplaceIn|whatToReplace|whatToReplaceItWith>
-				# <_regexreplace|stringToReplaceIn|regexOfWhatToReplace|whatToReplaceItWith>
-				if len(grammarParts) < 3:
-					return (False, u"Not enough parameters in field '<{}|{}>'. Need 3, found {}".format(fieldKey, u"|".join(grammarParts), len(grammarParts)))
-				#Check if the string wants the parameters or a variable name, otherwise use the provided string as-is
-				if grammarParts[0] == u"_params":
-					replacement = parameterString
-				elif grammarParts[0] in variableDict:
-					replacement = variableDict[grammarParts[0]]
-				else:
-					replacement = grammarParts[0]
-				#Now replace what we need to replace
-				if fieldKey == u"_replace":
-					replacement = replacement.replace(grammarParts[1], grammarParts[2])
-				else:
-					try:
-						#Unescape any characters inside the regex (like < and |)
-						regex = re.compile(re.sub(r"/(.)", r"\1", grammarParts[1]), flags=re.DOTALL)  #DOTALL so it can handle newlines in messages properly
-						replacement = re.sub(regex, grammarParts[2], replacement)
-					except re.error as e:
-						return (False, u"Unable to parse regular expression '{}' with replacement string '{}' ({})".format(grammarParts[1], grammarParts[2], e.message))
-			elif fieldKey == u"_choose":
-				# <_choose|option1|option2|...>
-				#Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for them
-				if len(grammarParts) == 0:
-					return (False, u"'{}' field doesn't specify any choices".format(fieldKey))
-				replacement = random.choice(grammarParts)
-			elif fieldKey == u"_modulecommand":
-				#<_modulecommand|commandName|argument1|argument2|key1=value1|key2=value2|...>
-				#Call commandFunctions from different modules
-				if not GlobalStore.commandhandler.hasCommandFunction(grammarParts[0]):
-					return (False, u"Unknown module command '{}'".format(grammarParts[0]))
-				#Turn the arguments into something we can call a function with
-				arguments = []
-				keywordArguments = {}
-				for grammarPart in grammarParts[1:]:
-					#Make sure they're all converted from unicode to string, since that's what functions will expect
-					grammarPart = grammarPart.encode('utf-8', errors='replace')
-					#Remove any character escaping (so arguments can contain '<' without messing up)
-					grammarPart = re.sub(r"/(.)", r"\1", grammarPart)
-					if '=' not in grammarPart:
-						arguments.append(grammarPart)
-					else:
-						key, value = grammarPart.split('=', 1)
-						keywordArguments[key] = value
-				#Call the module function!
-				replacement = GlobalStore.commandhandler.runCommandFunction(grammarParts[0], u"", *arguments, **keywordArguments)
-				#Make sure the replacement is a unicode string
-				if isinstance(replacement, str):
-					replacement = replacement.decode('utf-8', errors='replace')
-				elif isinstance(replacement, list):
-					replacement = u", ".join(replacement)
-				elif isinstance(replacement, dict):
-					SharedFunctions.dictToString(replacement)
-				else:
-					return (False, u"Module command '{}' returned non-text object".format(grammarParts[0]))
-			elif fieldKey == u"_" or fieldKey == u"_dummy":
-				replacement = u""
+			#Check if the grammar commands class has a method to deal with the provided command
+			commandName = fieldKey[1:].lower()
+			commandMethod = getattr(GrammarCommands, commandName, None)
+			#Also try a 'Command' suffix, so commands can be called the same as Python reserved words without breaking anything
+			if not commandMethod:
+				commandMethod = getattr(GrammarCommands, commandName + 'Command', None)
+			#Check if the command is a registered one
+			if commandMethod:
+				#Registered function! Call it, and return the result. Whether the call went right or wrong will be handled by the calling function
+				isSuccess, replacement = commandMethod(grammarParts, grammar, variableDict, parameterString)
+				#If something went wrong, stop now. The replacement string should be an error message, pass that along too
+				if not isSuccess:
+					return (False, replacement)
 			else:
 				return (False, u"Unknown command '{key}' in field '<{key}{args}>' found!".format(key=fieldKey, args=u"|" + u"|".join(grammarParts) if grammarParts else u""))
 		# No command, so check if it's a valid key
@@ -841,3 +661,369 @@ class Command(CommandTemplate):
 			gamenames.append(gamename)
 
 		return SharedFunctions.joinWithSeparator(gamenames)
+
+
+class GrammarCommands(object):
+	"""
+	A class to hold all the commands that can be called from grammar files
+	Each function should have the same name as it has in the grammar file, including case
+	The parameters a function accepts should always be the same:
+	-argumentList, which is a list of the arguments provided to the function
+	-grammarDict, the entire grammar dictionary, in case a field from that is needed. Should not be changed
+	-variableDict, the dictionary with variables set during grammar parsing. Functions are allowed to change this
+	-parameterString, the string passed along with the call to the grammar parser
+	Each function should return a tuple. The first value should be a boolean, set to True if executing the command succeeded, or to False if it failed
+	The second value should be a unicode string. If command execution succeeded, it should be the string that should be put in the grammar output string
+	 instead of this command block. If execution failed, it should be the reason why it failed
+	"""
+
+	#Shared internal methods
+	@staticmethod
+	def _constructNotEnoughParametersErrorMessage(commandName, requiredNumber, foundNumber, usageString):
+		return u"'{}' call needs at least {} parameters, only found {}. Usage: {}".format(commandName, requiredNumber, foundNumber, usageString)
+
+	#Saving and loading variables
+	@staticmethod
+	def setvar(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_setvar|varname|value>
+		Stores a value under the provided name, for future use
+		"""
+		if len(argumentList) < 2:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"setvar", 2, len(argumentList)))
+		variableDict[argumentList[0]] = argumentList[1]
+		return (True, u"")
+
+	@staticmethod
+	def setvarrandom(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_setvarrandom|varname|value1|value2|value3>
+		Picks one of the provided values at random, and stores it under the provided name, for future use
+		"""
+		if len(argumentList) < 2:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"setvarrandom", 2, len(argumentList)))
+		variableDict[argumentList[0]] = random.choice(argumentList[1:])
+		return (True, u"")
+
+	@staticmethod
+	def hasvar(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
+		Checks if the provided variable exists. Returns the first string if it does, and the second one if it doesn't
+		"""
+		if len(argumentList) < 3:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"hasvar", 3, len(argumentList)))
+		if argumentList[0] in variableDict:
+			return (True, argumentList[1])
+		else:
+			return (True, argumentList[2])
+
+	@staticmethod
+	def var(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_variable|varname|[valueIfVarNotSet]>
+		Returns the value stored under the provided variable name. The second argument is optional, and if set will be returned if the variable isn't stored
+		"""
+		if len(argumentList) < 1:
+			return (False, u"The call to '_var' doesn't have any parameters")
+		# Check if the named variable was stored
+		if argumentList[0] in variableDict:
+			return (True, variableDict[argumentList[0]])
+		else:
+			# If a second parameter was passed, use it as a fallback value
+			if len(argumentList) > 1:
+				return (True, argumentList[1])
+			# Otherwise, throw an error
+			else:
+				return (False, u"Referenced undefined variable '{}'".format(argumentList[0]))
+
+	@staticmethod
+	def remvar(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_remvar|varname>
+		Removes the value stored under this variable name. Does nothing if the variable doesn't exist
+		"""
+		if len(argumentList) > 0 and argumentList[0] in variableDict:
+			del variableDict[argumentList[0]]
+		return (True, u"")
+
+	@staticmethod
+	def removevar(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_removevar|varname>
+		Alias for 'remvar', removes the stored variable
+		"""
+		return GrammarCommands.remvar(argumentList, grammarDict, variableDict, parameterString)
+
+
+	#Variable checking
+	@staticmethod
+	def ifCommand(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_if|varname=string|stringIfTrue|stringIfFalse>
+		Checks if the variable is set to the specified value. Returns the first string if it is, and the second if it isn't. Use '_params' as varname to check the parameters
+		"""
+		if len(argumentList) < 3:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"if", 3, len(argumentList)))
+		if u'=' not in argumentList[0]:
+			return (False, u"The first parameter in an '_if' call should be formatted like '[varname]=string', '=' is missing")
+		#Split up the first parameter into a name and the wanted value
+		firstArgumentParts = argumentList[0].split(u'=', 1)
+		#If the first part is '_params', use the parameter string
+		if firstArgumentParts[0] == u"_params":
+			stringToCheck = parameterString if parameterString else u""
+		#Otherwise check if it's a valid variable name
+		elif firstArgumentParts[0] not in variableDict:
+			return (False, u"Referenced undefined variable '{}' in '_if' call".format(firstArgumentParts[0]))
+		else:
+			stringToCheck = variableDict[firstArgumentParts[0]]
+		#Check which string we need to return
+		if stringToCheck == firstArgumentParts[1]:
+			return (True, argumentList[1])
+		else:
+			return (True, argumentList[2])
+
+	@staticmethod
+	def ifcontains(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_ifcontains|varname/string|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
+		Checks if the variable contains the provided substring. If varname is '_params', the provided parameters will be checked against
+		"""
+		if len(argumentList) < 4:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"ifcontains", 4, len(argumentList)))
+		# Check if we need the parameters, a variable, or literally the entered string
+		stringToCheck = argumentList[0]
+		if argumentList[0] == u"_params":
+			stringToCheck = parameterString if parameterString else u""
+		elif argumentList[0] in variableDict:
+			stringToCheck = variableDict[argumentList[0]]
+		# Now do the 'contains' check
+		if argumentList[1] in stringToCheck:
+			return (True, argumentList[2])
+		else:
+			return (True, argumentList[3])
+
+	@staticmethod
+	def ifmatch(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_ifmatch|string/varname|regexToMatch|stringIfMatch|stringIfNoMatch>
+		Checks if the variable matches the provided regular expression. If varname is '_params', the provided parameters will be checked against
+		"""
+		if len(argumentList) < 4:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"ifmatch", 4, len(argumentList)))
+		if argumentList[0] == u"_params":
+			stringToMatchAgainst = parameterString if parameterString else u""
+		elif argumentList[0] in variableDict:
+			stringToMatchAgainst = variableDict[argumentList[0]]
+		else:
+			stringToMatchAgainst = argumentList[0]
+		# Make sure we un-escape the regex, so it can use characters like < and | without messing up our parsing
+		regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
+		try:
+			if re.search(regex, stringToMatchAgainst):
+				return (True, argumentList[2])
+			else:
+				return (True, argumentList[3])
+		except re.error as e:
+			return (False, u"Invalid regex '{}' in '_ifmatch' call ({})".format(argumentList[1], e.message))
+
+	@staticmethod
+	def switch(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|_default:stringIfNoCaseMatch>
+		Checks which provided case matches the stored variable. If varname is '_params', the provided parameters will be checked against
+		The '_default' field is not mandatory, if it's missing an empty string will be returned
+		"""
+		if len(argumentList) < 2:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"switch", 2, len(argumentList)))
+		#First construct the comparison dict
+		caseDict = {}
+		for caseString in argumentList[1:]:
+			if u":" not in caseString:
+				return (False, u"Missing colon in parameter '{}' to '_switch' field".format(caseString))
+			case, stringIfCase = caseString.split(u':', 1)
+			caseDict[case] = stringIfCase
+		#Now try to see which provided case, if any, we should use
+		if argumentList[0] == u"_params" and parameterString in caseDict:
+			#Match the parameter string
+			return (True, caseDict[parameterString])
+		elif argumentList[0] not in variableDict:
+			#Tried to match against a variable that doesn't exist
+			return (False, u"Variable '{}' was specified in a '_switch' call, but it isn't set".format(argumentList[0]))
+		elif variableDict[argumentList[0]] in caseDict:
+			#Value found in the case dict
+			return (True, caseDict[variableDict[argumentList[0]]])
+		elif u'_default' in caseDict:
+			#Value not found, fall back to the default value if it exists
+			return (True, caseDict[u'_default'])
+		else:
+			#No match, no fallback. Return empty string
+			return (True, u"")
+
+
+	#Parameter functions
+	@staticmethod
+	def hasparams(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_hasparams|stringIfHasParams|stringIfDoesntHaveParams>
+		Checks if there are any parameters provided. Returns the first string if any parameters exist, and the second one if not
+		"""
+		if len(argumentList) < 2:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"hasparams", 2, len(argumentList)))
+		if parameterString:
+			return (True, argumentList[0])
+		else:
+			return (True, argumentList[1])
+
+	@staticmethod
+	def hasparam(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
+		Checks if the the provided parameters are equal to a string. Returns the first string if it matches, and the second one if it doesn't.
+		If no parameter string was provided, the 'doesn't match' string is returned
+		"""
+		if len(argumentList) < 3:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"hasparam", 3, len(argumentList)))
+		if parameterString:
+			return (True, argumentList[1])
+		else:
+			return (True, argumentList[2])
+
+	@staticmethod
+	def params(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_params>
+		Returns the user-provided parameter string, or an empty string if no parameter string was provided
+		"""
+		# Fill in the provided parameter(s) in this field
+		return (True, u"" if not parameterString else parameterString)
+
+
+	#Random choices
+	@staticmethod
+	def randint(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_randint|lowerBound|higherBound>
+		Returns a number between the lower and upper bound, inclusive on both sides
+		"""
+		if len(argumentList) < 2:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"randint", 2, len(argumentList)))
+		try:
+			value = random.randint(int(argumentList[0]), int(argumentList[1]))
+		except ValueError:
+			return (False, u"Invalid argument provided to '_randint' call, '{}' or '{}' couldn't be parsed as a number".format(argumentList[0], argumentList[1]))
+		return (True, unicode(value, 'utf-8'))
+
+	@staticmethod
+	def randintasword(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_randintasword|lowerBound|upperBound>
+		Returns a number between the lower and upper bound, inclusive on both sides, and converts that to a word (so '2' becomes 'two')
+		"""
+		if len(argumentList) < 2:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"randint", 2, len(argumentList)))
+		try:
+			value = random.randint(int(argumentList[0]), int(argumentList[1]))
+		except ValueError:
+			return (False, u"Invalid argument provided to '_randint' call, '{}' or '{}' couldn't be parsed as a number".format(argumentList[0], argumentList[1]))
+		return (True, Command.numberToText(value))
+
+	@staticmethod
+	def choose(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_choose|option1|option2|...>
+		Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for each of them
+		"""
+		if len(argumentList) == 0:
+			return (False, u"'_choose' field doesn't specify any choices")
+		return (True, random.choice(argumentList))
+
+	@staticmethod
+	def file(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_file|filename>
+		Load a sentence from the specified file. Useful for not cluttering up the grammar file with a lot of options
+		The file has to exists in the same directory the grammar file is in
+		"""
+		if len(argumentList) == 0:
+			return (False, u"Call to '_file' doesn't specify a filename")
+		return (True, Command.getRandomLine(argumentList[0]))
+
+
+	#Miscellaneous
+	@staticmethod
+	def replace(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_replace|stringToReplaceIn|whatToReplace|whatToReplaceItWith>
+		Returns the provided string but with part of it replaced. The substring 'whatToReplace' is replaced by 'whatToReplaceItBy'. String can be a varname or '_params' too
+		"""
+		if len(argumentList) < 3:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"replace", 3, len(argumentList)))
+		# Check if the string wants the parameters or a variable name, otherwise use the provided string as-is
+		stringToReplaceIn = argumentList[0]
+		if argumentList[0] == u"_params":
+			stringToReplaceIn = parameterString
+		elif argumentList[0] in variableDict:
+			stringToReplaceIn = variableDict[argumentList[0]]
+		# Now replace what we need to replace
+		return (True, stringToReplaceIn.replace(argumentList[1], argumentList[2]))
+
+	@staticmethod
+	def regexreplace(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_regexreplace|stringToReplaceIn|regexOfWhatToReplace|whatToReplaceItWith>
+		Returns the provided string with part of it replaced. The part to replaced is determined wit the provided regular expression. The string can be a varname or '_params' too
+		"""
+		if len(argumentList) < 3:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"regexreplace", 3, len(argumentList)))
+		# Check if the string wants the parameters or a variable name, otherwise use the provided string as-is
+		stringToReplaceIn = argumentList[0]
+		if argumentList[0] == u"_params":
+			stringToReplaceIn = parameterString
+		elif argumentList[0] in variableDict:
+			stringToReplaceIn = variableDict[argumentList[0]]
+		# Now replace what we need to replace
+		try:
+			# Unescape any characters inside the regex (like < and |)
+			regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
+			return (True, re.sub(regex, argumentList[2], stringToReplaceIn))
+		except re.error as e:
+			return (False, u"Unable to parse regular expression '{}' in '_regexreplace' call ({})".format(argumentList[1], e.message))
+
+	@staticmethod
+	def modulecommand(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_modulecommand|commandName|argument1|argument2|key1=value1|key2=value2|...>
+		Runs a shared command in another bot module. The first parameter is the name of that command, the rest are unnamed and named parameters to pass on, and are all optional
+		"""
+		if len(argumentList) < 1:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(u"modulecommand", 1, len(argumentList)))
+		# Call commandFunctions from different modules
+		if not GlobalStore.commandhandler.hasCommandFunction(argumentList[0]):
+			return (False, u"Unknown module command '{}'".format(argumentList[0]))
+		# Turn the arguments into something we can call a function with
+		commandArguments = []
+		keywordCommandArguments = {}
+		for argument in argumentList[1:]:
+			# Make sure they're all converted from unicode to string, since that's what functions will expect
+			argument = argument.encode('utf-8', errors='replace')
+			# Remove any character escaping (so arguments can contain '<' without messing up)
+			argument = re.sub(r"/(.)", r"\1", argument)
+			if '=' not in argument:
+				commandArguments.append(argument)
+			else:
+				key, value = argument.split('=', 1)
+				keywordCommandArguments[key] = value
+		# Call the module function!
+		moduleCommandResult = GlobalStore.commandhandler.runCommandFunction(argumentList[0], u"", *commandArguments, **keywordCommandArguments)
+		# Make sure the replacement is a unicode string
+		if isinstance(moduleCommandResult, basestring):
+			moduleCommandResult = moduleCommandResult.decode('utf-8', errors='replace')
+		elif isinstance(moduleCommandResult, (list, tuple)):
+			moduleCommandResult = u", ".join(moduleCommandResult)
+		elif isinstance(moduleCommandResult, dict):
+			SharedFunctions.dictToString(moduleCommandResult)
+		else:
+			return (False, u"Module command '{}' returned non-text object".format(argumentList[0]))
+		#Everything parsed and converted fine
+		return (True, moduleCommandResult)
