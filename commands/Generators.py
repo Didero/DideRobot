@@ -876,9 +876,9 @@ class GrammarCommands(object):
 			return (True, argumentList[1])
 
 	@staticmethod
-	def hasparam(argumentList, grammarDict, variableDict, parameterString):
+	def hasparameter(argumentList, grammarDict, variableDict, parameterString):
 		"""
-		<_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
+		<_hasparameter|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 		Checks if the the provided parameters are equal to a string. Returns the first string if it matches, and the second one if it doesn't.
 		If no parameter string was provided, the 'doesn't match' string is returned
 		"""
@@ -888,6 +888,15 @@ class GrammarCommands(object):
 			return (True, argumentList[1])
 		else:
 			return (True, argumentList[2])
+
+	@staticmethod
+	def hasparam(argumentList, grammarDict, variableDict, parameterString):
+		"""
+		<_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
+		Checks if the the provided parameters are equal to a string. Returns the first string if it matches, and the second one if it doesn't.
+		If no parameter string was provided, the 'doesn't match' string is returned
+		"""
+		return GrammarCommands.hasparameter(argumentList, grammarDict, variableDict, parameterString)
 
 	@staticmethod
 	def params(argumentList, grammarDict, variableDict, parameterString):
