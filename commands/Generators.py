@@ -122,16 +122,17 @@ class Command(CommandTemplate):
 				availableTriggers.extend(triggers)
 		return sorted(availableTriggers)
 
-	def getRandomLine(self, filename, filelocation=None):
+	@staticmethod
+	def getRandomLine(filename, filelocation=None):
 		if not filelocation:
-			filelocation = self.filesLocation
+			filelocation = Command.filesLocation
 		elif not filelocation.startswith(GlobalStore.scriptfolder):
 			filelocation = os.path.join(GlobalStore.scriptfolder, filelocation)
 		filepath = os.path.abspath(os.path.join(filelocation, filename))
 		#Check if the provided file is in our 'generator' folder
-		if not filepath.startswith(self.filesLocation):
+		if not filepath.startswith(Command.filesLocation):
 			#Trying to get out of the 'generators' folder
-			self.logWarning("[Gen] User is trying to access files outside the 'generators' folder with filename '{}'".format(filename))
+			Command.logWarning("[Gen] User is trying to access files outside the 'generators' folder with filename '{}'".format(filename))
 			return "[Access error]"
 		line = SharedFunctions.getRandomLineFromFile(filepath)
 		if not line:
