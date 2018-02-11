@@ -831,7 +831,6 @@ class GrammarCommands(object):
 	@staticmethod
 	def ifmatch(argumentList, grammarDict, variableDict, parameterString):
 		"""
-		<_ifmatch|string/varname|regexToMatch|stringIfMatch|stringIfNoMatch>
 		<_ifmatch|varname|regexToMatch|stringIfMatch|stringIfNoMatch>
 		Checks if the variable matches the provided regular expression. If varname is '_params', the provided parameters will be checked against
 		Return the NoMatch string if the variable isn't set
