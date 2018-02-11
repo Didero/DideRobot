@@ -862,7 +862,7 @@ class GrammarCommands(object):
 	@staticmethod
 	def switch(argumentList, grammarDict, variableDict, parameterString):
 		"""
-		<_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|_default:stringIfNoCaseMatch>
+		<_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|[_default:stringIfNoCaseMatch]>
 		Checks which provided case matches the stored variable. If varname is '_params', the provided parameters will be checked against
 		The '_default' field is not mandatory, if it's missing an empty string will be returned
 		"""
