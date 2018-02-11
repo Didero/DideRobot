@@ -767,7 +767,7 @@ class GrammarCommands(object):
 				return (True, argumentList[1])
 			# Otherwise, throw an error
 			else:
-				return (False, u"Referenced undefined variable '{}'".format(argumentList[0]))
+				return (False, u"Referenced undefined variable '{}' in '_var' call".format(argumentList[0]))
 
 	@staticmethod
 	def remvar(argumentList, grammarDict, variableDict, parameterString):
