@@ -789,7 +789,7 @@ class GrammarCommands(object):
 	def command_if(argumentList, grammarDict, variableDict):
 		"""
 		<_if|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
-		Checks if the variable is set to the specified value. Returns the IfIdentical string if it is, and the IfNotIdentical string if it isn't.
+		Checks if the variable is set to the specified value. Returns the IfIdentical string if it is, and the IfNotIdentical string if it isn't or if the var isn't set
 		Use '_params' as the varname to check the parameters
 		"""
 		if len(argumentList) < 4:
