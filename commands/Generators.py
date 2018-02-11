@@ -801,16 +801,12 @@ class GrammarCommands(object):
 			return (False, u"The first parameter in an '_if' call should be formatted like '[varname]=string', '=' is missing")
 		#Split up the first parameter into a name and the wanted value
 		firstArgumentParts = argumentList[0].split(u'=', 1)
-		#If the first part is '_params', use the parameter string
-		if firstArgumentParts[0] == u"_params":
-			stringToCheck = parameterString if parameterString else u""
-		#Otherwise check if it's a valid variable name
-		elif firstArgumentParts[0] not in variableDict:
-			return (False, u"Referenced undefined variable '{}' in '_if' call".format(firstArgumentParts[0]))
-		else:
-			stringToCheck = variableDict[firstArgumentParts[0]]
-		#Check which string we need to return
-		if stringToCheck == firstArgumentParts[1]:
+
+		#If the first part is '_params', check if there are parameters and if they match
+		if firstArgumentParts[0] == u"_params" and parameterString and parameterString == firstArgumentParts[1]:
+			return (True, argumentList[1])
+		#Check if the variable exists and is set to the requested value
+		elif firstArgumentParts[0] in variableDict and variableDict[firstArgumentParts[0]] == firstArgumentParts[1]:
 			return (True, argumentList[1])
 		else:
 			return (True, argumentList[2])
