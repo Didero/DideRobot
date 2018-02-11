@@ -336,11 +336,9 @@ class Command(CommandTemplate):
 
 		if fieldKey.startswith(u"_"):
 			#Check if the grammar commands class has a method to deal with the provided command
+			#  ('command' prefix is so commands can be named the same as Python keywords, and to distinguish them from GrammarCommands' internal methods)
 			commandName = fieldKey[1:].lower()
-			commandMethod = getattr(GrammarCommands, commandName, None)
-			#Also try a 'Command' suffix, so commands can be called the same as Python reserved words without breaking anything
-			if not commandMethod:
-				commandMethod = getattr(GrammarCommands, commandName + 'Command', None)
+			commandMethod = getattr(GrammarCommands, 'command_' + commandName, None)
 			#Check if the command is a registered one
 			if commandMethod:
 				#Registered function! Call it, and return the result. Whether the call went right or wrong will be handled by the calling function
@@ -714,7 +712,7 @@ class GrammarCommands(object):
 
 	#Saving and loading variables
 	@staticmethod
-	def setvar(argumentList, grammarDict, variableDict):
+	def command_setvar(argumentList, grammarDict, variableDict):
 		"""
 		<_setvar|varname|value>
 		Stores a value under the provided name, for future use
@@ -725,7 +723,7 @@ class GrammarCommands(object):
 		return (True, u"")
 
 	@staticmethod
-	def setvarrandom(argumentList, grammarDict, variableDict):
+	def command_setvarrandom(argumentList, grammarDict, variableDict):
 		"""
 		<_setvarrandom|varname|value1|value2|value3>
 		Picks one of the provided values at random, and stores it under the provided name, for future use
@@ -736,7 +734,7 @@ class GrammarCommands(object):
 		return (True, u"")
 
 	@staticmethod
-	def hasvar(argumentList, grammarDict, variableDict):
+	def command_hasvar(argumentList, grammarDict, variableDict):
 		"""
 		<_hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
 		Checks if the provided variable exists. Returns the first string if it does, and the second one if it doesn't
@@ -749,7 +747,7 @@ class GrammarCommands(object):
 			return (True, argumentList[2])
 
 	@staticmethod
-	def var(argumentList, grammarDict, variableDict):
+	def command_var(argumentList, grammarDict, variableDict):
 		"""
 		<_variable|varname|[valueIfVarNotSet]>
 		Returns the value stored under the provided variable name. The second argument is optional, and if set will be returned if the variable isn't stored
@@ -768,7 +766,7 @@ class GrammarCommands(object):
 				return (False, u"Referenced undefined variable '{}' in '_var' call".format(argumentList[0]))
 
 	@staticmethod
-	def remvar(argumentList, grammarDict, variableDict):
+	def command_remvar(argumentList, grammarDict, variableDict):
 		"""
 		<_remvar|varname>
 		Removes the value stored under this variable name. Does nothing if the variable doesn't exist
@@ -778,17 +776,17 @@ class GrammarCommands(object):
 		return (True, u"")
 
 	@staticmethod
-	def removevar(argumentList, grammarDict, variableDict):
+	def command_removevar(argumentList, grammarDict, variableDict):
 		"""
 		<_removevar|varname>
 		Alias for 'remvar', removes the stored variable
 		"""
-		return GrammarCommands.remvar(argumentList, grammarDict, variableDict)
+		return GrammarCommands.command_remvar(argumentList, grammarDict, variableDict)
 
 
 	#Variable checking
 	@staticmethod
-	def ifCommand(argumentList, grammarDict, variableDict):
+	def command_if(argumentList, grammarDict, variableDict):
 		"""
 		<_if|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
 		Checks if the variable is set to the specified value. Returns the IfIdentical string if it is, and the IfNotIdentical string if it isn't.
@@ -804,7 +802,7 @@ class GrammarCommands(object):
 			return (True, argumentList[3])
 
 	@staticmethod
-	def ifcontains(argumentList, grammarDict, variableDict):
+	def command_ifcontains(argumentList, grammarDict, variableDict):
 		"""
 		<_ifcontains|varname|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
 		Checks if the variable contains the provided substring. If varname is '_params', the provided parameters will be checked against
@@ -818,7 +816,7 @@ class GrammarCommands(object):
 			return (True, argumentList[3])
 
 	@staticmethod
-	def ifmatch(argumentList, grammarDict, variableDict):
+	def command_ifmatch(argumentList, grammarDict, variableDict):
 		"""
 		<_ifmatch|varname|regexToMatch|stringIfMatch|stringIfNoMatch>
 		Checks if the variable matches the provided regular expression. If varname is '_params', the provided parameters will be checked against
@@ -840,7 +838,7 @@ class GrammarCommands(object):
 			return (False, u"Invalid regex '{}' in '_ifmatch' call ({})".format(argumentList[1], e.message))
 
 	@staticmethod
-	def switch(argumentList, grammarDict, variableDict):
+	def command_switch(argumentList, grammarDict, variableDict):
 		"""
 		<_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|[_default:stringIfNoCaseMatch]>
 		Checks which provided case matches the stored variable. If varname is '_params', the provided parameters will be checked against
@@ -865,7 +863,7 @@ class GrammarCommands(object):
 
 	#Parameter functions
 	@staticmethod
-	def hasparams(argumentList, grammarDict, variableDict):
+	def command_hasparams(argumentList, grammarDict, variableDict):
 		"""
 		<_hasparams|stringIfHasParams|stringIfDoesntHaveParams>
 		Checks if there are any parameters provided. Returns the first string if any parameters exist, and the second one if not
@@ -878,7 +876,7 @@ class GrammarCommands(object):
 			return (True, argumentList[1])
 
 	@staticmethod
-	def hasparameter(argumentList, grammarDict, variableDict):
+	def command_hasparameter(argumentList, grammarDict, variableDict):
 		"""
 		<_hasparameter|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 		Checks if the the provided parameter string is equal to a string. Returns the first string if it matches, and the second one if it doesn't.
@@ -892,16 +890,16 @@ class GrammarCommands(object):
 			return (True, argumentList[2])
 
 	@staticmethod
-	def hasparam(argumentList, grammarDict, variableDict):
+	def command_hasparam(argumentList, grammarDict, variableDict):
 		"""
 		<_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 		Checks if the the provided parameters are equal to a string. Returns the first string if it matches, and the second one if it doesn't.
 		If no parameter string was provided, the 'doesn't match' string is returned
 		"""
-		return GrammarCommands.hasparameter(argumentList, grammarDict, variableDict)
+		return GrammarCommands.command_hasparameter(argumentList, grammarDict, variableDict)
 
 	@staticmethod
-	def params(argumentList, grammarDict, variableDict):
+	def command_params(argumentList, grammarDict, variableDict):
 		"""
 		<_params>
 		Returns the user-provided parameter string, or an empty string if no parameter string was provided
@@ -911,7 +909,7 @@ class GrammarCommands(object):
 
 	#Random choices
 	@staticmethod
-	def randint(argumentList, grammarDict, variableDict):
+	def command_randint(argumentList, grammarDict, variableDict):
 		"""
 		<_randint|lowerBound|higherBound>
 		Returns a number between the lower and upper bound, inclusive on both sides
@@ -925,7 +923,7 @@ class GrammarCommands(object):
 		return (True, unicode(value, 'utf-8'))
 
 	@staticmethod
-	def randintasword(argumentList, grammarDict, variableDict):
+	def command_randintasword(argumentList, grammarDict, variableDict):
 		"""
 		<_randintasword|lowerBound|upperBound>
 		Returns a number between the lower and upper bound, inclusive on both sides, and converts that to a word (so '2' becomes 'two')
@@ -939,7 +937,7 @@ class GrammarCommands(object):
 		return (True, Command.numberToText(value))
 
 	@staticmethod
-	def choose(argumentList, grammarDict, variableDict):
+	def command_choose(argumentList, grammarDict, variableDict):
 		"""
 		<_choose|option1|option2|...>
 		Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for each of them
@@ -949,7 +947,7 @@ class GrammarCommands(object):
 		return (True, random.choice(argumentList))
 
 	@staticmethod
-	def file(argumentList, grammarDict, variableDict):
+	def command_file(argumentList, grammarDict, variableDict):
 		"""
 		<_file|filename>
 		Load a sentence from the specified file. Useful for not cluttering up the grammar file with a lot of options
@@ -962,7 +960,7 @@ class GrammarCommands(object):
 
 	#Miscellaneous
 	@staticmethod
-	def replace(argumentList, grammarDict, variableDict):
+	def command_replace(argumentList, grammarDict, variableDict):
 		"""
 		<_replace|varname/_params|whatToReplace|whatToReplaceItWith>
 		Returns the provided variable value but with part of it replaced. The substring 'whatToReplace' is replaced by 'whatToReplaceItBy'
@@ -980,7 +978,7 @@ class GrammarCommands(object):
 		return (True, variableDict[argumentList[0]].replace(argumentList[1], argumentList[2]))
 
 	@staticmethod
-	def regexreplace(argumentList, grammarDict, variableDict):
+	def command_regexreplace(argumentList, grammarDict, variableDict):
 		"""
 		<_regexreplace|varname/_params|regexOfWhatToReplace|whatToReplaceItWith>
 		Returns the provided variable value with part of it replaced. The part to replaced is determined wit the provided regular expression
@@ -1003,7 +1001,7 @@ class GrammarCommands(object):
 			return (False, u"Unable to parse regular expression '{}' in '_regexreplace' call ({})".format(argumentList[1], e.message))
 
 	@staticmethod
-	def modulecommand(argumentList, grammarDict, variableDict):
+	def command_modulecommand(argumentList, grammarDict, variableDict):
 		"""
 		<_modulecommand|commandName|argument1|argument2|key1=value1|key2=value2|...>
 		Runs a shared command in another bot module. The first parameter is the name of that command, the rest are unnamed and named parameters to pass on, and are all optional
