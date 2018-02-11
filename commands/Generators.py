@@ -325,15 +325,15 @@ class Command(CommandTemplate):
 		#Done!
 		return outputString
 
-	def parseGrammarBlock(self, grammarParts, grammar, parameterString=None, variableDict=None):
-		fieldKey = grammarParts.pop(0)
+	def parseGrammarBlock(self, grammarBlockParts, grammar, parameterString=None, variableDict=None):
+		fieldKey = grammarBlockParts.pop(0)
 		replacement = u""
 
 		#If the last field starts with '&', it specifies special options, like making text bold.
 		# Multiple options are separated by commas. Retrieve those options
 		extraOptions = []
-		if grammarParts and grammarParts[-1].startswith(u'&'):
-			extraOptions = grammarParts.pop()[1:].split(u',')
+		if grammarBlockParts and grammarBlockParts[-1].startswith(u'&'):
+			extraOptions = grammarBlockParts.pop()[1:].split(u',')
 
 		if fieldKey.startswith(u"_"):
 			#Check if the grammar commands class has a method to deal with the provided command
@@ -345,12 +345,12 @@ class Command(CommandTemplate):
 			#Check if the command is a registered one
 			if commandMethod:
 				#Registered function! Call it, and return the result. Whether the call went right or wrong will be handled by the calling function
-				isSuccess, replacement = commandMethod(grammarParts, grammar, variableDict, parameterString)
+				isSuccess, replacement = commandMethod(grammarBlockParts, grammar, variableDict, parameterString)
 				#If something went wrong, stop now. The replacement string should be an error message, pass that along too
 				if not isSuccess:
 					return (False, replacement)
 			else:
-				return (False, u"Unknown command '{key}' in field '<{key}{args}>' found!".format(key=fieldKey, args=u"|" + u"|".join(grammarParts) if grammarParts else u""))
+				return (False, u"Unknown command '{key}' in field '<{key}{args}>' found!".format(key=fieldKey, args=u"|" + u"|".join(grammarBlockParts) if grammarBlockParts else u""))
 		# No command, so check if it's a valid key
 		elif fieldKey not in grammar:
 			return (False, u"Field '{}' not found in grammar file!".format(fieldKey))
@@ -391,7 +391,7 @@ class Command(CommandTemplate):
 				#Store the replacement under the provided variable name
 				# (format 'storeas:[varname]')
 				if u':' not in option:
-					return (False, u"Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarParts), u",".join(extraOptions)))
+					return (False, u"Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarBlockParts), u",".join(extraOptions)))
 				varname = option.split(u':', 1)[1]
 				variableDict[varname] = replacement
 			elif option == u"hide":
