@@ -792,24 +792,21 @@ class GrammarCommands(object):
 	@staticmethod
 	def ifCommand(argumentList, grammarDict, variableDict, parameterString):
 		"""
-		<_if|varname=string|stringIfTrue|stringIfFalse>
-		Checks if the variable is set to the specified value. Returns the first string if it is, and the second if it isn't. Use '_params' as varname to check the parameters
+		<_if|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
+		Checks if the variable is set to the specified value. Returns the IfIdentical string if it is, and the IfNotIdentical string if it isn't.
+		Use '_params' as the varname to check the parameters
 		"""
-		if len(argumentList) < 3:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
-		if u'=' not in argumentList[0]:
-			return (False, u"The first parameter in an '_if' call should be formatted like '[varname]=string', '=' is missing")
-		#Split up the first parameter into a name and the wanted value
-		firstArgumentParts = argumentList[0].split(u'=', 1)
+		if len(argumentList) < 4:
+			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(4))
 
 		#If the first part is '_params', check if there are parameters and if they match
-		if firstArgumentParts[0] == u"_params" and parameterString and parameterString == firstArgumentParts[1]:
-			return (True, argumentList[1])
-		#Check if the variable exists and is set to the requested value
-		elif firstArgumentParts[0] in variableDict and variableDict[firstArgumentParts[0]] == firstArgumentParts[1]:
-			return (True, argumentList[1])
-		else:
+		if argumentList[0] == u"_params" and parameterString and parameterString == argumentList[1]:
 			return (True, argumentList[2])
+		#Check if the variable exists and is set to the requested value
+		elif argumentList[0] in variableDict and variableDict[argumentList[0]] == argumentList[1]:
+			return (True, argumentList[2])
+		else:
+			return (True, argumentList[3])
 
 	@staticmethod
 	def ifcontains(argumentList, grammarDict, variableDict, parameterString):
