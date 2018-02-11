@@ -841,7 +841,8 @@ class GrammarCommands(object):
 		elif argumentList[0] in variableDict:
 			stringToMatchAgainst = variableDict[argumentList[0]]
 		else:
-			stringToMatchAgainst = argumentList[0]
+			#The variable doesn't exist, so it can't match anything
+			return (True, argumentList[3])
 		# Make sure we un-escape the regex, so it can use characters like < and | without messing up our parsing
 		regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
 		try:
