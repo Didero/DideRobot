@@ -981,8 +981,9 @@ class GrammarCommands(object):
 	@staticmethod
 	def replace(argumentList, grammarDict, variableDict, parameterString):
 		"""
-		<_replace|stringToReplaceIn|whatToReplace|whatToReplaceItWith>
-		Returns the provided string but with part of it replaced. The substring 'whatToReplace' is replaced by 'whatToReplaceItBy'. String can be a varname or '_params' too
+		<_replace|varname/_params|whatToReplace|whatToReplaceItWith>
+		Returns the provided variable value but with part of it replaced. The substring 'whatToReplace' is replaced by 'whatToReplaceItBy'
+		Use '_params' as the variable name to use the parameters
 		"""
 		if len(argumentList) < 3:
 			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
@@ -1001,8 +1002,9 @@ class GrammarCommands(object):
 	@staticmethod
 	def regexreplace(argumentList, grammarDict, variableDict, parameterString):
 		"""
-		<_regexreplace|stringToReplaceIn|regexOfWhatToReplace|whatToReplaceItWith>
-		Returns the provided string with part of it replaced. The part to replaced is determined wit the provided regular expression. The string can be a varname or '_params' too
+		<_regexreplace|varname/_params|regexOfWhatToReplace|whatToReplaceItWith>
+		Returns the provided variable value with part of it replaced. The part to replaced is determined wit the provided regular expression
+		Use '_params' as the variable name to use the parameters
 		"""
 		if len(argumentList) < 3:
 			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
