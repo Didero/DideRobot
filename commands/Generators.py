@@ -749,7 +749,7 @@ class GrammarCommands(object):
 	@staticmethod
 	def command_var(argumentList, grammarDict, variableDict):
 		"""
-		<_variable|varname|[valueIfVarNotSet]>
+		<_var|varname|[valueIfVarNotSet]>
 		Returns the value stored under the provided variable name. The second argument is optional, and if set will be returned if the variable isn't stored
 		"""
 		if len(argumentList) < 1:
