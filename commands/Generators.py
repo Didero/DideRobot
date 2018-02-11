@@ -988,6 +988,8 @@ class GrammarCommands(object):
 			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
 		# Check if the string wants the parameters or a variable name, otherwise use the provided string as-is
 		if argumentList[0] == u"_params":
+			if not parameterString:
+				return (False, u"'_replace' called with '_params' argument, but no parameters were provided")
 			stringToReplaceIn = parameterString
 		elif argumentList[0] in variableDict:
 			stringToReplaceIn = variableDict[argumentList[0]]
@@ -1007,6 +1009,8 @@ class GrammarCommands(object):
 		# Check if the string wants the parameters or a variable name, otherwise use the provided string as-is
 		stringToReplaceIn = argumentList[0]
 		if argumentList[0] == u"_params":
+			if not parameterString:
+				return (False, u"'_regexreplace' called with '_params' argument, but no parameters were provided")
 			stringToReplaceIn = parameterString
 		elif argumentList[0] in variableDict:
 			stringToReplaceIn = variableDict[argumentList[0]]
