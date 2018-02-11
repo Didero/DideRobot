@@ -903,12 +903,12 @@ class GrammarCommands(object):
 	def hasparameter(argumentList, grammarDict, variableDict, parameterString):
 		"""
 		<_hasparameter|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
-		Checks if the the provided parameters are equal to a string. Returns the first string if it matches, and the second one if it doesn't.
+		Checks if the the provided parameter string is equal to a string. Returns the first string if it matches, and the second one if it doesn't.
 		If no parameter string was provided, the 'doesn't match' string is returned
 		"""
 		if len(argumentList) < 3:
 			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(3))
-		if parameterString:
+		if parameterString and argumentList[0] == parameterString:
 			return (True, argumentList[1])
 		else:
 			return (True, argumentList[2])
