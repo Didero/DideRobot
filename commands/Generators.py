@@ -864,7 +864,7 @@ class GrammarCommands(object):
 		"""
 		<_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|[_default:stringIfNoCaseMatch]>
 		Checks which provided case matches the stored variable. If varname is '_params', the provided parameters will be checked against
-		The '_default' field is not mandatory, if it's missing an empty string will be returned
+		The '_default' field is not mandatory, but if it's missing and no suitable case can be found, an error is returned
 		"""
 		if len(argumentList) < 2:
 			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(2))
@@ -875,23 +875,15 @@ class GrammarCommands(object):
 				return (False, u"Missing colon in parameter '{}' to '_switch' field".format(caseString))
 			case, stringIfCase = caseString.split(u':', 1)
 			caseDict[case] = stringIfCase
-		#Now try to see which provided case, if any, we should use
-		if argumentList[0] == u"_params" and parameterString in caseDict:
-			#Match the parameter string
+		#Then see if we can find a matching case
+		if argumentList[0] == u'_params' and parameterString and parameterString in caseDict:
 			return (True, caseDict[parameterString])
-		elif argumentList[0] not in variableDict:
-			#Tried to match against a variable that doesn't exist
-			return (False, u"Variable '{}' was specified in a '_switch' call, but it isn't set".format(argumentList[0]))
-		elif variableDict[argumentList[0]] in caseDict:
-			#Value found in the case dict
+		elif argumentList[0] in variableDict and variableDict[argumentList[0]] in caseDict:
 			return (True, caseDict[variableDict[argumentList[0]]])
 		elif u'_default' in caseDict:
-			#Value not found, fall back to the default value if it exists
 			return (True, caseDict[u'_default'])
 		else:
-			#No match, no fallback. Return empty string
-			return (True, u"")
-
+			return (False, u"'_switch' command contains no case for '{}', and no '_default' fallback case".format(argumentList[0]))
 
 	#Parameter functions
 	@staticmethod
