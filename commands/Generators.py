@@ -716,7 +716,10 @@ class GrammarCommands(object):
 			elif argumentList[0] not in variableDict:
 				return (False, u"'_{}' command called with '{}' as variable name argument, but that variable isn't set".format(commandName, argumentList[0]))
 		#All checks passed, call the command
-		return command(argumentList, grammarDict, variableDict)
+		try:
+			return command(argumentList, grammarDict, variableDict)
+		except Exception as e:
+			return (False, u"Something went wrong when executing the '_{}' call ({})".format(commandName, e.message))
 
 	#Shared internal methods
 	@staticmethod
