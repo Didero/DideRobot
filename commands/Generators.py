@@ -768,7 +768,7 @@ class GrammarCommands(object):
 			return (True, argumentList[2])
 
 	@staticmethod
-	@validateArguments(1, False)  #False because a fallback value could be set
+	@validateArguments(1, checkIfFirstArgumentIsVarname=False)  #False because a fallback value could be set
 	def command_var(argumentList, grammarDict, variableDict):
 		"""
 		<_var|varname|[valueIfVarNotSet]>
@@ -972,7 +972,7 @@ class GrammarCommands(object):
 
 	#Miscellaneous
 	@staticmethod
-	@validateArguments(3, True)
+	@validateArguments(3, checkIfFirstArgumentIsVarname=True)
 	def command_replace(argumentList, grammarDict, variableDict):
 		"""
 		<_replace|varname/_params|whatToReplace|whatToReplaceItWith>
@@ -983,7 +983,7 @@ class GrammarCommands(object):
 		return (True, variableDict[argumentList[0]].replace(argumentList[1], argumentList[2]))
 
 	@staticmethod
-	@validateArguments(3, True)
+	@validateArguments(3, checkIfFirstArgumentIsVarname=True)
 	def command_regexreplace(argumentList, grammarDict, variableDict):
 		"""
 		<_regexreplace|varname/_params|regexOfWhatToReplace|whatToReplaceItWith>
