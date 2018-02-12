@@ -337,8 +337,7 @@ class Command(CommandTemplate):
 		# Grammar commands start with an underscore, check if this block is a grammar command
 		if fieldKey.startswith(u"_"):
 			#Have the GrammarCommands class try and execute the provided command name
-			commandName = fieldKey[1:].lower()
-			isSuccess, replacement = GrammarCommands.runCommand(commandName, grammarBlockParts, grammar, variableDict)
+			isSuccess, replacement = GrammarCommands.runCommand(fieldKey[1:], grammarBlockParts, grammar, variableDict)
 			# If something went wrong, stop now. The replacement string should be an error message, pass that along too
 			if not isSuccess:
 				return (False, replacement)
@@ -697,7 +696,7 @@ class GrammarCommands(object):
 			or during the grammar command execution, this is False, and the string is the error message. If everything went right, the boolean is True and the string is
 			the outcome of the grammar command, ready to be substituted into the grammar string in place of the command
 		"""
-		command = getattr(GrammarCommands, 'command_' + commandName, None)
+		command = getattr(GrammarCommands, 'command_' + commandName.lower(), None)
 		#First check if the requested command exists
 		if not command:
 			return (False, u"Unknown command '{}' called".format(commandName))
