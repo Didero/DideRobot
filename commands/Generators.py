@@ -977,25 +977,43 @@ class GrammarCommands(object):
 	@validateArguments(3, checkIfFirstArgumentIsVarname=True)
 	def command_replace(argumentList, grammarDict, variableDict):
 		"""
-		<_replace|varname/_params|whatToReplace|whatToReplaceItWith>
+		<_replace|varname/_params|whatToReplace|whatToReplaceItWith[|replacementCount]>
 		Returns the provided variable value but with part of it replaced. The substring 'whatToReplace' is replaced by 'whatToReplaceItBy'
-		Use '_params' as the variable name to use the parameters
+		Use '_params' as the variable name to use the parameters. If 'replacementCount' is set to a number, only that many replacements are made
 		"""
-		# Now replace what we need to replace
-		return (True, variableDict[argumentList[0]].replace(argumentList[1], argumentList[2]))
+		replacementCount = -1  #Negative count means no replacement limit
+		#Check if a count parameter was given, and if so, if it's valid
+		if len(argumentList) >= 4:
+			try:
+				replacementCount = int(argumentList[3])
+				if replacementCount == 0:
+					replacementCount = -1
+			except ValueError:
+				return (False, u"Invalid optional replacement count value '{}' passed to '_replace' call".format(argumentList[3]))
+		#Now replace what we need to replace
+		return (True, variableDict[argumentList[0]].replace(argumentList[1], argumentList[2], replacementCount))
 
 	@staticmethod
 	@validateArguments(3, checkIfFirstArgumentIsVarname=True)
 	def command_regexreplace(argumentList, grammarDict, variableDict):
 		"""
-		<_regexreplace|varname/_params|regexOfWhatToReplace|whatToReplaceItWith>
+		<_regexreplace|varname/_params|regexOfWhatToReplace|whatToReplaceItWith[|replacementCount]>
 		Returns the provided variable value with part of it replaced. The part to replaced is determined wit the provided regular expression
-		Use '_params' as the variable name to use the parameters
+		Use '_params' as the variable name to use the parameters. If 'replacementCount' is set to a number, only that many replacements are made
 		"""
+		replacementCount = 0  #0 means no replacement limit
+		#Check if a replacement count parameter was given, and if so, if it's valid
+		if len(argumentList) >= 4:
+			try:
+				replacementCount = int(argumentList[3])
+				if replacementCount < 0:
+					replacementCount = 0
+			except ValueError:
+				return (False, u"Invalid optional replacement count value '{}' passed to '_regexreplace' call".format(argumentList[3]))
 		try:
 			# Unescape any characters inside the regex (like < and |)
 			regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
-			return (True, re.sub(regex, argumentList[2], variableDict[argumentList[0]]))
+			return (True, re.sub(regex, argumentList[2], variableDict[argumentList[0]], count=replacementCount))
 		except re.error as e:
 			return (False, u"Unable to parse regular expression '{}' in '_regexreplace' call ({})".format(argumentList[1], e.message))
 
