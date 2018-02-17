@@ -937,7 +937,7 @@ class GrammarCommands(object):
 			value = random.randint(int(argumentList[0]), int(argumentList[1]))
 		except ValueError:
 			return (False, u"Invalid argument provided to '_randint' call, '{}' or '{}' couldn't be parsed as a number".format(argumentList[0], argumentList[1]))
-		return (True, unicode(value, 'utf-8'))
+		return (True, unicode(str(value), 'utf-8'))
 
 	@staticmethod
 	@validateArguments(2)
