@@ -200,13 +200,13 @@ class Command(CommandTemplate):
 			return False
 
 		if gender == "f":
-			return {"gender": "f", "genderNoun": "Woman", "genderNounYoung": "Girl", "pronoun": "she",
-								 "possessivePronoun": "her", "personalPronoun": "her"}
+			return {"gender": "f", "genderNoun": "Woman", "genderNounYoung": "Girl", "pronoun": "she", "possessivePronoun": "her", "personalPronoun": "her",
+					"they": "she", "their": "her", "them": "her"}
 		elif gender == "m":
-			return {"gender": "m", "genderNoun": "Man", "genderNounYoung": "Boy", "pronoun": "he",
-								 "possessivePronoun": "his", "personalPronoun": "him"}
-		return {"gender": "misc", "genderNoun": "Person", "genderNounYoung": "Kid", "pronoun": "they",
-								 "possessivePronoun": "their", "personalPronoun": "them"}
+			return {"gender": "m", "genderNoun": "Man", "genderNounYoung": "Boy", "pronoun": "he", "possessivePronoun": "his", "personalPronoun": "him",
+					"they": "he", "their": "his", "them": "him"}
+		return {"gender": "misc", "genderNoun": "Person", "genderNounYoung": "Kid", "pronoun": "they", "possessivePronoun": "their", "personalPronoun": "them",
+				"they": "they", "their": "their", "them": "them"}
 
 	def parseGrammarDict(self, grammarDict, parameters=None, variableDict=None):
 		if variableDict is None:
