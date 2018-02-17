@@ -181,7 +181,14 @@ class Command(CommandTemplate):
 	def getGenderWords(genderString, allowUnspecified=True):
 		if genderString is not None:
 			genderString = genderString.lower()
-		if not genderString:
+
+		if genderString in ("f", "female", "woman", "girl"):
+			gender = "f"
+		elif genderString in ("m", "male", "man", "boy"):
+			gender = "m"
+		elif allowUnspecified and genderString in ("misc", "other", "queer"):
+			gender = "misc"
+		else:
 			# No gender specified, pick one on our own
 			roll = random.randint(1, 100)
 			if allowUnspecified and roll <= 45 or roll <= 50:
@@ -190,14 +197,6 @@ class Command(CommandTemplate):
 				gender = "m"
 			else:
 				gender = "misc"
-		elif genderString in ("f", "female", "woman", "girl"):
-			gender = "f"
-		elif genderString in ("m", "male", "man", "boy"):
-			gender = "m"
-		elif allowUnspecified:
-			gender = "misc"
-		else:
-			return False
 
 		if gender == "f":
 			return {"gender": "f", "genderNoun": "Woman", "genderNounYoung": "Girl", "pronoun": "she", "possessivePronoun": "her", "personalPronoun": "her",
