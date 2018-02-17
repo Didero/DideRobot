@@ -175,7 +175,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def isGenderParameter(arg):
-		return arg.lower() in ("f", "female", "woman", "girl", "m", "male", "man", "boy")
+		return arg.lower() in ("f", "female", "woman", "girl", "m", "male", "man", "boy", "misc", "other", "queer")
 
 	@staticmethod
 	def getGenderWords(genderString, allowUnspecified=True):
