@@ -104,8 +104,13 @@ class Command(CommandTemplate):
 			parameters = message.messageParts[1:]
 			#The generator can either be a module function, or a string pointing to a grammar file. Check which it is
 			if isinstance(wantedGenerator, basestring):
-				#Grammar file! Send it to the parser
-				with open(os.path.join(self.filesLocation, wantedGenerator), "r") as grammarfile:
+				path = os.path.join(self.filesLocation, wantedGenerator)
+				#Grammar file! First check if it still exists
+				if not os.path.isfile(path):
+					message.reply("Huh, that generator did exist last time I looked, but now it's... gone, for some reason. Please don't rename my files without telling me", "say")
+					return
+				#It exists! Send it to the parser
+				with open(path, "r") as grammarfile:
 					grammarDict = json.load(grammarfile)
 					message.reply(self.parseGrammarDict(grammarDict, parameters=parameters))
 			else:
