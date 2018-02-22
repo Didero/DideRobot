@@ -59,7 +59,7 @@ class Command(CommandTemplate):
 			if len(aliasNames) == 0:
 				message.reply("No aliases stored yet. You could be the first to add one!", "say")
 			else:
-				message.reply(u"{:,} alias(es): {}".format(len(aliasNames), u", ".join(aliasNames)), "say")
+				message.reply(u"{:,} alias{}: {}".format(len(aliasNames), u"es" if len(aliasNames) > 1 else u"", u", ".join(sorted(aliasNames))), "say")
 
 		elif parameter == "show":
 			if message.messagePartsLength == 1:
