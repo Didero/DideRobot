@@ -203,14 +203,23 @@ class Command(CommandTemplate):
 			else:
 				gender = "misc"
 
+		#Set some verb variables, so using both 'they' and 'he/his' in sentences is easier
+		#For instance in grammar files you can do '<_var|they> <_var|isAre>' or '<_var|they> make<_var|verbS>'
+		#First set them ot the 'he' and 'she' values, since then we only have to change them in one case
+		genderDict = {"isAre": "is", "wasWere": "was", "verbS": "s", "verbEs": "es"}
+		#Then set the pronouns
 		if gender == "f":
-			return {"gender": "f", "genderNoun": "Woman", "genderNounYoung": "Girl", "pronoun": "she", "possessivePronoun": "her", "personalPronoun": "her",
-					"they": "she", "their": "her", "them": "her"}
+			genderDict.update({"gender": "f", "genderNoun": "Woman", "genderNounYoung": "Girl", "pronoun": "she", "possessivePronoun": "her", "personalPronoun": "her",
+							   "they": "she", "their": "her", "them": "her"})
 		elif gender == "m":
-			return {"gender": "m", "genderNoun": "Man", "genderNounYoung": "Boy", "pronoun": "he", "possessivePronoun": "his", "personalPronoun": "him",
-					"they": "he", "their": "his", "them": "him"}
-		return {"gender": "misc", "genderNoun": "Person", "genderNounYoung": "Kid", "pronoun": "they", "possessivePronoun": "their", "personalPronoun": "them",
-				"they": "they", "their": "their", "them": "them"}
+			genderDict.update({"gender": "m", "genderNoun": "Man", "genderNounYoung": "Boy", "pronoun": "he", "possessivePronoun": "his", "personalPronoun": "him",
+							   "they": "he", "their": "his", "them": "him"})
+		else:
+			#Since the pronoun is 'they', verbs need other forms, so set them too here
+			genderDict.update({"gender": "misc", "genderNoun": "Person", "genderNounYoung": "Kid", "pronoun": "they", "possessivePronoun": "their", "personalPronoun": "them",
+							   "they": "they", "their": "their", "them": "them",
+							   "isAre": "are", "wasWere": "were", "verbS": "", "verbEs": ""})
+		return genderDict
 
 	def parseGrammarDict(self, grammarDict, parameters=None, variableDict=None):
 		if variableDict is None:
