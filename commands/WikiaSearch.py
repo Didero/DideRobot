@@ -28,7 +28,8 @@ class Command(CommandTemplate):
 	def retrieveArticleAbstract(wikiName, articleName):
 		#Retrieve the page, if we can
 		try:
-			r = requests.get("http://{}.wikia.com/api/v1/Articles/Details".format(wikiName), params={"titles": articleName.replace(" ", "_"), "abstract": "200"}, timeout=10.0)
+			r = requests.get("http://{}.wikia.com/api/v1/Articles/Details".format(wikiName), timeout=10.0,
+							 params={"titles": articleName.replace(" ", "_"), "abstract": Constants.MAX_MESSAGE_LENGTH})
 		except requests.exceptions.Timeout:
 			return (False, "Apparently Wikia got caught up reading that article, because it didn't get back to me. Maybe try again later")
 		#If the wiki doesn't exist, we get redirected to a different page
@@ -57,5 +58,7 @@ class Command(CommandTemplate):
 		if articleInfo['abstract'].startswith("{} may refer to:".format(articleInfo['title'])):
 			return (True, "Apparently '{}' can mean multiple things. Who knew? Here's the list of what it can mean: {}".format(articleName, url))
 
-		#Seems we got an article start! Return that
-		return (True, articleInfo['abstract'] + Constants.GREY_SEPARATOR + url)
+		#Seems we got an actual article start. Clamp it to the maximum message length
+		maxAbstractLength = Constants.MAX_MESSAGE_LENGTH - len(Constants.GREY_SEPARATOR) - len(url)
+		articleAbstract = articleInfo['abstract'][:maxAbstractLength].rsplit(' ', 1)[0]
+		return (True, articleAbstract + Constants.GREY_SEPARATOR + url)
