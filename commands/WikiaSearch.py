@@ -45,8 +45,6 @@ class Command(CommandTemplate):
 		articleId = apireply['items'].keys()[0]
 		articleInfo = apireply['items'][articleId]
 
-		print "[WikiaSearch] article info:", articleInfo
-
 		#Apparently the page exists. It could still be a redirect page though
 		if articleInfo['abstract'].startswith("REDIRECT "):
 			redirectArticleName = articleInfo['abstract'].split(' ', 1)[1]
