@@ -6,7 +6,7 @@ import Constants
 
 
 class Command(CommandTemplate):
-	triggers = ['wikiasearch']
+	triggers = ['wikiasearch', 'wikia']
 	helptext = "Searches a wiki on Wikia.com. Usage: '{commandPrefix}wikiasearch [wiki-name] [search]'. Wiki names aren't case-sensitive, but searches are, sorry"
 
 	def execute(self, message):
