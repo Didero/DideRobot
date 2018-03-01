@@ -434,8 +434,11 @@ class Command(CommandTemplate):
 				replytext += cardInfoPart[:splitIndex] + u'\n'
 				messageLength = 0
 
-		#Remove the separator at the end, and make sure it's a string and not unicode
-		replytext = replytext.rstrip(Constants.GREY_SEPARATOR).rstrip().encode('utf-8')
+		#Remove the separator at the end, if there is one
+		if replytext.endswith(Constants.GREY_SEPARATOR):
+			replytext = replytext[:-separatorLength].rstrip()
+		#Make sure we return a string and not unicode
+		replytext = replytext.encode('utf-8')
 		return replytext
 
 	@staticmethod
