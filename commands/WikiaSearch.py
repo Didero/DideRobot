@@ -7,7 +7,7 @@ import Constants
 
 class Command(CommandTemplate):
 	triggers = ['wikiasearch', 'wikia']
-	helptext = "Searches a wiki on Wikia.com. Usage: '{commandPrefix}wikiasearch [wiki-name] [search]'. Wiki names aren't case-sensitive, but searches are, sorry"
+	helptext = "Searches a wiki on Wikia.com for the best-matching article. Usage: '{commandPrefix}wikiasearch [wiki-name] [search]'"
 
 	def execute(self, message):
 		"""
@@ -21,8 +21,31 @@ class Command(CommandTemplate):
 			return message.reply("What do you want me to search for on the {} Wikia wiki?".format(message.messageParts[0]), "say")
 
 		searchterm = " ".join(message.messageParts[1:])
-		articleSearchResult = self.retrieveArticleAbstract(message.messageParts[0], searchterm)
-		message.reply(articleSearchResult[1], "say")
+		success, articleTitleOrError = self.searchForArticleTitle(message.messageParts[0], searchterm)
+		if not success:
+			#Searching for the article went wrong, just say the error message
+			return message.reply(articleTitleOrError, "say")
+		#Found an article name, retrieve and say the article abstract (or the error message if something goes wrong)
+		message.reply(self.retrieveArticleAbstract(message.messageParts[0], articleTitleOrError)[1], "say")
+
+	@staticmethod
+	def searchForArticleTitle(wikiName, query):
+		try:
+			r = requests.get("http://{}.wikia.com/api/v1/Search/List".format(wikiName), timeout=10.0, params={"query": query, "limit": "1"})
+		except requests.exceptions.Timeout:
+			return (False, "Wikia apparently got confused about that query, since it's taking ages. Maybe try again in a bit?")
+
+		#If the wiki doesn't exist, we get redirected to a different page
+		if r.url == "http://community.wikia.com/wiki/Community_Central:Not_a_valid_community?from={}.wikia.com".format(wikiName.lower()):
+			return (False, "Apparently the wiki '{}' doesn't exist on Wikia. You invented a new fandom!".format(wikiName))
+		apireply = r.json()
+
+		#Check if no results were found
+		if 'items' not in apireply:
+			return (False, "The term '{}' doesn't seem to exist in the {} fandom. Time to write fanfic about it!".format(query, wikiName))
+
+		#Found at least one article match, return the name of the top one
+		return (True, apireply['items'][0]['title'])
 
 	@staticmethod
 	def retrieveArticleAbstract(wikiName, articleName):
