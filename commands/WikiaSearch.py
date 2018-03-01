@@ -78,10 +78,20 @@ class Command(CommandTemplate):
 		url = "{}{}".format(apireply['basepath'], articleInfo['url'])
 
 		#Check if it isn't a disambiguation page
-		if articleInfo['abstract'].startswith("{} may refer to:".format(articleInfo['title'])):
-			return (True, "Apparently '{}' can mean multiple things. Who knew? Here's the list of what it can mean: {}".format(articleName, url))
+		if Command.isPageDisambiguationPage(url, articleInfo['title'], articleInfo['abstract']):
+			return (True, "Apparently that can mean multiple things. Who knew? Here's the list of what it can refer to: {}".format(articleName, url))
 
 		#Seems we got an actual article start. Clamp it to the maximum message length
 		maxAbstractLength = Constants.MAX_MESSAGE_LENGTH - len(Constants.GREY_SEPARATOR) - len(url)
 		articleAbstract = articleInfo['abstract'][:maxAbstractLength].rsplit(' ', 1)[0]
 		return (True, articleAbstract + Constants.GREY_SEPARATOR + url)
+
+	@staticmethod
+	def isPageDisambiguationPage(url, title, pageText):
+		if url.endswith("_(disambiguation)"):
+			return True
+		if pageText.startswith("{} may refer to:".format(title)):
+			return True
+		if pageText.startstwith("This is a disambiguation page"):
+			return True
+		return False
