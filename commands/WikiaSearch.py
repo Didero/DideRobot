@@ -29,6 +29,16 @@ class Command(CommandTemplate):
 		message.reply(self.retrieveArticleAbstract(message.messageParts[0], articleTitleOrError)[1], "say")
 
 	@staticmethod
+	def isPageDisambiguationPage(url, title, pageText):
+		if url.endswith("_(disambiguation)"):
+			return True
+		if pageText.startswith("{} may refer to:".format(title)):
+			return True
+		if pageText.startstwith("This is a disambiguation page"):
+			return True
+		return False
+
+	@staticmethod
 	def searchForArticleTitle(wikiName, query):
 		try:
 			r = requests.get("http://{}.wikia.com/api/v1/Search/List".format(wikiName), timeout=10.0, params={"query": query, "limit": "1"})
@@ -85,13 +95,3 @@ class Command(CommandTemplate):
 		maxAbstractLength = Constants.MAX_MESSAGE_LENGTH - len(Constants.GREY_SEPARATOR) - len(url)
 		articleAbstract = articleInfo['abstract'][:maxAbstractLength].rsplit(' ', 1)[0]
 		return (True, articleAbstract + Constants.GREY_SEPARATOR + url)
-
-	@staticmethod
-	def isPageDisambiguationPage(url, title, pageText):
-		if url.endswith("_(disambiguation)"):
-			return True
-		if pageText.startswith("{} may refer to:".format(title)):
-			return True
-		if pageText.startstwith("This is a disambiguation page"):
-			return True
-		return False
