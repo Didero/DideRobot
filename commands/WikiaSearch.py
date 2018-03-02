@@ -39,6 +39,10 @@ class Command(CommandTemplate):
 		return False
 
 	@staticmethod
+	def isUrlInvalidWikiaPage(url):
+		return url.startswith("http://community.wikia.com/wiki/Community_Central:Not_a_valid_community?from=")
+
+	@staticmethod
 	def retrieveApiResult(wikiName, apiUrl, params, timeout=10.0):
 		try:
 			r = requests.get("http://{}.wikia.com/api/v1/{}".format(wikiName, apiUrl), timeout=10.0, params=params)
@@ -46,7 +50,7 @@ class Command(CommandTemplate):
 			return (False, "Wikia apparently got confused about that query, since it's taking ages. Maybe try again in a bit?")
 
 		#If the wiki doesn't exist, we get redirected to a different page
-		if r.url == "http://community.wikia.com/wiki/Community_Central:Not_a_valid_community?from={}.wikia.com".format(wikiName.lower()):
+		if Command.isUrlInvalidWikiaPage(r.url):
 			return (False, "Apparently the wiki '{}' doesn't exist on Wikia. You invented a new fandom!".format(wikiName))
 
 		#Loading worked, return the API reply
