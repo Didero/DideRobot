@@ -50,7 +50,7 @@ class Command(CommandTemplate):
 			return (False, "Apparently the wiki '{}' doesn't exist on Wikia. You invented a new fandom!".format(wikiName))
 
 		#Loading worked, return the API reply
-		return r.json()
+		return (True, r.json())
 
 	@staticmethod
 	def searchForArticleTitle(wikiName, query):
