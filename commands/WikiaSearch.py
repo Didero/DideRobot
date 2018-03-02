@@ -6,7 +6,7 @@ import Constants
 
 
 class Command(CommandTemplate):
-	triggers = ['wikiasearch', 'wikia']
+	triggers = ['wikiasearch', 'wikia', 'wikiarandom']
 	helptext = "Searches a wiki on Wikia.com for the best-matching article. Usage: '{commandPrefix}wikiasearch [wiki-name] [search]'"
 
 	def execute(self, message):
@@ -17,7 +17,13 @@ class Command(CommandTemplate):
 		#First check if enough parameters were passed
 		if message.messagePartsLength == 0:
 			return message.reply("Please tell me which Wikia wiki you want me to search, there's a BILLION of 'em", "say")
-		elif message.messagePartsLength == 1:
+
+		#Getting a random page only needs a wiki name
+		if message.trigger == 'wikiarandom':
+			return message.reply(Command.getRandomWikiaArticle(message.messageParts[0])[1])
+
+		#Searches need a search term
+		if message.messagePartsLength == 1:
 			return message.reply("What do you want me to search for on the {} Wikia wiki?".format(message.messageParts[0]), "say")
 
 		searchterm = " ".join(message.messageParts[1:])
@@ -102,3 +108,18 @@ class Command(CommandTemplate):
 		maxAbstractLength = Constants.MAX_MESSAGE_LENGTH - len(Constants.GREY_SEPARATOR) - len(url)
 		articleAbstract = articleInfo['abstract'][:maxAbstractLength].rsplit(' ', 1)[0]
 		return (True, articleAbstract + Constants.GREY_SEPARATOR + url)
+
+	@staticmethod
+	def getRandomWikiaArticle(wikiName):
+		try:
+			page = requests.get('http://{}.wikia.com/wiki/Special:Random'.format(wikiName), timeout=10.0)
+		except requests.exceptions.Timeout:
+			return (False, "Apparently Wikia couldn't pick between all of its interesting articles, so it took too long to reply. Sorry!")
+
+		if Command.isUrlInvalidWikiaPage(page.url):
+			return (False, "That doesn't appear to be a valid Wikia wiki. Seems like you're good enough at making up random stuff that you don't need me!")
+
+		#Get the part of the URL that is the article title
+		articleName = page.url.split('/wiki/', 1)[1]
+		#And retrieve the abstract of the article in a more easily parsable format
+		return Command.retrieveArticleAbstract(wikiName, articleName)
