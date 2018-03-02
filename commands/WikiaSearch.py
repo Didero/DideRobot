@@ -41,7 +41,7 @@ class Command(CommandTemplate):
 	@staticmethod
 	def retrieveApiResult(wikiName, apiUrl, params, timeout=10.0):
 		try:
-			r = requests.get("http://{}.wikia.com/api/{}".format(wikiName, apiUrl), timeout=10.0, params=params)
+			r = requests.get("http://{}.wikia.com/api/v1/{}".format(wikiName, apiUrl), timeout=10.0, params=params)
 		except requests.exceptions.Timeout:
 			return (False, "Wikia apparently got confused about that query, since it's taking ages. Maybe try again in a bit?")
 
