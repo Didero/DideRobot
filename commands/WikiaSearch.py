@@ -34,7 +34,7 @@ class Command(CommandTemplate):
 			return True
 		if pageText.startswith("{} may refer to:".format(title)):
 			return True
-		if pageText.startstwith("This is a disambiguation page"):
+		if pageText.startswith("This is a disambiguation page"):
 			return True
 		return False
 
