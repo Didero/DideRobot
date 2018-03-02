@@ -39,16 +39,26 @@ class Command(CommandTemplate):
 		return False
 
 	@staticmethod
-	def searchForArticleTitle(wikiName, query):
+	def retrieveApiResult(wikiName, apiUrl, params, timeout=10.0):
 		try:
-			r = requests.get("http://{}.wikia.com/api/v1/Search/List".format(wikiName), timeout=10.0, params={"query": query, "limit": "1"})
+			r = requests.get("http://{}.wikia.com/api/{}".format(wikiName, apiUrl), timeout=10.0, params=params)
 		except requests.exceptions.Timeout:
 			return (False, "Wikia apparently got confused about that query, since it's taking ages. Maybe try again in a bit?")
 
 		#If the wiki doesn't exist, we get redirected to a different page
 		if r.url == "http://community.wikia.com/wiki/Community_Central:Not_a_valid_community?from={}.wikia.com".format(wikiName.lower()):
 			return (False, "Apparently the wiki '{}' doesn't exist on Wikia. You invented a new fandom!".format(wikiName))
-		apireply = r.json()
+
+		#Loading worked, return the API reply
+		return r.json()
+
+	@staticmethod
+	def searchForArticleTitle(wikiName, query):
+		#Retrieve the API result for this search (or an error message of something went wrong)
+		apiResultTuple = Command.retrieveApiResult(wikiName, "Search/List", {"query": query, "limit": "1"})
+		if not apiResultTuple[0]:
+			return apiResultTuple
+		apireply = apiResultTuple[1]
 
 		#Check if no results were found
 		if 'items' not in apireply:
@@ -59,18 +69,11 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveArticleAbstract(wikiName, articleName):
-		#Retrieve the page, if we can
-		try:
-			r = requests.get("http://{}.wikia.com/api/v1/Articles/Details".format(wikiName), timeout=10.0,
-							 params={"titles": articleName.replace(" ", "_"), "abstract": Constants.MAX_MESSAGE_LENGTH})
-		except requests.exceptions.Timeout:
-			return (False, "Apparently Wikia got caught up reading that article, because it didn't get back to me. Maybe try again later")
-		#If the wiki doesn't exist, we get redirected to a different page
-		if r.url == "http://community.wikia.com/wiki/Community_Central:Not_a_valid_community?from={}.wikia.com".format(wikiName.lower()):
-			return (False, "Apparently the wiki '{}' doesn't exist on Wikia. You invented a new fandom!".format(wikiName))
-
-		#Request succeeded, wiki exists
-		apireply = r.json()
+		#Retrieve the API result for this search (or an error message of something went wrong)
+		apiResultTuple = Command.retrieveApiResult(wikiName, "Articles/Details", {"titles": articleName.replace(" ", "_"), "abstract": Constants.MAX_MESSAGE_LENGTH})
+		if not apiResultTuple[0]:
+			return apiResultTuple
+		apireply = apiResultTuple[1]
 
 		#If the requested page doesn't exist, the return is empty
 		if len(apireply['items']) == 0:
