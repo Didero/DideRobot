@@ -7,7 +7,8 @@ import Constants
 
 class Command(CommandTemplate):
 	triggers = ['wikiasearch', 'wikia', 'wikiarandom']
-	helptext = "Searches a wiki on Wikia.com for the best-matching article. Usage: '{commandPrefix}wikiasearch [wiki-name] [search]'"
+	helptext = "Searches a wiki on Wikia.com for the best-matching article. Usage: '{commandPrefix}wikiasearch [wiki-name] [search]'. " \
+			   "Or use '{commandPrefix}wikiarandom [wiki-name]' to get a random article from that wiki"
 
 	def execute(self, message):
 		"""
