@@ -2,7 +2,7 @@
 "_name": "Sam's Surprise Exclamations",
 "_description": "Sam from the Sam & Max games is always surprised in an interesting way. This generates some of his exclamations",
 "_triggers": ["samandmax"],
-"_start": "<_hasparameter|original|<_file|SamsOriginalSentences.txt>|<sentence>>",
+"_start": "\"<_hasparameter|original|<_file|SamsOriginalSentences.txt>|<sentence>>\" -Sam",
 "sentenceStart": ["Holy", "Sweet", "Great", "By the", "Mighty"],
 "sentence": {"95": "<sentenceStart> <adjective> <subject><affixes>!", "100": "<adjective|&firstletteruppercase> <subject><affixes>!"},
 "adjective": ["jumping", "mother of", "gouts of", "cap-wearing", "suffering", "grinning", "head of", "gin-running", "thundering", "two-timing", "mace-wielding", "domesticated", "fat-free", "caffeine-addled", "sacred", "knuckle-cracking", "ruby-red", "bloody-nosed", "rampaging", "heaping helpings of"],
