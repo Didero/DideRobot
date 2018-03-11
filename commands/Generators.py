@@ -959,19 +959,6 @@ class GrammarCommands(object):
 		return (True, unicode(str(value), 'utf-8'))
 
 	@staticmethod
-	@validateArguments(2)
-	def command_randintasword(argumentList, grammarDict, variableDict):
-		"""
-		<_randintasword|lowerBound|upperBound>
-		Returns a number between the lower and upper bound, inclusive on both sides, and converts that to a word (so '2' becomes 'two')
-		"""
-		try:
-			value = random.randint(int(argumentList[0]), int(argumentList[1]))
-		except ValueError:
-			return (False, u"Invalid argument provided to '_randint' call, '{}' or '{}' couldn't be parsed as a number".format(argumentList[0], argumentList[1]))
-		return (True, Command.numberToText(value))
-
-	@staticmethod
 	@validateArguments(1)
 	def command_choose(argumentList, grammarDict, variableDict):
 		"""
