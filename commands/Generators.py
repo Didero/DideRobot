@@ -398,6 +398,12 @@ class Command(CommandTemplate):
 					return (False, u"Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarBlockParts), u",".join(extraOptions)))
 				varname = option.split(u':', 1)[1]
 				variableDict[varname] = replacement
+			elif option == u'numbertotext':
+				#Convert an actual number to text, like '4' to 'four'
+				try:
+					replacement = Command.numberToText(int(replacement))
+				except ValueError:
+					return (False, u"Asked to convert '{}' to a number with 'numberasword' option, but it isn't one")
 			elif option == u"hide":
 				#Completely hides the replacement text. Useful in combination with 'storeas', if you don't want to store but not display the output
 				replacement = u""
