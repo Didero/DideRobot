@@ -18,5 +18,5 @@
 "colour": ["purple", "blue", "yellow", "green", "red", "white", "black", "turquoise", "pink", "violet", "aquamarine", "cyan", "orange", "khaki"],
 "colourPattern": ["dots", "stripes", "spots"],
 "specialPartsLine": {"25": "It also has <specialPart>.", "50": "It also has <specialPart> and <specialPart>."},
-"specialPart": ["<_randintasword|2|4> horns", "fins", "a <size> tail", "a <size>, prehensile tail", "<_randintasword|2|4> <size> ears", "a lot of hair", "feathers", "<_randintasword|2|4> tentacles"]
+"specialPart": ["<_randint|2|4|&numbertotext> horns", "fins", "a <size> tail", "a <size>, prehensile tail", "<_randint|2|4|&numbertotext> <size> ears", "a lot of hair", "feathers", "<_randint|2|4|&numbertotext> tentacles"]
 }
