@@ -5,9 +5,25 @@
 "_start": "This creature is a <size> <creatureExistence>. It has <bodyDescription>. It is <colourDescription>. <specialPartsLine>",
 "size": ["minuscule", "tiny", "small", "medium-sized", "large", "huge", "gargantuan", "colossal"],
 "creatureExistence": ["carnivore that typically <carnivoreBehaviour>", "herbivore that typically <herbivoreBehaviour>", "omnivore that typically <omnivoreBehaviour>"],
-"carnivoreBehaviour": ["hunts for prey in large packs", "hides and waits for prey, often for hours at a time", "surprises its prey by jumping down on it from a tree", "stalks its prey, waiting patiently for an opportunity to strike", "seduces its prey, and strikes when the prey relaxes"],
-"herbivoreBehaviour": ["grazes in large herds for protection against predators", "swings from tree to tree, collecting and eating the fruit it comes across", "hides most of the time, only coming out of its hiding place to quickly search for some fruits and grass", "uses its natural camouflage to move slowly from grassland to grassland to graze"],
-"omnivoreBehaviour": ["swings from tree to tree, eating all the fruit and small creatures it comes across", "hunts for prey in packs, or when there's no suitable prey around, grazes in groups", "stalks its prey for hours on end, occasionally eating fruits and grass on the way, waiting for the perfect time to strike", "waits in the same hiding place for hours for the perfect foodsource to come its way, be it flora or fauna"],
+"carnivoreBehaviour": [
+	"hunts for prey in large packs",
+	"hides and waits for prey, often for hours at a time",
+	"surprises its prey by jumping down on it from a tree",
+	"stalks its prey, waiting patiently for an opportunity to strike",
+	"seduces its prey, and strikes when the prey relaxes"
+],
+"herbivoreBehaviour": [
+	"grazes in large herds for protection against predators",
+	"swings from tree to tree, collecting and eating the fruit it comes across",
+	"hides most of the time, only coming out of its hiding place to quickly search for some fruits and grass",
+	"uses its natural camouflage to move slowly from grassland to grassland to graze"
+],
+"omnivoreBehaviour": [
+	"swings from tree to tree, eating all the fruit and small creatures it comes across",
+	"hunts for prey in packs, or when there's no suitable prey around, grazes in groups",
+	"stalks its prey for hours on end, occasionally eating fruits and grass on the way, waiting for the perfect time to strike",
+	"waits in the same hiding place for hours for the perfect foodsource to come its way, be it flora or fauna"
+],
 "bodyDescription": ["<mouth>, <legs>, <arms>, and <eyes>", "<arms>, <legs>, <mouth>, and <eyes>"],
 "mouth": ["one mouth", "two mouths", "three mouths"],
 "legs": ["no legs", "a single pair of legs", "four legs", "five oddly placed legs", "a total of eight legs placed in pairs", "an almost uncountable number of small legs"],
