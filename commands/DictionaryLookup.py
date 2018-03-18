@@ -8,8 +8,8 @@ import SharedFunctions
 
 
 class Command(CommandTemplate):
-	triggers = ['define', 'dictionary', 'dict', 'word']
 	helptext = "Looks up the definition of the provided word"
+	triggers = ['define']
 
 	def execute(self, message):
 		"""
