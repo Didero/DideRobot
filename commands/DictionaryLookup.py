@@ -3,90 +3,77 @@ import json, urllib
 import requests
 
 from CommandTemplate import CommandTemplate
+import GlobalStore
 import Constants
 import SharedFunctions
 
 
 class Command(CommandTemplate):
-	helptext = "Looks up the definition of the provided word"
 	triggers = ['define']
+	helptext = "Looks up the definition of the provided word or term in the Oxford Dictionary. Or tries to, anyway, because language is hard"
 
 	def execute(self, message):
 		"""
 		:type message: IrcMessage.IrcMessage
 		"""
+		appId = GlobalStore.commandhandler.apikeys.get('oxforddictionaries', {}).get('app_id', None)
+		appKey = GlobalStore.commandhandler.apikeys.get('oxforddictionaries', {}).get('app_key', None)
+		if not appId or not appKey:
+			return message.reply("Since I don't know a lot of words myself, I need access to the Oxford Dictionaries to help you out here, and I don't seem to have API keys required, sorry! "
+								 "Poke my owner(s), they can probably add them", "say")
 
 		if message.messagePartsLength == 0:
-			return message.reply("Please add a term to search for. You wouldn't want me making up words, trust me")
+			return message.reply("Since I don't have a wordlist handy, I can't just pick a random word to define, so you'll have to enter something to look up. Thanks!", "say")
 
-		#Lower case makes it easier to compare with later
-		searchQuery = message.message.lower()
-
-		#Get the data
 		try:
-			apireply = requests.get("http://api.pearson.com/v2/dictionaries/ldoce5/entries", params={'limit': 100, 'headword': searchQuery}, timeout=15.0)
+			apiresult = requests.get("https://od-api.oxforddictionaries.com:443/api/v1/entries/en/" + message.message, headers={"app_id": appId, "app_key": appKey},
+									 timeout=10.0)
 		except requests.exceptions.Timeout:
-			return message.reply("Sorry, the dictionary API took too long to respond. Please try again in a little while. Or a longer while, if the API is temporarily broken")
-		#Load the data
-		try:
-			definitionData = json.loads(apireply.text)
-		except ValueError:
-			self.logError("[DictLookup] Unexpected reply from Dictionary API:")
-			self.logError(apireply.text)
-			return message.reply("I'm sorry, the dictionary API I'm using returned some weird data. Tell my owner(s) about it, maybe it's something they can fix? Or just try again in a little while")
+			return message.reply("Hmm, it took the Oxford site a bit too long to respond. They're probably busy trying to keep up with internet slang or something. Try again in a bit!", "say")
 
-		#Check to see if it's a recognised word/term
-		if 'total' not in definitionData or definitionData['total'] == 0 or 'results' not in definitionData or len(definitionData['results']) == 0:
-			return message.reply("That is apparently not a term this dictionary API is familiar with. Maybe you made a typo? Or maybe you invented a new word!")
+		if apiresult.status_code == 404:
+			return message.reply("Apparently that's not a word Oxford Dictionaries knows about. So either it's one of those words only teenagers use, or it doesn't exist. Or you made a typo, which happens to the best of us",
+								 "say")
+		elif apiresult.status_code != 200:
+			return message.reply("Seems like Oxford Dictionary isn't feeling well, since they did not send a happy reply. Give them some time to recover, and try again in a bit", "say")
+		#There's always going to be at least one entry from here on, since otherwise we would've gotten a status code 404 reply
 
-		replytext = SharedFunctions.makeTextBold(message.message) + ": "
+		#The result is in a 'results' field. It can list multiple entries, but since they can be different word types, it could make the output confusing, so just use the first entry for now
+		data = apiresult.json()['results'][0]
+		#In case the found word is different from the entered word, retrieve it from the dataset
+		replytext = SharedFunctions.makeTextBold(data['word'])
+		#Get the word type of the first entry, since that's what we're going to get the definition(s) from. Word type is 'Noun', 'Verb', etc
+		wordType = data['lexicalEntries'][0]['lexicalCategory'].lower()
+		if wordType != 'other':
+			replytext += " ({})".format(wordType)
+		replytext += ": "
 
-		#Keep adding definitions until we run out of space
-		definitionsSkipped = 0
-		hasAddedDefinition = False
-		fallbackDefinitionEntry = None
-		wordTypeReplacements = {'verb': 'v', 'noun': 'n', 'adjective': 'adj', 'adverb': 'adv'}
-		for definitionEntry in definitionData['results']:
-			#Only add definitions if the search query and the word the entry is about match exactly (so verb forms)
-			if definitionEntry['headword'] != searchQuery:
-				#Store it in case we end up with no results, then we can show this one
-				if fallbackDefinitionEntry is None:
-					fallbackDefinitionEntry = definitionEntry
-				continue
-			for sense in definitionEntry['senses']:
-				if 'definition' not in sense:
-					continue
-				#For some reason 'definition' is a list, usually with only one entry
-				for definition in sense['definition']:
-					if len(replytext) + len(definition) < Constants.MAX_MESSAGE_LENGTH:
-						#Add a separator if this isn't the first definition
-						if hasAddedDefinition:
-							replytext += Constants.GREY_SEPARATOR
-						#Prefix with the word type (verb, noun, etc.)
-						if 'part_of_speech' in definitionEntry:
-							wordType = definitionEntry['part_of_speech']
-							#Shorten the word type so we don't waste space
-							if wordType in wordTypeReplacements:
-								wordType = wordTypeReplacements[wordType]
-							replytext += "[{}] ".format(wordType)
-						replytext += definition
-						hasAddedDefinition = True
-					else:
-						definitionsSkipped += 1
+		#The actual definitions are inside the 'lexicalEntries' field, which is a list of dictionaries
+		# Each dictionary contains an 'entries' field, which is another list of dictionaries
+		# Each of those dicts has a 'senses' dictionary list, which contains a 'definitions' list
+		#'Eating' the entires list means the definitions will be added in reverse order, but we will be eating that list too, so it'll be reversed again
+		definitions = []
+		while data['lexicalEntries'][0]['entries']:
+			entry = data['lexicalEntries'][0]['entries'].pop()
+			while entry['senses']:
+				sense = entry['senses'].pop()
+				#Not all words have a definition. Something like 'swum' has a 'crossReferenceMarkers' list that mentions which word it's related to
+				if 'definitions' in sense:
+					definitions.extend(sense['definitions'])
+				elif 'crossReferenceMarkers' in sense:
+					definitions.extend(sense['crossReferenceMarkers'])
+				else:
+					definitions.append("[definition not found]")
 
-		#If we didn't find any definition that matched the search query and wasn't too long, report that
-		if not hasAddedDefinition:
-			#If we didn't find the literal search query, but we did find at least something, show that
-			if fallbackDefinitionEntry is not None and 'senses' in fallbackDefinitionEntry and 'definition' in fallbackDefinitionEntry['senses'][0]:
-				replytext = "{}: {}".format(SharedFunctions.makeTextBold(fallbackDefinitionEntry['headword']), fallbackDefinitionEntry['senses'][0]['definition'][0])
-				if len(replytext) > Constants.MAX_MESSAGE_LENGTH:
-					replytext = replytext[:Constants.MAX_MESSAGE_LENGTH - 5] + "[...]"
-				return message.reply(replytext)
-			else:
-				return message.reply("Sorry, all the definitions I found were either for the wrong word or too long. Maybe try Wiktionary: http://en.wiktionary.org/wiki/Special:Search?search=" + urllib.quote_plus(searchQuery))
-		#But if everything is fine and we found some definitions, report 'em!
-		else:
-			#If we've skipped a few definitions for length, add that info too
-			if definitionsSkipped > 0:
-				replytext += " ({} skipped)".format(definitionsSkipped)
-			return message.reply(replytext)
+		#Keep adding definitions to the output textuntil we run out of message space
+		separatorLength = len(Constants.GREY_SEPARATOR)
+		while definitions and len(replytext) + separatorLength + len(definitions[0]) < Constants.MAX_MESSAGE_LENGTH:
+			replytext += definitions.pop() + Constants.GREY_SEPARATOR
+		#Remove the last trailing separator
+		replytext = replytext[:-separatorLength]
+		#Add how much defitions we skipped, if necessary
+		if len(definitions) > 0:
+			replytext += " ({:,} more)".format(len(definitions))
+
+		#Done! Show our result
+		message.reply(replytext, "say")
