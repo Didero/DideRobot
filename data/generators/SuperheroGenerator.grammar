@@ -7,7 +7,7 @@
 "intro": [
 	"By day <_var|name>, by night, <heroname|&bold>",
 	"At night, <_var|name> turns into the <positiveAdjective> <heroname|&bold>",
-	"Normally, <_var|firstname> is no different than other people. But when there's trouble, <_var|name> turns into the <positiveAdjective> <heroname|&bold>, ready to defend the innocent",
+	"Normally, <_var|pronoun> <_var|isAre> no different than other people. But when there's trouble, <_var|name> turns into the <positiveAdjective> <heroname|&bold>, ready to defend the innocent",
 	"Earthquake? <_var|pronoun|&titlecase> will help. Bankrobbery? <_var|pronoun|&titlecase> will save the day. <_var|name> IS <heroname|&bold>",
 	"Whenever there's danger, the unremarkable <_var|name> turns into <heroname|&bold> to save the day",
 	"Don't feel blue, <_var|name> is here for you! In the guise of <heroname|&bold>, <_var|pronoun> will help wherever <_var|pronoun> can"
