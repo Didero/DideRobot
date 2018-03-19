@@ -9,6 +9,7 @@ import GlobalStore
 class Command(CommandTemplate):
 	triggers = ['generate', 'gen']
 	helptext = "Generate random stories or words. Call a specific generator with '{commandPrefix}generate [genName]'. Enter 'random' to let me pick, or choose from: "
+	callInThread = True
 
 	generators = {}
 	filesLocation = os.path.join(GlobalStore.scriptfolder, "data", "generators")
