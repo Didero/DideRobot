@@ -23,7 +23,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.3.1'
+	dataFormatVersion = '4.3.2'
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.searchCards)
@@ -344,10 +344,10 @@ class Command(CommandTemplate):
 			if 'life' in card:
 				handLife += card['life'] + u" lifemod"
 			cardInfoList.append(handLife)
-			cardInfoList.append(u"Layout is '" + card['layout'] + u"'")
 		if 'layout' in card:
+			cardInfoList.append(card['layout'] + u" layout")
 			if 'names' in card:
-				cardInfoList[-1] += u", also contains " + card['names']
+				cardInfoList[-1] += u", with " + card['names']
 		#All cards have a 'text' key set (for search reasons), it's just empty on ones that didn't have one
 		if len(card['text']) > 0:
 			cardInfoList.append(card['text'])
@@ -850,6 +850,9 @@ class Command(CommandTemplate):
 						#No need to store there's nothing special about the card's layout or if the special-ness is already evident from the text
 						if card['layout'] in layoutTypesToRemove:
 							del card['layout']
+						#For display purposes, capitalise the first letter of the layout
+						else:
+							card['layout'] = card['layout'].capitalize()
 
 						#The 'Colors' field benefits from some ordering, for readability.
 						if 'colors' in card:
