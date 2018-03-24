@@ -436,6 +436,9 @@ class Command(CommandTemplate):
 					except ValueError:
 						# Key is not a number, throw an error
 						return (False, u"Grammar '{}' field '{}' chance dictionary key '{}' can't be resolved to a number".format(grammar.get('_name', "[unknown]"), fieldKey, chanceString))
+					#We shouldn't support values higher than 100, since that breaks sorting and we'd always pick that value. So skip too-high values
+					if chanceValue > 100:
+						return (False, u"Grammar '{}' field '{}' chance dictionary key '{}' is larger than 100, which isn't supported. Please lower it to 100 or less".format(grammar.get('_name', "[unknown]"), fieldKey, chanceString))
 					if roll <= chanceValue:
 						replacement = grammar[fieldKey][chanceString]
 						break
