@@ -7,8 +7,8 @@
 	"<_setvar|planetType|ocean><oceanPlanet> beneath",
 	"<_setvar|planetType|plant><plantPlanet>",
 	"<_setvar|planetType|ice><icePlanet>",
-	"<_setvar|planetType|airless><airlessPlanet>",
-	"<_setvar|planetType|misc><miscPlanet>"
+	"<_setvar|planetType|airless><airlessPlanet> stretches away beneath",
+	"<_setvar|planetType|misc><miscPlanet> stretches away beneath"
 ],
 "oceanPlanet": [
 	"ocean tosses with slow, kilometres-high waves,",
@@ -32,18 +32,18 @@
 	"perfectly flat ice sheet stretches away beneath"
 ],
 "airlessPlanet": [
-	"jagged landscape of high crater walls and towering shards of rock stretches away beneath",
-	"jagged, cratered landscape stretches away beneath",
-	"perfectly still, cratered landscape stretches away beneath",
-	"perfectly still landscape, flat except for a few shallow craters, stretches away beneath",
-	"perfectly still, flat landscape stretches away beneath"
+	"jagged landscape of high crater walls and towering shards of rock",
+	"jagged, cratered landscape",
+	"perfectly still, cratered landscape",
+	"perfectly still landscape, flat except for a few shallow craters,",
+	"perfectly still, flat landscape"
 ],
 "miscPlanet": [
-	"landscape of spindly rock outcroppings and impossibly tall mountains stretches away beneath",
-	"landscape of huge boulders and towering mountains stretches away beneath",
-	"barren, rocky landscape stretches away beneath",
-	"flat, rocky landscape stretches away beneath",
-	"perfectly flat, barren landscape stretches away beneath"
+	"landscape of spindly rock outcroppings and impossibly tall mountains",
+	"landscape of huge boulders and towering mountains",
+	"barren, rocky landscape",
+	"flat, rocky landscape",
+	"perfectly flat, barren landscape"
 ],
 "air": ["a blue sky", "a pale blue sky", "a black, star-studded sky", "an alien sky", "a poisonous sky", "a sky filled with corrosive clouds"],
 "colony": {"20": "<failedColony>", "100": "<successfulColony>"},
