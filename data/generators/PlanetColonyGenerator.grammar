@@ -60,33 +60,28 @@
 	"45": " The planet's intelligent natives explore the ruins, but not enough remains for them to learn anything about the extinct human race.",
 	"100": ""
 },
-"successfulColony": "<_setvarrandom|techLevel|high|medium|low>The colonists live in <building> <buildingProtection>, <buildingLocation>. <colonistLifestyle><nativesTreatmentChoice>",
+"successfulColony": "<_setvarrandom|techLevel|high|medium|low>The colonists live in <building> <buildingProtection>,<buildingLocation>. <colonistLifestyle><nativesTreatmentChoice>",
 "building": "<_switch|techLevel|high:<buildingHeight> <buildingTechTypeHigh>|medium:<buildingHeight> <buildingTechTypeMedium>|low:<buildingTechTypeLow>>",
 "buildingHeight": ["towering", "tall", "squat", "low, sprawling"],
 "buildingTechTypeHigh": ["high-tech cities", "cities of steel and glass", "cities of steel and concrete"],
 "buildingTechTypeMedium": ["smog-filled industrial cities", "stone-walled cities"],
 "buildingTechTypeLow": ["farming villages", "wandering hunter-gatherer tribes"],
-"buildingLocation": "<_switch|planetType|ocean:<buildingLocationOcean>|ice:<buildingLocationIce>|_default:<buildingLocationMisc>>",
 "buildingProtection": [
 	"beneath the planet's open sky",
 	"with buildings sealed against the planet's harsh environment",
 	"inside airtight caves",
 	"under airtight domes"
 ],
+"buildingLocation": "<_switch|planetType|ocean: <buildingLocationOcean>|ice: <buildingLocationIce>|_default:<buildingLocationMisc>>",
 "buildingLocationOcean": [
 	"on platforms floating on the planet-wide ocean",
-	"gathered around water production plants"
+	"beside rivers that flow into the planet's ocean"
 ],
 "buildingLocationIce": [
 	"on top of the planet-wide ice sheet",
 	"by lakes of water melted from the planet's ice caps",
-	"gathered around water production plants"
 ],
-"buildingLocationMisc": [
-	"gathered around water production plants",
-	"by lakes of water melted from the planet's ice caps",
-	"beside rivers that flow into the planet's oceans"
-],
+"buildingLocationMisc": ["", " gathered around water production plants"],
 "colonistLifestyle": "<_if|techLevel|low|<colonistLifestyleLowTech>|<colonistLifestyleMediumHighTech>>",
 "colonistLifestyleMediumHighTech" :[
 	"They live lives of peace and spiritual fulfilment beyond the dreams of their ancestors on Earth, guided by a combination of human and alien philosophy",
