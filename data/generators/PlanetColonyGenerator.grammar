@@ -55,9 +55,9 @@
 	"are overgrown with alien plants"
 ],
 "descendantInfo": {
-	"20": " The colonists' descendants live on as slaves to the intelligent natives, but they have lost all knowledge of Earth.",
-	"35": " Nearby stand monuments built by the planet's native inhabitants to celebrate their victory over the invaders.",
-	"50": " The planet's intelligent natives explore the ruins, but not enough remains for them to learn anything about the extinct human race.",
+	"15": " The colonists' descendants live on as slaves to the intelligent natives, but they have lost all knowledge of Earth.",
+	"30": " Nearby stand monuments built by the planet's native inhabitants to celebrate their victory over the invaders.",
+	"45": " The planet's intelligent natives explore the ruins, but not enough remains for them to learn anything about the extinct human race.",
 	"100": ""
 },
 "successfulColony": "<_setvarrandom|techLevel|high|medium|low>The colonists live in <building> <buildingProtection>, <buildingLocation>. <colonistLifestyle><nativesTreatmentChoice>",
