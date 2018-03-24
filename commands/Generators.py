@@ -148,14 +148,70 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def numberToText(number):
-		singleNumberNames = {0: u"zero", 1: u"one", 2: u"two", 3: u"three", 4: u"four", 5: u"five", 6: u"six", 7: u"seven",
-							 8: u"eight", 9: u"nine", 10: u"ten", 11: u"eleven", 12: u"twelve", 13: u"thirteen",
-							 14: u"fourteen", 15: u"fifteen", 16: u"sixteen", 17: u"seventeen", 18: u"eighteen", 19: u"nineteen"}
-		if number in singleNumberNames:
-			return singleNumberNames[number]
-		else:
-			#TODO: Handle numbers larger than 19 by combining words, like "twenty" and "two" for 22
-			return unicode(number)
+		baseNumberNames = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen")
+		tensNames = ("twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety")
+		numberTextParts = []
+
+		#Handle negative numbers too
+		if number < 0:
+			number *= -1
+			numberTextParts.append("minus")
+
+		#Easiest case if the number is small enough to be in the base number list
+		if number < 20:
+			numberTextParts.append(baseNumberNames[number])
+			return " ".join(numberTextParts)
+
+		#We only handle up to a hundred trillion (trillion is 10 to the 12th, so hundred trillion is 10 to the 14th)
+		if number >= 10 ** 14:
+			return "[Number too large]"
+
+		#Now we have to split up the number into groups of three (called 'periods' apparently), so we can parse each in turn
+		numberPeriods = []
+		while number > 0:
+			numberPeriods.append(number % 1000)
+			number /= 1000
+
+		#Since the number was parsed from right to left, we need to reverse it, since in text numbers are written left to right ( twelve thousand fifty, not fifty twelve thousand)
+		numberPeriods.reverse()
+
+		#And now we can add the proper name to each of these groups
+		periodNames = ("", "thousand", "million", "billion", "trillion")
+
+		numberPeriodsCount = len(numberPeriods)
+		for periodIndex, periodValue in enumerate(numberPeriods):
+			#Ignore empty periods (So 12,000 doesn't turn into 'twelve thousand zero')
+			if periodValue == 0:
+				continue
+
+			#If the number period is larger than 100, we need to mention the first number separately (204,000 is 'two hundred and four thousand')
+			if periodValue >= 100:
+				numberTextParts.append(baseNumberNames[periodValue / 100])
+				numberTextParts.append('hundred')
+				periodValue %= 100
+
+			#If the number period is smaller than 20, it's in the base list
+			# Skip zero though, otherwise 100 becomes 'one hundred zero'
+			if periodValue < 20 and periodValue > 0:
+				numberTextParts.append(baseNumberNames[periodValue])
+			#Otherwise we need to split it up a bit more
+			else:
+				tensValue = periodValue / 10
+				if tensValue > 0:
+					numberTextParts.append(tensNames[tensValue - 2])  # -2 because lists are zero-indexed, and the list starts at twenty, not ten
+				#Make sure it doesn't turn 20 into 'twenty zero'
+				onesValue = periodValue % 10
+				if onesValue > 0:
+					numberTextParts.append(baseNumberNames[onesValue])
+
+			#Since we're parsing left to right, and the period names are sorted small to large, we need to get the distance between the start
+			# of the periods and the current period to get the name, minus one because the index starts at 0 but the names at 'thousand'
+			periodName = periodNames[numberPeriodsCount - periodIndex - 1]
+			if len(periodName) > 0:
+				numberTextParts.append(periodName)
+
+		#Done! Stick the parts together
+		return " ".join(numberTextParts)
 
 	@staticmethod
 	def getBasicOrSpecialLetter(vowelOrConsonant, basicLetterChance):
