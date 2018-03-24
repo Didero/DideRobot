@@ -79,7 +79,7 @@
 ],
 "buildingLocationIce": [
 	"on top of the planet-wide ice sheet",
-	"by lakes of water melted from the planet's ice caps",
+	"by lakes of water melted from the planet's ice caps"
 ],
 "buildingLocationMisc": ["", " gathered around water production plants"],
 "colonistLifestyle": "<_if|techLevel|low|<colonistLifestyleLowTech>|<colonistLifestyleMediumHighTech>>",
