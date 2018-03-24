@@ -66,8 +66,13 @@
 "buildingTechTypeHigh": ["high-tech cities", "cities of steel and glass", "cities of steel and concrete"],
 "buildingTechTypeMedium": ["smog-filled industrial cities", "stone-walled cities"],
 "buildingTechTypeLow": ["farming villages", "wandering hunter-gatherer tribes"],
-"buildingProtection": ["beneath the planet's open sky", "with buildings sealed against the planet's harsh environment", "inside airtight caves", "under airtight domes"],
 "buildingLocation": "<_switch|planetType|ocean:<buildingLocationOcean>|ice:<buildingLocationIce>|_default:<buildingLocationMisc>>",
+"buildingProtection": [
+	"beneath the planet's open sky",
+	"with buildings sealed against the planet's harsh environment",
+	"inside airtight caves",
+	"under airtight domes"
+],
 "buildingLocationOcean": [
 	"on platforms floating on the planet-wide ocean",
 	"gathered around water production plants"
