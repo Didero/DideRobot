@@ -423,9 +423,14 @@ class Command(CommandTemplate):
 			elif isinstance(grammar[fieldKey], dict):
 				# Dictionary! The keys are chance percentages, the values are the replacement strings
 				roll = random.randint(1, 100)
-				for chance in sorted(grammar[fieldKey].keys()):
-					if roll <= int(chance):
-						replacement = grammar[fieldKey][chance]
+				for chanceString in sorted(grammar[fieldKey].keys()):
+					try:
+						chanceValue = int(chanceString)
+					except ValueError:
+						# Key is not a number, throw an error
+						return (False, u"Grammar '{}' field '{}' chance dictionary key '{}' can't be resolved to a number".format(grammar.get('_name', "[unknown]"), fieldKey, chanceString))
+					if roll <= chanceValue:
+						replacement = grammar[fieldKey][chanceString]
 						break
 			elif isinstance(grammar[fieldKey], basestring):
 				# If it's a string (either the string class or the unicode class), just dump it in
