@@ -423,7 +423,14 @@ class Command(CommandTemplate):
 			elif isinstance(grammar[fieldKey], dict):
 				# Dictionary! The keys are chance percentages, the values are the replacement strings
 				roll = random.randint(1, 100)
+				#Since keys have to be strings, "100" is sorted before other numbers larger than "10"
+				# So store it as the last choice we should make, and skip it in the loop
+				if u"100" in grammar[fieldKey]:
+					replacement = grammar[fieldKey][u"100"]
 				for chanceString in sorted(grammar[fieldKey].keys()):
+					#"100" gets alphabetically sorted before numbers larger than 10. We've stored it before, so we can skip it now
+					if chanceString == u"100":
+						continue
 					try:
 						chanceValue = int(chanceString)
 					except ValueError:
