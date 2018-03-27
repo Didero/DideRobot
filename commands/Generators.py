@@ -312,6 +312,11 @@ class Command(CommandTemplate):
 				variableDict[u'firstname'] = nameparts[0]
 				variableDict[u'lastname'] = nameparts[-1] #Use -1 because names
 
+		#Since chance dictionaries ('{"20": "20% of this text", "80": "60% (80-20) of this text", "100: "20% chance"}') have to have string keys to be valid JSON,
+		# the keys need to be converted to integers for correct sorting (so "100" doesn't come before "20"). We'll do that as we encounter them, so we need to
+		# keep track of which dictionaries we've converted and which we haven't yet. We do that by storing references to them in a list, in the variableDict
+		variableDict['_convertedChanceDicts'] = []
+
 		#Start the parsing!
 		return self.parseGrammarString(startString, grammarDict, parameters, variableDict)
 
@@ -422,25 +427,33 @@ class Command(CommandTemplate):
 				replacement = random.choice(grammar[fieldKey])
 			elif isinstance(grammar[fieldKey], dict):
 				# Dictionary! The keys are chance percentages, the values are the replacement strings
+
+				#JSON requires keys to be strings, but we want them to be numbers. Check to see if we need to convert them
+				if grammar[fieldKey] not in variableDict['_convertedChanceDicts']:
+					for chanceDictKey in grammar[fieldKey].keys():
+						value = grammar[fieldKey][chanceDictKey]
+						#Remove the string key, and add in the integer key if the conversion succeeded
+						del grammar[fieldKey][chanceDictKey]
+						try:
+							chanceDictKeyAsInt = int(chanceDictKey, 10)
+							#Check if the number is in the correct range of 0 - 100
+							if chanceDictKeyAsInt < 0 or chanceDictKeyAsInt > 100:
+								self.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains invalid key '{}'. Chance dictionary keys should be between 0 and 100. Ignoring it".format(
+									grammar.get('_name', "[unknown]"), fieldKey, chanceDictKey))
+							else:
+								grammar[fieldKey][chanceDictKeyAsInt] = value
+						except ValueError as e:
+							#Show a warning about a non-int key in a chance dict. Not an error, since we can just ignore it and move on
+							self.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains non-numeric key '{}', which isn't supported. Ignoring it".format(grammar.get('_name', "[unknown]"), fieldKey, chanceDictKey))
+					#Store that we converted the chance dict
+					variableDict['_convertedChanceDicts'].append(grammar[fieldKey])
+
+				#Now find the lowest chance dict key that's larger than our roll
+				# So in a dict '{20: "first", 100: "second"}', a roll of 18 would return 'first', and a roll of 73 would return 'second'
 				roll = random.randint(1, 100)
-				#Since keys have to be strings, "100" is sorted before other numbers larger than "10"
-				# So store it as the last choice we should make, and skip it in the loop
-				if u"100" in grammar[fieldKey]:
-					replacement = grammar[fieldKey][u"100"]
-				for chanceString in sorted(grammar[fieldKey].keys()):
-					#"100" gets alphabetically sorted before numbers larger than 10. We've stored it before, so we can skip it now
-					if chanceString == u"100":
-						continue
-					try:
-						chanceValue = int(chanceString)
-					except ValueError:
-						# Key is not a number, throw an error
-						return (False, u"Grammar '{}' field '{}' chance dictionary key '{}' can't be resolved to a number".format(grammar.get('_name', "[unknown]"), fieldKey, chanceString))
-					#We shouldn't support values higher than 100, since that breaks sorting and we'd always pick that value. So skip too-high values
-					if chanceValue > 100:
-						return (False, u"Grammar '{}' field '{}' chance dictionary key '{}' is larger than 100, which isn't supported. Please lower it to 100 or less".format(grammar.get('_name', "[unknown]"), fieldKey, chanceString))
-					if roll <= chanceValue:
-						replacement = grammar[fieldKey][chanceString]
+				for chance in sorted(grammar[fieldKey].keys()):
+					if roll <= chance:
+						replacement = grammar[fieldKey][chance]
 						break
 			elif isinstance(grammar[fieldKey], basestring):
 				# If it's a string (either the string class or the unicode class), just dump it in
