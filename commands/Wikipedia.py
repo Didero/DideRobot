@@ -77,6 +77,10 @@ class Command(CommandTemplate):
 				replytext = "'{}' has multiple meanings".format(pagename)
 			else:
 				replytext = replytext.replace('\n', ' ').replace('  ', ' ')
+				#Some articles contain a link to a pronunciation sound file. Since that doesn't work here, remove it
+				replytext = replytext.replace(" ( listen)", "")
+				#Sometimes this leaves empty brackets, remove those too
+				replytext = replytext.replace(" ()", "")
 			#Make sure the text isn't too long
 			if limitLength and len(replytext) > Constants.MAX_MESSAGE_LENGTH:
 				replytext = replytext[:Constants.MAX_MESSAGE_LENGTH]
