@@ -23,7 +23,7 @@ class Command(CommandTemplate):
 		except requests.exceptions.Timeout:
 			return (False, "Apparently Wikipedia couldn't pick between all of its interesting articles, so it took too long to reply. Sorry!")
 		self.logDebug("[wiki] Random page url: {}".format(page.url))
-		articleName = page.url.split('/wiki/', 1)[1]  #Get the part of the URL that is the article title
+		articleName = re.search(ur"<title.*?>(.+?) - Wikipedia</title>", page.text, re.IGNORECASE).group(1)
 		return self.getArticleText(articleName, addExtendedText)
 
 	def searchWikipedia(self, searchterm, addExtendedText=False):
