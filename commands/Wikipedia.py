@@ -29,9 +29,11 @@ class Command(CommandTemplate):
 	def searchWikipedia(self, searchterm, addExtendedText=False):
 		if not isinstance(searchterm, unicode):
 			searchterm = searchterm.decode('utf-8', errors='replace')
-		url = u'https://en.wikipedia.org/w/api.php?format=json&utf8=1&action=query&list=search&srwhat=nearmatch&srlimit=1&srsearch={}&srprop='.format(searchterm)
+		url = u"https://en.wikipedia.org/w/api.php"
+		params = {u'format': u'json', u'utf8': 1, u'action': u'query', u'list': u'search', u'srwhat': u'nearmatch',
+				 u'srlimit': 1, u'srsearch': searchterm}
 		try:
-			result = requests.get(url, timeout=10.0)
+			result = requests.get(url, params=params, timeout=10.0)
 		except requests.exceptions.Timeout:
 			return (False, "Either that's a difficult search query, or Wikipedia is tired. Either way, that search took too long, sorry")
 		result = json.loads(result.text)
