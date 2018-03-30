@@ -1,4 +1,4 @@
-import json
+import json, re
 
 import requests
 
@@ -53,7 +53,7 @@ class Command(CommandTemplate):
 				  'exintro': '1', 'explaintext': '1', 'exsectionformat': 'plain', 'titles': pagename}
 		#If we need to be verbose, get as many characters as we can
 		if addExtendedText:
-			params['exchars'] = Constants.MAX_MESSAGE_LENGTH
+			params['exchars'] = Constants.MAX_MESSAGE_LENGTH * 1.5  #Get some extra characters since we may remove some later
 		#Otherwise just get the first sentence
 		else:
 			params['exsentences'] = '1'
