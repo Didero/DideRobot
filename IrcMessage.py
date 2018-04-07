@@ -57,7 +57,7 @@ class IrcMessage(object):
 				self.trigger = None
 				self.message = self.rawText
 
-			if self.message != "":
+			if self.message:
 				self.messageParts = self.message.split(" ")
 				self.messagePartsLength = len(self.messageParts)
 			else:
