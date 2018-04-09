@@ -379,7 +379,7 @@ class Command(CommandTemplate):
 				setlistString += u"{} ({}); ".format(setname, rarity)
 			setlistString = setlistString[:-2]  #Remove the last '; '
 			if setcount > maxSetsToDisplay:
-				setlistString += u" and {:,} more".format(setcount - maxSetsToDisplay)
+				setlistString += u"; {:,} more".format(setcount - maxSetsToDisplay)
 			cardInfoList.append(setlistString)
 		#No extra set info, but still add a warning if it's in a non-legal set
 		else:
