@@ -300,7 +300,7 @@ class Command(CommandTemplate):
 			replytext = self.getFormattedCardInfo(carddata, addExtendedCardInfo, setname)
 			#We may have culled the cardstore list, so there may have been more matches initially. List a count of those
 			if addResultCount and numberOfCardsFound > 1:
-				replytext += " ({:,} more match{} found)".format(numberOfCardsFound - 1, 'es' if numberOfCardsFound > 2 else '')  #>2 because we subtract 1
+				replytext += " ({:,} more found)".format(numberOfCardsFound - 1)
 			return replytext
 
 		#Check if we didn't find more matches than we're allowed to show
