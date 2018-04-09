@@ -31,7 +31,7 @@ class IrcMessage(object):
 			self.isPrivateMessage = False
 
 		#Handle the text component, including seeing if it starts with the bot's command character
-		self.rawText = rawText
+		self.rawText = rawText.strip()
 		#There isn't always text
 		if not self.rawText:
 			self.trigger = None
@@ -39,7 +39,6 @@ class IrcMessage(object):
 			self.messageParts = []
 			self.messagePartsLength = 0
 		else:
-			self.rawText = self.rawText.strip()
 			#Collect information about the possible command in this message
 			if self.rawText.startswith(bot.commandPrefix):
 				#Get the part from the end of the command prefix to the first space (the 'help' part of '!help say')
