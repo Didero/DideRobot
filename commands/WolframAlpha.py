@@ -43,7 +43,7 @@ class Command(CommandTemplate):
 			podIndexParam = podIndexParam[:-1]
 			params['podindex'] = podIndexParam
 		try:
-			apireturn = requests.get("http://api.wolframalpha.com/v2/query", params=params, timeout=15.0)
+			apireturn = requests.get("http://api.wolframalpha.com/v2/query", params=params, timeout=10.0)
 		except requests.exceptions.Timeout:
 			return (False, "Sorry, Wolfram Alpha took too long to respond")
 		xmltext = apireturn.text
