@@ -39,9 +39,9 @@ class Command(CommandTemplate):
 	def isPageDisambiguationPage(url, title, pageText):
 		if url.endswith("_(disambiguation)"):
 			return True
-		if pageText.startswith("{} may refer to:".format(title)):
+		if pageText.startswith(u"{} may refer to:".format(title)):
 			return True
-		if pageText.startswith("This is a disambiguation page"):
+		if pageText.startswith(u"This is a disambiguation page"):
 			return True
 		return False
 
