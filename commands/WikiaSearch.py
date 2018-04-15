@@ -103,7 +103,7 @@ class Command(CommandTemplate):
 
 		#Check if it isn't a disambiguation page
 		if Command.isPageDisambiguationPage(url, articleInfo['title'], articleInfo['abstract']):
-			return (True, "Apparently that can mean multiple things. Who knew? Here's the list of what it can refer to: {}".format(articleName, url))
+			return (True, "Apparently '{}' can mean multiple things. Who knew? Here's the list of what it can refer to: {}".format(articleName, url))
 
 		#Seems we got an actual article start. Clamp it to the maximum message length
 		maxAbstractLength = Constants.MAX_MESSAGE_LENGTH - len(Constants.GREY_SEPARATOR) - len(url)
