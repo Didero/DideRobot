@@ -915,9 +915,9 @@ class GrammarCommands(object):
 	#Variable checking
 	@staticmethod
 	@validateArguments(4)
-	def command_if(argumentList, grammarDict, variableDict):
+	def command_ifequals(argumentList, grammarDict, variableDict):
 		"""
-		<_if|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
+		<_ifequals|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
 		Checks if the variable is set to the specified value. Returns the IfIdentical string if it is, and the IfNotIdentical string if it isn't or if the var isn't set
 		Use '_params' as the varname to check the parameters
 		"""
@@ -926,6 +926,16 @@ class GrammarCommands(object):
 			return (True, argumentList[2])
 		else:
 			return (True, argumentList[3])
+
+	@staticmethod
+	@validateArguments(4)
+	def command_if(argumentList, grammarDict, variableDict):
+		"""
+		<_if|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
+		Checks if the variable is set to the specified value. Returns the IfIdentical string if it is, and the IfNotIdentical string if it isn't or if the var isn't set
+		Use '_params' as the varname to check the parameters
+		"""
+		return GrammarCommands.command_ifequals(argumentList, grammarDict, variableDict)
 
 	@staticmethod
 	@validateArguments(4)
