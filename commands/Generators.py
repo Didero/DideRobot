@@ -764,14 +764,14 @@ class Command(CommandTemplate):
 #Store some data about grammar commands, so we can do some initial argument verification. Keeps the actual commands nice and short
 grammarCommandOptions = {}
 
-def validateArguments(count=0, checkIfFirstArgumentIsVarname=False):
+def validateArguments(argumentCount=0, checkIfFirstArgumentIsVarname=False):
 	"""
 	A decorator to store options on how grammar commands should be executed and how the input should be checked
-	:param count: The minimum number of arguments this grammar command needs. An error is thrown if the command is called with fewer arguments
 	:param checkIfFirstArgumentIsVarname: Set to True to enable verification that the first argument exists in the variable dictionary
+	:param argumentCount: The minimum number of arguments this grammar command needs. An error is thrown if the command is called with fewer arguments
 	"""
 	def wrapperFunction(functionToWrap):
-		grammarCommandOptions[functionToWrap] = (count, checkIfFirstArgumentIsVarname)
+		grammarCommandOptions[functionToWrap] = (argumentCount, checkIfFirstArgumentIsVarname)
 		return functionToWrap
 	return wrapperFunction
 
@@ -846,7 +846,7 @@ class GrammarCommands(object):
 
 	#Saving and loading variables
 	@staticmethod
-	@validateArguments(2)
+	@validateArguments(argumentCount=2)
 	def command_setvar(argumentList, grammarDict, variableDict):
 		"""
 		<_setvar|varname|value>
@@ -856,7 +856,7 @@ class GrammarCommands(object):
 		return (True, u"")
 
 	@staticmethod
-	@validateArguments(2)
+	@validateArguments(argumentCount=2)
 	def command_setvarrandom(argumentList, grammarDict, variableDict):
 		"""
 		<_setvarrandom|varname|value1|value2|value3>
@@ -866,7 +866,7 @@ class GrammarCommands(object):
 		return (True, u"")
 
 	@staticmethod
-	@validateArguments(3)
+	@validateArguments(argumentCount=3)
 	def command_hasvar(argumentList, grammarDict, variableDict):
 		"""
 		<_hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
@@ -878,7 +878,7 @@ class GrammarCommands(object):
 			return (True, argumentList[2])
 
 	@staticmethod
-	@validateArguments(1, checkIfFirstArgumentIsVarname=False)  #False because a fallback value could be set
+	@validateArguments(argumentCount=1, checkIfFirstArgumentIsVarname=False)  #False because a fallback value could be set
 	def command_var(argumentList, grammarDict, variableDict):
 		"""
 		<_var|varname|[valueIfVarNotSet]>
@@ -896,7 +896,7 @@ class GrammarCommands(object):
 				return (False, u"Referenced undefined variable '{}' in '_var' call".format(argumentList[0]))
 
 	@staticmethod
-	@validateArguments(1)
+	@validateArguments(argumentCount=1)
 	def command_remvar(argumentList, grammarDict, variableDict):
 		"""
 		<_remvar|varname>
@@ -907,7 +907,7 @@ class GrammarCommands(object):
 		return (True, u"")
 
 	@staticmethod
-	@validateArguments(1)
+	@validateArguments(argumentCount=1)
 	def command_removevar(argumentList, grammarDict, variableDict):
 		"""
 		<_removevar|varname>
@@ -918,7 +918,7 @@ class GrammarCommands(object):
 
 	#Variable checking
 	@staticmethod
-	@validateArguments(4)
+	@validateArguments(argumentCount=4)
 	def command_ifequals(argumentList, grammarDict, variableDict):
 		"""
 		<_ifequals|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
@@ -932,7 +932,7 @@ class GrammarCommands(object):
 			return (True, argumentList[3])
 
 	@staticmethod
-	@validateArguments(4)
+	@validateArguments(argumentCount=4)
 	def command_if(argumentList, grammarDict, variableDict):
 		"""
 		<_if|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
@@ -942,7 +942,7 @@ class GrammarCommands(object):
 		return GrammarCommands.command_ifequals(argumentList, grammarDict, variableDict)
 
 	@staticmethod
-	@validateArguments(4)
+	@validateArguments(argumentCount=4)
 	def command_ifcontains(argumentList, grammarDict, variableDict):
 		"""
 		<_ifcontains|varname|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
@@ -955,7 +955,7 @@ class GrammarCommands(object):
 			return (True, argumentList[3])
 
 	@staticmethod
-	@validateArguments(4)
+	@validateArguments(argumentCount=4)
 	def command_ifmatch(argumentList, grammarDict, variableDict):
 		"""
 		<_ifmatch|varname|regexToMatch|stringIfMatch|stringIfNoMatch>
@@ -976,7 +976,7 @@ class GrammarCommands(object):
 			return (False, u"Invalid regex '{}' in '_ifmatch' call ({})".format(argumentList[1], e.message))
 
 	@staticmethod
-	@validateArguments(2)
+	@validateArguments(argumentCount=2)
 	def command_switch(argumentList, grammarDict, variableDict):
 		"""
 		<_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|[_default:stringIfNoCaseMatch]>
@@ -1000,7 +1000,7 @@ class GrammarCommands(object):
 
 	#Parameter functions
 	@staticmethod
-	@validateArguments(2)
+	@validateArguments(argumentCount=2)
 	def command_hasparams(argumentList, grammarDict, variableDict):
 		"""
 		<_hasparams|stringIfHasParams|stringIfDoesntHaveParams>
@@ -1012,7 +1012,7 @@ class GrammarCommands(object):
 			return (True, argumentList[1])
 
 	@staticmethod
-	@validateArguments(3)
+	@validateArguments(argumentCount=3)
 	def command_hasparameter(argumentList, grammarDict, variableDict):
 		"""
 		<_hasparameter|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
@@ -1025,7 +1025,7 @@ class GrammarCommands(object):
 			return (True, argumentList[2])
 
 	@staticmethod
-	@validateArguments(3)
+	@validateArguments(argumentCount=3)
 	def command_hasparam(argumentList, grammarDict, variableDict):
 		"""
 		<_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
@@ -1035,6 +1035,7 @@ class GrammarCommands(object):
 		return GrammarCommands.command_hasparameter(argumentList, grammarDict, variableDict)
 
 	@staticmethod
+	@validateArguments(argumentCount=0)
 	def command_params(argumentList, grammarDict, variableDict):
 		"""
 		<_params>
@@ -1045,7 +1046,7 @@ class GrammarCommands(object):
 
 	#Random choices
 	@staticmethod
-	@validateArguments(2)
+	@validateArguments(argumentCount=2)
 	def command_randint(argumentList, grammarDict, variableDict):
 		"""
 		<_randint|lowerBound|higherBound>
@@ -1058,7 +1059,7 @@ class GrammarCommands(object):
 		return (True, unicode(str(value), 'utf-8'))
 
 	@staticmethod
-	@validateArguments(1)
+	@validateArguments(argumentCount=1)
 	def command_choose(argumentList, grammarDict, variableDict):
 		"""
 		<_choose|option1|option2|...>
@@ -1067,7 +1068,7 @@ class GrammarCommands(object):
 		return (True, random.choice(argumentList))
 
 	@staticmethod
-	@validateArguments(1)
+	@validateArguments(argumentCount=1)
 	def command_file(argumentList, grammarDict, variableDict):
 		"""
 		<_file|filename>
@@ -1079,7 +1080,7 @@ class GrammarCommands(object):
 
 	#Miscellaneous
 	@staticmethod
-	@validateArguments(3, checkIfFirstArgumentIsVarname=True)
+	@validateArguments(argumentCount=3, checkIfFirstArgumentIsVarname=True)
 	def command_replace(argumentList, grammarDict, variableDict):
 		"""
 		<_replace|varname/_params|whatToReplace|whatToReplaceItWith[|replacementCount]>
@@ -1099,7 +1100,7 @@ class GrammarCommands(object):
 		return (True, variableDict[argumentList[0]].replace(argumentList[1], argumentList[2], replacementCount))
 
 	@staticmethod
-	@validateArguments(3, checkIfFirstArgumentIsVarname=True)
+	@validateArguments(argumentCount=3, checkIfFirstArgumentIsVarname=True)
 	def command_regexreplace(argumentList, grammarDict, variableDict):
 		"""
 		<_regexreplace|varname/_params|regexOfWhatToReplace|whatToReplaceItWith[|replacementCount]>
@@ -1123,7 +1124,7 @@ class GrammarCommands(object):
 			return (False, u"Unable to parse regular expression '{}' in '_regexreplace' call ({})".format(argumentList[1], e.message))
 
 	@staticmethod
-	@validateArguments(1)
+	@validateArguments(argumentCount=1)
 	def command_modulecommand(argumentList, grammarDict, variableDict):
 		"""
 		<_modulecommand|commandName|argument1|argument2|key1=value1|key2=value2|...>
