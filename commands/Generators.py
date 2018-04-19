@@ -6,6 +6,10 @@ import SharedFunctions
 import GlobalStore
 
 
+fieldCommandPrefix = u"$"
+postProcessorPrefix = u"&"
+
+
 class Command(CommandTemplate):
 	triggers = ['generate', 'gen']
 	helptext = "Generate random stories or words. Call a specific generator with '{commandPrefix}generate [genName]'. Enter 'random' to let me pick, or choose from: "
@@ -406,13 +410,13 @@ class Command(CommandTemplate):
 		#If the last field starts with '&', it specifies special options, like making text bold.
 		# Multiple options are separated by commas. Retrieve those options
 		extraOptions = []
-		if grammarBlockParts and grammarBlockParts[-1].startswith(u'&'):
+		if grammarBlockParts and grammarBlockParts[-1].startswith(postProcessorPrefix):
 			extraOptions = grammarBlockParts.pop()[1:].split(u',')
 
 		# Grammar commands start with an underscore, check if this block is a grammar command
-		if fieldKey.startswith(u"_"):
+		if fieldKey.startswith(fieldCommandPrefix):
 			#Have the GrammarCommands class try and execute the provided command name
-			isSuccess, replacement = GrammarCommands.runCommand(fieldKey[1:], grammarBlockParts, grammar, variableDict)
+			isSuccess, replacement = GrammarCommands.runCommand(fieldKey[len(fieldCommandPrefix):], grammarBlockParts, grammar, variableDict)
 			# If something went wrong, stop now. The replacement string should be an error message, pass that along too
 			if not isSuccess:
 				return (False, replacement)
