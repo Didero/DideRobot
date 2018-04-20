@@ -765,14 +765,15 @@ class Command(CommandTemplate):
 #Store some data about grammar commands, so we can do some initial argument verification. Keeps the actual commands nice and short
 grammarCommandOptions = {}
 
-def validateArguments(argumentCount=0, checkIfFirstArgumentIsVarname=False):
+def validateArguments(argumentCount=0, numericArgumentIndexes=None):
 	"""
 	A decorator to store options on how grammar commands should be executed and how the input should be checked
-	:param checkIfFirstArgumentIsVarname: Set to True to enable verification that the first argument exists in the variable dictionary
 	:param argumentCount: The minimum number of arguments this grammar command needs. An error is thrown if the command is called with fewer arguments
+	:param numericArgumentIndexes: A tuple or list of the argument indexes that should be turned from strings into numbers (indexes start at 0).
+			If an index specified here is larger than 'count', it's considered an optional arg
 	"""
 	def wrapperFunction(functionToWrap):
-		grammarCommandOptions[functionToWrap] = (argumentCount, checkIfFirstArgumentIsVarname)
+		grammarCommandOptions[functionToWrap] = (argumentCount, numericArgumentIndexes)
 		return functionToWrap
 	return wrapperFunction
 
@@ -810,7 +811,7 @@ class GrammarCommands(object):
 		if not command:
 			return (False, u"Unknown command '{}' called".format(commandName))
 		#Get the settings for the method
-		requiredArgumentCount, verifyFirstArgIsVarname = grammarCommandOptions.get(command, (0, False))
+		requiredArgumentCount, numericArgIndexes = grammarCommandOptions.get(command, (0, None))
 		#Check if enough arguments were passed, if not, return an error
 		if len(argumentList) < requiredArgumentCount:
 			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(command, requiredArgumentCount, len(argumentList)))
@@ -822,6 +823,12 @@ class GrammarCommands(object):
 				if varname not in variableDict:
 					return (False, u"Field '{}' references variable name '{}', but that isn't set".format(commandName, varname))
 				argumentList[argIndex] = variableDict[varname]
+			#If the arg is in the 'numericalArg' list, (try to) convert it to a number
+			if numericArgIndexes and argIndex in numericArgIndexes:
+				try:
+					argumentList[argIndex] = int(argumentList[argIndex], 10)
+				except ValueError as e:
+					return (False, u"Argument '{}' (index {}) of command '{}' should be numeric, but couldn't get properly converted to a number".format(argumentList[argIndex], argIndex, commandName))
 		#All checks passed, call the command
 		try:
 			return command(argumentList, grammarDict, variableDict)
@@ -877,7 +884,7 @@ class GrammarCommands(object):
 			return (True, argumentList[2])
 
 	@staticmethod
-	@validateArguments(argumentCount=1, checkIfFirstArgumentIsVarname=False)  #False because a fallback value could be set
+	@validateArguments(argumentCount=1)
 	def command_var(argumentList, grammarDict, variableDict):
 		"""
 		<_var|varname|[valueIfVarNotSet]>
@@ -1042,16 +1049,16 @@ class GrammarCommands(object):
 
 	#Random choices
 	@staticmethod
-	@validateArguments(argumentCount=2)
+	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1))
 	def command_randint(argumentList, grammarDict, variableDict):
 		"""
 		<_randint|lowerBound|higherBound>
 		Returns a number between the lower and upper bound, inclusive on both sides
 		"""
-		try:
-			value = random.randint(int(argumentList[0]), int(argumentList[1]))
-		except ValueError:
-			return (False, u"Invalid argument provided to '_randint' call, '{}' or '{}' couldn't be parsed as a number".format(argumentList[0], argumentList[1]))
+		if argumentList[1] < argumentList[0]:
+			value = random.randint(argumentList[1], argumentList[0])
+		else:
+			value = random.randint(argumentList[0], argumentList[1])
 		return (True, unicode(str(value), 'utf-8'))
 
 	@staticmethod
@@ -1076,7 +1083,7 @@ class GrammarCommands(object):
 
 	#Miscellaneous
 	@staticmethod
-	@validateArguments(argumentCount=3, checkIfFirstArgumentIsVarname=True)
+	@validateArguments(argumentCount=3, numericArgumentIndexes=(3,))
 	def command_replace(argumentList, grammarDict, variableDict):
 		"""
 		<_replace|varname/_params|whatToReplace|whatToReplaceItWith[|replacementCount]>
@@ -1086,17 +1093,14 @@ class GrammarCommands(object):
 		replacementCount = -1  #Negative count means no replacement limit
 		#Check if a count parameter was given, and if so, if it's valid
 		if len(argumentList) >= 4:
-			try:
-				replacementCount = int(argumentList[3])
-				if replacementCount == 0:
-					replacementCount = -1
-			except ValueError:
-				return (False, u"Invalid optional replacement count value '{}' passed to '_replace' call".format(argumentList[3]))
+			replacementCount = argumentList[3]
+			if replacementCount <= 0:
+				return (False, u"Invalid optional replacement count value '{}' passed to 'replace' call".format(argumentList[3]))
 		#Now replace what we need to replace
 		return (True, argumentList[0].replace(argumentList[1], argumentList[2], replacementCount))
 
 	@staticmethod
-	@validateArguments(argumentCount=3, checkIfFirstArgumentIsVarname=True)
+	@validateArguments(argumentCount=3, numericArgumentIndexes=(3,))
 	def command_regexreplace(argumentList, grammarDict, variableDict):
 		"""
 		<_regexreplace|varname/_params|regexOfWhatToReplace|whatToReplaceItWith[|replacementCount]>
@@ -1106,12 +1110,9 @@ class GrammarCommands(object):
 		replacementCount = 0  #0 means no replacement limit
 		#Check if a replacement count parameter was given, and if so, if it's valid
 		if len(argumentList) >= 4:
-			try:
-				replacementCount = int(argumentList[3])
-				if replacementCount < 0:
-					replacementCount = 0
-			except ValueError:
-				return (False, u"Invalid optional replacement count value '{}' passed to '_regexreplace' call".format(argumentList[3]))
+			replacementCount = argumentList[3]
+			if replacementCount <= 0:
+				return (False, u"Invalid optional replacement count value '{}' passed to 'regexreplace' call".format(argumentList[3]))
 		try:
 			# Unescape any characters inside the regex (like < and |)
 			regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
