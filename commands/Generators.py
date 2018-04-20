@@ -820,9 +820,14 @@ class GrammarCommands(object):
 			#Check if the arg start with the variables prefix, in which case it should be replaced by that variable's value
 			if argumentList[argIndex].startswith(argumentIsVariablePrefix):
 				varname = argumentList[argIndex][len(argumentIsVariablePrefix):]
+				argumentSuffix = u''
+				#Commands like $switch have arguments with a colon in them, to split the case and the value. Check for that too
+				if u':' in varname:
+					varname, argumentSuffix = varname.split(u':', 1)
+					argumentSuffix = u':' + argumentSuffix
 				if varname not in variableDict:
 					return (False, u"Field '{}' references variable name '{}', but that isn't set".format(commandName, varname))
-				argumentList[argIndex] = variableDict[varname]
+				argumentList[argIndex] = variableDict[varname] + argumentSuffix
 			#If the arg is in the 'numericalArg' list, (try to) convert it to a number
 			if numericArgIndexes and argIndex in numericArgIndexes:
 				try:
