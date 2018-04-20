@@ -11,9 +11,9 @@
 	"The faded note reads 'Step 1) Find <land>, Step 2) Avoid <creature>, Step 3) Acquire <artifact>'. Step 4 starts with 'Beware the' but the rest is smudged with... blood?",
 	"Long story short, <creature> has <artifact>, and I want it. Go to <land> and take it, will you?"
 ],
-"basicLandOrLands": "<basicland><_choose|s||>",
+"basicLandOrLands": "<basicland><$choose|s||>",
 "basicland": ["plain", "island", "mountain", "swamp", "forest"],
-"land": "<_modulecommand|searchMagicTheGatheringCards|random|type: (?/<!basic )land|&storeas:card,hide><_regexreplace|card|^.*?\\x02(.+?)\\x0f.+$|\\1|&storeas:card,hide><_ifmatch|card|(,/|')|<_var|card>|<_regexreplace|card|^|the >>",
-"artifact": "<_modulecommand|searchMagicTheGatheringCards|random|type: artifact(?! creature)|&storeas:card,hide><_regexreplace|card|^.*?\\x02(.+?)\\x0f.+$|\\1|&storeas:card,hide><_ifcontains|card|'s|<_var|card>|<_regexreplace|card|^|the >>",
-"creature": "<_modulecommand|searchMagicTheGatheringCards|random|type: creature|&storeas:card,hide><_regexreplace|card|^.*?\\x02(.+?)\\x0f.+$|\\1|&storeas:card,hide><_ifmatch|card|(,/|\bthe\b)|<_var|card>|<_regexreplace|card|^|the >>"
+"land": "<$modulecommand|searchMagicTheGatheringCards|random|type: (?/<!basic )land|&storeas:card,hide><$regexreplace|%card|^.*?\\x02(.+?)\\x0f.+$|\\1|&storeas:card,hide><$ifmatch|%card|(,/|')|<$var|card>|<$regexreplace|%card|^|the >>",
+"artifact": "<$modulecommand|searchMagicTheGatheringCards|random|type: artifact(?! creature)|&storeas:card,hide><$regexreplace|%card|^.*?\\x02(.+?)\\x0f.+$|\\1|&storeas:card,hide><$ifcontains|%card|'s|<$var|card>|<$regexreplace|%card|^|the >>",
+"creature": "<$modulecommand|searchMagicTheGatheringCards|random|type: creature|&storeas:card,hide><$regexreplace|%card|^.*?\\x02(.+?)\\x0f.+$|\\1|&storeas:card,hide><$ifmatch|%card|(,/|\bthe\b)|<$var|card>|<$regexreplace|%card|^|the >>"
 }

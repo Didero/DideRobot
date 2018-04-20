@@ -2,9 +2,9 @@
 "_name": "Cards Against Humanity Card Combinator - Custom Black Card Edition",
 "_description": "Picks a random black card or uses the one provided by the user, and fills it in with one or multiple white cards",
 "_triggers": ["cahb", "cardsagainsthumanityblack"],
-"_start": "<_hasparams|<paramscheck>|<_file|CardsAgainstHumanityBlackCards.txt>>",
-"paramscheck": "<_ifcontains|_params|_|<usercardWithUnderscore>|<usercardWithoutUnderscore>>",
-"usercardWithUnderscore": "<_replace|_params|_|<whitecard>>",
-"usercardWithoutUnderscore": "<_params> <whitecard>",
-"whitecard": "<_file|CardsAgainstHumanityWhiteCards.txt|&storeas:lastwhitecard,bold>"
+"_start": "<$hasparams|<paramscheck>|<$file|CardsAgainstHumanityBlackCards.txt>>",
+"paramscheck": "<$ifcontains|%_params|_|<usercardWithUnderscore>|<usercardWithoutUnderscore>>",
+"usercardWithUnderscore": "<$replace|%_params|_|<whitecard>>",
+"usercardWithoutUnderscore": "<$params> <whitecard>",
+"whitecard": "<$file|CardsAgainstHumanityWhiteCards.txt|&storeas:lastwhitecard,bold>"
 }

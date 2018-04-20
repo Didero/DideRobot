@@ -4,11 +4,11 @@
 "_triggers": ["colony"],
 "_start": "This planet's <planet> <air>. <colony>.",
 "planet": [
-	"<_setvar|planetType|ocean><oceanPlanet> beneath",
-	"<_setvar|planetType|plant><plantPlanet>",
-	"<_setvar|planetType|ice><icePlanet>",
-	"<_setvar|planetType|airless><airlessPlanet> stretches away beneath",
-	"<_setvar|planetType|misc><miscPlanet> stretches away beneath"
+	"<$setvar|planetType|ocean><oceanPlanet> beneath",
+	"<$setvar|planetType|plant><plantPlanet>",
+	"<$setvar|planetType|ice><icePlanet>",
+	"<$setvar|planetType|airless><airlessPlanet> stretches away beneath",
+	"<$setvar|planetType|misc><miscPlanet> stretches away beneath"
 ],
 "oceanPlanet": [
 	"ocean tosses with slow, kilometres-high waves,",
@@ -49,7 +49,7 @@
 "colony": {"20": "<failedColony>", "100": "<successfulColony>"},
 "failedColony": ["The <resultOfFailure> <failureLocation><descendantInfo>"],
 "resultOfFailure": ["fragments of the crashed seedship", "ruins of the colony"],
-"failureLocation": "<_switch|planetType|ocean:decay at the bottom of the planet-wide ocean|ice:lie embedded in the planet-wide ice sheet|plant:<plantPlanetFailure>|_default:lie on the rocky surface>",
+"failureLocation": "<$switch|%planetType|ocean:decay at the bottom of the planet-wide ocean|ice:lie embedded in the planet-wide ice sheet|plant:<plantPlanetFailure>|_default:lie on the rocky surface>",
 "plantPlanetFailure": [
 	"are overgrown with alien plants and overrun by alien animals",
 	"are overgrown with alien plants"
@@ -60,8 +60,8 @@
 	"45": ". The planet's intelligent natives explore the ruins, but not enough remains for them to learn anything about the extinct human race",
 	"100": ""
 },
-"successfulColony": "<_setvarrandom|techLevel|high|medium|low>The colonists live in <building> <buildingProtection>,<buildingLocation>. <colonistLifestyle><nativesTreatmentChoice>",
-"building": "<_switch|techLevel|high:<buildingHeight> <buildingTechTypeHigh>|medium:<buildingHeight> <buildingTechTypeMedium>|low:<buildingTechTypeLow>>",
+"successfulColony": "<$setvarrandom|techLevel|high|medium|low>The colonists live in <building> <buildingProtection><buildingLocation>. <colonistLifestyle><nativesTreatmentChoice>",
+"building": "<$switch|%techLevel|high:<buildingHeight> <buildingTechTypeHigh>|medium:<buildingHeight> <buildingTechTypeMedium>|low:<buildingTechTypeLow>>",
 "buildingHeight": ["towering", "tall", "squat", "low, sprawling"],
 "buildingTechTypeHigh": ["high-tech cities", "cities of steel and glass", "cities of steel and concrete"],
 "buildingTechTypeMedium": ["smog-filled industrial cities", "stone-walled cities"],
@@ -72,7 +72,7 @@
 	"inside airtight caves",
 	"under airtight domes"
 ],
-"buildingLocation": "<_switch|planetType|ocean: <buildingLocationOcean>|ice: <buildingLocationIce>|_default:<buildingLocationMisc>>",
+"buildingLocation": "<$switch|%planetType|ocean: <buildingLocationOcean>|ice: <buildingLocationIce>|_default:<buildingLocationMisc>>",
 "buildingLocationOcean": [
 	"on platforms floating on the planet-wide ocean",
 	"beside rivers that flow into the planet's ocean"
@@ -82,7 +82,7 @@
 	"by lakes of water melted from the planet's ice caps"
 ],
 "buildingLocationMisc": ["", " gathered around water production plants"],
-"colonistLifestyle": "<_if|techLevel|low|<colonistLifestyleLowTech>|<colonistLifestyleMediumHighTech>>",
+"colonistLifestyle": "<$if|%techLevel|low|<colonistLifestyleLowTech>|<colonistLifestyleMediumHighTech>>",
 "colonistLifestyleMediumHighTech" :[
 	"They live lives of peace and spiritual fulfilment beyond the dreams of their ancestors on Earth, guided by a combination of human and alien philosophy",
 	"They spend their time pursuing art, leisure, and spiritual fulfilment, while automatic machines take care of their material needs",
