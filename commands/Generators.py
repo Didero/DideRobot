@@ -827,7 +827,7 @@ class GrammarCommands(object):
 		try:
 			return command(argumentList, grammarDict, variableDict)
 		except Exception as e:
-			return (False, u"Something went wrong when executing the '_{}' call ({})".format(commandName, e.message))
+			return (False, u"Something went wrong when executing the '{}' command ({})".format(commandName, e.message))
 
 	#Shared internal methods
 	@staticmethod
@@ -893,7 +893,7 @@ class GrammarCommands(object):
 				return (True, argumentList[1])
 			# Otherwise, throw an error
 			else:
-				return (False, u"Referenced undefined variable '{}' in '_var' call".format(argumentList[0]))
+				return (False, u"Referenced undefined variable '{}' in 'var' call".format(argumentList[0]))
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -987,7 +987,7 @@ class GrammarCommands(object):
 		caseDict = {}
 		for caseString in argumentList[1:]:
 			if u":" not in caseString:
-				return (False, u"Missing colon in parameter '{}' to '_switch' field".format(caseString))
+				return (False, u"Missing colon in parameter '{}' to 'switch' command".format(caseString))
 			case, stringIfCase = caseString.split(u':', 1)
 			caseDict[case] = stringIfCase
 		#Then see if we can find a matching case
@@ -996,7 +996,7 @@ class GrammarCommands(object):
 		elif u'_default' in caseDict:
 			return (True, caseDict[u'_default'])
 		else:
-			return (False, u"'_switch' command contains no case for '{}', and no '_default' fallback case".format(argumentList[0]))
+			return (False, u"'switch' command contains no case for '{}', and no '_default' fallback case".format(argumentList[0]))
 
 	#Parameter functions
 	@staticmethod
@@ -1121,7 +1121,7 @@ class GrammarCommands(object):
 			regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
 			return (True, re.sub(regex, argumentList[2], variableDict[argumentList[0]], count=replacementCount))
 		except re.error as e:
-			return (False, u"Unable to parse regular expression '{}' in '_regexreplace' call ({})".format(argumentList[1], e.message))
+			return (False, u"Unable to parse regular expression '{}' in 'regexreplace' call ({})".format(argumentList[1], e.message))
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
