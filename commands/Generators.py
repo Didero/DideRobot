@@ -855,7 +855,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=2)
 	def command_setvar(argumentList, grammarDict, variableDict):
 		"""
-		<_setvar|varname|value>
+		<$setvar|varname|value>
 		Stores a value under the provided name, for future use
 		"""
 		variableDict[argumentList[0]] = argumentList[1]
@@ -865,7 +865,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=2)
 	def command_setvarrandom(argumentList, grammarDict, variableDict):
 		"""
-		<_setvarrandom|varname|value1|value2|value3>
+		<$setvarrandom|varname|value1|value2|value3>
 		Picks one of the provided values at random, and stores it under the provided name, for future use
 		"""
 		variableDict[argumentList[0]] = random.choice(argumentList[1:])
@@ -875,8 +875,8 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=3)
 	def command_hasvar(argumentList, grammarDict, variableDict):
 		"""
-		<_hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
-		Checks if the provided variable exists. Returns the first string if it does, and the second one if it doesn't
+		<$hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
+		Checks if the variable with the provided name exists. Returns the first string if it does, and the second one if it doesn't
 		"""
 		if argumentList[0] in variableDict:
 			return (True, argumentList[1])
@@ -887,7 +887,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=1)
 	def command_var(argumentList, grammarDict, variableDict):
 		"""
-		<_var|varname|[valueIfVarNotSet]>
+		<$var|varname|[valueIfVarNotSet]>
 		Returns the value stored under the provided variable name. The second argument is optional, and if set will be returned if the variable isn't stored
 		"""
 		# Check if the named variable was stored
@@ -905,7 +905,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=1)
 	def command_remvar(argumentList, grammarDict, variableDict):
 		"""
-		<_remvar|varname>
+		<$remvar|varname>
 		Removes the value stored under this variable name. Does nothing if the variable doesn't exist
 		"""
 		if argumentList[0] in variableDict:
@@ -916,7 +916,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=1)
 	def command_removevar(argumentList, grammarDict, variableDict):
 		"""
-		<_removevar|varname>
+		<$removevar|varname>
 		Alias for 'remvar', removes the stored variable
 		"""
 		return GrammarCommands.command_remvar(argumentList, grammarDict, variableDict)
@@ -927,9 +927,8 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=4)
 	def command_ifequals(argumentList, grammarDict, variableDict):
 		"""
-		<_ifequals|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
-		Checks if the variable is set to the specified value. Returns the IfIdentical string if it is, and the IfNotIdentical string if it isn't or if the var isn't set
-		Use '_params' as the varname to check the parameters
+		<$ifequals|firstStringToMatch|secondStringToMatch|resultIfIdentical|resultIfNotIdentical>
+		Checks if the first string is identical to the second string. Returns the 'IfIdentical' result if they're identical, and the 'IfNotIdentical' result otherwise
 		"""
 		#Check if the variable exists and is set to the requested value
 		if argumentList[0] == argumentList[1]:
@@ -941,9 +940,8 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=4)
 	def command_if(argumentList, grammarDict, variableDict):
 		"""
-		<_if|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
-		Checks if the variable is set to the specified value. Returns the IfIdentical string if it is, and the IfNotIdentical string if it isn't or if the var isn't set
-		Use '_params' as the varname to check the parameters
+		<$if|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
+		Alias for 'ifequals' left in for backwards compatibility. Functionality could change in the future, use 'ifequals' instead
 		"""
 		return GrammarCommands.command_ifequals(argumentList, grammarDict, variableDict)
 
@@ -951,8 +949,8 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=4)
 	def command_ifcontains(argumentList, grammarDict, variableDict):
 		"""
-		<_ifcontains|varname|substringToCheckFor|stringIfSubstringInString|stringIfSubstringNotInString>
-		Checks if the variable contains the provided substring. If varname is '_params', the provided parameters will be checked against
+		<$ifcontains|string|substringToCheckFor|resultIfSubstringInString|resultIfSubstringNotInString>
+		Checks if the provided string contains the provided substring. Returns the 'InString' result if it is, and the 'NotInString' result otherwise
 		"""
 		#Check if the provided variable exists and if it contains the provided string
 		if argumentList[1] in argumentList[0]:
@@ -964,9 +962,8 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=4)
 	def command_ifmatch(argumentList, grammarDict, variableDict):
 		"""
-		<_ifmatch|varname|regexToMatch|stringIfMatch|stringIfNoMatch>
-		Checks if the variable matches the provided regular expression. If varname is '_params', the provided parameters will be checked against
-		Return the NoMatch string if the variable isn't set
+		<$ifmatch|string|regexToMatch|resultIfMatch|resultIfNoMatch>
+		Checks if the provided regular expression matches the provided string
 		"""
 		#Make sure we un-escape the regex, so it can use characters like < and | without messing up our parsing
 		regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
@@ -983,9 +980,8 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=2)
 	def command_switch(argumentList, grammarDict, variableDict):
 		"""
-		<_switch|varname/_params|case1:stringIfCase1|case2:stringIfCase2|...|[_default:stringIfNoCaseMatch]>
-		Checks which provided case matches the stored variable. If varname is '_params', the provided parameters will be checked against
-		The '_default' field is not mandatory, but if it's missing and no suitable case can be found, an error is returned
+		<$switch|stringToCheck|case1:stringIfCase1|case2:stringIfCase2|...|[_default:stringIfNoCaseMatch]>
+		Checks which provided case matches the string to check. The '_default' field is not mandatory, but if it's missing and no suitable case can be found, an error is returned
 		"""
 		#First construct the comparison dict
 		caseDict = {}
@@ -1007,7 +1003,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=2)
 	def command_hasparams(argumentList, grammarDict, variableDict):
 		"""
-		<_hasparams|stringIfHasParams|stringIfDoesntHaveParams>
+		<$hasparams|stringIfHasParams|stringIfDoesntHaveParams>
 		Checks if there are any parameters provided. Returns the first string if any parameters exist, and the second one if not
 		"""
 		if u'_params' in variableDict:
@@ -1019,7 +1015,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=3)
 	def command_hasparameter(argumentList, grammarDict, variableDict):
 		"""
-		<_hasparameter|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
+		<$hasparameter|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 		Checks if the the provided parameter string is equal to a string. Returns the first string if it matches, and the second one if it doesn't.
 		If no parameter string was provided, the 'doesn't match' string is returned
 		"""
@@ -1032,7 +1028,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=3)
 	def command_hasparam(argumentList, grammarDict, variableDict):
 		"""
-		<_hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
+		<$hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 		Checks if the the provided parameters are equal to a string. Returns the first string if it matches, and the second one if it doesn't.
 		If no parameter string was provided, the 'doesn't match' string is returned
 		"""
@@ -1042,7 +1038,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=0)
 	def command_params(argumentList, grammarDict, variableDict):
 		"""
-		<_params>
+		<$params>
 		Returns the user-provided parameter string, or an empty string if no parameter string was provided
 		"""
 		# Fill in the provided parameter(s) in this field
@@ -1053,7 +1049,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1))
 	def command_randint(argumentList, grammarDict, variableDict):
 		"""
-		<_randint|lowerBound|higherBound>
+		<$randint|lowerBound|higherBound>
 		Returns a number between the lower and upper bound, inclusive on both sides
 		"""
 		if argumentList[1] < argumentList[0]:
@@ -1066,7 +1062,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=1)
 	def command_choose(argumentList, grammarDict, variableDict):
 		"""
-		<_choose|option1|option2|...>
+		<$choose|option1|option2|...>
 		Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for each of them
 		"""
 		return (True, random.choice(argumentList))
@@ -1075,7 +1071,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=1)
 	def command_file(argumentList, grammarDict, variableDict):
 		"""
-		<_file|filename>
+		<$file|filename>
 		Load a sentence from the specified file. Useful for not cluttering up the grammar file with a lot of options
 		The file has to exists in the same directory the grammar file is in
 		"""
@@ -1087,9 +1083,9 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=3, numericArgumentIndexes=(3,))
 	def command_replace(argumentList, grammarDict, variableDict):
 		"""
-		<_replace|varname/_params|whatToReplace|whatToReplaceItWith[|replacementCount]>
-		Returns the provided variable value but with part of it replaced. The substring 'whatToReplace' is replaced by 'whatToReplaceItBy'
-		Use '_params' as the variable name to use the parameters. If 'replacementCount' is set to a number, only that many replacements are made
+		<$replace|stringToReplaceIn|whatToReplace|whatToReplaceItWith[|replacementCount]>
+		Returns the provided string but with part of it replaced. The substring 'whatToReplace' is replaced by 'whatToReplaceItBy'
+		If 'replacementCount' is set to a number, only that many replacements are made
 		"""
 		replacementCount = -1  #Negative count means no replacement limit
 		#Check if a count parameter was given, and if so, if it's valid
@@ -1104,9 +1100,9 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=3, numericArgumentIndexes=(3,))
 	def command_regexreplace(argumentList, grammarDict, variableDict):
 		"""
-		<_regexreplace|varname/_params|regexOfWhatToReplace|whatToReplaceItWith[|replacementCount]>
-		Returns the provided variable value with part of it replaced. The part to replaced is determined wit the provided regular expression
-		Use '_params' as the variable name to use the parameters. If 'replacementCount' is set to a number, only that many replacements are made
+		<$regexreplace|stringToReplaceIn|regexOfWhatToReplace|whatToReplaceItWith[|replacementCount]>
+		Returns the provided string with part of it replaced. The part to replace is determined with the provided regular expression
+		If 'replacementCount' is set to a number, only that many replacements are made
 		"""
 		replacementCount = 0  #0 means no replacement limit
 		#Check if a replacement count parameter was given, and if so, if it's valid
@@ -1125,7 +1121,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=1)
 	def command_modulecommand(argumentList, grammarDict, variableDict):
 		"""
-		<_modulecommand|commandName|argument1|argument2|key1=value1|key2=value2|...>
+		<$modulecommand|commandName[|argument1|argument2|key1=value1|key2=value2|...]>
 		Runs a shared command in another bot module. The first parameter is the name of that command, the rest are unnamed and named parameters to pass on, and are all optional
 		"""
 		if not GlobalStore.commandhandler.hasCommandFunction(argumentList[0]):
