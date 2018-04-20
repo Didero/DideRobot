@@ -170,6 +170,7 @@ class Command(CommandTemplate):
 		#Check if the parsing went well
 		if newMessageText.startswith(u"Error: "):
 			message.reply(u"Something went wrong with executing the alias: " + newMessageText.split(': ', 1)[1])
+			return
 		#Aliases that use parameters can end with whitespace at the end. Remove that
 		newMessageText = newMessageText.rstrip()
 
