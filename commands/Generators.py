@@ -976,7 +976,8 @@ class GrammarCommands(object):
 			else:
 				return (True, argumentList[3])
 		except re.error as e:
-			return (False, u"Invalid regex '{}' in '_ifmatch' call ({})".format(argumentList[1], e.message))
+			return (False, u"Invalid regex '{}' in 'ifmatch' call ({})".format(argumentList[1], e.message))
+
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
