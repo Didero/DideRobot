@@ -166,7 +166,9 @@ class Command(CommandTemplate):
 			aliasDict[str(i+1)] = message.messageParts[i] if i < message.messagePartsLength else u""
 		aliasDict[u'nick'] = message.userNickname
 		aliasDict[u'CP'] = message.bot.commandPrefix
-		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, parameters=message.messageParts)
+		#Always send along parameters
+		parameters = message.messageParts if message.messagePartsLength > 0 else [""]
+		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, parameters=parameters)
 		#Check if the parsing went well
 		if newMessageText.startswith(u"Error: "):
 			message.reply(u"Something went wrong with executing the alias: " + newMessageText.split(': ', 1)[1])
