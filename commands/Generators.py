@@ -6,7 +6,7 @@ import SharedFunctions
 import GlobalStore
 
 
-fieldCommandPrefix = u"_"
+fieldCommandPrefix = u"$"
 argumentIsVariablePrefix = u"%"
 postProcessorPrefix = u"&"
 
