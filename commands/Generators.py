@@ -512,8 +512,10 @@ class Command(CommandTemplate):
 				self.logDebug(u"[Gen] Passed on case option, replaced '{}' with '{}'".format(orgReplacement, replacement))
 
 		#The parser expects unicode, so make sure our replacement is unicode
-		if not isinstance(replacement, unicode):
+		if isinstance(replacement, str):
 			replacement = replacement.decode("utf-8", errors="replace")
+		elif not isinstance(replacement, unicode):
+			replacement = unicode(replacement)
 
 		#Done!
 		return (True, replacement)
