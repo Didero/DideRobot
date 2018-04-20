@@ -975,6 +975,29 @@ class GrammarCommands(object):
 		except re.error as e:
 			return (False, u"Invalid regex '{}' in 'ifmatch' call ({})".format(argumentList[1], e.message))
 
+	@staticmethod
+	@validateArguments(argumentCount=4, numericArgumentIndexes=(0, 1))
+	def command_ifsmaller(argumentList, grammarDict, variableDict):
+		"""
+		<$ifsmaller|firstValue|secondValue|resultIfFirstValueIsSmaller|resultIfFirstValueIsNotSmaller>
+		Returns the first result if the first value is smaller than the second value, and the second result if the first value is equal to or larger than the second value
+		"""
+		if argumentList[0] < argumentList[1]:
+			return (True, argumentList[2])
+		else:
+			return (True, argumentList[3])
+
+	@staticmethod
+	@validateArguments(argumentCount=4, numericArgumentIndexes=(0, 1))
+	def command_ifsmallerorequal(argumentList, grammarDict, variableDict):
+		"""
+		<$ifsmallerorequal|firstValue|secondValue|resultIfFirstValueIsSmallerOrEqual|resulOtherwise>
+		Returns the first result if the first value is smaller than or equal to the second value, and the second result if the first value is larger than the second value
+		"""
+		if argumentList[0] <= argumentList[1]:
+			return (True, argumentList[2])
+		else:
+			return (True, argumentList[3])
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
