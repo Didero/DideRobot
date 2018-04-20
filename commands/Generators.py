@@ -980,6 +980,7 @@ class GrammarCommands(object):
 		except re.error as e:
 			return (False, u"Invalid regex '{}' in 'ifmatch' call ({})".format(argumentList[1], e.message))
 
+	#Numeric functions
 	@staticmethod
 	@validateArguments(argumentCount=4, numericArgumentIndexes=(0, 1))
 	def command_ifsmaller(argumentList, grammarDict, variableDict):
@@ -1003,6 +1004,26 @@ class GrammarCommands(object):
 			return (True, argumentList[2])
 		else:
 			return (True, argumentList[3])
+
+	@staticmethod
+	@validateArguments(argumentCount=1, numericArgumentIndexes=(0, 1))
+	def command_increase(argumentList, grammarDict, variableDict):
+		"""
+		<$increase|numberToIncrease[|increaseAmount]>
+		Increases the provided number. If the 'increaseAmount' is specified, numberToIncrease is increased by that amount, otherwise 1 is added
+		"""
+		increaseAmount = 1 if len(argumentList) <= 1 else argumentList[1]
+		return (True, argumentList[0] + increaseAmount)
+
+	@staticmethod
+	@validateArguments(argumentCount=1, numericArgumentIndexes=(0, 1))
+	def command_decrease(argumentList, grammarDict, variableDict):
+		"""
+		<$decrease|numberToDecrease[|decreaseAmount]>
+		Decreases the provided number. If the 'decreaseAmount' is specified, numberToDecrease is decreased by that amount, otherwise 1 is subtracted
+		"""
+		decreaseAmount = 1 if len(argumentList) <= 1 else argumentList[1]
+		return (True, argumentList[0] - decreaseAmount)
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
