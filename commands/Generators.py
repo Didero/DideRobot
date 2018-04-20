@@ -1034,7 +1034,7 @@ class GrammarCommands(object):
 		<$hasparams|stringIfHasParams|stringIfDoesntHaveParams>
 		Checks if there are any parameters provided. Returns the first string if any parameters exist, and the second one if not
 		"""
-		if u'_params' in variableDict:
+		if variableDict.get(u'_params', None):
 			return (True, argumentList[0])
 		else:
 			return (True, argumentList[1])
