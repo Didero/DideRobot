@@ -167,6 +167,9 @@ class Command(CommandTemplate):
 		aliasDict[u'nick'] = message.userNickname
 		aliasDict[u'CP'] = message.bot.commandPrefix
 		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, parameters=message.messageParts)
+		#Check if the parsing went well
+		if newMessageText.startswith(u"Error: "):
+			message.reply(u"Something went wrong with executing the alias: " + newMessageText.split(': ', 1)[1])
 		#Aliases that use parameters can end with whitespace at the end. Remove that
 		newMessageText = newMessageText.rstrip()
 
