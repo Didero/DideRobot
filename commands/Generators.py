@@ -7,6 +7,7 @@ import GlobalStore
 
 
 fieldCommandPrefix = u"_"
+argumentIsVariablePrefix = u"%"
 postProcessorPrefix = u"&"
 
 
@@ -813,16 +814,14 @@ class GrammarCommands(object):
 		#Check if enough arguments were passed, if not, return an error
 		if len(argumentList) < requiredArgumentCount:
 			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(command, requiredArgumentCount, len(argumentList)))
-		#If we need to check if the first argument is a variable, do so
-		if verifyFirstArgIsVarname:
-			if len(argumentList) == 0:
-				return (False, u"'_{}' requires the first argument to be a variable name, but no arguments were provided")
-			#Use a special error message if the variable requested is the parameter string
-			elif argumentList[0] == u"_params" and u"_params" not in variableDict:
-				return (False, u"'_{}' command called with '_params' argument, but no parameters were provided".format(commandName))
-			#Required variable isn't set, show an error about that
-			elif argumentList[0] not in variableDict:
-				return (False, u"'_{}' command called with '{}' as variable name argument, but that variable isn't set".format(commandName, argumentList[0]))
+		#Check each arg for certain settings
+		for argIndex in xrange(len(argumentList)):
+			#Check if the arg start with the variables prefix, in which case it should be replaced by that variable's value
+			if argumentList[argIndex].startswith(argumentIsVariablePrefix):
+				varname = argumentList[argIndex][len(argumentIsVariablePrefix):]
+				if varname not in variableDict:
+					return (False, u"Field '{}' references variable name '{}', but that isn't set".format(commandName, varname))
+				argumentList[argIndex] = variableDict[varname]
 		#All checks passed, call the command
 		try:
 			return command(argumentList, grammarDict, variableDict)
@@ -926,7 +925,7 @@ class GrammarCommands(object):
 		Use '_params' as the varname to check the parameters
 		"""
 		#Check if the variable exists and is set to the requested value
-		if argumentList[0] in variableDict and variableDict[argumentList[0]] == argumentList[1]:
+		if argumentList[0] == argumentList[1]:
 			return (True, argumentList[2])
 		else:
 			return (True, argumentList[3])
@@ -949,7 +948,7 @@ class GrammarCommands(object):
 		Checks if the variable contains the provided substring. If varname is '_params', the provided parameters will be checked against
 		"""
 		#Check if the provided variable exists and if it contains the provided string
-		if argumentList[0] in variableDict and argumentList[1] in variableDict[argumentList[0]]:
+		if argumentList[1] in argumentList[0]:
 			return (True, argumentList[2])
 		else:
 			return (True, argumentList[3])
@@ -962,13 +961,10 @@ class GrammarCommands(object):
 		Checks if the variable matches the provided regular expression. If varname is '_params', the provided parameters will be checked against
 		Return the NoMatch string if the variable isn't set
 		"""
-		#Check if the requested variable exists. If it doesn't, return the False string
-		if argumentList[0] not in variableDict:
-			return (True, argumentList[3])
-		# Make sure we un-escape the regex, so it can use characters like < and | without messing up our parsing
+		#Make sure we un-escape the regex, so it can use characters like < and | without messing up our parsing
 		regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
 		try:
-			if re.search(regex, variableDict[argumentList[0]]):
+			if re.search(regex, argumentList[0]):
 				return (True, argumentList[2])
 			else:
 				return (True, argumentList[3])
@@ -991,8 +987,8 @@ class GrammarCommands(object):
 			case, stringIfCase = caseString.split(u':', 1)
 			caseDict[case] = stringIfCase
 		#Then see if we can find a matching case
-		if argumentList[0] in variableDict and variableDict[argumentList[0]] in caseDict:
-			return (True, caseDict[variableDict[argumentList[0]]])
+		if argumentList[0] in caseDict:
+			return (True, caseDict[argumentList[0]])
 		elif u'_default' in caseDict:
 			return (True, caseDict[u'_default'])
 		else:
@@ -1097,7 +1093,7 @@ class GrammarCommands(object):
 			except ValueError:
 				return (False, u"Invalid optional replacement count value '{}' passed to '_replace' call".format(argumentList[3]))
 		#Now replace what we need to replace
-		return (True, variableDict[argumentList[0]].replace(argumentList[1], argumentList[2], replacementCount))
+		return (True, argumentList[0].replace(argumentList[1], argumentList[2], replacementCount))
 
 	@staticmethod
 	@validateArguments(argumentCount=3, checkIfFirstArgumentIsVarname=True)
@@ -1119,7 +1115,7 @@ class GrammarCommands(object):
 		try:
 			# Unescape any characters inside the regex (like < and |)
 			regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
-			return (True, re.sub(regex, argumentList[2], variableDict[argumentList[0]], count=replacementCount))
+			return (True, re.sub(regex, argumentList[2], argumentList[0], count=replacementCount))
 		except re.error as e:
 			return (False, u"Unable to parse regular expression '{}' in 'regexreplace' call ({})".format(argumentList[1], e.message))
 
