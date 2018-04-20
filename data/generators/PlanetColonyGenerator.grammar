@@ -47,7 +47,7 @@
 ],
 "air": ["a blue sky", "a pale blue sky", "a black, star-studded sky", "an alien sky", "a poisonous sky", "a sky filled with corrosive clouds"],
 "colony": {"20": "<failedColony>", "100": "<successfulColony>"},
-"failedColony": ["The <resultOfFailure> <failureLocation>.<descendantInfo>"],
+"failedColony": ["The <resultOfFailure> <failureLocation><descendantInfo>"],
 "resultOfFailure": ["fragments of the crashed seedship", "ruins of the colony"],
 "failureLocation": "<_switch|planetType|ocean:decay at the bottom of the planet-wide ocean|ice:lie embedded in the planet-wide ice sheet|plant:<plantPlanetFailure>|_default:lie on the rocky surface>",
 "plantPlanetFailure": [
@@ -55,9 +55,9 @@
 	"are overgrown with alien plants"
 ],
 "descendantInfo": {
-	"15": " The colonists' descendants live on as slaves to the intelligent natives, but they have lost all knowledge of Earth.",
-	"30": " Nearby stand monuments built by the planet's native inhabitants to celebrate their victory over the invaders.",
-	"45": " The planet's intelligent natives explore the ruins, but not enough remains for them to learn anything about the extinct human race.",
+	"15": ". The colonists' descendants live on as slaves to the intelligent natives, but they have lost all knowledge of Earth",
+	"30": ". Nearby stand monuments built by the planet's native inhabitants to celebrate their victory over the invaders",
+	"45": ". The planet's intelligent natives explore the ruins, but not enough remains for them to learn anything about the extinct human race",
 	"100": ""
 },
 "successfulColony": "<_setvarrandom|techLevel|high|medium|low>The colonists live in <building> <buildingProtection>,<buildingLocation>. <colonistLifestyle><nativesTreatmentChoice>",
