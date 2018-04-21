@@ -984,6 +984,21 @@ class GrammarCommands(object):
 
 	#Numeric functions
 	@staticmethod
+	@validateArguments(argumentCount=3)
+	def command_isnumber(argumentList, grammarDict, variableDict):
+		"""
+		<$isnumber|stringToCheckAsNumber|resultIfNumber|resultIfNotNumber>
+		Checks if the provided string can be converted to a number. Returns the 'IfNumber' result if it can, and the 'IfNotNumber' result otherwise
+		Can be useful to verify that the provided parameter is a number, for instance
+		"""
+		try:
+			int(argumentList[0], 10)
+			return (True, argumentList[1])
+		except ValueError:
+			return (True, argumentList[2])
+
+
+	@staticmethod
 	@validateArguments(argumentCount=4, numericArgumentIndexes=(0, 1))
 	def command_ifsmaller(argumentList, grammarDict, variableDict):
 		"""
