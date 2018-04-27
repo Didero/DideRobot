@@ -909,6 +909,22 @@ class GrammarCommands(object):
 				return (False, u"Referenced undefined variable '{}' in 'var' call".format(argumentList[0]))
 
 	@staticmethod
+	@validateArguments(argumentCount=2)
+	def command_appendtovar(argumentList, grammarDict, variableDict):
+		"""
+		<$appendtovar|varname|stringToAppend>
+		Appends stringToAppend to what is stored in the specified variable name, and stores it under that name.
+		If the variable wasn't set before, it will be set to 'stringToAppend'.
+		Doesn't print anything, use the $var command to print the result
+		"""
+		if argumentList[0] not in variableDict:
+			variableDict[argumentList[0]] = argumentList[1]
+		else:
+			variableDict[argumentList[0]] += argumentList[1]
+		return (True, u"")
+
+
+	@staticmethod
 	@validateArguments(argumentCount=1)
 	def command_remvar(argumentList, grammarDict, variableDict):
 		"""
