@@ -416,12 +416,31 @@ class Command(CommandTemplate):
 
 		# Grammar commands start with the command prefix, check if this block is a grammar command
 		if fieldKey.startswith(fieldCommandPrefix):
-			#Have the GrammarCommands class try and execute the provided command name
-			isSuccess, replacement = GrammarCommands.runCommand(fieldKey[len(fieldCommandPrefix):], grammarBlockParts, grammar, variableDict)
-			# If something went wrong, stop now. The replacement string should be an error message, pass that along too
-			if not isSuccess:
-				return (False, replacement)
-			#Otherwise everything went fine, and the replacement string is set properly
+			# First check if the requested command exists as a custom command inside the grammar dict
+			if fieldKey in grammar:
+				# Custom command, declared in the grammar dict like '"$myCommand": "First argument is %1"',
+				# where '%1' should be replaced with the first argument, '%2' with the second, etc.
+				# Numbered arguments when there's less than that amount of arguments will be replaced with an empty string
+				def replaceNumberedArguments(matchObject):
+					# A uneven amount of escape symbols means the % was escaped, so keep it unchanged
+					if len(matchObject.group(1)) % 2 == 1:
+						return matchObject.group(0)
+					argumentIndex = int(matchObject.group(2), 10) - 1  # -1 because the arguments in the command start at 1 but list indexes start at 0
+					# Keep the slashes in front if they didn't escape anything
+					returnstring = matchObject.group(1)
+					# If the index isn't referring to anything in the argument list, leave it empty, otherwise fill it in
+					if argumentIndex < len(grammarBlockParts):
+						returnstring += grammarBlockParts[argumentIndex]
+					return returnstring
+				replacement = re.sub(r"(/*)%(\d+)", replaceNumberedArguments, grammar[fieldKey])
+			#Otherwise let the Commands class handle it
+			else:
+				#Have the GrammarCommands class try and execute the provided command name
+				isSuccess, replacement = GrammarCommands.runCommand(fieldKey[len(fieldCommandPrefix):], grammarBlockParts, grammar, variableDict)
+				# If something went wrong, stop now. The replacement string should be an error message, pass that along too
+				if not isSuccess:
+					return (False, replacement)
+				#Otherwise everything went fine, and the replacement string is set properly
 		# No command, so check if it's a valid key
 		elif fieldKey not in grammar:
 			return (False, u"Field '{}' not found in grammar file!".format(fieldKey))
