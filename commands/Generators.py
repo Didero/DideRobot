@@ -414,7 +414,7 @@ class Command(CommandTemplate):
 		if grammarBlockParts and grammarBlockParts[-1].startswith(postProcessorPrefix):
 			extraOptions = grammarBlockParts.pop()[1:].split(u',')
 
-		# Grammar commands start with an underscore, check if this block is a grammar command
+		# Grammar commands start with the command prefix, check if this block is a grammar command
 		if fieldKey.startswith(fieldCommandPrefix):
 			#Have the GrammarCommands class try and execute the provided command name
 			isSuccess, replacement = GrammarCommands.runCommand(fieldKey[len(fieldCommandPrefix):], grammarBlockParts, grammar, variableDict)
