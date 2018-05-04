@@ -160,7 +160,12 @@ class Command(CommandTemplate):
 			return Command.retrieveArticleAbstract(wikiName, redirectArticleName)
 
 		#From here it's a success. We need the URL to append
-		url = "{}{}".format(apireply['basepath'], articleInfo['url'])
+		url = apireply['basepath']
+		#The '/wiki/' between Wikia name and article title isn't needed, remove it to save space
+		if articleInfo['url'].startswith('/wiki/'):
+			url += articleInfo['url'][5:]
+		else:
+			url += articleInfo['url']
 
 		#Check if it isn't a disambiguation page
 		if Command.isPageDisambiguationPage(url, articleInfo['title'], articleInfo['abstract']):
