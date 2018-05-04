@@ -189,5 +189,4 @@ class Command(CommandTemplate):
 		#Get the part of the URL that is the article title
 		articleTitle = page.url.split('/wiki/', 1)[1].replace('_', ' ')
 		articleTitle = urllib.unquote(articleTitle)
-		print "URL: {}; Title: {}".format(page.url, articleTitle)
 		return (True, articleTitle)
