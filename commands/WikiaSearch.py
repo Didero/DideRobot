@@ -182,4 +182,4 @@ class Command(CommandTemplate):
 			return (False, WikiaApiErrors.INVALID_WIKIA_NAME)
 
 		#Get the part of the URL that is the article title
-		return page.url.split('/wiki/', 1)[1]
+		return (True, page.url.split('/wiki/', 1)[1])
