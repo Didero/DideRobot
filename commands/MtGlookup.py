@@ -345,7 +345,7 @@ class Command(CommandTemplate):
 				handLife += card['life'] + u" lifemod"
 			cardInfoList.append(handLife)
 		if 'layout' in card:
-			cardInfoList.append(card['layout'] + u" layout")
+			cardInfoList.append(card['layout'])
 			if 'names' in card:
 				cardInfoList[-1] += u", with " + card['names']
 		#All cards have a 'text' key set (for search reasons), it's just empty on ones that didn't have one
