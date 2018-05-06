@@ -351,6 +351,7 @@ class Command(CommandTemplate):
 			#If the stream has been online for a while, longer than our update cycle, we must've missed it going online
 			#  No use reporting on it now, because that could f.i. cause an autoreport avalanche when the bot is just started up
 			if streamdata['created_at'] < tooOldTimestamp:
+				self.logDebug("[TwitchWatcher] Skipping reporting on streamer '{}' because they went live too long ago (at {})".format(streamername, streamdata['created_at']))
 				continue
 			#Store current stream description data for each name, so we can check afterwards which channels we need to send it to
 			#  Don't store it as a string, so we can shorten it if one channel would get a lot of live streamer reports
