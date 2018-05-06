@@ -338,7 +338,7 @@ class Command(CommandTemplate):
 		#We don't want to report a stream that's been live for a while already, like if it has been live when the bot was offline and it only just got started
 		#  So create a timestamp for at least one update cycle in the past, and if the stream was live before that, don't mention it updated
 		tooOldTimestamp = datetime.datetime.utcnow() - datetime.timedelta(seconds=self.scheduledFunctionTime * 1.5)
-		tooOldTimestamp = datetime.datetime.strftime(tooOldTimestamp, "%Y-%m-%dT%H:%M%SZ")
+		tooOldTimestamp = datetime.datetime.strftime(tooOldTimestamp, "%Y-%m-%dT%H:%M:%SZ")
 		for streamername, streamdata in result.iteritems():
 			channeldata = streamdata.pop('channel')
 			#Remove this stream from the list of streamers we need to check, so afterwards we can verify which streams we didn't get data on
