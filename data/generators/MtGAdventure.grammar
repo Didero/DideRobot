@@ -17,5 +17,5 @@
 "artifact": "<$modulecommand|searchMagicTheGatheringCards|random|type: artifact(?! creature)|&storeas:card,hide><getTitleFromCard><$ifcontains|%card|'s|<$var|card>|<prependThe>>",
 "creature": "<$modulecommand|searchMagicTheGatheringCards|random|type: creature|&storeas:card,hide><getTitleFromCard><$ifmatch|%card|(,/|\bthe\b)|<$var|card>|<prependThe>>",
 "getTitleFromCard": "<$regexreplace|%card|^.*?\\x02(.+?)\\x0f.+$|\\1|&storeas:card,hide>",
-"prependThe": "<$regexreplace|%card|^|the >"
+"prependThe": "<$prependtovar|card|the ><$var|card>",
 }
