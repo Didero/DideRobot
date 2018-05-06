@@ -929,6 +929,21 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
+	def command_prependtovar(argumentList, grammarDict, variableDict):
+		"""
+		<$prependtovar|varname|stringToPrepend>
+		Prepends stringToPrepend to what is stored in the specified variable name, and stores it under that name.
+		If the variable wasn't set before, it will be set to 'stringToPrepend'.
+		Doesn't print anything, use the $var command to print the result
+		"""
+		if argumentList[0] not in variableDict:
+			variableDict[argumentList[0]] = argumentList[1]
+		else:
+			variableDict[argumentList[0]] = argumentList[1] + variableDict[argumentList[0]]
+		return (True, u"")
+
+	@staticmethod
+	@validateArguments(argumentCount=2)
 	def command_appendtovar(argumentList, grammarDict, variableDict):
 		"""
 		<$appendtovar|varname|stringToAppend>
@@ -941,7 +956,6 @@ class GrammarCommands(object):
 		else:
 			variableDict[argumentList[0]] += argumentList[1]
 		return (True, u"")
-
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
