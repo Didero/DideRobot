@@ -1236,6 +1236,30 @@ class GrammarCommands(object):
 			return (False, u"Unable to parse regular expression '{}' in 'regexreplace' call ({})".format(argumentList[1], e.message))
 
 	@staticmethod
+	@validateArguments(argumentCount=2, numericArgumentIndexes=0)
+	def command_repeat(argumentList, grammarDict, variableDict):
+		"""
+		<$repeat|timesToRepeat|stringToRepeat[|stringToPutBetweenRepeats]>
+		Repeats the provided stringToRepeat the amount of times specified in timesToRepeat. If timesToRepeat is zero or less, nothing will be returned
+		If the third argument stringToPutBetweenRepeats is specified, this string will be inserted between each repetition of stringToRepeat
+		"""
+		#If there's nothing to repeat, stop immediately
+		if argumentList[0] <= 0:
+			return (True, u"")
+		#Check if there's something to put between the repeated string
+		joinString = None
+		if len(argumentList) > 2:
+			joinString = argumentList[2]
+		#Do the actual repeating (-1 because we already start with one repetition)
+		resultString = argumentList[1]
+		for i in xrange(argumentList[0] - 1):
+			if joinString:
+				resultString += joinString
+			resultString += argumentList[1]
+		#Done!
+		return (True, resultString)
+
+	@staticmethod
 	@validateArguments(argumentCount=1)
 	def command_modulecommand(argumentList, grammarDict, variableDict):
 		"""
