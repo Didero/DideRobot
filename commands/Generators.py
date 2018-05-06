@@ -793,6 +793,9 @@ def validateArguments(argumentCount=0, numericArgumentIndexes=None):
 	:param numericArgumentIndexes: A tuple or list of the argument indexes that should be turned from strings into numbers (indexes start at 0).
 			If an index specified here is larger than 'count', it's considered an optional arg
 	"""
+	#If the numericArgumentIndexes was provided as just a single index number, turn it into a tuple for easier parsing
+	if isinstance(numericArgumentIndexes, int):
+		numericArgumentIndexes = (numericArgumentIndexes,)
 	def wrapperFunction(functionToWrap):
 		grammarCommandOptions[functionToWrap] = (argumentCount, numericArgumentIndexes)
 		return functionToWrap
