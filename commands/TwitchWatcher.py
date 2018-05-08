@@ -1,4 +1,4 @@
-import datetime, json, os
+import json, os, time
 
 import requests
 
@@ -35,7 +35,9 @@ class Command(CommandTemplate):
 			with open(datafilepath, 'r') as datafile:
 				self.watchedStreamersData = json.load(datafile)
 
-	def saveWatchedStreamerData(self):
+	def saveWatchedStreamerData(self, updateLastUpdatedTime=False):
+		if updateLastUpdatedTime:
+			self.watchedStreamersData['_lastUpdateTime'] = time.time()
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'TwitchWatcherData.json'), 'w') as datafile:
 			datafile.write(json.dumps(self.watchedStreamersData))
 
@@ -332,13 +334,18 @@ class Command(CommandTemplate):
 		isSuccess, result = self.retrieveStreamDataForIds(streamerIdsToCheck.keys())
 		if not isSuccess:
 			self.logError(u"[TwitchWatch] An error occurred during the scheduled live check. " + result)
+			#Still update the last checked time, so we do get results when the connection works again
+			self.saveWatchedStreamerData(True)
 			return
 
+		#If the last time we checked for updates was (far) longer ago than the time between update checks, we've probably been offline for a while
+		# Any data we retrieve could be old, so don't report it, but just log who's streaming and who isn't
+		if '_lastUpdateTime' in self.watchedStreamersData:
+			shouldReport = self.watchedStreamersData['_lastUpdateTime'] - time.time() <= self.scheduledFunctionTime * 2
+		else:
+			shouldReport = True
+
 		channelMessages = {}  #key is string with server-channel, separated by a space. Value is a list of tuples with data on streams that are live
-		#We don't want to report a stream that's been live for a while already, like if it has been live when the bot was offline and it only just got started
-		#  So create a timestamp for at least one update cycle in the past, and if the stream was live before that, don't mention it updated
-		tooOldTimestamp = datetime.datetime.utcnow() - datetime.timedelta(seconds=self.scheduledFunctionTime * 1.5)
-		tooOldTimestamp = datetime.datetime.strftime(tooOldTimestamp, "%Y-%m-%dT%H:%M:%SZ")
 		for streamername, streamdata in result.iteritems():
 			channeldata = streamdata.pop('channel')
 			#Remove this stream from the list of streamers we need to check, so afterwards we can verify which streams we didn't get data on
@@ -348,49 +355,47 @@ class Command(CommandTemplate):
 				continue
 			#We will report that this stream is live, so store that we'll have done that
 			self.watchedStreamersData[streamername]['hasBeenReportedLive'] = True
-			#If the stream has been online for a while, longer than our update cycle, we must've missed it going online
-			#  No use reporting on it now, because that could f.i. cause an autoreport avalanche when the bot is just started up
-			if streamdata['created_at'] < tooOldTimestamp:
-				self.logDebug("[TwitchWatcher] Skipping reporting on streamer '{}' because they went live too long ago (at {})".format(streamername, streamdata['created_at']))
-				continue
-			#Store current stream description data for each name, so we can check afterwards which channels we need to send it to
-			#  Don't store it as a string, so we can shorten it if one channel would get a lot of live streamer reports
-			for serverChannelString in self.watchedStreamersData[streamername]['reportChannels']:
-				#Add this stream's data to the channel's reporting output
-				if serverChannelString not in channelMessages:
-					channelMessages[serverChannelString] = []
-				displayname = channeldata['display_name']
-				if self.doesStreamerHaveNickname(streamername, serverChannelString):
-					displayname = self.watchedStreamersData[streamername]['nicknames'][serverChannelString]
-				channelMessages[serverChannelString].append((displayname, channeldata['status'], channeldata['game'], channeldata['url']))
+			#Only construct a live report message when we should report
+			if shouldReport:
+				#Store current stream description data for each name, so we can check afterwards which channels we need to send it to
+				#  Don't store it as a string, so we can shorten it if one channel would get a lot of live streamer reports
+				for serverChannelString in self.watchedStreamersData[streamername]['reportChannels']:
+					#Add this stream's data to the channel's reporting output
+					if serverChannelString not in channelMessages:
+						channelMessages[serverChannelString] = []
+					displayname = channeldata['display_name']
+					if self.doesStreamerHaveNickname(streamername, serverChannelString):
+						displayname = self.watchedStreamersData[streamername]['nicknames'][serverChannelString]
+					channelMessages[serverChannelString].append((displayname, channeldata['status'], channeldata['game'], channeldata['url']))
 
 		#Now we've got all the stream data we need!
 		# First set the offline streams to offline
 		for clientId, streamername in streamerIdsToCheck.iteritems():
 			self.watchedStreamersData[streamername]['hasBeenReportedLive'] = False
 
-		self.saveWatchedStreamerData()
+		self.saveWatchedStreamerData(True)
 
-		#And now report each online stream to each channel that wants it
-		for serverChannelString, streamdatalist in channelMessages.iteritems():
-			server, channel = serverChannelString.rsplit(" ", 1)
-			#First check if we're even in the server and channel we need to report to
-			if server not in GlobalStore.bothandler.bots or channel not in GlobalStore.bothandler.bots[server].channelsUserList:
-				continue
+		if shouldReport:
+			#And now report each online stream to each channel that wants it
+			for serverChannelString, streamdatalist in channelMessages.iteritems():
+				server, channel = serverChannelString.rsplit(" ", 1)
+				#First check if we're even in the server and channel we need to report to
+				if server not in GlobalStore.bothandler.bots or channel not in GlobalStore.bothandler.bots[server].channelsUserList:
+					continue
 
-			reportStrings = []
-			#If we have a lot of live streamers to report, keep it short. Otherwise, we can be a bit more verbose
-			if len(streamdatalist) >= 4:
-				#A lot of live streamers to report, keep it short. Just the streamer name and the URL
-				for streamdata in streamdatalist:
-					reportStrings.append(u"{0} ({3})".format(*streamdata))
-			else:
-				#Only a few streamers live, we can be a bit more verbose
-				for streamdata in streamdatalist:
-					reportStrings.append(u"{streamernameBolded}: {1} [{2}] ({3})".format(streamernameBolded=SharedFunctions.makeTextBold(streamdata[0]), *streamdata))
-			#Now make the bot say it
-			GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
-															SharedFunctions.joinWithSeparator(reportStrings), "say")
+				reportStrings = []
+				#If we have a lot of live streamers to report, keep it short. Otherwise, we can be a bit more verbose
+				if len(streamdatalist) >= 4:
+					#A lot of live streamers to report, keep it short. Just the streamer name and the URL
+					for streamdata in streamdatalist:
+						reportStrings.append(u"{0} ({3})".format(*streamdata))
+				else:
+					#Only a few streamers live, we can be a bit more verbose
+					for streamdata in streamdatalist:
+						reportStrings.append(u"{streamernameBolded}: {1} [{2}] ({3})".format(streamernameBolded=SharedFunctions.makeTextBold(streamdata[0]), *streamdata))
+				#Now make the bot say it
+				GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
+																SharedFunctions.joinWithSeparator(reportStrings), "say")
 
 	def retrieveStreamerId(self, streamername):
 		try:
