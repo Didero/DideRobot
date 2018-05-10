@@ -345,6 +345,9 @@ class Command(CommandTemplate):
 		else:
 			shouldReport = True
 
+		if not shouldReport:
+			self.logDebug("[TwitchWatcher] Skipping reporting on live streams, since our last check was {} seconds ago, which is too long".format(self.watchedStreamersData['_lastUpdateTime'] - time.time()))
+
 		channelMessages = {}  #key is string with server-channel, separated by a space. Value is a list of tuples with data on streams that are live
 		for streamername, streamdata in result.iteritems():
 			channeldata = streamdata.pop('channel')
