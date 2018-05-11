@@ -23,6 +23,9 @@ class Command(CommandTemplate):
 	#   -'reportChannels', a list of strings with server-channel, separated by a space, where streamers going live should be auto-reported
 	#	-'hasBeenReportedLive', a boolean that indicates whether this is the first time this stream has been seen live or not. If this is missing, no IRC channel wants autoreporting
 	watchedStreamersData = {}
+	#Keep track of the last time we updated, so we don't report on streams that have been live for a while, just because we've been offline for several update cycles
+	# Gets stored in the watch data when the module gets unloaded, and gets removed from the watch data when the module is loaded, to make iterating over it easier
+	lastLiveCheckTime = None
 
 	def onLoad(self):
 		if 'twitch' not in GlobalStore.commandhandler.apikeys:
@@ -34,10 +37,13 @@ class Command(CommandTemplate):
 		if os.path.isfile(datafilepath):
 			with open(datafilepath, 'r') as datafile:
 				self.watchedStreamersData = json.load(datafile)
+			self.lastLiveCheckTime = self.watchedStreamersData.pop('_lastUpdateTime', None)
 
-	def saveWatchedStreamerData(self, updateLastUpdatedTime=False):
-		if updateLastUpdatedTime:
-			self.watchedStreamersData['_lastUpdateTime'] = time.time()
+	def onUnload(self):
+		self.watchedStreamersData['_lastUpdateTime'] = self.lastLiveCheckTime
+		self.saveWatchedStreamerData()
+
+	def saveWatchedStreamerData(self):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'TwitchWatcherData.json'), 'w') as datafile:
 			datafile.write(json.dumps(self.watchedStreamersData))
 
@@ -335,18 +341,20 @@ class Command(CommandTemplate):
 		if not isSuccess:
 			self.logError(u"[TwitchWatch] An error occurred during the scheduled live check. " + result)
 			#Still update the last checked time, so we do get results when the connection works again
-			self.saveWatchedStreamerData(True)
+			self.lastLiveCheckTime = time.time()
 			return
 
 		#If the last time we checked for updates was (far) longer ago than the time between update checks, we've probably been offline for a while
 		# Any data we retrieve could be old, so don't report it, but just log who's streaming and who isn't
-		if '_lastUpdateTime' in self.watchedStreamersData:
-			shouldReport = self.watchedStreamersData['_lastUpdateTime'] - time.time() <= self.scheduledFunctionTime * 2
+		if self.lastLiveCheckTime:
+			shouldReport = self.lastLiveCheckTime - time.time() <= self.scheduledFunctionTime * 2
 		else:
 			shouldReport = True
 
 		if not shouldReport:
-			self.logDebug("[TwitchWatcher] Skipping reporting on live streams, since our last check was {} seconds ago, which is too long".format(self.watchedStreamersData['_lastUpdateTime'] - time.time()))
+			self.logDebug("[TwitchWatcher] Skipping reporting on live streams, since our last check was {} seconds ago, which is too long".format(self.lastLiveCheckTime - time.time()))
+		
+		self.lastLiveCheckTime = time.time()
 
 		channelMessages = {}  #key is string with server-channel, separated by a space. Value is a list of tuples with data on streams that are live
 		for streamername, streamdata in result.iteritems():
@@ -376,7 +384,7 @@ class Command(CommandTemplate):
 		for clientId, streamername in streamerIdsToCheck.iteritems():
 			self.watchedStreamersData[streamername]['hasBeenReportedLive'] = False
 
-		self.saveWatchedStreamerData(True)
+		self.saveWatchedStreamerData()
 
 		if shouldReport:
 			#And now report each online stream to each channel that wants it
