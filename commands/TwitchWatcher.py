@@ -347,7 +347,7 @@ class Command(CommandTemplate):
 		#If the last time we checked for updates was (far) longer ago than the time between update checks, we've probably been offline for a while
 		# Any data we retrieve could be old, so don't report it, but just log who's streaming and who isn't
 		if self.lastLiveCheckTime:
-			shouldReport = self.lastLiveCheckTime - time.time() <= self.scheduledFunctionTime * 2
+			shouldReport = time.time() - self.lastLiveCheckTime <= self.scheduledFunctionTime * 2
 		else:
 			shouldReport = True
 
