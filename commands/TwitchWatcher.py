@@ -424,8 +424,7 @@ class Command(CommandTemplate):
 		# No errors, got the streamer data. Return it
 		return (True, twitchData['users'][0]['_id'])
 
-	@staticmethod
-	def retrieveStreamDataForIds(idList):
+	def retrieveStreamDataForIds(self, idList):
 		# Add a 'limit' parameter in case we need to check more streamers than the default limit allows
 		try:
 			r = requests.get("https://api.twitch.tv/kraken/streams/", params={"client_id": GlobalStore.commandhandler.apikeys['twitch'], "api_version": 5,
