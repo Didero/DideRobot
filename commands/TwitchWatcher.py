@@ -347,13 +347,13 @@ class Command(CommandTemplate):
 		#If the last time we checked for updates was (far) longer ago than the time between update checks, we've probably been offline for a while
 		# Any data we retrieve could be old, so don't report it, but just log who's streaming and who isn't
 		if self.lastLiveCheckTime:
-			shouldReport = time.time() - self.lastLiveCheckTime <= self.scheduledFunctionTime * 2
+			shouldReport = time.time() - self.lastLiveCheckTime <= self.scheduledFunctionTime * 6
 		else:
 			shouldReport = True
 
 		if not shouldReport:
 			self.logDebug("[TwitchWatcher] Skipping reporting on live streams, since our last check was {} seconds ago, which is too long".format(self.lastLiveCheckTime - time.time()))
-		
+
 		self.lastLiveCheckTime = time.time()
 
 		channelMessages = {}  #key is string with server-channel, separated by a space. Value is a list of tuples with data on streams that are live
