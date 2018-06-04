@@ -11,7 +11,7 @@
 	"The faded note reads 'Step 1) Find <land>, Step 2) Avoid <creature>, Step 3) Acquire <artifact>'. Step 4 starts with 'Beware the' but the rest is smudged with... blood?",
 	"Long story short, <creature> has <artifact>, and I want it. Go to <land> and take it, will you?",
 	"Finally, we found <land>! Surely <artifact> can't be far off! Wait, what's that sound? It's <creature>! Run!",
-	"Hmm, this... thing is labeled '<artifact>'. We should take it to <creature>, they'll know what to do with it. You know where <land> is, right?"
+	"Hmm, this... thing is labeled '<artifact>'. We should take it to <creature>, they'll know what to do with it. You can get us to <land>, right?"
 ],
 "basicLandOrLands": "<basicland><$choose|s||>",
 "basicland": ["plain", "island", "mountain", "swamp", "forest"],
