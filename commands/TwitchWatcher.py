@@ -320,8 +320,7 @@ class Command(CommandTemplate):
 		if not isSuccess:
 			return (False, result)
 		if len(result) == 0:
-			return (True, u"{0} doesn't appear to be streaming at the moment. Maybe they've got some old streams you can watch though, "
-						  u"here: https://www.twitch.tv/{0}/videos/all".format(streamername))
+			return (True, u"{0} doesn't appear to be streaming at the moment. Maybe they've got some old streams you can watch though, here: https://twitch.tv/{0}/videos/all".format(streamername))
 		#Streamer is live, return info on them
 		return (True, u"{display_name}: {status} [{game}] ({url})".format(**result[streamername]['channel']))
 
