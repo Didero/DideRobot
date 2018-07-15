@@ -11,7 +11,7 @@ class Command(CommandTemplate):
 	helptext = "Follows Twitch streamers. '<add/remove> [streamername]' to add/remove (add 'autoreport' for automatic live mention). " \
 			   "'<list/live>' to see all or live followed streamers. '<toggle/autoreport> [streamername]' to toggle autoreporting. " \
 			   "'<setnick> [streamername] [nick]' to set a nickname for a streamer, '<removenick> [streamername]' to remove it. " \
-			   "Any other parameter is interpreted as a streamer name and will return stream info, if they're live."
+			   "'<lookup> [streamername] shows info on the provided streamer."
 	scheduledFunctionTime = 300
 	callInThread = True
 
