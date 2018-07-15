@@ -131,9 +131,11 @@ class Command(CommandTemplate):
 				followedStreamers.append(streamername + u"[a]")
 		if len(followedStreamers) == 0:
 			return u"I'm not watching anybody for this channel. You can add streamers for me to watch with the 'add' parameter"
+		elif len(followedStreamers) == 1:
+			return u"I'm only following a single stream for this channel, namely {}".format(followedStreamers[0])
 		else:
 			followedStreamers.sort()
-			return u"I'm watching {:,} streamer(s): ".format(len(followedStreamers)) + u", ".join(followedStreamers)
+			return u"I'm watching {:,} streamers: {}".format(len(followedStreamers), u", ".join(followedStreamers))
 
 	def startFollowingStreamer(self, serverChannelString, streamername, shouldAutoReport=False):
 		"""
