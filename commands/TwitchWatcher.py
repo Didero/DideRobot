@@ -445,3 +445,59 @@ class Command(CommandTemplate):
 			streamername = streamdata['channel']['name'].lower()
 			streamernameToData[streamername] = streamdata
 		return (True, streamernameToData)
+	def getAuthenticationHeader(self):
+		#Check if our access token is still valid, and get a new one if it isn't
+		if not self.isTokenValid():
+			tokenUpdateResult = self.updateAccessToken()
+			#If something went wrong, it returned the error message. Pass that on
+			if not tokenUpdateResult[0]:
+				return tokenUpdateResult
+		#Valid token, construct the header, ready to be passed to requests's 'headers=' keyword argument
+		return (True, {"Authorization": "Bearer " + GlobalStore.commandhandler.apikeys['twitch']['access_token']})
+
+	def isTokenValid(self):
+		apikeys = GlobalStore.commandhandler.apikeys['twitch']
+		if 'access_token' not in apikeys or 'expiration_time' not in apikeys:
+			return False
+		if time.time() >= apikeys['expiration_time']:
+			return False
+		return True
+
+	def updateAccessToken(self):
+		apikeys = GlobalStore.commandhandler.apikeys['twitch']
+
+		if 'client_id' not in apikeys or 'client_secret' not in apikeys:
+			return (False, "No Twitch client_id and/or client_secret stored")
+
+		#If we already have an access token, revoke it to prevent multiple tokens being registered and Twitch getting mad about that
+		if 'access_token' in apikeys:
+			#We don't care about the response, so no need to store it
+			requests.post("https://id.twitch.tv/oauth2/revoke", params={'client_id': apikeys['client_id'], 'token': apikeys['access_token']})
+
+		#Get a new token
+		r = requests.post("https://id.twitch.tv/oauth2/token", params={'client_id': apikeys['client_id'], 'client_secret': apikeys['client_secret'], 'grant_type': 'client_credentials'})
+		if r.status_code != 200:
+			errorMessage = "An error occurred while retrieving an access token"
+			try:
+				messagedata = r.json()
+			except ValueError as e:
+				errorMessage += ". No or invalid JSON returned, full message: '{}'".format(r.content.strip())
+			else:
+				if 'message' in messagedata:
+					errorMessage += ": " + messagedata['message']
+				else:
+					errorMessage += ". No error message was provided by the API"
+			errorMessage += ". [{}]".format(r.status_code)
+			return (False, errorMessage)
+
+		if 'access_token' not in r.json() or 'expires_in' not in r.json():
+			self.logError("[TwitchWatcher] Unexpected reply from the Twitch API during token refresh. Expected 'access_token' and 'expires_in' fields, API returned: " + r.json())
+			return (False, "The Twitch API sent an unexpected reply")
+
+		#Token successfully retrieved. Store it, and also when it expires
+		apikeys['access_token'] = r.json()['access_token']
+		apikeys['expiration_time'] = time.time() + r.json()['expires_in'] - 10  #-10 to build in some leeway
+		GlobalStore.commandhandler.saveApiKeys()
+
+		#Done, return the result
+		return (True, apikeys['access_token'])
