@@ -24,9 +24,10 @@ class Command(CommandTemplate):
 			modulename = message.messageParts[0]
 		else:
 			modulename = None
+			triggerToLookFor = message.messageParts[0].lower()
 			#Maybe the parameter provided isn't a module name, but a trigger word. Try to find the module it belongs to
 			for commandname, command in GlobalStore.commandhandler.commands.iteritems():
-				if message.messageParts[0] in command.triggers:
+				if message.messageParts[0] in command.triggers or triggerToLookFor in command.triggers:
 					modulename = commandname
 					break
 
