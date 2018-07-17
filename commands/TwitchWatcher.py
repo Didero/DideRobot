@@ -384,7 +384,7 @@ class Command(CommandTemplate):
 						#Add this stream's data to the channel's reporting output
 						if serverChannelString not in channelMessages:
 							channelMessages[serverChannelString] = []
-						channelMessages[serverChannelString].append({'streamername': streamername, 'gameId': liveStreamDataById[streamerId]['game_id'],
+						channelMessages[serverChannelString].append({'streamername': streamername, 'gameName': liveStreamDataById[streamerId]['game_name'],
 																	 'title': liveStreamDataById[streamerId]['title']})
 
 		#Save live status of all the streams
@@ -409,7 +409,7 @@ class Command(CommandTemplate):
 						reportStrings.append(u"{} ({})".format(displayname, url))
 					# Only a few streamers live, we can be a bit more verbose
 					else:
-						reportStrings.append(u"{}: {} [{}] ({})".format(SharedFunctions.makeTextBold(displayname), streamdata['title'], streamdata['game_name'], url))
+						reportStrings.append(u"{}: {} [{}] ({})".format(SharedFunctions.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url))
 				#Now make the bot say it
 				GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
 																SharedFunctions.joinWithSeparator(reportStrings), "say")
