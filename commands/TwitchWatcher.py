@@ -364,7 +364,7 @@ class Command(CommandTemplate):
 			shouldReport = True
 
 		if not shouldReport:
-			self.logDebug("[TwitchWatcher] Skipping reporting on live streams, since our last check was {} seconds ago, which is too long".format(self.lastLiveCheckTime - time.time()))
+			self.logDebug("[TwitchWatcher] Skipping reporting on live streams, since our last check was {} seconds ago, which is too long".format(time.time() - self.lastLiveCheckTime))
 
 		self.lastLiveCheckTime = time.time()
 
