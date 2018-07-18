@@ -44,7 +44,7 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 
 	#Now download tweets!
 	headers = {'Authorization': "{} {}".format(GlobalStore.commandhandler.apikeys['twitter']['tokentype'], GlobalStore.commandhandler.apikeys['twitter']['token'])}
-	params = {'screen_name': username, 'count': min(200, maxTweetCount), 'trim_user': 'true',
+	params = {'screen_name': username, 'count': min(200, maxTweetCount), 'trim_user': 'true', 'tweet_mode': 'extended',
 			  'exclude_replies': 'false' if includeReplies else 'true',
 			  'include_rts': True}  #Always get retweets, remove them later if necessary. Needed because 'count' always includes retweets, even if you don't want them
 	if downloadOlderThanId:

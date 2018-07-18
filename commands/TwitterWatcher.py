@@ -226,7 +226,7 @@ class Command(CommandTemplate):
 			tweetAge = ''
 		tweetUrl = "http://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
 		#Remove newlines
-		formattedTweetText = tweetData['text'].replace('\n\n', '\n').replace('\n', Constants.GREY_SEPARATOR)
+		formattedTweetText = tweetData['full_text'].replace('\n\n', '\n').replace('\n', Constants.GREY_SEPARATOR)
 		#Fix special characters (convert '&amp;' to '&' for instance)
 		formattedTweetText = HTMLParser.HTMLParser().unescape(formattedTweetText)
 		#Remove the link to the photo at the end, but mention that there is one

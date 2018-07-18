@@ -128,7 +128,7 @@ class Command(CommandTemplate):
 			#All tweets downloaded. Time to process them
 			tweetfile = open(os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', "{}.txt".format(username)), "a")
 			for tweet in tweets:
-				tweetfile.write(tweet['text'].replace('\n', ' ').encode(encoding='utf-8', errors='replace') + '\n')
+				tweetfile.write(tweet['full_text'].replace('\n', ' ').encode(encoding='utf-8', errors='replace') + '\n')
 			tweetfile.close()
 			#Get the id of the last tweet in the list (the newest one), so we know where to start downloading from next time
 			storedInfo[username]['highestIdDownloaded'] = tweets[-1]['id']
