@@ -23,7 +23,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.3.2'
+	dataFormatVersion = '4.3.3'
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.searchCards)
@@ -913,10 +913,12 @@ class Command(CommandTemplate):
 		if os.path.exists(setStoreFilename):
 			os.remove(setStoreFilename)
 		#Save the new databases to disk
+		numberOfCards = 0
 		with open(cardStoreFilename, 'w') as cardfile:
 			gamewideCardStoreFile = open(gamewideCardStoreFilename, 'r')
 			#Go through each card's game-wide data and append the set-specific data to it
 			for line in gamewideCardStoreFile:
+				numberOfCards += 1
 				cardname, gamewideCardData = json.loads(line).popitem()
 				#Write each card's as a separate JSON file so we can go through it line by line instead of having to load it all at once
 				cardfile.write(json.dumps({cardname: [gamewideCardData, newcardstore.pop(cardname)]}))
@@ -933,7 +935,7 @@ class Command(CommandTemplate):
 
 		#Store the new version data
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
-			versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': self.getLatestVersionNumber()[1], 'lastUpdateTime': time.time()}))
+			versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': self.getLatestVersionNumber()[1], 'lastUpdateTime': time.time(), 'cardCount': numberOfCards}))
 
 		replytext = "MtG card database successfully updated (Changelog: http://mtgjson.com/changelog.html)"
 		if shouldUpdateDefinitions:
