@@ -15,10 +15,11 @@ from IrcMessage import IrcMessage
 
 
 class Command(CommandTemplate):
-	triggers = ['mtg', 'mtgf', 'mtgb', 'magic']
+	triggers = ['mtg', 'mtgf', 'mtgb', 'magic', 'mtglink']
 	helptext = "Looks up info on Magic: The Gathering cards. Provide a card name or regex to search for, or 'random' for a surprise. "
 	helptext += "Use 'search' with key-value attribute pairs for more control, see http://mtgjson.com/documentation.html#cards for available attributes. "
-	helptext += "{commandPrefix}mtgf adds the flavor text and sets to the output. '{commandPrefix}mtgb [setname]' opens a boosterpack"
+	helptext += "'{commandPrefix}mtgf' adds the flavor text and sets to the output. '{commandPrefix}mtgb [setname]' opens a boosterpack. "
+	helptext += "'{commandPrefix}mtglink' returns links to the card on Gatherer and MagicCards.info"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
@@ -118,15 +119,44 @@ class Command(CommandTemplate):
 				#Unknown searchtype, just assume the entire entered text is a name search
 				searchType = 'search'
 				searchString = message.message
-			message.reply(self.searchCards(searchType, searchString, message.trigger.endswith('f'), 20 if message.isPrivateMessage else 10), "say")
+			#Do the search
+			searchResult = self.getMatchingCardsFromSearchString(searchType, searchString)
+			#Show the results
+			if not searchResult[0]:
+				#Something went wrong, just reply the error message
+				replytext = searchResult[1]
+			elif len(searchResult[2]) == 0:
+				#No matches
+				replytext = "Sorry, I couldn't find any cards that match your search query"
+			else:
+				#SearchResult[1] is the parsed searchDict, searchResult[2] is the matching cards
+				numberOfCardsToList = 20 if message.isPrivateMessage else 10
+				shouldPickRandomCard = searchType.startswith('random')
+				if message.trigger == 'mtglink':
+					replytext = self.getLinksFromSearchString(searchResult[1], searchResult[2], shouldPickRandomCard, numberOfCardsToList)
+				else:
+					#Normal search, format it
+					replytext = self.formatSearchResult(searchResult[2], message.trigger.endswith('f'), shouldPickRandomCard, numberOfCardsToList, searchResult[1].get('name', None), True)
+			message.reply(replytext, "say")
 
 	def getFormattedResultFromSearchString(self, searchType, searchString, extendedInfo=False, resultListLength=10):
+		result = self.getMatchingCardsFromSearchString(searchType, searchString)
+		if not result[0]:
+			#Something went wrong, second parameter is the error message, return that
+			return result[1]
+		#Search was successful, second parameter is the parsed search dictionary, third is the matching cards. Return a formatted result
+		return self.formatSearchResult(result[2], extendedInfo, searchType.startswith('random'), resultListLength, result[1].get('name', None), True)
+
+	def getMatchingCardsFromSearchString(self, searchType, searchString):
 		#Special case to prevent it having to load in all the cards before picking one
 		if searchType == 'random' and not searchString:
 			#Just pick a random card from all available ones
-			card = json.loads(SharedFunctions.getRandomLineFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')))
+			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')) as versionfile:
+				linecount = json.load(versionfile)['cardCount']
+			randomLineNumber = random.randint(1, linecount) - 1 # minus 1 because getLineFromFile() starts at 0
+			card = json.loads(SharedFunctions.getLineFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), randomLineNumber))
 			cardname, carddata = card.popitem()
-			return self.getFormattedCardInfo(carddata, extendedInfo)
+			return (True, {}, {cardname: (randomLineNumber, None)})
 
 		#Make sure the search string is an actual string, and not None or something
 		if searchString is None:
@@ -136,18 +166,18 @@ class Command(CommandTemplate):
 		parseSuccess, searchDict = self.parseSearchParameters(searchType, searchString)
 		if not parseSuccess:
 			#If an error occurred, the second returned parameter isn't the searchdict but an error message
-			return searchDict
+			return (False, searchDict)
 		#Check if the entered search terms can be converted to the regex we need
 		parseSuccess, regexDict = self.searchDictToRegexDict(searchDict)
 		if not parseSuccess:
 			#Again, 'regexDict' is the error string if an error occurred
-			return regexDict
+			return (False, regexDict)
 		matchingCards = self.searchCardStore(regexDict)
 		#Clear the stored regexes, since we don't need them anymore
 		del regexDict
 		re.purge()
-		#Done, show the formatted result
-		return self.formatSearchResult(matchingCards, extendedInfo, searchType.startswith('random'), resultListLength, searchDict.get('name', None), len(searchDict) > 0)
+		#Done, return the search dictionary (possibly needed for further parsing), and the matching cards
+		return (True, searchDict, matchingCards)
 
 	@staticmethod
 	def parseSearchParameters(searchType, searchString):
@@ -440,6 +470,38 @@ class Command(CommandTemplate):
 		#Make sure we return a string and not unicode
 		replytext = replytext.encode('utf-8')
 		return replytext
+
+	def getLinksFromSearchString(self, searchDict, matchingCards, pickRandomCard, numberOfCardsToListOnLargeResult):
+			# Reply with links to further information about the found card
+			matchingCardname = None
+			if pickRandomCard:
+				matchingCardname = random.choice(matchingCards.keys())
+			elif len(matchingCards) == 1:
+				matchingCardname = matchingCards.keys()[0]
+			#Check if the searched name is a literal match with one of found cards. If so, pick that one
+			elif 'name' in searchDict:
+				if searchDict['name'] in matchingCards:
+					matchingCardname = searchDict['name']
+				else:
+					#Compare each name
+					cardNameToMatch = searchDict['name'].lower()
+					for cardname, carddata in matchingCards.iteritems():
+						if cardname.lower() == cardNameToMatch:
+							matchingCardname = cardname
+							break
+			if not matchingCardname:
+				# No results or too many, reuse the normal way of listing cards
+				return self.formatSearchResult(matchingCards, False, False, numberOfCardsToListOnLargeResult, None, True)
+			#Retrieve card data
+			lineNumber, listOfSetNamesToMatch = matchingCards[matchingCardname]
+			matchingCardname, carddata = json.loads(SharedFunctions.getLineFromFile(os.path.join("data", "MTGcards.json"), lineNumber)).popitem()
+			#We need to pick a set to link to. Either pick one from the matches list, if it's there, otherwise pick a random one
+			setNameToMatch = random.choice(listOfSetNamesToMatch) if listOfSetNamesToMatch is not None else random.choice(carddata[1].keys())
+			setSpecificCardData = carddata[1][setNameToMatch]
+			#Retrieve set info, since we need the setcode
+			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGsets.json"), 'r') as setfile:
+				setcode = json.load(setfile)[setNameToMatch.lower()]['magicCardsInfoCode']
+			return u"{}: http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid={} | https://magiccards.info/{}/en/{}.html".format(SharedFunctions.makeTextBold(carddata[0]['name']), setSpecificCardData['multiverseid'], setcode, setSpecificCardData['number'])
 
 	@staticmethod
 	def getDefinition(searchterm, maxMessageLength=None):
