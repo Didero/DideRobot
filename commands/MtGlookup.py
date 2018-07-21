@@ -26,7 +26,7 @@ class Command(CommandTemplate):
 	dataFormatVersion = '4.3.3'
 
 	def onLoad(self):
-		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.searchCards)
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.getFormattedResultFromSearchString)
 
 	def executeScheduledFunction(self):
 		if not self.areCardfilesInUse and self.shouldUpdate():
@@ -120,7 +120,7 @@ class Command(CommandTemplate):
 				searchString = message.message
 			message.reply(self.searchCards(searchType, searchString, message.trigger.endswith('f'), 20 if message.isPrivateMessage else 10), "say")
 
-	def searchCards(self, searchType, searchString, extendedInfo=False, resultListLength=10):
+	def getFormattedResultFromSearchString(self, searchType, searchString, extendedInfo=False, resultListLength=10):
 		#Special case to prevent it having to load in all the cards before picking one
 		if searchType == 'random' and not searchString:
 			#Just pick a random card from all available ones
