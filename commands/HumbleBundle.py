@@ -4,8 +4,8 @@ import requests
 from bs4 import BeautifulSoup
 
 from CommandTemplate import CommandTemplate
-from util import SharedFunctions
 from util import DateTimeUtil
+from util import IrcFormattingUtil
 from util import StringUtil
 from IrcMessage import IrcMessage
 import Constants
@@ -180,7 +180,7 @@ class Command(CommandTemplate):
 				#Add a list of all the games found
 				for priceType in ('PWYW', 'BTA', 'Fixed'):
 					if len(gamePriceCategories[priceType]) > 0:
-						replytext += u" {}: {}".format(SharedFunctions.makeTextBold(priceType), StringUtil.joinWithSeparator(gamePriceCategories[priceType]))
+						replytext += u" {}: {}".format(IrcFormattingUtil.makeTextBold(priceType), StringUtil.joinWithSeparator(gamePriceCategories[priceType]))
 				if not message.isPrivateMessage and len(replytext) > Constants.MAX_MESSAGE_LENGTH:
 					replytext = replytext[:Constants.MAX_MESSAGE_LENGTH - 5] + u"[...]"
 				replytext += u" (itemlist may be wrong)"

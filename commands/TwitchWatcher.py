@@ -3,7 +3,7 @@ import json, os, time
 import requests
 
 import GlobalStore
-from util import SharedFunctions
+from util import IrcFormattingUtil
 from util import StringUtil
 from CommandTemplate import CommandTemplate
 
@@ -304,7 +304,7 @@ class Command(CommandTemplate):
 			if shouldUseShortReportString:
 				reportStrings.append(u"{} ({})".format(displayname, url))
 			else:
-				reportStrings.append(u"{}: {} [{}] ({})".format(SharedFunctions.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url))
+				reportStrings.append(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url))
 		return (True, StringUtil.joinWithSeparator(reportStrings))
 
 	def getStreamerInfo(self, streamername, serverChannelString=None):
@@ -410,7 +410,7 @@ class Command(CommandTemplate):
 						reportStrings.append(u"{} ({})".format(displayname, url))
 					# Only a few streamers live, we can be a bit more verbose
 					else:
-						reportStrings.append(u"{}: {} [{}] ({})".format(SharedFunctions.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url))
+						reportStrings.append(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url))
 				#Now make the bot say it
 				GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
 																StringUtil.joinWithSeparator(reportStrings), "say")

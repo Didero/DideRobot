@@ -4,8 +4,8 @@ import HTMLParser
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-from util import SharedFunctions
 from util import DateTimeUtil
+from util import IrcFormattingUtil
 from util import TwitterUtil
 from IrcMessage import IrcMessage
 
@@ -237,7 +237,7 @@ class Command(CommandTemplate):
 				formattedTweetText = formattedTweetText.replace(mediaItem['url'], u'')
 				formattedTweetText += u"(has {})".format(mediaItem['type'])
 		#Add in all the text around the tweet now, so we get a better sense of message length
-		formattedTweetText = u"{name}: {text}{age}{sep}{url}".format(name=SharedFunctions.makeTextBold(self.getDisplayName(username)), text=formattedTweetText,
+		formattedTweetText = u"{name}: {text}{age}{sep}{url}".format(name=IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), text=formattedTweetText,
 																	 age=tweetAge, sep=Constants.GREY_SEPARATOR, url=tweetUrl)
 		#Expand URLs (if it'd fit)
 		if 'urls' in tweetData['entities']:

@@ -3,7 +3,7 @@ import requests
 from CommandTemplate import CommandTemplate
 import GlobalStore
 import Constants
-from util import SharedFunctions
+from util import IrcFormattingUtil
 
 
 class Command(CommandTemplate):
@@ -39,7 +39,7 @@ class Command(CommandTemplate):
 		#The result is in a 'results' field. It can list multiple entries, but since they can be different word types, it could make the output confusing, so just use the first entry for now
 		data = apiresult.json()['results'][0]
 		#In case the found word is different from the entered word, retrieve it from the dataset
-		replytext = SharedFunctions.makeTextBold(data['word'])
+		replytext = IrcFormattingUtil.makeTextBold(data['word'])
 		#Get the word type of the first entry, since that's what we're going to get the definition(s) from. Word type is 'Noun', 'Verb', etc
 		wordType = data['lexicalEntries'][0]['lexicalCategory'].lower()
 		if wordType != 'other':

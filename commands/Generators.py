@@ -2,8 +2,8 @@ import glob, inspect, json, os, random, re
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-from util import SharedFunctions
 from util import FileUtil
+from util import IrcFormattingUtil
 from util import StringUtil
 import GlobalStore
 
@@ -501,7 +501,7 @@ class Command(CommandTemplate):
 				else:
 					replacement = replacement.upper()
 			elif option == u'bold':
-				replacement = SharedFunctions.makeTextBold(replacement)
+				replacement = IrcFormattingUtil.makeTextBold(replacement)
 			elif option.startswith(u'storeas'):
 				#Store the replacement under the provided variable name
 				# (format 'storeas:[varname]')

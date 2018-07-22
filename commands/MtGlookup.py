@@ -10,7 +10,7 @@ import gevent
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-from util import SharedFunctions
+from util import IrcFormattingUtil
 from util import FileUtil
 from util import StringUtil
 from util import WebUtil
@@ -352,7 +352,7 @@ class Command(CommandTemplate):
 	def getFormattedCardInfo(carddata, addExtendedInfo=False, setname=None, startingLength=0):
 		card = carddata[0]
 		sets = carddata[1]
-		cardInfoList = [SharedFunctions.makeTextBold(card['name'])]
+		cardInfoList = [IrcFormattingUtil.makeTextBold(card['name'])]
 		if 'type' in card and len(card['type']) > 0:
 			cardInfoList.append(card['type'])
 		if 'manacost' in card:
@@ -504,7 +504,7 @@ class Command(CommandTemplate):
 			#Retrieve set info, since we need the setcode
 			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGsets.json"), 'r') as setfile:
 				setcode = json.load(setfile)[setNameToMatch.lower()]['magicCardsInfoCode']
-			return u"{}: http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid={} | https://magiccards.info/{}/en/{}.html".format(SharedFunctions.makeTextBold(carddata[0]['name']), setSpecificCardData['multiverseid'], setcode, setSpecificCardData['number'])
+			return u"{}: http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid={} | https://magiccards.info/{}/en/{}.html".format(IrcFormattingUtil.makeTextBold(carddata[0]['name']), setSpecificCardData['multiverseid'], setcode, setSpecificCardData['number'])
 
 	@staticmethod
 	def getDefinition(searchterm, maxMessageLength=None):
@@ -552,7 +552,7 @@ class Command(CommandTemplate):
 			#Found one definition, return that
 			term, linenumber = possibleDefinitions.popitem()
 			definition = json.loads(FileUtil.getLineFromFile(definitionsFilename, linenumber)).values()[0]
-			replytext = u"{}: {}".format(SharedFunctions.makeTextBold(term), definition)
+			replytext = u"{}: {}".format(IrcFormattingUtil.makeTextBold(term), definition)
 			#Limit the message length
 			if maxMessageLength and len(replytext) > maxMessageLength:
 				splitIndex = replytext[:maxMessageLength].rfind(' ')
@@ -562,7 +562,7 @@ class Command(CommandTemplate):
 			if searchterm in possibleDefinitions:
 				#Multiple matches, but one of them is the literal search term. Return that, and how many other matches we found
 				definition = json.loads(FileUtil.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm])).values()[0]
-				replytext = u"{}: {}".format(SharedFunctions.makeTextBold(searchterm), definition)
+				replytext = u"{}: {}".format(IrcFormattingUtil.makeTextBold(searchterm), definition)
 				if maxMessageLength and len(replytext) > maxMessageLength - 18:  #-18 to account for the ' XX more matches' text later
 					replytext = replytext[:maxMessageLength-24] + ' [...]'  #18 + len(' [...]')
 				replytext += u" ({:,} more matches)".format(possibleDefinitionsCount-1)
@@ -702,7 +702,7 @@ class Command(CommandTemplate):
 		replytext = "{}{}".format(properSetname.encode('utf-8'), Constants.GREY_SEPARATOR)
 		for rarity, count in boosterRarities.iteritems():
 			cardlist = "; ".join(random.sample(possibleCards[rarity], count)).encode('utf-8')
-			replytext += "{}: {}. ".format(SharedFunctions.makeTextBold(rarity.encode('utf-8').capitalize()), cardlist)
+			replytext += "{}: {}. ".format(IrcFormattingUtil.makeTextBold(rarity.encode('utf-8').capitalize()), cardlist)
 		return (True, replytext)
 
 	def downloadCardDataset(self):
