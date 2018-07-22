@@ -6,7 +6,7 @@ import requests
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
-import SharedFunctions
+from util import SharedFunctions
 from IrcMessage import IrcMessage
 
 

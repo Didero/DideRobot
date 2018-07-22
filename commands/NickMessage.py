@@ -2,7 +2,7 @@ import json, os, time
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
-import SharedFunctions
+from util import SharedFunctions
 
 
 class Command(CommandTemplate):

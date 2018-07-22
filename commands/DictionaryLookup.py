@@ -1,11 +1,9 @@
-import json, urllib
-
 import requests
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
 import Constants
-import SharedFunctions
+from util import SharedFunctions
 
 
 class Command(CommandTemplate):

@@ -2,7 +2,7 @@ import glob, inspect, json, os, random, re
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-import SharedFunctions
+from util import SharedFunctions
 import GlobalStore
 
 

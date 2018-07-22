@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from CommandTemplate import CommandTemplate
-import SharedFunctions
+from util import SharedFunctions
 from IrcMessage import IrcMessage
 import Constants
 

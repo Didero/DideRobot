@@ -1,7 +1,7 @@
 import time
 
 from CommandTemplate import CommandTemplate
-import SharedFunctions
+from util import SharedFunctions
 from IrcMessage import IrcMessage
 
 

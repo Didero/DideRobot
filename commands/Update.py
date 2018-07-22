@@ -2,7 +2,7 @@ import subprocess
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-import SharedFunctions
+from util import SharedFunctions
 
 
 class Command(CommandTemplate):

@@ -10,7 +10,7 @@ import gevent
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-import SharedFunctions
+from util import SharedFunctions
 from IrcMessage import IrcMessage
 
 

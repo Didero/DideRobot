@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-import SharedFunctions
+from util import SharedFunctions
 import Constants
 
 
@@ -62,7 +62,7 @@ class Command(CommandTemplate):
 			return
 
 		replytext = u"{} ({} players, {} min, {}): ".format(SharedFunctions.makeTextBold(item.find('name').attrib['value']), self.getValueRangeDescription(item, 'minplayers', 'maxplayers'),
-															   self.getValueRangeDescription(item, 'minplaytime', 'maxplaytime'), item.find('yearpublished').attrib['value'])
+															self.getValueRangeDescription(item, 'minplaytime', 'maxplaytime'), item.find('yearpublished').attrib['value'])
 		url = u"{}http://boardgamegeek.com/boardgame/{})".format(Constants.GREY_SEPARATOR, gameId)
 		#Fit in as much of the description as we can
 		lengthLeft = Constants.MAX_MESSAGE_LENGTH - len(replytext) - len(url)
