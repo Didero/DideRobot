@@ -5,6 +5,7 @@ from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
 from util import SharedFunctions
+from util import DateTimeUtil
 from util import TwitterUtil
 from IrcMessage import IrcMessage
 
@@ -221,7 +222,7 @@ class Command(CommandTemplate):
 		if addTweetAge:
 			if not tweetAge:
 				tweetAge = self.getTweetAge(tweetData['created_at'])
-			tweetAge = SharedFunctions.durationSecondsToText(tweetAge.total_seconds())
+			tweetAge = DateTimeUtil.durationSecondsToText(tweetAge.total_seconds())
 			tweetAge = ' ({} ago)'.format(tweetAge)
 		else:
 			tweetAge = ''

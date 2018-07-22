@@ -6,7 +6,7 @@ import requests
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-from util import SharedFunctions
+from util import DateTimeUtil
 from IrcMessage import IrcMessage
 
 class Command(CommandTemplate):
@@ -139,7 +139,7 @@ class Command(CommandTemplate):
 			CommandTemplate.logError(u"[url] Unexpected reply from Google API: {}".format(json.dumps(googleJson).replace('\n', ' ')))
 			return None
 		videoData = googleJson['items'][0]
-		durationtimes = SharedFunctions.parseIsoDate(videoData['contentDetails']['duration'])
+		durationtimes = DateTimeUtil.parseIsoDate(videoData['contentDetails']['duration'])
 		durationstring = u""
 		if durationtimes['day'] > 0:
 			durationstring += u"{day} d, "

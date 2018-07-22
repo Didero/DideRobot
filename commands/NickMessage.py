@@ -2,7 +2,7 @@ import json, os, time
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
-from util import SharedFunctions
+from util import DateTimeUtil
 
 
 class Command(CommandTemplate):
@@ -38,7 +38,7 @@ class Command(CommandTemplate):
 				message.reply(u"I don't have a nick message stored for '{}'".format(nickToSearchFor))
 			else:
 				nickmessage = nickmessages[serverfolder][nickToSearchFor]
-				message.reply(u"Nick message for {}: {} (Set {} ago)".format(nickToSearchFor, nickmessage[0], SharedFunctions.durationSecondsToText(time.time() - nickmessage[1], 's')))
+				message.reply(u"Nick message for {}: {} (Set {} ago)".format(nickToSearchFor, nickmessage[0], DateTimeUtil.durationSecondsToText(time.time() - nickmessage[1], 's')))
 		elif message.trigger == 'setnickmessage':
 			if message.messagePartsLength == 0:
 				message.reply(u"Please provide some text to set as your nick message")

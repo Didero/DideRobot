@@ -3,7 +3,7 @@ from datetime import datetime
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
-from util import SharedFunctions
+from util import DateTimeUtil
 from IrcMessage import IrcMessage
 
 
@@ -109,7 +109,7 @@ class Command(CommandTemplate):
 	@staticmethod
 	def formatTell(targetNick, tell):
 		timeSent = datetime.utcfromtimestamp(tell[u"sentAt"])
-		timeSinceTell = SharedFunctions.durationSecondsToText((datetime.utcnow() - timeSent).seconds)
+		timeSinceTell = DateTimeUtil.durationSecondsToText((datetime.utcnow() - timeSent).seconds)
 
 		return u"{recipient}: {message} (sent by {sender} on {timeSent} UTC; {timeSinceTell} ago)"\
 			.format(recipient=targetNick, message=tell[u"text"], sender=tell[u"sender"], timeSent=timeSent.isoformat(' '), timeSinceTell=timeSinceTell)

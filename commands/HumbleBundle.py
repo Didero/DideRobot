@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 
 from CommandTemplate import CommandTemplate
 from util import SharedFunctions
+from util import DateTimeUtil
 from IrcMessage import IrcMessage
 import Constants
 
@@ -160,7 +161,7 @@ class Command(CommandTemplate):
 			#The time variable is in a different script than the other data, search for it separately
 			timeLeftMatch = re.search('var timing = \{"start": \d+, "end": (\d+)\};', script)
 			if timeLeftMatch:
-				timeLeft = SharedFunctions.durationSecondsToText(int(timeLeftMatch.group(1)) - time.time(), 'm')
+				timeLeft = DateTimeUtil.durationSecondsToText(int(timeLeftMatch.group(1)) - time.time(), 'm')
 
 			#If we found all the data we need, we can stop
 			if avgPrice > -1.0 and timeLeft != u"":
