@@ -11,6 +11,7 @@ from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
 from util import SharedFunctions
+from util import FileUtil
 from IrcMessage import IrcMessage
 
 
@@ -154,7 +155,7 @@ class Command(CommandTemplate):
 			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')) as versionfile:
 				linecount = json.load(versionfile)['cardCount']
 			randomLineNumber = random.randint(1, linecount) - 1 # minus 1 because getLineFromFile() starts at 0
-			card = json.loads(SharedFunctions.getLineFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), randomLineNumber))
+			card = json.loads(FileUtil.getLineFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), randomLineNumber))
 			cardname, carddata = card.popitem()
 			return (True, {}, {cardname: (randomLineNumber, None)})
 
@@ -326,7 +327,7 @@ class Command(CommandTemplate):
 		if len(cardstore) == 1:
 			#Retrieve the full info on the card we found
 			linenumber, setname = cardstore.values()[0]
-			cardname, carddata = json.loads(SharedFunctions.getLineFromFile(os.path.join("data", "MTGcards.json"), linenumber)).popitem()
+			cardname, carddata = json.loads(FileUtil.getLineFromFile(os.path.join("data", "MTGcards.json"), linenumber)).popitem()
 			replytext = self.getFormattedCardInfo(carddata, addExtendedCardInfo, setname)
 			#We may have culled the cardstore list, so there may have been more matches initially. List a count of those
 			if addResultCount and numberOfCardsFound > 1:
@@ -494,7 +495,7 @@ class Command(CommandTemplate):
 				return self.formatSearchResult(matchingCards, False, False, numberOfCardsToListOnLargeResult, None, True)
 			#Retrieve card data
 			lineNumber, listOfSetNamesToMatch = matchingCards[matchingCardname]
-			matchingCardname, carddata = json.loads(SharedFunctions.getLineFromFile(os.path.join("data", "MTGcards.json"), lineNumber)).popitem()
+			matchingCardname, carddata = json.loads(FileUtil.getLineFromFile(os.path.join("data", "MTGcards.json"), lineNumber)).popitem()
 			#We need to pick a set to link to. Either pick one from the matches list, if it's there, otherwise pick a random one
 			setNameToMatch = random.choice(listOfSetNamesToMatch) if listOfSetNamesToMatch is not None else random.choice(carddata[1].keys())
 			setSpecificCardData = carddata[1][setNameToMatch]
@@ -520,8 +521,8 @@ class Command(CommandTemplate):
 		possibleDefinitions = {}  #Keys are the matching terms found, values are the line they're found at for easy lookup
 
 		if searchterm == 'random':
-			randomLineNumber = random.randrange(0, SharedFunctions.getLineCount(definitionsFilename))
-			term = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, randomLineNumber)).keys()[0]
+			randomLineNumber = random.randrange(0, FileUtil.getLineCount(definitionsFilename))
+			term = json.loads(FileUtil.getLineFromFile(definitionsFilename, randomLineNumber)).keys()[0]
 			possibleDefinitions = {term: randomLineNumber}
 		else:
 			try:
@@ -548,7 +549,7 @@ class Command(CommandTemplate):
 		elif possibleDefinitionsCount == 1:
 			#Found one definition, return that
 			term, linenumber = possibleDefinitions.popitem()
-			definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, linenumber)).values()[0]
+			definition = json.loads(FileUtil.getLineFromFile(definitionsFilename, linenumber)).values()[0]
 			replytext = u"{}: {}".format(SharedFunctions.makeTextBold(term), definition)
 			#Limit the message length
 			if maxMessageLength and len(replytext) > maxMessageLength:
@@ -558,7 +559,7 @@ class Command(CommandTemplate):
 		else:
 			if searchterm in possibleDefinitions:
 				#Multiple matches, but one of them is the literal search term. Return that, and how many other matches we found
-				definition = json.loads(SharedFunctions.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm])).values()[0]
+				definition = json.loads(FileUtil.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm])).values()[0]
 				replytext = u"{}: {}".format(SharedFunctions.makeTextBold(searchterm), definition)
 				if maxMessageLength and len(replytext) > maxMessageLength - 18:  #-18 to account for the ' XX more matches' text later
 					replytext = replytext[:maxMessageLength-24] + ' [...]'  #18 + len(' [...]')

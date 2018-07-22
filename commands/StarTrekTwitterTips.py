@@ -2,7 +2,7 @@ import json, os, random, re, time
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
-from util import SharedFunctions
+from util import FileUtil
 from util import TwitterUtil
 from IrcMessage import IrcMessage
 
@@ -55,7 +55,7 @@ class Command(CommandTemplate):
 		if not os.path.exists(tweetFileName):
 			self.executeScheduledFunction()
 			return (False, "I don't seem to have the tweets for '{}', sorry! I'll retrieve them right away, try again in a bit".format(name))
-		tweets = SharedFunctions.getAllLinesFromFile(tweetFileName)
+		tweets = FileUtil.getAllLinesFromFile(tweetFileName)
 		if searchterm is not None:
 			#Search terms provided! Go through all the tweets to find matches
 			regex = None

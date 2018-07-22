@@ -3,6 +3,7 @@ import glob, inspect, json, os, random, re
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from util import SharedFunctions
+from util import FileUtil
 import GlobalStore
 
 
@@ -144,7 +145,7 @@ class Command(CommandTemplate):
 			#Trying to get out of the 'generators' folder
 			Command.logWarning("[Gen] User is trying to access files outside the 'generators' folder with filename '{}'".format(filename))
 			return "[Access error]"
-		line = SharedFunctions.getRandomLineFromFile(filepath)
+		line = FileUtil.getRandomLineFromFile(filepath)
 		if not line:
 			#The line function encountered an error, so it returned None
 			# Since we expect a string, provide an empty one
@@ -745,7 +746,7 @@ class Command(CommandTemplate):
 				repeatedSubjectFound = True
 				while repeatedSubjectFound:
 					repeatedSubjectFound = False
-					word = SharedFunctions.getRandomLineFromFile(os.path.join(self.filesLocation, "VideogameName{}.txt".format(partFilename)))
+					word = FileUtil.getRandomLineFromFile(os.path.join(self.filesLocation, "VideogameName{}.txt".format(partFilename)))
 					#Some words are followed by a subject list, to prevent repeats
 					subjects = []
 					if '^' in word:
