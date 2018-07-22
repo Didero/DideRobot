@@ -12,6 +12,7 @@ import Constants
 import GlobalStore
 from util import SharedFunctions
 from util import FileUtil
+from util import WebUtil
 from IrcMessage import IrcMessage
 
 
@@ -706,7 +707,7 @@ class Command(CommandTemplate):
 	def downloadCardDataset(self):
 		url = "http://mtgjson.com/json/AllSetFilesWindows.zip"  # Use the Windows version to keep it multi-platform (Windows can't handle files named 'CON')
 		cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
-		success, extraInfo = SharedFunctions.downloadFile(url, cardzipFilename)
+		success, extraInfo = WebUtil.downloadFile(url, cardzipFilename)
 		if not success:
 			self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo.message)
 			return (False, "Something went wrong while trying to download the card file.")

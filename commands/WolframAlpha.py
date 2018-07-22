@@ -9,7 +9,7 @@ import requests
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-from util import SharedFunctions
+from util import WebUtil
 from IrcMessage import IrcMessage
 
 
@@ -133,7 +133,7 @@ class Command(CommandTemplate):
 			searchUrl = "http://www.wolframalpha.com/input/?i={}".format(urllib.quote_plus(query))
 			#If the message would get too long, shorten the result URL
 			if len(replystring) + len(searchUrl) > Constants.MAX_MESSAGE_LENGTH:
-				searchUrl = SharedFunctions.shortenUrl(searchUrl)[1]
+				searchUrl = WebUtil.shortenUrl(searchUrl)[1]
 			replystring += "{}{}".format(Constants.GREY_SEPARATOR, searchUrl)
 			
 		return replystring
