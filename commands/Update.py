@@ -2,7 +2,7 @@ import subprocess
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-from util import SharedFunctions
+from util import StringUtil
 
 
 class Command(CommandTemplate):
@@ -44,7 +44,7 @@ class Command(CommandTemplate):
 			replytext = u"One new commit: {}".format(commitMessages[0])
 		else:
 			commitMessages.reverse()  #Otherwise the messages are ordered new to old
-			replytext = u"{:,} new commits: {}".format(linecount, SharedFunctions.joinWithSeparator(commitMessages))
+			replytext = u"{:,} new commits: {}".format(linecount, StringUtil.joinWithSeparator(commitMessages))
 			if linecount > self.MAX_UPDATES_TO_DISPLAY:
 				replytext += u"; {:,} older ones".format(linecount - self.MAX_UPDATES_TO_DISPLAY)
 		#Set the last mentioned hash to the newest one

@@ -12,6 +12,7 @@ import Constants
 import GlobalStore
 from util import SharedFunctions
 from util import FileUtil
+from util import StringUtil
 from util import WebUtil
 from IrcMessage import IrcMessage
 
@@ -189,7 +190,7 @@ class Command(CommandTemplate):
 		#Check if there is an actual search (with colon as key-value separator)
 		elif ':' in searchString:
 			#Advanced search! Turn the search string into a usable dictionary
-			searchDict = SharedFunctions.stringToDict(searchString.lower(), True)
+			searchDict = StringUtil.stringToDict(searchString.lower(), True)
 			if len(searchDict) == 0:
 				return (False, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
 							  "For a list of valid keys, see http://mtgjson.com/documentation.html#cards (though not all keys may be available)")

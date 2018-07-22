@@ -4,6 +4,7 @@ from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from util import SharedFunctions
 from util import FileUtil
+from util import StringUtil
 import GlobalStore
 
 
@@ -584,7 +585,7 @@ class Command(CommandTemplate):
 			else:
 				names.append(u"{} {}".format(firstName, lastName))
 
-		return SharedFunctions.joinWithSeparator(names)
+		return StringUtil.joinWithSeparator(names)
 
 
 	def generateWord(self, parameters=None):
@@ -604,7 +605,7 @@ class Command(CommandTemplate):
 		#Determine how many words we're going to have to generate
 		repeats = 1
 		if parameters and len(parameters) > 0:
-			repeats = SharedFunctions.parseInt(parameters[0], 1, 1, 25)
+			repeats = StringUtil.parseInt(parameters[0], 1, 1, 25)
 
 		words = []
 		for i in xrange(0, repeats):
@@ -670,7 +671,7 @@ class Command(CommandTemplate):
 		#Start the word
 		repeats = 1
 		if parameters and len(parameters) > 0:
-			repeats = SharedFunctions.parseInt(parameters[0], 1, 1, 25)
+			repeats = StringUtil.parseInt(parameters[0], 1, 1, 25)
 
 		words = []
 		for i in xrange(0, repeats):
@@ -781,7 +782,7 @@ class Command(CommandTemplate):
 				gamename = gamename.replace(random.choice(words), replacementText, 1)
 			gamenames.append(gamename)
 
-		return SharedFunctions.joinWithSeparator(gamenames)
+		return StringUtil.joinWithSeparator(gamenames)
 
 
 #Store some data about grammar commands, so we can do some initial argument verification. Keeps the actual commands nice and short
@@ -1290,7 +1291,7 @@ class GrammarCommands(object):
 		elif isinstance(moduleCommandResult, (list, tuple)):
 			moduleCommandResult = u", ".join(moduleCommandResult)
 		elif isinstance(moduleCommandResult, dict):
-			SharedFunctions.dictToString(moduleCommandResult)
+			StringUtil.dictToString(moduleCommandResult)
 		else:
 			return (False, u"Module command '{}' returned non-text object".format(argumentList[0]))
 		#Everything parsed and converted fine

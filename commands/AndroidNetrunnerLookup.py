@@ -6,7 +6,7 @@ import requests
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
-from util import SharedFunctions
+from util import StringUtil
 from IrcMessage import IrcMessage
 
 
@@ -71,7 +71,7 @@ class Command(CommandTemplate):
 				return
 
 			#Turn the search string (not the argument) into a usable dictionary, case-insensitive,
-			searchDict = SharedFunctions.stringToDict(" ".join(message.messageParts[1:]).lower(), True)
+			searchDict = StringUtil.stringToDict(" ".join(message.messageParts[1:]).lower(), True)
 			if len(searchDict) == 0:
 				message.reply("That is not a valid search query. It should be entered like JSON, so 'name: Wall of Thorns, type: ICE,...'. ")
 				return

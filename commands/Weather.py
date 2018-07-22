@@ -8,6 +8,7 @@ from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 import GlobalStore
 from util import SharedFunctions
+from util import StringUtil
 
 
 class Command(CommandTemplate):
@@ -123,7 +124,7 @@ class Command(CommandTemplate):
 													   minTempF=celsiusToFahrenheit(day['temp']['min']), maxTempF=celsiusToFahrenheit(day['temp']['max']),
 													   humidity=day['humidity'], windSpeed=day['speed'], windDir=getWindDirection(day['deg']), weatherType=day['weather'][0]['description'])
 							forecasts.append(forecast)
-						replytext += SharedFunctions.joinWithSeparator(forecasts)
+						replytext += StringUtil.joinWithSeparator(forecasts)
 
 
 		message.bot.sendMessage(message.source, replytext)

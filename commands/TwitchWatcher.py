@@ -4,6 +4,7 @@ import requests
 
 import GlobalStore
 from util import SharedFunctions
+from util import StringUtil
 from CommandTemplate import CommandTemplate
 
 class Command(CommandTemplate):
@@ -304,7 +305,7 @@ class Command(CommandTemplate):
 				reportStrings.append(u"{} ({})".format(displayname, url))
 			else:
 				reportStrings.append(u"{}: {} [{}] ({})".format(SharedFunctions.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url))
-		return (True, SharedFunctions.joinWithSeparator(reportStrings))
+		return (True, StringUtil.joinWithSeparator(reportStrings))
 
 	def getStreamerInfo(self, streamername, serverChannelString=None):
 		"""
@@ -412,7 +413,7 @@ class Command(CommandTemplate):
 						reportStrings.append(u"{}: {} [{}] ({})".format(SharedFunctions.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url))
 				#Now make the bot say it
 				GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
-																SharedFunctions.joinWithSeparator(reportStrings), "say")
+																StringUtil.joinWithSeparator(reportStrings), "say")
 
 
 
