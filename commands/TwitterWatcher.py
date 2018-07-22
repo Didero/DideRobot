@@ -5,6 +5,7 @@ from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
 from util import SharedFunctions
+from util import TwitterUtil
 from IrcMessage import IrcMessage
 
 
@@ -115,7 +116,7 @@ class Command(CommandTemplate):
 			if not isUserBeingWatchedHere:
 				replytext = "I'm not watching {}, so I don't know what they've been up to. On Twitter or anywhere else".format(accountName)
 			else:
-				singleTweet = SharedFunctions.downloadTweet(accountNameLowered, self.watchData[accountNameLowered]['highestId'])
+				singleTweet = TwitterUtil.downloadTweet(accountNameLowered, self.watchData[accountNameLowered]['highestId'])
 				if not singleTweet[0]:
 					self.logError("[TwitterWatcher] Error occured while downloading single tweet id {} of user {}: {}".format(accountName, self.watchData[accountNameLowered]['highestId'], singleTweet[1]))
 					replytext = "Woops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe it's Twitter's fault, in which case all we can do is wait"
@@ -157,7 +158,7 @@ class Command(CommandTemplate):
 			if username not in self.watchData:
 				self.logWarning("[TwitterWatcher] Asked to check account '{}' for new tweets, but it is not in the watchlist".format(username))
 				continue
-			tweetsReply = SharedFunctions.downloadTweets(username, maxTweetCount=10, downloadNewerThanId=self.watchData[username].get('highestId', None), includeRetweets=False)
+			tweetsReply = TwitterUtil.downloadTweets(username, maxTweetCount=10, downloadNewerThanId=self.watchData[username].get('highestId', None), includeRetweets=False)
 			if not tweetsReply[0]:
 				self.logError("[TwitterWatcher] Couldn't retrieve tweets for '{}': {}".format(username, tweetsReply[1]))
 				continue

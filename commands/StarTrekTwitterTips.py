@@ -3,6 +3,7 @@ import json, os, random, re, time
 from CommandTemplate import CommandTemplate
 import GlobalStore
 from util import SharedFunctions
+from util import TwitterUtil
 from IrcMessage import IrcMessage
 
 
@@ -114,7 +115,7 @@ class Command(CommandTemplate):
 				storedInfo[username] = {'linecount': 0}
 			elif "highestIdDownloaded" in storedInfo[username]:
 				highestIdDownloaded = storedInfo[username]['highestIdDownloaded']
-			tweetResponse = SharedFunctions.downloadTweets(username, downloadNewerThanId=highestIdDownloaded)
+			tweetResponse = TwitterUtil.downloadTweets(username, downloadNewerThanId=highestIdDownloaded)
 			if not tweetResponse[0]:
 				self.logError("[STTip] Something went wrong while downloading new tweets for '{}', skipping".format(username))
 				continue
