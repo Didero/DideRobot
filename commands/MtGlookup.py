@@ -504,7 +504,8 @@ class Command(CommandTemplate):
 			#Retrieve set info, since we need the setcode
 			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGsets.json"), 'r') as setfile:
 				setcode = json.load(setfile)[setNameToMatch.lower()]['magicCardsInfoCode']
-			return u"{}: http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid={} | https://magiccards.info/{}/en/{}.html".format(IrcFormattingUtil.makeTextBold(carddata[0]['name']), setSpecificCardData['multiverseid'], setcode, setSpecificCardData['number'])
+			return u"{}: http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid={} {} https://magiccards.info/{}/en/{}.html".format(
+				IrcFormattingUtil.makeTextBold(carddata[0]['name']), setSpecificCardData['multiverseid'], Constants.GREY_SEPARATOR, setcode, setSpecificCardData['number'])
 
 	@staticmethod
 	def getDefinition(searchterm, maxMessageLength=None):
