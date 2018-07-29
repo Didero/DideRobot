@@ -520,7 +520,7 @@ class Command(CommandTemplate):
 				replacement = u""
 
 		# Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
-		if len(extraOptions) > 0 and not fieldKey.startswith(u'_') and replacement.startswith(u'<'):
+		if len(extraOptions) > 0 and not fieldKey.startswith(u'_') and isinstance(replacement, basestring) and replacement.startswith(u'<'):
 			closingBracketIndex = replacement.find(u'>')
 			if closingBracketIndex > -1:
 				# Only pass on the case changes
@@ -853,7 +853,7 @@ class GrammarCommands(object):
 					argumentSuffix = u':' + argumentSuffix
 				if varname not in variableDict:
 					return (False, u"Field '{}' references variable name '{}', but that isn't set".format(commandName, varname))
-				argumentList[argIndex] = variableDict[varname] + argumentSuffix
+				argumentList[argIndex] = u"{}{}".format(variableDict[varname], argumentSuffix)
 			#If the arg is in the 'numericalArg' list, (try to) convert it to a number
 			if numericArgIndexes and argIndex in numericArgIndexes:
 				try:
