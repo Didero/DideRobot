@@ -345,7 +345,7 @@ class Command(CommandTemplate):
 		outputString = grammarString
 		loopcount = 0
 		startIndex = 0
-		while loopcount < 150:
+		while loopcount < 250:
 			loopcount += 1
 
 			nestedBracketLevel = 0
