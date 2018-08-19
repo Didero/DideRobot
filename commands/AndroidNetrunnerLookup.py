@@ -42,7 +42,7 @@ class Command(CommandTemplate):
 				replytext = "I'm already updating!"
 			elif not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				replytext = "Sorry, only admins can use my update function"
-			elif not searchType == 'forceupdate' and not self.shouldUpdate()[0]:
+			elif not searchType == 'forceupdate' and not self.shouldUpdate():
 				replytext = "The last update check was done pretty recently, there's no need to check again so soon"
 			else:
 				replytext = self.updateCardFile()[1]
@@ -272,13 +272,13 @@ class Command(CommandTemplate):
 		# If we don't absolutely HAVE to update, check if our last update isn't too soon, to prevent work and traffic
 		versionfilename = os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCardsVersion.json')
 		if not os.path.exists(versionfilename):
-			return (True, "Version file does not exist")
+			return True
 		else:
 			with open(versionfilename) as versionfile:
 				versiondata = json.load(versionfile)
 			if time.time() - versiondata['lastUpdateTime'] < self.scheduledFunctionTime - 5.0:
-				return (False, "Last update was less than 5 days ago, not updating now")
-		return (True, "Last update was more than 5 days ago, check needed")
+				return False
+		return True
 
 	def updateCardFile(self):
 		starttime = time.time()
