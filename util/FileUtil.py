@@ -9,7 +9,7 @@ def isAllowedPath(path):
 	#This function checks whether the provided path is inside the bot's data folder
 	# To prevent people adding "../.." to some bot calls to have free access to the server's filesystem
 	if not os.path.abspath(path).startswith(GlobalStore.scriptfolder):
-		logger.warning("[SharedFunctions] Somebody is trying to leave the bot's file systems by calling filename '{}'".format(path))
+		logger.warning("[FileUtil] Somebody is trying to leave the bot's file systems by calling filename '{}'".format(path))
 		return False
 	return True
 

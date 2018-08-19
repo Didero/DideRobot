@@ -74,15 +74,15 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 			break
 		#Check for errors
 		if isinstance(apireply, dict) and 'errors' in apireply:
-			logger.error("[SharedFunctions] Error occurred while retrieving tweets for {}. Parameters:".format(username))
+			logger.error("[TwitterUtil] Error occurred while retrieving tweets for {}. Parameters:".format(username))
 			logger.error(params)
-			logger.error("[SharedFunctions] Twitter API reply:")
+			logger.error("[TwitterUtil] Twitter API reply:")
 			logger.error(apireply)
 			errorMessages = '; '.join(e['message'] for e in apireply['errors'])
 			return (False, "Error(s) occurred: {}".format(errorMessages), tweets)
 		#Sometimes the API does not return a list of tweets for some reason. Catch that
 		if not isinstance(apireply, list):
-			logger.error("[SharedFunctions] Unexpected reply from Twitter API. Expected tweet list, got {}:".format(type(apireply)))
+			logger.error("[TwitterUtil] Unexpected reply from Twitter API. Expected tweet list, got {}:".format(type(apireply)))
 			logger.error(apireply)
 			return (False, "Unexpected API reply", tweets)
 		#Tweets are sorted reverse-chronologically, so we can get the highest ID from the first tweet
