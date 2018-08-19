@@ -27,7 +27,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.3.3'
+	dataFormatVersion = '4.3.4'
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.getFormattedResultFromSearchString)
@@ -919,6 +919,10 @@ class Command(CommandTemplate):
 
 					#If the card isn't in the store yet, parse its data
 					if cardname not in newcardstore:
+						# If there is no number set, substitute the 'mciNumber', since it's the closest we can get
+						if 'number' not in card and 'mciNumber' in card:
+							card['number'] = card['mciNumber']
+
 						#Remove some useless data to save some space, memory and time
 						for keyToRemove in keysToRemove:
 							if keyToRemove in card:
