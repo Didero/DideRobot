@@ -504,8 +504,19 @@ class Command(CommandTemplate):
 			#Retrieve set info, since we need the setcode
 			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGsets.json"), 'r') as setfile:
 				setcode = json.load(setfile)[setNameToMatch.lower()]['magicCardsInfoCode']
-			return u"{}: http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid={}{}https://magiccards.info/{}/en/{}.html".format(
-				IrcFormattingUtil.makeTextBold(carddata[0]['name']), setSpecificCardData['multiverseid'], Constants.GREY_SEPARATOR, setcode, setSpecificCardData['number'])
+			#Not all cards have a multiverse id (mostly special editions of cards) or a card number (mostly old cards)
+			# Check if the required fields exist
+			linkString = u""
+			if 'multiverseid' in setSpecificCardData:
+				linkString += u"http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + setSpecificCardData['multiverseid']
+			if 'multiverseid' in setSpecificCardData and 'number' in setSpecificCardData:
+				linkString += Constants.GREY_SEPARATOR
+			if 'number' in setSpecificCardData:
+				linkString += u"https://magiccards.info/{}/en/{}.html".format(setcode, setSpecificCardData['number'])
+			displayCardname = IrcFormattingUtil.makeTextBold(carddata[0]['name'])
+			if not linkString:
+				return u"I'm sorry, I don't have enough data on {} to construct links. Must be a pretty rare card!".format(displayCardname)
+			return u"{}: {}".format(displayCardname, linkString)
 
 	@staticmethod
 	def getDefinition(searchterm, maxMessageLength=None):
