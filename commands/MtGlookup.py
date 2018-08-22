@@ -701,9 +701,18 @@ class Command(CommandTemplate):
 			possibleCards['basic land'] = ['Forest', 'Island', 'Mountain', 'Plains', 'Swamp']
 
 		#Check if we found enough cards
+		raritySubstitutions = []
 		for rarity, count in boosterRarities.iteritems():
 			if rarity == '_choice':
 				continue
+
+			#Use normal rarity cards if there aren't enough 'double faced [rarity]' cards (Solves problem with e.g. 'Shadows Over Innistrad' and 'Eldritch Moon')
+			if rarity.startswith('double faced') or rarity.startswith('double-faced'):
+				fallbackRarity = rarity.split('faced ', 1)[-1]
+				if fallbackRarity in possibleCards and (rarity not in possibleCards or len(possibleCards[rarity]) < count):
+					possibleCards[rarity].extend(possibleCards[fallbackRarity])
+					raritySubstitutions.append((rarity, fallbackRarity))
+
 			if rarity not in possibleCards:
 				return (False, u"No cards with rarity '{}' found in set '{}', and I can't make a booster pack without it!".format(rarity, properSetname))
 			elif len(possibleCards[rarity]) < count:
@@ -715,6 +724,11 @@ class Command(CommandTemplate):
 		for rarity, count in boosterRarities.iteritems():
 			cardlist = "; ".join(random.sample(possibleCards[rarity], count)).encode('utf-8')
 			replytext += "{}: {}. ".format(IrcFormattingUtil.makeTextBold(rarity.encode('utf-8').capitalize()), cardlist)
+		if raritySubstitutions:
+			replytext += "(Rarity subsitutions: "
+			for substitutionPair in raritySubstitutions:
+				replytext += "'{}' as '{}',".format(substitutionPair[1], substitutionPair[0])
+			replytext = replytext.rstrip(',') + ")"
 		return (True, replytext)
 
 	def downloadCardDataset(self):
