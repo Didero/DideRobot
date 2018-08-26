@@ -41,3 +41,13 @@ A modular Python 2 IRC bot built with Gevent
 0. Connect to a server the bot is connected to, if you're not connected already
 1. Either in a channel the bot is in, or in a private message, type the specified command character, followed by either 'quit' to make the bot leave just that server, or 'shutdown' to make the bot disconnect from all servers it is connected to. (Make sure the settings file for the bot specifies you as an admin, because only bot admins can make the bot quit or shut down)
 2. Once DideRobot isn't connected to any server (Either because it quit from the last server it was connected to, or because of a 'shutdown' call), the program will exit
+
+### Bonus) Creating Your Own Command Module
+1. Create a new '.py' file in the 'commands' subfolder
+2. In that file, create a new class called 'Command', and have it inherit from 'CommandTemplate'
+3. Check the 'CommandTemplate' class to see which class variables you can set. The most important one is 'triggers' since that determines how your command gets called
+4. While you're in the 'CommandTemplate' class, look at the methods defined in there. You should at least implement the 'execute' method in your command, since that gets called when your one of your triggers is used in called in chat. The other methods described there might come in handy too
+##### Some suggestions
+* It's probably helpful to look at a simple command like 'Source' or 'Uptime' for basic examples of commands. 'Choice' is also a good one since it uses the 'IrcMessage' class, which represents the chat message the bot received and what 'execute' receives. You'll probably use the 'IrcMessage' class a lot in your command
+* To have your command be able to reply when it gets called, you can use 'message.reply' inside the 'execute' method
+* Commands can also have a method that periodically gets called, 'executeScheduledFunction', and you set the period with the 'scheduledFunctionTime' class variable
