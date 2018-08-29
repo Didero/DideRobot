@@ -46,7 +46,7 @@ A modular Python 2 IRC bot built with Gevent
 1. Create a new '.py' file in the 'commands' subfolder
 2. In that file, create a new class called 'Command', and have it inherit from 'CommandTemplate'
 3. Check the 'CommandTemplate' class to see which class variables you can set. The most important one is 'triggers' since that determines how your command gets called
-4. While you're in the 'CommandTemplate' class, look at the methods defined in there. You should at least implement the 'execute' method in your command, since that gets called when your one of your triggers is used in called in chat. The other methods described there might come in handy too
+4. While you're in the 'CommandTemplate' class, look at the methods defined in there. You should at least implement the 'execute' method in your command, since that gets called when one of your triggers is used in a chat. The other methods described there might come in handy too
 ##### Some suggestions
 * It's probably helpful to look at a simple command like 'Source' or 'Uptime' for basic examples of commands. 'Choice' is also a good one since it uses the 'IrcMessage' class, which represents the chat message the bot received and what 'execute' receives. You'll probably use the 'IrcMessage' class a lot in your command
 * To have your command be able to reply when it gets called, you can use 'message.reply' inside the 'execute' method
