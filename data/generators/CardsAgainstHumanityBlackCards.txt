@@ -699,7 +699,7 @@ The citizens of Innsmouth are really <whitecard>!
 My GM just made his girlfriend a <whitecard> character. How fucked are we?
 If you buy a camel, Crazy Hassan is adding in free <whitecard> this week only!
 Around elves, watch <whitecard>
-The only good <whitecard> is a dead <_var|lastwhitecard|&bold>
+The only good <whitecard> is a dead <$var|lastwhitecard|&bold>
 ...and then he killed the Tarasque with a <whitecard>
 There is a <whitecard> on the roof
 What are we going to argue about today? <whitecard>
