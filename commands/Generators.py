@@ -1179,6 +1179,24 @@ class GrammarCommands(object):
 		return (True, unicode(str(value), 'utf-8'))
 
 	@staticmethod
+	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1))
+	def command_dice(argumentList, grammarDict, variableDict):
+		"""
+		<$dice|numberOfDice|numberOfSides>
+		Rolls a number of dice and returns the total. First argument is how many dice to roll, second argument is how many sides each die should have
+		"""
+		if argumentList[0] <= 0 or argumentList[1] <= 0:
+			return (False, u"Dice command can't handle negative values or zero")
+		diceLimit = 1000
+		sidesLimit = 10**9
+		if argumentList[0] > diceLimit or argumentList[1] > sidesLimit:
+			return (False, u"Dice count shouldn't be higher than {:,} and sides count shouldn't be higher than {:,}".format(diceLimit, sidesLimit))
+		total = 0
+		for i in xrange(argumentList[0]):
+			total += random.randint(1, argumentList[1])
+		return (True, total)
+
+	@staticmethod
 	@validateArguments(argumentCount=1)
 	def command_choose(argumentList, grammarDict, variableDict):
 		"""
