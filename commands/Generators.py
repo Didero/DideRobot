@@ -1179,11 +1179,14 @@ class GrammarCommands(object):
 		return (True, unicode(str(value), 'utf-8'))
 
 	@staticmethod
-	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1))
+	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1, 2, 3))
 	def command_dice(argumentList, grammarDict, variableDict):
 		"""
-		<$dice|numberOfDice|numberOfSides>
+		<$dice|numberOfDice|numberOfSides[lowestRollsToRemove|highestRollsToRemove]>
 		Rolls a number of dice and returns the total. First argument is how many dice to roll, second argument is how many sides each die should have
+		The third argument is how many of the lowest rolls should be removed. So if you roll three dice - say 1, 3, 4 - and specify 1 for this argument, it'll ignore the 1 and return 7
+		The fourth argument works the same way, except for the highest rolls (so the total would be 4 in the example if you specify 1 here instead of 1 for lowest)
+		The third and fourth arguments are optional
 		"""
 		if argumentList[0] <= 0 or argumentList[1] <= 0:
 			return (False, u"Dice command can't handle negative values or zero")
@@ -1191,9 +1194,37 @@ class GrammarCommands(object):
 		sidesLimit = 10**9
 		if argumentList[0] > diceLimit or argumentList[1] > sidesLimit:
 			return (False, u"Dice count shouldn't be higher than {:,} and sides count shouldn't be higher than {:,}".format(diceLimit, sidesLimit))
-		total = 0
+
+		#Check if we need to remove some highest or lowest values later
+		lowestRollsToRemove = 0
+		highestRollsToRemove = 0
+		if len(argumentList) > 2:
+			if argumentList[2] <= 0 or argumentList[2] >= argumentList[0]:
+				return (False, u"Invalid number for lowestRollsToRemove parameter, it's not allowed to be lower than 0 or equal to or larger than the number of rolls")
+			lowestRollsToRemove = argumentList[2]
+			if len(argumentList) > 3:
+				if argumentList[3] <= 0 or argumentList[3] >= argumentList[0]:
+					return (False, u"Invalid number for highestRollsToRemove parameter, it's not allowed to be lower than 0 or equal to or larger than the number of rolls")
+				highestRollsToRemove = argumentList[3]
+				if lowestRollsToRemove + highestRollsToRemove >= argumentList[0]:
+					return (False, u"Lowest and highest rolls to remove are equal to or larger than the total number of rolls")
+
+		#Roll the dice!
+		rolls = []
 		for i in xrange(argumentList[0]):
-			total += random.randint(1, argumentList[1])
+			rolls.append(random.randint(1, argumentList[1]))
+		rolls.sort()
+
+		#The time of (possibly) removing high and low rolls is now
+		if highestRollsToRemove:
+			rolls = rolls[:argumentList[0] - highestRollsToRemove]
+		if lowestRollsToRemove:
+			rolls = rolls[lowestRollsToRemove:]
+
+		#Add up the (remaining) rolls
+		total = 0
+		for roll in rolls:
+			total += roll
 		return (True, total)
 
 	@staticmethod
