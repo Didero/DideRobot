@@ -4,7 +4,7 @@
 "_triggers": ["cahb", "cardsagainsthumanityblack"],
 "_start": "<$hasparams|<paramscheck>|<$file|CardsAgainstHumanityBlackCards.txt>>",
 "paramscheck": "<$ifcontains|%_params|_|<usercardWithUnderscore>|<usercardWithoutUnderscore>>",
-"usercardWithUnderscore": "<$replace|%_params|_|<whitecard>>",
+"usercardWithUnderscore": "<$regexreplace|%_params|_+|<whitecard>>",
 "usercardWithoutUnderscore": "<$params> <whitecard>",
 "whitecard": "<$file|CardsAgainstHumanityWhiteCards.txt|&storeas:lastwhitecard,bold>"
 }
