@@ -51,27 +51,39 @@ class Command(CommandTemplate):
 		# Each of those dicts has a 'senses' dictionary list, which contains a 'definitions' list
 		#'Eating' the entires list means the definitions will be added in reverse order, but we will be eating that list too, so it'll be reversed again
 		definitions = []
-		while data['lexicalEntries'][0]['entries']:
-			entry = data['lexicalEntries'][0]['entries'].pop()
-			while entry['senses']:
-				sense = entry['senses'].pop()
-				#Not all words have a definition. Something like 'swum' has a 'crossReferenceMarkers' list that mentions which word it's related to
-				if 'definitions' in sense:
-					definitions.extend(sense['definitions'])
-				elif 'crossReferenceMarkers' in sense:
-					definitions.extend(sense['crossReferenceMarkers'])
-				else:
-					definitions.append("[definition not found]")
+		while len(data['lexicalEntries']) > 0:
+			lexicalEntry = data['lexicalEntries'].pop()
+			entry = lexicalEntry['entries'].pop()
+			if 'senses' in entry:
+				while entry['senses']:
+					sense = entry['senses'].pop()
+					if 'definitions' in sense:
+						definitions.extend(sense['definitions'])
+					elif 'short_definitions' in sense:
+						definitions.extend(sense['short_definitions'])
+					#Not all words have a definition. Something like 'swum' has a 'crossReferenceMarkers' list that mentions which word it's related to
+					elif 'crossReferenceMarkers' in sense:
+						definitions.extend(sense['crossReferenceMarkers'])
+					else:
+						definitions.append("[definition not found]")
+			#Some words without definition reference the word they're derived from, list that so users can look that word up
+			elif 'derivativeOf' in lexicalEntry:
+				derivative = lexicalEntry['derivativeOf'][0]['text']
+				definitions.append("word is derived from '{}'".format(derivative))
 
-		#Keep adding definitions to the output textuntil we run out of message space
-		separatorLength = len(Constants.GREY_SEPARATOR)
-		while definitions and len(replytext) + separatorLength + len(definitions[0]) < Constants.MAX_MESSAGE_LENGTH:
-			replytext += definitions.pop() + Constants.GREY_SEPARATOR
-		#Remove the last trailing separator
-		replytext = replytext[:-separatorLength]
-		#Add how much defitions we skipped, if necessary
-		if len(definitions) > 0:
-			replytext += " ({:,} more)".format(len(definitions))
+		if not definitions:
+			#Apparently we didn't find any good definitions for some reason
+			replytext += "No definitions found, for some reason, even though the word definitely exists. Language is difficult, even for a dictionary"
+		else:
+			#Keep adding definitions to the output text until we run out of message space
+			separatorLength = len(Constants.GREY_SEPARATOR)
+			while definitions and len(replytext) + separatorLength + len(definitions[0]) < Constants.MAX_MESSAGE_LENGTH:
+				replytext += definitions.pop() + Constants.GREY_SEPARATOR
+			#Remove the last trailing separator
+			replytext = replytext[:-separatorLength]
+			#Add how much defitions we skipped, if necessary
+			if len(definitions) > 0:
+				replytext += " ({:,} more)".format(len(definitions))
 
 		#Done! Show our result
 		message.reply(replytext, "say")
