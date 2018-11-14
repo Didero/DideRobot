@@ -27,7 +27,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.3.4'
+	dataFormatVersion = '4.3.5'
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.getFormattedResultFromSearchString)
@@ -810,6 +810,8 @@ class Command(CommandTemplate):
 		#Lists of what to do with certain card keys
 		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
 		keysToFormatNicer = ('flavor', 'manacost', 'text')
+		#Some number fields can be 'null' if they're 'X' on the card, so their value depends on some card text or mana spent. Change that to 'X' in our dataset
+		nullFieldsToX = ('loyalty',)
 		layoutTypesToRemove = ('normal', 'phenomenon', 'plane', 'scheme', 'vanguard')
 		listKeysToMakeString = ('colors', 'names')
 		setSpecificCardKeys = ('artist', 'flavor', 'multiverseid', 'number', 'rarity', 'watermark')
@@ -963,6 +965,10 @@ class Command(CommandTemplate):
 						for attrib in listKeysToMakeString:
 							if attrib in card:
 								card[attrib] = u"; ".join(card[attrib])
+
+						for field in nullFieldsToX:
+							if field in card and card[field] is None:
+								card[field] = 'X'
 
 						#Make 'manaCost' lowercase, since we make the searchstring lowercase too, and we don't want to miss this
 						if 'manaCost' in card:
