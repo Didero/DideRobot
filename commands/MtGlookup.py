@@ -832,6 +832,7 @@ class Command(CommandTemplate):
 		gamewideCardStoreFile = open(gamewideCardStoreFilename, 'w')
 
 		#Write each keyword we find to the definitions file so we don't have to keep it in memory
+		definitionsFile = None
 		if shouldUpdateDefinitions:
 			definitionsFile = open(definitionsFilename, 'w')
 
