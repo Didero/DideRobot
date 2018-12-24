@@ -131,7 +131,8 @@ class CommandTemplate(object):
 		There's no need to override this method, just calling it in your command if you need it is sufficient
 		"""
 		if not self.scheduledFunctionIsExecuting:
-			self.scheduledFunctionGreenlet.kill()
+			if self.scheduledFunctionGreenlet:
+				self.scheduledFunctionGreenlet.kill()
 			self.scheduledFunctionGreenlet = gevent.spawn(self.keepRunningScheduledFunction)
 
 	def executeScheduledFunction(self):
