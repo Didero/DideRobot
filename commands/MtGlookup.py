@@ -37,7 +37,7 @@ class Command(CommandTemplate):
 			try:
 				self.updateCardFile()
 			except Exception as e:
-				self.logError("[MTG] An error occurred during scheduled update:" + e.message)
+				self.logError("[MTG] An error occurred during scheduled update: " + e.message)
 				self.areCardfilesInUse = False
 
 	def execute(self, message):
