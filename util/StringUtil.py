@@ -50,3 +50,8 @@ def joinWithSeparator(listOfStrings, separator=None):
 	if not separator:
 		separator = Constants.GREY_SEPARATOR
 	return separator.join(listOfStrings)
+
+def removeNewlines(string):
+	if '\n' not in string:
+		return string
+	return re.sub(r"( ?\n+ ?)+", " ", string)

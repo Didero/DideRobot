@@ -304,7 +304,7 @@ class Command(CommandTemplate):
 			if shouldUseShortReportString:
 				reportStrings.append(u"{} ({})".format(displayname, url))
 			else:
-				reportStrings.append(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url))
+				reportStrings.append(StringUtil.removeNewlines(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url)))
 		return (True, StringUtil.joinWithSeparator(reportStrings))
 
 	def getStreamerInfo(self, streamername, serverChannelString=None):
@@ -333,7 +333,7 @@ class Command(CommandTemplate):
 			return (True, u"{0} doesn't appear to be streaming at the moment. Maybe they've got some old streams you can watch though, here: https://twitch.tv/{0}/videos/all".format(streamername))
 		#Streamer is live, return info on them
 		url = "https://twitch.tv/" + streamername
-		return (True, u"{}: {} [{}] ({})".format(displayName, result[streamerId]['title'], result[streamerId]['game_name'], url))
+		return (True, StringUtil.removeNewlines(u"{}: {} [{}] ({})".format(displayName, result[streamerId]['title'], result[streamerId]['game_name'], url)))
 
 
 	def executeScheduledFunction(self):
@@ -410,7 +410,7 @@ class Command(CommandTemplate):
 						reportStrings.append(u"{} ({})".format(displayname, url))
 					# Only a few streamers live, we can be a bit more verbose
 					else:
-						reportStrings.append(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url))
+						reportStrings.append(StringUtil.removeNewlines(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url)))
 				#Now make the bot say it
 				GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
 																StringUtil.joinWithSeparator(reportStrings), "say")
