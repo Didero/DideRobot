@@ -797,6 +797,7 @@ class Command(CommandTemplate):
 		#Download the wrongly-formatted (for our purposes) card data
 		success, result = self.downloadCardDataset()
 		if not success:
+			self.areCardfilesInUse = False
 			return (False, result)
 		else:
 			cardDatasetFilename = result
