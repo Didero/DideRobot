@@ -27,7 +27,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.3.5'
+	dataFormatVersion = '4.4.0'
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.getFormattedResultFromSearchString)
@@ -507,7 +507,7 @@ class Command(CommandTemplate):
 			setSpecificCardData = carddata[1][setNameToMatch]
 			#Retrieve set info, since we need the setcode
 			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGsets.json"), 'r') as setfile:
-				setcode = json.load(setfile)[setNameToMatch.lower()]['magicCardsInfoCode']
+				setcode = json.load(setfile)[setNameToMatch.lower()]['code']
 			#Not all cards have a multiverse id (mostly special editions of cards) or a card number (mostly old cards)
 			# Check if the required fields exist
 			linkString = u""
@@ -607,7 +607,7 @@ class Command(CommandTemplate):
 				#Skip the list with the sets that have boosterpacks
 				if setname == '_setsWithBoosterpacks':
 					continue
-				if askedSetcode == setdata[setname]['code']:
+				if askedSetcode == setdata[setname].get('code') or askedSetcode == setdata[setname].get('mtgocode'):
 					properSetname = setname
 					#Since setcodes are unique, no need to keep looking
 					break
@@ -736,11 +736,11 @@ class Command(CommandTemplate):
 		return (True, replytext)
 
 	def downloadCardDataset(self):
-		url = "http://mtgjson.com/json/AllSetFilesWindows.zip"  # Use the Windows version to keep it multi-platform (Windows can't handle files named 'CON')
+		url = "http://mtgjson.com/json/AllSetFiles.zip"
 		cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 		success, extraInfo = WebUtil.downloadFile(url, cardzipFilename)
 		if not success:
-			self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo.message)
+			self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo)
 			return (False, "Something went wrong while trying to download the card file.")
 		return (True, extraInfo)
 
@@ -807,18 +807,20 @@ class Command(CommandTemplate):
 		#Since definitions from cards get written to file immediately, just keep a list of which keywords we already stored
 		definitions = []
 		#Lists of what to do with certain set keys
-		setKeysToRemove = ('border', 'magicRaritiesCodes', 'mkm_id', 'mkm_name', 'oldCode', 'onlineOnly', 'translations')
+		setKeysToKeep = ('block', 'boosterV3', 'cards', 'code', 'mtgoCode', 'name', 'releaseDate', 'type')
 		raritiesToRemove = ('checklist', 'double faced', 'draft-matters', 'foil', 'marketing', 'power nine', 'timeshifted purple', 'token')
 		raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s'}  #Non-standard rarities are interpreted as regexes for type
 		rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls
 		#Lists of what to do with certain card keys
-		keysToRemove = ('border', 'colorIdentity', 'id', 'imageName', 'mciNumber', 'releaseDate', 'reserved', 'starter', 'subtypes', 'supertypes', 'timeshifted', 'types', 'variations')
-		keysToFormatNicer = ('flavor', 'manacost', 'text')
+		setSpecificCardKeys = ('artist', 'flavor', 'multiverseid', 'number', 'rarity', 'watermark')
+		cardKeysToKeep = ('colors', 'convertedManaCost', 'layout', 'loyalty', 'manaCost', 'name', 'names', 'power', 'text', 'toughness', 'type')
+		setSpecificCardKeysToRename = {'flavorText': 'flavor', 'multiverseId': 'multiverseid'}
+		cardKeysToRename = {'convertedManaCost': 'cmc', 'manaCost': 'manacost'}
+		keysToFormatNicer = ('manacost', 'text')  #'flavor' also needs to be formatted nicer, but that's done separately since it's a set-specific key, in contrast with the others listed here
 		#Some number fields can be 'null' if they're 'X' on the card, so their value depends on some card text or mana spent. Change that to 'X' in our dataset
 		nullFieldsToX = ('loyalty',)
 		layoutTypesToRemove = ('normal', 'phenomenon', 'plane', 'scheme', 'vanguard')
 		listKeysToMakeString = ('colors', 'names')
-		setSpecificCardKeys = ('artist', 'flavor', 'multiverseid', 'number', 'rarity', 'watermark')
 
 		# This function will be called on the 'keysToFormatNicer' keys
 		#  Made into a function, because it's used in two places
@@ -848,15 +850,18 @@ class Command(CommandTemplate):
 			for setfilename in setfilesZip.namelist():
 				# Keep numbers as strings, saves on converting them back later
 				setData = json.loads(setfilesZip.read(setfilename), parse_int=lambda x: x, parse_float=lambda x: x)
-				#Put the cardlist in a separate variable, so we can store all the set information easily
-				cardlist = setData.pop('cards')
 				#Clean up the set data a bit
-				for setKeyToRemove in setKeysToRemove:
-					if setKeyToRemove in setData:
-						del setData[setKeyToRemove]
+				for setKey in setData.keys():
+					if setKey not in setKeysToKeep:
+						del setData[setKey]
+				if 'mtgoCode' in setData:
+					if setData['mtgoCode'] is None:
+						del setData['mtgoCode']
+					else:
+						setData['mtgocode'] = setData.pop('mtgoCode')
 				#The 'booster' set field is a bit verbose, make that shorter and easier to use
-				if 'booster' in setData:
-					originalBoosterList = setData.pop('booster')
+				if 'boosterV3' in setData:
+					originalBoosterList = setData.pop('boosterV3')
 					countedBoosterData = {}
 					try:
 						for rarity in originalBoosterList:
@@ -922,10 +927,14 @@ class Command(CommandTemplate):
 				setstore[setData['name'].lower()] = setData
 
 				#Pop off cards when we need them, to save on memory
+				cardlist = setData.pop('cards')
 				for cardcount in xrange(0, len(cardlist)):
 					card = cardlist.pop()
 					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
 
+					for setSpecificCardKeyToRename, newKeyName in setSpecificCardKeysToRename.iteritems():
+						if setSpecificCardKeyToRename in card:
+							card[newKeyName] = card.pop(setSpecificCardKeyToRename)
 					#Make flavor text read better
 					if 'flavor' in card:
 						card['flavor'] = formatNicer(card['flavor'])
@@ -935,19 +944,13 @@ class Command(CommandTemplate):
 					for setSpecificKey in setSpecificCardKeys:
 						if setSpecificKey in card:
 							setSpecificCardData[setSpecificKey] = card.pop(setSpecificKey)
-					#Don't add it to newcardstore yet, so we can check if it's in there already or not
-					# But do the loop now so the set-specific keys are removed from the card dict
 
 					#If the card isn't in the store yet, parse its data
 					if cardname not in newcardstore:
-						# If there is no number set, substitute the 'mciNumber', since it's the closest we can get
-						if 'number' not in card and 'mciNumber' in card:
-							card['number'] = card['mciNumber']
-
-						#Remove some useless data to save some space, memory and time
-						for keyToRemove in keysToRemove:
-							if keyToRemove in card:
-								del card[keyToRemove]
+						#Remove data we don't use, to save some space, memory and time
+						for key in card.keys():
+							if key not in cardKeysToKeep:
+								del card[key]
 
 						#No need to store there's nothing special about the card's layout or if the special-ness is already evident from the text
 						if card['layout'] in layoutTypesToRemove:
@@ -960,9 +963,8 @@ class Command(CommandTemplate):
 						if 'colors' in card:
 							card['colors'] = sorted(card['colors'])
 
-						#Remove the current card from the list of names this card also contains (for flip cards)
-						# (Saves on having to remove it later, and the presence of this field shows it's in there too)
-						if 'names' in card:
+						#Remove the current card from the list of names this card also contains (for flip cards), saves on having to remove it during display
+						if 'names' in card and card['name'] in card['names']:
 							card['names'].remove(card['name'])
 
 						#Make sure all stored values are strings, that makes searching later much easier
@@ -972,12 +974,16 @@ class Command(CommandTemplate):
 
 						for field in nullFieldsToX:
 							if field in card and card[field] is None:
-								card[field] = 'X'
+								card[field] = u'X'
 
-						#Make 'manaCost' lowercase, since we make the searchstring lowercase too, and we don't want to miss this
-						if 'manaCost' in card:
-							card['manacost'] = card['manaCost']
-							del card['manaCost']
+						#Make some card keys lowercase, more readable, and/or shorter
+						for keyToRename, newName in cardKeysToRename.iteritems():
+							if keyToRename in card:
+								card[newName] = card.pop(keyToRename)
+
+						#Converted mana cost is stored as a float, but in most cases its decimal is zero. If so, remove that decimal
+						if 'cmc' in card and card['cmc'].endswith('.0'):
+							card['cmc'] = card['cmc'][:-2]
 
 						#Get possible term definitions from this card's text, if needed
 						if shouldUpdateDefinitions and 'text' in card:
@@ -1019,6 +1025,10 @@ class Command(CommandTemplate):
 		if os.path.exists(setStoreFilename):
 			os.remove(setStoreFilename)
 		#Save the new databases to disk
+		with open(setStoreFilename, 'w') as setsfile:
+			setsfile.write(json.dumps(setstore))
+		#We don't need the card info in memory anymore, hopefully this way the memory used get freed
+		del setstore
 		numberOfCards = 0
 		with open(cardStoreFilename, 'w') as cardfile:
 			gamewideCardStoreFile = open(gamewideCardStoreFilename, 'r')
@@ -1030,14 +1040,9 @@ class Command(CommandTemplate):
 				cardfile.write(json.dumps({cardname: [gamewideCardData, newcardstore.pop(cardname)]}))
 				cardfile.write('\n')
 			gamewideCardStoreFile.close()
-		with open(setStoreFilename, 'w') as setsfile:
-			setsfile.write(json.dumps(setstore))
 
 		#We don't need the temporary gamewide card data file anymore
 		os.remove(gamewideCardStoreFilename)
-
-		#We don't need the card info in memory anymore, hopefully this way the memory used get freed
-		del setstore
 
 		#Store the new version data
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
