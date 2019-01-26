@@ -412,7 +412,7 @@ class Command(CommandTemplate):
 				if rarity == u"Basic Land":
 					rarity = u'L'
 				else:
-					rarity = rarity[0]
+					rarity = rarity[0].upper()
 				setlistString += u"{} ({}); ".format(setname, rarity)
 			setlistString = setlistString[:-2]  #Remove the last '; '
 			if setcount > maxSetsToDisplay:
