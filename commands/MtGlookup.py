@@ -830,9 +830,9 @@ class Command(CommandTemplate):
 			if '{' in text:
 				text = text.replace('}{', ' ').replace('{', '').replace('}', '')
 			#Replace newlines with spaces. If the sentence ends in a letter, add a period
-			text = re.sub('(?<=\w)\n', '. ', text).replace('\n', ' ')
+			text = re.sub(r'(?<=\w)\n', '. ', text).replace('\n', ' ')
 			#Prevent double spaces
-			text = re.sub(' {2,}', ' ', text).strip()
+			text = re.sub(r' {2,}', ' ', text).strip()
 			return text
 
 		#Reference to a temporary file where we will store gamewide JSON-parsed card info (Like card text, CMC)
@@ -1147,7 +1147,7 @@ class Command(CommandTemplate):
 					while currentParagraph and currentParagraph.name in ('p', 'ul', 'dl', 'ol'):
 						paragraphText += u" " + currentParagraph.text
 						currentParagraph = currentParagraph.next_sibling
-					paragraphText = re.sub(" ?\[\d+?]", "", paragraphText).lstrip().rstrip(' .')  #Remove the reference links ('[1]')
+					paragraphText = re.sub(r" ?\[\d+?]", "", paragraphText).lstrip().rstrip(' .')  #Remove the reference links ('[1]')
 					if len(paragraphText) == 0:
 						self.logWarning("[MTG] Definition for '{}' is empty, skipping".format(keyword))
 						continue
