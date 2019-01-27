@@ -516,7 +516,7 @@ class Command(CommandTemplate):
 			if 'multiverseid' in setSpecificCardData and 'number' in setSpecificCardData:
 				linkString += Constants.GREY_SEPARATOR
 			if 'number' in setSpecificCardData:
-				linkString += u"https://scryfall.com/card{}/{}" .format(setcode.lower(), setSpecificCardData['number'])
+				linkString += u"https://scryfall.com/card/{}/{}" .format(setcode.lower(), setSpecificCardData['number'])
 			displayCardname = IrcFormattingUtil.makeTextBold(carddata[0]['name'])
 			if not linkString:
 				return u"I'm sorry, I don't have enough data on {} to construct links. Must be a pretty rare card!".format(displayCardname)
