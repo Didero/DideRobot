@@ -147,6 +147,8 @@ class Command(CommandTemplate):
 			message.reply(replytext, "say")
 
 	def getFormattedResultFromSearchString(self, searchType, searchString, extendedInfo=False, resultListLength=10):
+		if self.areCardfilesInUse:
+			return "[Updating cardfiles]"
 		result = self.getMatchingCardsFromSearchString(searchType, searchString)
 		if not result[0]:
 			#Something went wrong, second parameter is the error message, return that
