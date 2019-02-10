@@ -150,7 +150,7 @@ class Command(CommandTemplate):
 		result = self.getMatchingCardsFromSearchString(searchType, searchString)
 		if not result[0]:
 			#Something went wrong, second parameter is the error message, return that
-			return result[1]
+			return u"[Error: {}]".format(result[1])
 		#Search was successful, second parameter is the parsed search dictionary, third is the matching cards. Return a formatted result
 		return self.formatSearchResult(result[2], extendedInfo, searchType.startswith('random'), resultListLength, result[1].get('name', None), True)
 
