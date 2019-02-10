@@ -1023,11 +1023,16 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=4)
 	def command_ifmatch(argumentList, grammarDict, variableDict):
 		"""
-		<$ifmatch|string|regexToMatch|resultIfMatch|resultIfNoMatch>
+		<$ifmatch|string|regexToMatch|resultIfMatch|resultIfNoMatch[|shouldIgnoreCase]>
 		Checks if the provided regular expression matches the provided string
+		If the last parameter is provided and is anything but 'false' or empty, the match will be done in a case-insensitive manner
 		"""
+		#First check which regex flags we need to use
+		regexFlags = re.DOTALL  # DOTALL so it can handle newlines in messages properly
+		if len(argumentList) > 4 and len(argumentList[4]) > 0 and argumentList[4].lower() != "false":
+			regexFlags |= re.IGNORECASE
 		#Make sure we un-escape the regex, so it can use characters like < and | without messing up our parsing
-		regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
+		regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=regexFlags)
 		try:
 			if re.search(regex, argumentList[0]):
 				return (True, argumentList[2])
