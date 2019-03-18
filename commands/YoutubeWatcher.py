@@ -51,10 +51,12 @@ class Command(CommandTemplate):
 				continue
 			newVideoList = []
 			#Check if these videos are newer than the latest video we have stored
-			for videoDict in videoResultTuple[1]:
+			while videoResultTuple[1]:
+				videoDict = videoResultTuple[1].pop(0)
 				videoDict['publishedAt'] = datetime.datetime.strptime(videoDict['publishedAt'], self.datetimeFormatString)
 				if videoDict['publishedAt'] > playlistData['latestVideoUploadTime']:
-					newVideoList.append(videoDict)
+					#Store the video info in the 'new' list, but only the data we need
+					newVideoList.append(self.getValuesFromDict(videoDict, 'publishedAt', 'videoId', 'title', 'playlistId'))
 				else:
 					#This video isn't newer than the stored video, and subsequent videos are assumed to be older, so no need to check those
 					break
@@ -66,26 +68,34 @@ class Command(CommandTemplate):
 				playlistData['latestVideoUploadTime'] = latestVideoDict['publishedAt']
 				shouldSaveWatchedData = True
 				# Store the new videos by serverchannel string, since we need to report on those
-				for newVideoDict in newVideoList:
+				while newVideoList:
+					newVideoDict = newVideoList.pop(0)
 					#If this video (and the subsequent older ones) is very old, don't report on it
 					if (now - newVideoDict['publishedAt']).total_seconds() > self.newVideoReportCutoffAge:
 						break
 					#If it's not that old, store it to report to each IRC channel that wants to know about it
 					for serverChannelString in playlistData['reportChannels']:
 						if serverChannelString not in newVideosPerServerChannelString:
-							newVideosPerServerChannelString[serverChannelString] = newVideoList
+							newVideosPerServerChannelString[serverChannelString] = [newVideoDict]
 						else:
-							newVideosPerServerChannelString[serverChannelString].extend(newVideoList)
-		if shouldSaveWatchedData:
-			#New video info was stored, so save it to disk too
-			self.saveWatchedChannelsData()
+							newVideosPerServerChannelString[serverChannelString].append(newVideoDict)
 		#Now we can report the newly found videos to each IRC channel
-		for serverChannelString, videoList in newVideosPerServerChannelString.iteritems():
+		while newVideosPerServerChannelString:
+			serverChannelString, videoList = newVideosPerServerChannelString.popitem()
 			for videoDict in videoList:
 				server, channel = serverChannelString.rsplit(' ', 1)
 				if server in GlobalStore.bothandler.bots:
 					message = "{} uploaded '{}' {} ago: https://youtu.be/{}".format(self.watchedPlaylistsData[videoDict['playlistId']]['channelname'], videoDict['title'], self.getVideoAge(videoDict['publishedAt'], 's'), videoDict['videoId'])
 					GlobalStore.bothandler.bots[server].sendMessage(channel, message)
+		if shouldSaveWatchedData:
+			#New video info was stored, so save it to disk too
+			self.saveWatchedChannelsData()
+
+	def getValuesFromDict(self, dictToCopyFrom, *keysToCopy):
+		copiedDict = {}
+		for keyToCopy in keysToCopy:
+			copiedDict[keyToCopy] = dictToCopyFrom.get(keyToCopy, None)
+		return copiedDict
 
 	def execute(self, message):
 		"""
