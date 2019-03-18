@@ -3,7 +3,7 @@ import copy, datetime, json, os, re
 import requests
 
 import GlobalStore
-from util import DateTimeUtil
+from util import DateTimeUtil, DictUtil
 from CommandTemplate import CommandTemplate
 
 
@@ -56,7 +56,7 @@ class Command(CommandTemplate):
 				videoDict['publishedAt'] = datetime.datetime.strptime(videoDict['publishedAt'], self.datetimeFormatString)
 				if videoDict['publishedAt'] > playlistData['latestVideoUploadTime']:
 					#Store the video info in the 'new' list, but only the data we need
-					newVideoList.append(self.getValuesFromDict(videoDict, 'publishedAt', 'videoId', 'title', 'playlistId'))
+					newVideoList.append(DictUtil.getValuesFromDict(videoDict, 'publishedAt', 'videoId', 'title', 'playlistId'))
 				else:
 					#This video isn't newer than the stored video, and subsequent videos are assumed to be older, so no need to check those
 					break
@@ -90,12 +90,6 @@ class Command(CommandTemplate):
 		if shouldSaveWatchedData:
 			#New video info was stored, so save it to disk too
 			self.saveWatchedChannelsData()
-
-	def getValuesFromDict(self, dictToCopyFrom, *keysToCopy):
-		copiedDict = {}
-		for keyToCopy in keysToCopy:
-			copiedDict[keyToCopy] = dictToCopyFrom.get(keyToCopy, None)
-		return copiedDict
 
 	def execute(self, message):
 		"""
