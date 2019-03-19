@@ -110,7 +110,9 @@ class Command(CommandTemplate):
 
 		replytext = ""
 		#Commands from here down need a channel name, check if one is provided
-		if message.messagePartsLength > 1:
+		if message.messagePartsLength < 2:
+			replytext = "Please also add a channel name or playlist URL, so I know who you're talking about. Thanks!"
+		else:
 			channelName = " ".join(message.messageParts[1:])
 			if subcommand == 'add':
 				#Check if the parameter is a URL to a playlist
