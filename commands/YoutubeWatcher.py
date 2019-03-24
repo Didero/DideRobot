@@ -331,9 +331,11 @@ class Command(CommandTemplate):
 		if not matchingPlaylistIds:
 			# If we didn't find a direct channel name match, check if the search query matches (part of) the playlist name
 			for playlistId, playlistData in self.watchedPlaylistsData.iteritems():
+				if 'playlistname' not in playlistData:
+					continue
 				if serverChannelStringToMatch and serverChannelStringToMatch not in playlistData['reportChannels']:
 					continue
-				if 'playlistname' in playlistData and lowerChannelOrPlaylistNameToSearchFor not in playlistData['playlistname'].lower():
+				if lowerChannelOrPlaylistNameToSearchFor not in playlistData['playlistname'].lower():
 					continue
 				matchingPlaylistIds.append(playlistId)
 		return matchingPlaylistIds
