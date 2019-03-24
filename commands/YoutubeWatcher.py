@@ -10,7 +10,8 @@ from CommandTemplate import CommandTemplate
 class Command(CommandTemplate):
 	triggers = ['youtubewatcher', 'youtubewatch']
 	helptext = "Regularly checks for new Youtube videos. '<add/remove> [channelname/playlist URL]' to add/remove channels or playlists to watch for new videos. " \
-			   "'<list>' to see all watched channels and playlists. '<last/latest> [channelname/playlistname] shows the latest video uploaded by the channel or to the playlist."
+			   "'<list>' to see all watched channels and playlists. '<last/latest> [channelname/playlistname] shows the latest video uploaded by the channel or to the playlist. " \
+			   "<show/link> [channelname/playlistname] gives a link to the matching channel's uploaded videos or to the matching playlist."
 	scheduledFunctionTime = 900
 	callInThread = True
 
@@ -130,6 +131,8 @@ class Command(CommandTemplate):
 					replytext = self.removeWatchedChannel(serverChannelString, channelName)
 			elif subcommand == 'last' or subcommand == 'latest':
 				replytext = self.getLatestStoredVideo(serverChannelString, channelName)
+			elif subcommand == 'show' or subcommand == 'link':
+				replytext = self.getLinkToPlaylist(serverChannelString, channelName)
 			elif subcommand == 'forcecheck':
 				if self.scheduledFunctionIsExecuting:
 					replytext = "I'm already checking at the moment! You're welcome"
@@ -234,10 +237,8 @@ class Command(CommandTemplate):
 
 	def getLatestStoredVideo(self, serverChannelString, playlistOrChannelName):
 		matchingPlaylistIds = self.getPlaylistIdsFromNameSearch(playlistOrChannelName, serverChannelString)
-		if not matchingPlaylistIds:
-			return "Sorry, I don't know anybody with the playlist or channel name '{}'. If you want to introduce me to them, you can do so with the 'add' subcommand".format(playlistOrChannelName)
-		elif len(matchingPlaylistIds) > 1:
-			return "That matches {:,} channels I'm watching, can you be more specific?".format(len(matchingPlaylistIds))
+		if len(matchingPlaylistIds) != 1:
+			return self.getReplyWhenNoSingleSearchMatch(playlistOrChannelName, matchingPlaylistIds)
 		playlistData = self.watchedPlaylistsData[matchingPlaylistIds[0]]
 		if not playlistData['latestVideoId']:
 			replytext = "{channelname} hasn't uploaded anything{playlistnameIfPresent} yet"
@@ -246,6 +247,22 @@ class Command(CommandTemplate):
 		playlistnameIfPresent = "" if 'playlistname' not in playlistData else " to the '{}' playlist".format(playlistData['playlistname'])
 		return replytext.format(channelname=playlistData['channelname'], videoTitle=playlistData['latestVideoTitle'], playlistnameIfPresent=playlistnameIfPresent,
 								videoAge=self.getVideoAge(playlistData['latestVideoUploadTime']), videoId=playlistData['latestVideoId'])
+
+	def getLinkToPlaylist(self, serverChannelString, playlistOrChannelName):
+		matchingPlaylistIds = self.getPlaylistIdsFromNameSearch(playlistOrChannelName, serverChannelString)
+		if len(matchingPlaylistIds) != 1:
+			return self.getReplyWhenNoSingleSearchMatch(playlistOrChannelName, matchingPlaylistIds)
+		playlistData = self.watchedPlaylistsData[matchingPlaylistIds[0]]
+		if 'playlistname' in playlistData:
+			return "Sure, here's the '{}' playlist of {}: https://youtube.com/playlist?list={}".format(playlistData['playlistname'], playlistData['channelname'], matchingPlaylistIds[0])
+		else:
+			return "Sure, here's all the videos that {0} has uploaded: https://youtube.com/user/{0}/videos".format(playlistData['channelname'])
+
+	def getReplyWhenNoSingleSearchMatch(self, searchQuery, matchingPlaylistIds):
+		if not matchingPlaylistIds:
+			return "Sorry, I don't know anybody with the playlist or channel name '{}'. If you want to introduce me to them, you can do so with the 'add' subcommand".format(searchQuery)
+		elif len(matchingPlaylistIds) > 1:
+			return "That matches {:,} channels I'm watching, can you be more specific?".format(len(matchingPlaylistIds))
 
 	def saveWatchedChannelsData(self):
 		#We need to turn the timestamps from a datetime object into a string timestamp, so we need a copy of the watch data
