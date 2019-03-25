@@ -27,7 +27,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.4.1'
+	dataFormatVersion = '4.4.2'
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.getFormattedResultFromSearchString)
