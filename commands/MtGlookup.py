@@ -20,7 +20,7 @@ from IrcMessage import IrcMessage
 class Command(CommandTemplate):
 	triggers = ['mtg', 'mtgf', 'mtgb', 'magic', 'mtglink']
 	helptext = "Looks up info on Magic: The Gathering cards. Provide a card name or regex to search for, or 'random' for a surprise. "
-	helptext += "Use 'search' with key-value attribute pairs for more control, see http://mtgjson.com/documentation.html#cards for available attributes. "
+	helptext += "Use 'search' with key-value attribute pairs for more control, see https://mtgjson.com/structures/card/ for available attributes. "
 	helptext += "'{commandPrefix}mtgf' adds the flavor text and sets to the output. '{commandPrefix}mtgb [setname]' opens a boosterpack. "
 	helptext += "'{commandPrefix}mtglink' returns links to the card on Gatherer and MagicCards.info"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
@@ -199,7 +199,7 @@ class Command(CommandTemplate):
 			searchDict = StringUtil.stringToDict(searchString.lower(), True)
 			if len(searchDict) == 0:
 				return (False, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
-							  "For a list of valid keys, see http://mtgjson.com/documentation.html#cards (though not all keys may be available)")
+							  "For a list of valid keys, see https://mtgjson.com/structures/card/ (though not all keys may be available)")
 		#Not a special search, just set the whole message as a 'name' search, since that's the most common search
 		elif searchString:
 			searchDict['name'] = searchString.lower()
@@ -1051,7 +1051,7 @@ class Command(CommandTemplate):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
 			versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': self.getLatestVersionNumber()[1], 'lastUpdateTime': time.time(), 'cardCount': numberOfCards}))
 
-		replytext = "MtG card database successfully updated (Changelog: http://mtgjson.com/changelog.html)"
+		replytext = "MtG card database successfully updated (Changelog: https://mtgjson.com/changelog/)"
 		if shouldUpdateDefinitions:
 			#Download the definitions too, and add them to the definitions we found in the card texts
 			success, downloadedDefinitions = self.downloadDefinitions(definitions)
