@@ -811,7 +811,7 @@ class Command(CommandTemplate):
 		definitions = []
 		#Lists of what to do with certain set keys
 		setKeysToKeep = ('block', 'boosterV3', 'cards', 'code', 'mtgoCode', 'name', 'releaseDate', 'type')
-		raritiesToRemove = ('checklist', 'double faced', 'draft-matters', 'foil', 'marketing', 'power nine', 'timeshifted purple', 'token')
+		raritiesToRemove = ('checklist', 'double faced', 'draft-matters', 'foil', 'marketing', 'power nine', 'timeshifted purple', 'token', 'Steamflogger Boss')
 		raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s', 'mythic rare': 'mythic'}  #Non-standard rarities are interpreted as regexes for type
 		rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls
 		#Lists of what to do with certain card keys
