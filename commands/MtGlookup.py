@@ -747,13 +747,19 @@ class Command(CommandTemplate):
 		return (True, extraInfo)
 
 	def getLatestVersionNumber(self):
+		versionRequest = None
 		try:
-			latestVersion = requests.get("http://mtgjson.com/json/version.json", timeout=10.0).text
+			versionRequest = requests.get("http://mtgjson.com/json/version.json", timeout=10.0)
+			latestVersionData = versionRequest.json()
 		except requests.exceptions.Timeout:
 			self.logError("[MTG] Fetching card version timed out")
 			return (False, "Fetching online card version took too long")
-		latestVersion = latestVersion.replace('"', '')  #Version is a quoted string, remove the quotes
-		return (True, latestVersion)
+		except ValueError:
+			self.logError("[MTG] Unable to parse downloaded version file, returned text is: " + versionRequest.text if versionRequest else "[not a request]")
+			return (False, "Unable to parse downloaded version file")
+		if 'version' not in latestVersionData:
+			return (False, "'version' field does not exist in downloaded version file, data is" + json.dumps(latestVersionData))
+		return (True, latestVersionData['version'])
 
 	@staticmethod
 	def doNeededFilesExist():
@@ -1048,8 +1054,12 @@ class Command(CommandTemplate):
 		os.remove(gamewideCardStoreFilename)
 
 		#Store the new version data
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
-			versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': self.getLatestVersionNumber()[1], 'lastUpdateTime': time.time(), 'cardCount': numberOfCards}))
+		getVersionSuccess, latestVersionNumber = self.getLatestVersionNumber()
+		if not getVersionSuccess:
+			self.logError("[MTG] Error when retrieving latest version number: " + latestVersionNumber)
+		else:
+			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
+				versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': latestVersionNumber, 'lastUpdateTime': time.time(), 'cardCount': numberOfCards}))
 
 		replytext = "MtG card database successfully updated (Changelog: https://mtgjson.com/changelog/)"
 		if shouldUpdateDefinitions:
