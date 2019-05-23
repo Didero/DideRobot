@@ -76,8 +76,8 @@ class Command(CommandTemplate):
 			return "Wow, that's some weird data. I don't know what to do with this, sorry. Try reformulating your query, or just try again and see what happens"
 
 		if xml.attrib['error'] != 'false':
-			replystring = "Sorry, an error occurred. Tell my owner(s) to check the error log"
-			self.logError("[Wolfram] An error occurred for the search query '{}'. Reply:".format(query, wolframResult[1]))
+			replystring = "Sorry, an error occurred. Tell my owner(s) to check the error log, maybe they can fix it. It could also be an error on WolframAlpha's side though"
+			self.logError("[Wolfram] An error occurred for the search query '{}'. Reply: {}".format(query, wolframResult[1]))
 		elif xml.attrib['success'] != 'true':
 			replystring = "No results found, sorry"
 			#Most likely no results were found. See if there are suggestions for search improvements
