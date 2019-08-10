@@ -135,7 +135,14 @@ class Command(CommandTemplate):
 		return sorted(availableTriggers)
 
 	@staticmethod
-	def getRandomLine(filename, filelocation=None):
+	def getLineFromFile(filename, filelocation=None, lineNumber=None):
+		"""
+		Gets a line from the provided file. If no line number is provided, a random line will be returned
+		:param filename: The name of the file to get the line from
+		:param filelocation: The path to the file. If it's empty or None, the default location will be prepended
+		:param lineNumber: If provided, the specified line will be retrieved from the file (line counts start at 0). If not specified, a random line is returned
+		:return: A line from the specified file, or an error message if the file is in an invalid location or doesn't exit
+		"""
 		if not filelocation:
 			filelocation = Command.filesLocation
 		elif not filelocation.startswith(GlobalStore.scriptfolder):
@@ -146,7 +153,10 @@ class Command(CommandTemplate):
 			#Trying to get out of the 'generators' folder
 			Command.logWarning("[Gen] User is trying to access files outside the 'generators' folder with filename '{}'".format(filename))
 			return "[Access error]"
-		line = FileUtil.getRandomLineFromFile(filepath)
+		if lineNumber and lineNumber >= 0:
+			line = FileUtil.getLineFromFile(filepath, lineNumber)
+		else:
+			line = FileUtil.getRandomLineFromFile(filepath)
 		if not line:
 			#The line function encountered an error, so it returned None
 			# Since we expect a string, provide an empty one
@@ -1258,14 +1268,16 @@ class GrammarCommands(object):
 		return (True, separator.join(random.sample(argumentList, numberOfOptionsToChoose)))
 
 	@staticmethod
-	@validateArguments(argumentCount=1)
+	@validateArguments(argumentCount=1, numericArgumentIndexes=1)
 	def command_file(argumentList, grammarDict, variableDict):
 		"""
-		<$file|filename>
-		Load a sentence from the specified file. Useful for not cluttering up the grammar file with a lot of options
+		<$file|filename[|lineNumber]>
+		Load a random line from the specified file. Useful for not cluttering up the grammar file with a lot of options
 		The file has to exists in the same directory the grammar file is in
+		If the line number parameter is specified, that specific line will be returned instead of a random line (line count starts at 0)
+		Specifying a line number is mainly useful for testing
 		"""
-		return (True, Command.getRandomLine(argumentList[0]))
+		return (True, Command.getLineFromFile(argumentList[0], lineNumber=None if len(argumentList) == 1 else argumentList[1]))
 
 
 	#Miscellaneous
