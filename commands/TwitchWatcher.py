@@ -165,8 +165,8 @@ class Command(CommandTemplate):
 			isSuccess, result = self.retrieveChannelInfo(streamername)
 			if not isSuccess:
 				return (False, result)
-			# No errors, got the streamer data. Store it
-			self.watchedStreamersData[streamername] = {'clientId': result['id'], 'hasBeenReportedLive': False, 'followChannels': [], 'reportChannels': []}
+			# No errors, got the streamer data. Store it (Store as reported live, so if added when they're live, it won't get auto-reported until the next time they go live)
+			self.watchedStreamersData[streamername] = {'clientId': result['id'], 'hasBeenReportedLive': True, 'followChannels': [], 'reportChannels': []}
 			# Update the convenience variable too since that's 'None' now
 			streamerdata = self.watchedStreamersData[streamername]
 
