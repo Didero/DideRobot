@@ -1242,6 +1242,22 @@ class GrammarCommands(object):
 		return (True, random.choice(argumentList))
 
 	@staticmethod
+	@validateArguments(argumentCount=3, numericArgumentIndexes=0)
+	def command_choosemultiple(argumentList, grammarDict, variableDict):
+		"""
+		<$choosemultiple|numberOfOptionsToChoose|separator|option1|option2|...>
+		Chooses the provided number of random options from the option list, and returns them in a random order,	with the provided separator between the options
+		"""
+		numberOfOptionsToChoose = argumentList.pop(0)
+		separator = argumentList.pop(0)
+		if numberOfOptionsToChoose <= 0 or numberOfOptionsToChoose >= len(argumentList):
+			#Invalid choice number, just shuffle the list and return that
+			random.shuffle(argumentList)
+			return (True, separator.join(argumentList))
+		#Number of options to choose is less than number of provided options, pick that number
+		return (True, separator.join(random.sample(argumentList, numberOfOptionsToChoose)))
+
+	@staticmethod
 	@validateArguments(argumentCount=1)
 	def command_file(argumentList, grammarDict, variableDict):
 		"""
