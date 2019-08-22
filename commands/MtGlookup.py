@@ -27,7 +27,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.4.2'
+	dataFormatVersion = '4.4.3'
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.getFormattedResultFromSearchString)
@@ -817,7 +817,7 @@ class Command(CommandTemplate):
 		definitions = []
 		#Lists of what to do with certain set keys
 		setKeysToKeep = ('block', 'boosterV3', 'cards', 'code', 'mtgoCode', 'name', 'releaseDate', 'type')
-		raritiesToRemove = ('checklist', 'double faced', 'draft-matters', 'foil', 'marketing', 'power nine', 'timeshifted purple', 'token', 'Steamflogger Boss')
+		raritiesToRemove = ('checklist', 'double faced', 'draft-matters', 'foil', 'full art print', 'marketing', 'power nine', 'timeshifted purple', 'token', 'Steamflogger Boss')
 		raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s', 'mythic rare': 'mythic'}  #Non-standard rarities are interpreted as regexes for type
 		rarityPrefixesToRemove = {'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls
 		#Lists of what to do with certain card keys
