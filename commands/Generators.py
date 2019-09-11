@@ -582,12 +582,12 @@ class Command(CommandTemplate):
 		names = []
 		for i in xrange(namecount):
 			# First get a last name
-			lastName = self.getRandomLine("LastNames.txt")
+			lastName = self.getLineFromFile("LastNames.txt")
 			#Get the right name for the provided gender
 			if genderDict['gender'] == 'f':
-				firstName = self.getRandomLine("FirstNamesFemale.txt")
+				firstName = self.getLineFromFile("FirstNamesFemale.txt")
 			else:
-				firstName = self.getRandomLine("FirstNamesMale.txt")
+				firstName = self.getLineFromFile("FirstNamesMale.txt")
 
 			#with a chance add a middle letter:
 			if (parameters and "addletter" in parameters) or random.randint(1, 100) <= 15:
