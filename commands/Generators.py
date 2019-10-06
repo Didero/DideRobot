@@ -15,13 +15,18 @@ postProcessorPrefix = u"&"
 
 class Command(CommandTemplate):
 	triggers = ['generate', 'gen']
-	helptext = "Generate random stories or words. Call a specific generator with '{commandPrefix}generate [genName]'. Enter 'random' to let me pick, or choose from: "
+	helptext = "Generate random stories or words. Reload generators with '{commandPrefix}generate reload'. Call a specific generator with '{commandPrefix}generate [genName]'. Enter 'random' to let me pick, or choose from: "
 	callInThread = True
 
 	generators = {}
 	filesLocation = os.path.join(GlobalStore.scriptfolder, "data", "generators")
 
 	def onLoad(self):
+		#Make the grammar parsing function available to other modules
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'parseGrammarDict', self.parseGrammarDict)
+		self.loadGenerators()
+
+	def loadGenerators(self):
 		#First fill the generators dict with a few built-in generators
 		self.generators = {self.generateName: 'name', self.generateVideogame: ('game', 'videogame'), self.generateWord: 'word', self.generateWord2: 'word2'}
 		#Go through all available .grammar files and store their 'triggers'
@@ -41,17 +46,13 @@ class Command(CommandTemplate):
 						triggers = [trigger.lower() for trigger in grammarJson['_triggers']]
 						#Store them so we know which grammar file to parse for which trigger(s)
 						self.generators[grammarFilename] = tuple(triggers)
-		#Add all the available triggers to the module's helptext
-		self.helptext += ", ".join(self.getAvailableTriggers())
 		self.logDebug("[Generators] Loaded {:,} generators".format(len(self.generators)))
 
-		#Make the grammar parsing function available to other modules
-		GlobalStore.commandhandler.addCommandFunction(__file__, 'parseGrammarDict', self.parseGrammarDict)
 
 	def getHelp(self, message):
 		#If there's no parameters provided, just show the generic module help text
 		if message.messagePartsLength <= 1:
-			return CommandTemplate.getHelp(self, message)
+			return CommandTemplate.getHelp(self, message) + ", ".join(self.getAvailableTriggers())
 		#Check if the parameter matches one of our generator triggers
 		requestedTrigger = message.messageParts[1].lower()
 		for generator, triggers in self.generators.iteritems():
@@ -87,6 +88,12 @@ class Command(CommandTemplate):
 		if len(self.generators) == 0:
 			return message.reply("That's weird, I don't seem to have any generators loaded, sorry. Try updating, reloading this module, or writing your own generator!", "say")
 
+		if message.messageParts[0].lower() == 'reload':
+			if 	not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
+				return message.reply("I'm sorry, only admins are allowed to make me reload my generators. Try asking one if my admins. Sorry!")
+			self.loadGenerators()
+			return message.reply("Ok, I reloaded all the generators from disk. I now have these {:,} generators loaded: {}".format(len(self.generators), ", ".join(self.getAvailableTriggers())))
+
 		wantedGeneratorName = message.messageParts[0].lower()
 		wantedGenerator = None
 
@@ -115,8 +122,8 @@ class Command(CommandTemplate):
 				path = os.path.join(self.filesLocation, wantedGenerator)
 				#Grammar file! First check if it still exists
 				if not os.path.isfile(path):
-					message.reply("Huh, that generator did exist last time I looked, but now it's... gone, for some reason. Please don't rename my files without telling me", "say")
-					return
+					self.loadGenerators()
+					return message.reply("Huh, that generator did exist last time I looked, but now it's... gone, for some reason. Please don't rename my files without telling me. I'll just refresh my generator list", "say")
 				#It exists! Send it to the parser
 				with open(path, "r") as grammarfile:
 					grammarDict = json.load(grammarfile)
