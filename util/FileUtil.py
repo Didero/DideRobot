@@ -62,3 +62,16 @@ def getAllLinesFromFile(filename):
 	#Get all the lines!
 	with codecs.open(filename, 'r', 'utf-8') as linesfile:
 		return linesfile.readlines()
+
+def deleteIfExists(filename):
+	"""
+	Deletes the provided file if it exists
+	:param filename:  The filename to delete
+	:return: True if the file existed and was removed, False if it didn't exist
+	"""
+	#Use try-except instead of 'os.exists' to prevent race conditions between the check and the delete
+	try:
+		os.remove(filename)
+		return True
+	except OSError:
+		return False
