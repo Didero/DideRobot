@@ -1028,11 +1028,6 @@ class Command(CommandTemplate):
 		os.remove(cardDatasetFilename)
 
 
-		#First delete the original files
-		if os.path.exists(cardStoreFilename):
-			os.remove(cardStoreFilename)
-		if os.path.exists(setStoreFilename):
-			os.remove(setStoreFilename)
 		#Save the new databases to disk
 		with open(setStoreFilename, 'w') as setsfile:
 			setsfile.write(json.dumps(setstore))
