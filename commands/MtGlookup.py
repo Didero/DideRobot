@@ -22,7 +22,7 @@ class Command(CommandTemplate):
 	helptext = "Looks up info on Magic: The Gathering cards. Provide a card name or regex to search for, or 'random' for a surprise. "
 	helptext += "Use 'search' with key-value attribute pairs for more control, see https://mtgjson.com/structures/card/ for available attributes. "
 	helptext += "'{commandPrefix}mtgf' adds the flavor text and sets to the output. '{commandPrefix}mtgb [setname]' opens a boosterpack. "
-	helptext += "'{commandPrefix}mtglink' returns links to the card on Gatherer and MagicCards.info"
+	helptext += "'{commandPrefix}mtglink' returns links to the card on Gatherer and ScryFall.com"
 	scheduledFunctionTime = 172800.0  #Every other day, since it doesn't update too often
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
