@@ -854,6 +854,9 @@ class Command(CommandTemplate):
 		# Write gamewide (so not set-specific) data to a temporary file (Like card text, CMC). This way we don't have to keep that in memory during the entire loop
 		# Keys will be lower()'ed cardnames, values will be a dict of the card's fields that are not variable between the sets the card is in
 		with zipfile.ZipFile(cardDatasetFilename, 'r') as setfilesZip, open(gamewideCardStoreFilename, 'w') as gamewideCardStoreFile:
+			#First check if the zip file contains enough info
+			if not setfilesZip.namelist():
+				self.logError("[MTG] Downloaded card data file is empty")
 			#Go through each file in the sets zip
 			for setfilename in setfilesZip.namelist():
 				# Keep numbers as strings, saves on converting them back later
@@ -1027,6 +1030,15 @@ class Command(CommandTemplate):
 		#Since we don't need the downloaded cardfile anymore now, delete it
 		os.remove(cardDatasetFilename)
 
+		#Check if we have data to save
+		if not newcardstore or not setstore:
+			self.logError("[MTG] No card or set data was retrieved, not updating the data files")
+			os.remove(gamewideCardStoreFilename)
+			if definitionsFile:
+				definitionsFile.close()
+				os.remove(definitionsTempFilename)
+			self.areCardfilesInUse = False
+			return (False, "I couldn't download or read the card data from MTGJSON, sorry. I'll just keep my old data for now")
 
 		#Save the new databases to disk
 		with open(setStoreFilename, 'w') as setsfile:
