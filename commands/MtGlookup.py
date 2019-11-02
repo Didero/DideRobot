@@ -768,7 +768,11 @@ class Command(CommandTemplate):
 	@staticmethod
 	def doNeededFilesExist():
 		for fn in ('cards', 'definitions', 'sets', 'version'):
-			if not os.path.isfile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTG{}.json'.format(fn))):
+			filename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTG{}.json'.format(fn))
+			if not os.path.isfile(filename):
+				return False
+			#Check if it isn't an empty file
+			if os.path.getsize(filename) == 0:
 				return False
 		return True
 
