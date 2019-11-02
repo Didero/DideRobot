@@ -738,7 +738,7 @@ class Command(CommandTemplate):
 		return (True, replytext)
 
 	def downloadCardDataset(self):
-		url = "http://mtgjson.com/json/AllSetFiles.zip"
+		url = "http://mtgjson.com/files/AllSetFiles.zip"
 		cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
 		success, extraInfo = WebUtil.downloadFile(url, cardzipFilename)
 		if not success:
