@@ -794,9 +794,11 @@ class Command(CommandTemplate):
 	def updateCardFile(self, shouldUpdateDefinitions=True):
 		starttime = time.time()
 		cardStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')
+		cardStoreTempFilename = cardStoreFilename + ".tmp"
 		gamewideCardStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards_gamewide.json')
 		setStoreFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json')
 		definitionsFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')
+		definitionsTempFilename = definitionsFilename + ".tmp"
 
 		#Inform everything that we're going to be changing the card files
 		self.areCardfilesInUse = True
@@ -851,7 +853,7 @@ class Command(CommandTemplate):
 		#Write each keyword we find to the definitions file so we don't have to keep it in memory
 		definitionsFile = None
 		if shouldUpdateDefinitions:
-			definitionsFile = open(definitionsFilename, 'w')
+			definitionsFile = open(definitionsTempFilename, 'w')
 
 		#Go through each file in the sets zip (Saves memory compared to downloading the single file with all the sets)
 		with zipfile.ZipFile(cardDatasetFilename, 'r') as setfilesZip:
@@ -1038,9 +1040,11 @@ class Command(CommandTemplate):
 			setsfile.write(json.dumps(setstore))
 		#We don't need the card info in memory anymore, hopefully this way the memory used get freed
 		del setstore
+
+		#Write the combined card data to file
+		# (Use a temporary intermediate file so we still have the data if something would go wrong)
 		numberOfCards = 0
-		with open(cardStoreFilename, 'w') as cardfile:
-			gamewideCardStoreFile = open(gamewideCardStoreFilename, 'r')
+		with open(gamewideCardStoreFilename, 'r') as gamewideCardStoreFile, open(cardStoreTempFilename, 'w') as cardfile:
 			#Go through each card's game-wide data and append the set-specific data to it
 			for line in gamewideCardStoreFile:
 				numberOfCards += 1
@@ -1048,7 +1052,8 @@ class Command(CommandTemplate):
 				#Write each card's as a separate JSON file so we can go through it line by line instead of having to load it all at once
 				cardfile.write(json.dumps({cardname: [gamewideCardData, newcardstore.pop(cardname)]}))
 				cardfile.write('\n')
-			gamewideCardStoreFile.close()
+		FileUtil.deleteIfExists(cardStoreFilename)  #Delete the file because Windows can't rename to an existing filename
+		os.rename(cardStoreTempFilename, cardStoreFilename)
 
 		#We don't need the temporary gamewide card data file anymore
 		os.remove(gamewideCardStoreFilename)
@@ -1062,7 +1067,7 @@ class Command(CommandTemplate):
 				versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': latestVersionNumber, 'lastUpdateTime': time.time(), 'cardCount': numberOfCards}))
 
 		replytext = "MtG card database successfully updated (Changelog: https://mtgjson.com/changelog/)"
-		if shouldUpdateDefinitions:
+		if shouldUpdateDefinitions and definitionsFile:
 			#Download the definitions too, and add them to the definitions we found in the card texts
 			success, downloadedDefinitions = self.downloadDefinitions(definitions)
 			if success:
@@ -1073,6 +1078,9 @@ class Command(CommandTemplate):
 			for term, definition in downloadedDefinitions.iteritems():
 				definitionsFile.write(json.dumps({term: definition}))
 				definitionsFile.write('\n')
+			definitionsFile.close()
+			FileUtil.deleteIfExists(definitionsFilename)
+			os.rename(definitionsTempFilename, definitionsFilename)
 			#And (try to) clean up the memory used
 			del definitions
 			del downloadedDefinitions
