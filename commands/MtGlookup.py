@@ -162,6 +162,8 @@ class Command(CommandTemplate):
 			#Just pick a random card from all available ones
 			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')) as versionfile:
 				linecount = json.load(versionfile)['cardCount']
+			if linecount <= 0:
+				return (False, "I don't seem to know how many cards I have, that's weird... Tell my owner(s), they should help me with updating")
 			randomLineNumber = random.randint(1, linecount) - 1 # minus 1 because getLineFromFile() starts at 0
 			card = json.loads(FileUtil.getLineFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), randomLineNumber))
 			cardname, carddata = card.popitem()
