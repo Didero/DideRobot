@@ -600,6 +600,8 @@ class Command(CommandTemplate):
 		#First check if the message is a valid setname
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
 			setdata = json.load(setsfile)
+		if not setdata:
+			return (False, "That's weird, I should have set data, but this file is just... empty. Tell my owner(s), something's probably broken, maybe they can fix it")
 		if askedSetname == 'random':
 			properSetname = random.choice(setdata['_setsWithBoosterpacks'])
 		elif askedSetname in setdata:
