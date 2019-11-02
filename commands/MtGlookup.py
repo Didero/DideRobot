@@ -1024,6 +1024,9 @@ class Command(CommandTemplate):
 				#Don't hog the execution thread for too long, give it up after each set
 				gevent.idle()
 
+		#Since we don't need the downloaded cardfile anymore now, delete it
+		os.remove(cardDatasetFilename)
+
 
 		#First delete the original files
 		if os.path.exists(cardStoreFilename):
@@ -1079,9 +1082,6 @@ class Command(CommandTemplate):
 			#And (try to) clean up the memory used
 			del definitions
 			del downloadedDefinitions
-
-		#Since we don't need the cardfile anymore now, delete it
-		os.remove(cardDatasetFilename)
 
 		#Updating apparently uses up RAM that Python doesn't clear up soon or properly. Force it to
 		re.purge()
