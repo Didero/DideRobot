@@ -845,18 +845,15 @@ class Command(CommandTemplate):
 			text = re.sub(r' {2,}', ' ', text).strip()
 			return text
 
-		#Reference to a temporary file where we will store gamewide JSON-parsed card info (Like card text, CMC)
-		# This way we don't have to keep that in memory during the entire loop
-		# Keys will be lower()'ed cardnames, values will be a dict of the card's fields that are true regardless of the set the card is in
-		gamewideCardStoreFile = open(gamewideCardStoreFilename, 'w')
-
 		#Write each keyword we find to the definitions file so we don't have to keep it in memory
 		definitionsFile = None
 		if shouldUpdateDefinitions:
 			definitionsFile = open(definitionsTempFilename, 'w')
 
 		#Go through each file in the sets zip (Saves memory compared to downloading the single file with all the sets)
-		with zipfile.ZipFile(cardDatasetFilename, 'r') as setfilesZip:
+		# Write gamewide (so not set-specific) data to a temporary file (Like card text, CMC). This way we don't have to keep that in memory during the entire loop
+		# Keys will be lower()'ed cardnames, values will be a dict of the card's fields that are not variable between the sets the card is in
+		with zipfile.ZipFile(cardDatasetFilename, 'r') as setfilesZip, open(gamewideCardStoreFilename, 'w') as gamewideCardStoreFile:
 			#Go through each file in the sets zip
 			for setfilename in setfilesZip.namelist():
 				# Keep numbers as strings, saves on converting them back later
@@ -1027,8 +1024,6 @@ class Command(CommandTemplate):
 				#Don't hog the execution thread for too long, give it up after each set
 				gevent.idle()
 
-		#Make sure all the data is flushed to disk
-		gamewideCardStoreFile.close()
 
 		#First delete the original files
 		if os.path.exists(cardStoreFilename):
