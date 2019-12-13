@@ -1,0 +1,20 @@
+{
+"_name": "Spaceship Name Generator",
+"_description": "Generates a spaceship name. Provide a number to generate multiple names (Max 10). Or provide your own name with one or more underscores somewhere, and those underscores will get replaced by generated names",
+"_triggers": ["spaceship"],
+"start": "<$hasparams|<$isnumber|%_params|<$ifsmallerorequal|%_params|10|<$repeat|%_params|<name>|, >|<name>>|<nameFromParamsIfUnderscore>>|<name>>",
+"name": "<optionalIdentifierPrefix><mainPart><optionalSuffix>",
+"nameFromParamsIfUnderscore": "<$ifcontains|%_params|_|<nameFromParams>|<name>>",
+"nameFromParams": "<optionalIdentifierPrefix><$regexreplace|%_params|_+|<mainPart>><optionalSuffix>",
+"optionalIdentifierPrefix": {"75": "<identifierPrefix> ", "100": ""},
+"identifierPrefix": ["HMS", "MSV", "PSC", "RSV", "TSF", "UNSC", "USG"],
+"mainPart": {"5": "<fullName>", "100": "<generatedName>"},
+"fullName": ["Abraham", "Alexandria", "Carry A Big Stick", "Come Out And Play", "Cromwell", "Defy All Expectations", "Earthly Delights", "Elizabeth", "Insert Name Here", "Parents' Pride", "Perchance To Dream", "Pick Up The Gauntlet",  "Solar Plexus", "Stalwart", "Throw Down The Gauntlet", "Trust Issues", "Walk Softly", "Wish Upon A Star"],
+"generatedName": {"15": "<noun>", "30": "<noun> <noun>", "100": "<adjective> <noun>"},
+"adjective": ["Astral", "Belligerent", "Blazing", "Burning", "Celestial", "Defiant", "Doomed", "Enchanted", "Fearless", "Furious", "Glorious", "Golden", "Grim", "Hard", "Honest", "Immortal", "Iron", "New", "Jeweled", "Painted", "Platinum", "Red", "Rusty", "Shining", "Solar", "Stalwart", "Starlit", "Steeled", "Stellar", "Sterling", "The", "United", "Winged", "Yellow"],
+"noun": ["Adventure", "Bargain", "Blaster", "Crusader", "Dealing", "Defiance", "Dragoon", "Drake", "Echo", "Empress", "Endeavor", "Expectations", "Falcon", "Freedom", "Future", "Ghost", "Hawk", "Horizon", "Jewel", "Kite", "Lightning", "Longsword", "Maelstrom", "Minotaur", "Omen", "Phoenix", "Pilgrim", "Pioneer", "Pride", "Rainbow", "Raven", "Roc", "Rose", "Seeker", "Shepherd", "Stardust", "Starling", "Talon", "Theory", "Vagabond", "Victory", "Voyage", "Warning", "Wolf"],
+"optionalSuffix": {"20": " <versionPrefix> <versionValue>", "10": " <versionValue>", "100": ""},
+"versionPrefix": ["Mark", "Edition", "Version"],
+"versionValue": "<$randint|1|13|&storeas:version,hide><$choose|%version|<$toRomanNumeral|%version>>",
+"$toRomanNumeral": "<$switch|%1|1:I|2:II|3:III|4:IV|5:V|6:VI|7:VII|8:VIII|9:IX|10:X|11:XI|12:XII|13:XIII|_default:%1>"
+}
