@@ -353,7 +353,7 @@ class Command(CommandTemplate):
 		#Store that string inside the variableDict under the key '_params', makes lookup and checking easier
 		if parameters:
 			variableDict[u'_params'] = " ".join(parameters).decode("utf-8", errors="replace")
-			variableDict[u'_params'] = variableDict[u'_params'].replace(u"/", u"//").replace(u"<", u"/<")
+			variableDict[u'_params'] = variableDict[u'_params'].replace(u"/", u"//").replace(u"<", u"/<").replace(u">", u"/>")
 
 		#Make sure the input string is Unicode, since that's what we expect
 		if not isinstance(grammarString, unicode):
