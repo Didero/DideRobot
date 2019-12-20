@@ -3,6 +3,7 @@ import importlib, json, logging, os
 import gevent
 
 import GlobalStore
+from CommandException import CommandException
 from IrcMessage import IrcMessage
 
 
@@ -99,9 +100,18 @@ class CommandHandler:
 		try:
 			self.commands[commandname].execute(message)
 		except Exception as e:
-			message.reply("Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it", "say")
-			message.bot.messageLogger.log("ERROR executing '{}': {}".format(commandname, str(e)), message.source)
-			self.logger.error("Exception thrown while handling command '{}' and message '{}'".format(commandname, message.rawText), exc_info=True)
+			displayMessage = "Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it"
+			shouldLogStacktrace = True
+			# Check if it's a special Command Exception, which should have a more specific display error
+			# And It should have logged more extensive information if available, so we don't need a stacktrace here
+			if isinstance(e, CommandException):
+				shouldLogStacktrace = False
+				if e.displayMessage:
+					displayMessage = e.displayMessage
+
+			# Show the user the (custom or generic) error message, and log the error to the program log
+			message.reply(displayMessage, "say")
+			self.logger.error("{} exception thrown while handling command '{}' and message '{}': {}".format(type(e).__name__, commandname, message.rawText, str(e)), exc_info=shouldLogStacktrace)
 
 	@staticmethod
 	def isCommandAllowedForBot(bot, commandname):
