@@ -911,6 +911,16 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
+	def command_storeas(argumentList, grammarDict, variableDict):
+		"""
+		<$storeas|varname|value>
+		Stores a value under the provided name, for future use. An alias for 'setvar'
+		"""
+		return GrammarCommands.command_setvar(argumentList, grammarDict, variableDict)
+
+
+	@staticmethod
+	@validateArguments(argumentCount=2)
 	def command_setvarrandom(argumentList, grammarDict, variableDict):
 		"""
 		<$setvarrandom|varname|value1|value2|value3>
