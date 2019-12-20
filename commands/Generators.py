@@ -6,6 +6,7 @@ from util import FileUtil
 from util import IrcFormattingUtil
 from util import StringUtil
 import GlobalStore
+from CommandException import CommandException
 
 
 fieldCommandPrefix = u"$"
@@ -81,7 +82,6 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-
 		if message.messagePartsLength == 0 or message.messageParts[0].lower() == 'help':
 			return message.reply(self.getHelp(message))
 
@@ -127,7 +127,10 @@ class Command(CommandTemplate):
 				#It exists! Send it to the parser
 				with open(path, "r") as grammarfile:
 					grammarDict = json.load(grammarfile)
-					message.reply(self.parseGrammarDict(grammarDict, parameters=parameters))
+					try:
+						message.reply(self.parseGrammarDict(grammarDict, parameters=parameters))
+					except GrammarException as e:
+						raise CommandException(e.errorMessage)
 			else:
 				#Function! Just call it, with the message so it can figure it out from there itself
 				message.reply(wantedGenerator(parameters))
@@ -316,7 +319,7 @@ class Command(CommandTemplate):
 			startString = u"<start>"
 		else:
 			self.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
-			return u"Error: No 'start' field found!"
+			raise GrammarException(u"Error: No 'start' field found!")
 
 		#Parse any options specified
 		if u'_options' in grammarDict:
@@ -389,10 +392,7 @@ class Command(CommandTemplate):
 					grammarParts.append(u"")
 				elif nestedBracketLevel == 1 and character == u">":
 					#We found the end of the grammar block. Have it parsed
-					success, parsedGrammarBlock = self.parseGrammarBlock(grammarParts, grammar, variableDict)
-					if not success:
-						#If something went wrong, it returned an error message. Stop parsing and report that error
-						return u"Error: " + parsedGrammarBlock
+					parsedGrammarBlock = self.parseGrammarBlock(grammarParts, grammar, variableDict)
 					#Everything went fine, replace the grammar block with the output
 					outputString = outputString[:startIndex] + parsedGrammarBlock + outputString[index + 1:]
 					#Done with this parsing loop, start a new one! (break out of the for-loop to start a new while-loop iteration)
@@ -415,7 +415,7 @@ class Command(CommandTemplate):
 				break
 		else:
 			#We reached the loop limit, so there's probably an infinite loop. Report that
-			self.logWarning(u"[Gen] Grammar '{}' has an infinite loop in line '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
+			self.logWarning(u"[Gen] Grammar '{}' reached the parse loop limit while parsing string '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
 			return u"Error: Loop limit reached, there's probably an infinite loop in the grammar file"
 
 		#Unescape escaped characters so they display properly
@@ -455,14 +455,10 @@ class Command(CommandTemplate):
 			#Otherwise let the Commands class handle it
 			else:
 				#Have the GrammarCommands class try and execute the provided command name
-				isSuccess, replacement = GrammarCommands.runCommand(fieldKey[len(fieldCommandPrefix):], grammarBlockParts, grammar, variableDict)
-				# If something went wrong, stop now. The replacement string should be an error message, pass that along too
-				if not isSuccess:
-					return (False, replacement)
-				#Otherwise everything went fine, and the replacement string is set properly
+				replacement = GrammarCommands.runCommand(fieldKey[len(fieldCommandPrefix):], grammarBlockParts, grammar, variableDict)
 		# No command, so check if it's a valid key
 		elif fieldKey not in grammar:
-			return (False, u"Field '{}' not found in grammar file!".format(fieldKey))
+			raise GrammarException(u"Field '{}' not found in grammar file".format(fieldKey))
 		# All's well, fill it in
 		else:
 			if isinstance(grammar[fieldKey], list):
@@ -485,7 +481,7 @@ class Command(CommandTemplate):
 									grammar.get('_name', "[unknown]"), fieldKey, chanceDictKey))
 							else:
 								grammar[fieldKey][chanceDictKeyAsInt] = value
-						except ValueError as e:
+						except ValueError:
 							#Show a warning about a non-int key in a chance dict. Not an error, since we can just ignore it and move on
 							self.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains non-numeric key '{}', which isn't supported. Ignoring it".format(grammar.get('_name', "[unknown]"), fieldKey, chanceDictKey))
 					#Store that we converted the chance dict
@@ -502,7 +498,7 @@ class Command(CommandTemplate):
 				# If it's a string (either the string class or the unicode class), just dump it in
 				replacement = grammar[fieldKey]
 			else:
-				return (False, u"No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey))
+				raise GrammarException(u"No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey))
 
 		# Process the possible extra options that can be provided, in the specified order
 		for option in extraOptions:
@@ -523,7 +519,7 @@ class Command(CommandTemplate):
 				#Store the replacement under the provided variable name
 				# (format 'storeas:[varname]')
 				if u':' not in option:
-					return (False, u"Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarBlockParts), u",".join(extraOptions)))
+					raise GrammarException(u"Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarBlockParts), u",".join(extraOptions)))
 				varname = option.split(u':', 1)[1]
 				variableDict[varname] = replacement
 			elif option == u'numbertotext':
@@ -531,7 +527,7 @@ class Command(CommandTemplate):
 				try:
 					replacement = Command.numberToText(int(replacement))
 				except ValueError:
-					return (False, u"Asked to convert '{}' to a number with 'numberasword' option, but it isn't one")
+					raise GrammarException(u"Asked to convert '{}' to a number with 'numberasword' option, but it isn't one")
 			elif option == u"hide":
 				#Completely hides the replacement text. Useful in combination with 'storeas', if you don't want to store but not display the output
 				replacement = u""
@@ -556,7 +552,7 @@ class Command(CommandTemplate):
 			replacement = unicode(replacement)
 
 		#Done!
-		return (True, replacement)
+		return replacement
 
 	def generateName(self, parameters=None):
 		"""
@@ -852,12 +848,12 @@ class GrammarCommands(object):
 		command = getattr(GrammarCommands, 'command_' + commandName.lower(), None)
 		#First check if the requested command exists
 		if not command:
-			return (False, u"Unknown command '{}' called".format(commandName))
+			raise GrammarException(u"Unknown command '{}' called".format(commandName))
 		#Get the settings for the method
 		requiredArgumentCount, numericArgIndexes = grammarCommandOptions.get(command, (0, None))
 		#Check if enough arguments were passed, if not, return an error
 		if len(argumentList) < requiredArgumentCount:
-			return (False, GrammarCommands._constructNotEnoughParametersErrorMessage(command, requiredArgumentCount, len(argumentList)))
+			raise GrammarException(GrammarCommands._constructNotEnoughParametersErrorMessage(command, requiredArgumentCount, len(argumentList)))
 		#Check each arg for certain settings
 		for argIndex in xrange(len(argumentList)):
 			#Check if the arg start with the variables prefix, in which case it should be replaced by that variable's value
@@ -869,19 +865,19 @@ class GrammarCommands(object):
 					varname, argumentSuffix = varname.split(u':', 1)
 					argumentSuffix = u':' + argumentSuffix
 				if varname not in variableDict:
-					return (False, u"Field '{}' references variable name '{}', but that isn't set".format(commandName, varname))
+					raise GrammarException(u"Field '{}' references variable name '{}', but that isn't set".format(commandName, varname))
 				argumentList[argIndex] = u"{}{}".format(variableDict[varname], argumentSuffix)
 			#If the arg is in the 'numericalArg' list, (try to) convert it to a number
 			if numericArgIndexes and argIndex in numericArgIndexes:
 				try:
 					argumentList[argIndex] = int(argumentList[argIndex], 10)
-				except ValueError as e:
-					return (False, u"Argument '{}' (index {}) of command '{}' should be numeric, but couldn't get properly converted to a number".format(argumentList[argIndex], argIndex, commandName))
+				except ValueError:
+					raise GrammarException(u"Argument '{}' (index {}) of command '{}' should be numeric, but couldn't get properly converted to a number".format(argumentList[argIndex], argIndex, commandName))
 		#All checks passed, call the command
 		try:
 			return command(argumentList, grammarDict, variableDict)
 		except Exception as e:
-			return (False, u"Something went wrong when executing the '{}' command ({})".format(commandName, e.message))
+			raise GrammarException(u"Something went wrong when executing the '{}' command ({})".format(commandName, e.message))
 
 	#Shared internal methods
 	@staticmethod
@@ -907,7 +903,7 @@ class GrammarCommands(object):
 		Stores a value under the provided name, for future use
 		"""
 		variableDict[argumentList[0]] = argumentList[1]
-		return (True, u"")
+		return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
@@ -927,7 +923,7 @@ class GrammarCommands(object):
 		Picks one of the provided values at random, and stores it under the provided name, for future use
 		"""
 		variableDict[argumentList[0]] = random.choice(argumentList[1:])
-		return (True, u"")
+		return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=3)
@@ -937,9 +933,9 @@ class GrammarCommands(object):
 		Checks if the variable with the provided name exists. Returns the first string if it does, and the second one if it doesn't
 		"""
 		if argumentList[0] in variableDict:
-			return (True, argumentList[1])
+			return argumentList[1]
 		else:
-			return (True, argumentList[2])
+			return argumentList[2]
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -950,14 +946,14 @@ class GrammarCommands(object):
 		"""
 		# Check if the named variable was stored
 		if argumentList[0] in variableDict:
-			return (True, variableDict[argumentList[0]])
+			return variableDict[argumentList[0]]
 		else:
 			# If a second parameter was passed, use it as a fallback value
 			if len(argumentList) > 1:
-				return (True, argumentList[1])
+				return argumentList[1]
 			# Otherwise, throw an error
 			else:
-				return (False, u"Referenced undefined variable '{}' in 'var' call".format(argumentList[0]))
+				raise GrammarException(u"Referenced undefined variable '{}' in 'var' call".format(argumentList[0]))
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
@@ -972,7 +968,7 @@ class GrammarCommands(object):
 			variableDict[argumentList[0]] = argumentList[1]
 		else:
 			variableDict[argumentList[0]] = argumentList[1] + variableDict[argumentList[0]]
-		return (True, u"")
+		return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
@@ -987,7 +983,7 @@ class GrammarCommands(object):
 			variableDict[argumentList[0]] = argumentList[1]
 		else:
 			variableDict[argumentList[0]] += argumentList[1]
-		return (True, u"")
+		return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -998,7 +994,7 @@ class GrammarCommands(object):
 		"""
 		if argumentList[0] in variableDict:
 			del variableDict[argumentList[0]]
-		return (True, u"")
+		return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -1020,9 +1016,9 @@ class GrammarCommands(object):
 		"""
 		#Check if the variable exists and is set to the requested value
 		if argumentList[0] == argumentList[1]:
-			return (True, argumentList[2])
+			return argumentList[2]
 		else:
-			return (True, argumentList[3])
+			return argumentList[3]
 
 	@staticmethod
 	@validateArguments(argumentCount=4)
@@ -1042,9 +1038,9 @@ class GrammarCommands(object):
 		"""
 		#Check if the provided variable exists and if it contains the provided string
 		if argumentList[1] in argumentList[0]:
-			return (True, argumentList[2])
+			return argumentList[2]
 		else:
-			return (True, argumentList[3])
+			return argumentList[3]
 
 	@staticmethod
 	@validateArguments(argumentCount=4)
@@ -1062,11 +1058,11 @@ class GrammarCommands(object):
 		regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=regexFlags)
 		try:
 			if re.search(regex, argumentList[0]):
-				return (True, argumentList[2])
+				return argumentList[2]
 			else:
-				return (True, argumentList[3])
+				return argumentList[3]
 		except re.error as e:
-			return (False, u"Invalid regex '{}' in 'ifmatch' call ({})".format(argumentList[1], e.message))
+			raise GrammarException(u"Invalid regex '{}' in 'ifmatch' call ({})".format(argumentList[1], e.message))
 
 	#Numeric functions
 	@staticmethod
@@ -1079,9 +1075,9 @@ class GrammarCommands(object):
 		"""
 		try:
 			int(argumentList[0], 10)
-			return (True, argumentList[1])
+			return argumentList[1]
 		except ValueError:
-			return (True, argumentList[2])
+			return argumentList[2]
 
 
 	@staticmethod
@@ -1092,9 +1088,9 @@ class GrammarCommands(object):
 		Returns the first result if the first value is smaller than the second value, and the second result if the first value is equal to or larger than the second value
 		"""
 		if argumentList[0] < argumentList[1]:
-			return (True, argumentList[2])
+			return argumentList[2]
 		else:
-			return (True, argumentList[3])
+			return argumentList[3]
 
 	@staticmethod
 	@validateArguments(argumentCount=4, numericArgumentIndexes=(0, 1))
@@ -1104,9 +1100,9 @@ class GrammarCommands(object):
 		Returns the first result if the first value is smaller than or equal to the second value, and the second result if the first value is larger than the second value
 		"""
 		if argumentList[0] <= argumentList[1]:
-			return (True, argumentList[2])
+			return argumentList[2]
 		else:
-			return (True, argumentList[3])
+			return argumentList[3]
 
 	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=(0, 1))
@@ -1116,7 +1112,7 @@ class GrammarCommands(object):
 		Increases the provided number. If the 'increaseAmount' is specified, numberToIncrease is increased by that amount, otherwise 1 is added
 		"""
 		increaseAmount = 1 if len(argumentList) <= 1 else argumentList[1]
-		return (True, argumentList[0] + increaseAmount)
+		return argumentList[0] + increaseAmount
 
 	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=(0, 1))
@@ -1126,7 +1122,7 @@ class GrammarCommands(object):
 		Decreases the provided number. If the 'decreaseAmount' is specified, numberToDecrease is decreased by that amount, otherwise 1 is subtracted
 		"""
 		decreaseAmount = 1 if len(argumentList) <= 1 else argumentList[1]
-		return (True, argumentList[0] - decreaseAmount)
+		return argumentList[0] - decreaseAmount
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
@@ -1139,16 +1135,16 @@ class GrammarCommands(object):
 		caseDict = {}
 		for caseString in argumentList[1:]:
 			if u":" not in caseString:
-				return (False, u"Missing colon in parameter '{}' to 'switch' command".format(caseString))
+				raise GrammarException(u"Missing colon in parameter '{}' to 'switch' command".format(caseString))
 			case, stringIfCase = caseString.split(u':', 1)
 			caseDict[case] = stringIfCase
 		#Then see if we can find a matching case
 		if argumentList[0] in caseDict:
-			return (True, caseDict[argumentList[0]])
+			return caseDict[argumentList[0]]
 		elif u'_default' in caseDict:
-			return (True, caseDict[u'_default'])
+			return caseDict[u'_default']
 		else:
-			return (False, u"'switch' command contains no case for '{}', and no '_default' fallback case".format(argumentList[0]))
+			raise GrammarException(u"'switch' command contains no case for '{}', and no '_default' fallback case".format(argumentList[0]))
 
 	#Parameter functions
 	@staticmethod
@@ -1159,9 +1155,9 @@ class GrammarCommands(object):
 		Checks if there are any parameters provided. Returns the first string if any parameters exist, and the second one if not
 		"""
 		if variableDict.get(u'_params', None):
-			return (True, argumentList[0])
+			return argumentList[0]
 		else:
-			return (True, argumentList[1])
+			return argumentList[1]
 
 	@staticmethod
 	@validateArguments(argumentCount=3)
@@ -1172,9 +1168,9 @@ class GrammarCommands(object):
 		If no parameter string was provided, the 'doesn't match' string is returned
 		"""
 		if u'_params' in variableDict and argumentList[0] == variableDict[u'_params']:
-			return (True, argumentList[1])
+			return argumentList[1]
 		else:
-			return (True, argumentList[2])
+			return argumentList[2]
 
 	@staticmethod
 	@validateArguments(argumentCount=3)
@@ -1194,7 +1190,7 @@ class GrammarCommands(object):
 		Returns the user-provided parameter string, or an empty string if no parameter string was provided
 		"""
 		# Fill in the provided parameter(s) in this field
-		return (True, variableDict.get(u'_params', u""))
+		return variableDict.get(u'_params', u"")
 
 	#Random choices
 	@staticmethod
@@ -1208,7 +1204,7 @@ class GrammarCommands(object):
 			value = random.randint(argumentList[1], argumentList[0])
 		else:
 			value = random.randint(argumentList[0], argumentList[1])
-		return (True, unicode(str(value), 'utf-8'))
+		return unicode(str(value), 'utf-8')
 
 	@staticmethod
 	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1, 2, 3))
@@ -1221,25 +1217,25 @@ class GrammarCommands(object):
 		The third and fourth arguments are optional
 		"""
 		if argumentList[0] <= 0 or argumentList[1] <= 0:
-			return (False, u"Dice command can't handle negative values or zero")
+			raise GrammarException(u"Dice command can't handle negative values or zero")
 		diceLimit = 1000
 		sidesLimit = 10**9
 		if argumentList[0] > diceLimit or argumentList[1] > sidesLimit:
-			return (False, u"Dice count shouldn't be higher than {:,} and sides count shouldn't be higher than {:,}".format(diceLimit, sidesLimit))
+			raise GrammarException(u"Dice count shouldn't be higher than {:,} and sides count shouldn't be higher than {:,}".format(diceLimit, sidesLimit))
 
 		#Check if we need to remove some highest or lowest values later
 		lowestRollsToRemove = 0
 		highestRollsToRemove = 0
 		if len(argumentList) > 2:
 			if argumentList[2] <= 0 or argumentList[2] >= argumentList[0]:
-				return (False, u"Invalid number for lowestRollsToRemove parameter, it's not allowed to be lower than 0 or equal to or larger than the number of rolls")
+				raise GrammarException(u"Invalid number for lowestRollsToRemove parameter, it's not allowed to be lower than 0 or equal to or larger than the number of rolls")
 			lowestRollsToRemove = argumentList[2]
 			if len(argumentList) > 3:
 				if argumentList[3] <= 0 or argumentList[3] >= argumentList[0]:
-					return (False, u"Invalid number for highestRollsToRemove parameter, it's not allowed to be lower than 0 or equal to or larger than the number of rolls")
+					raise GrammarException(u"Invalid number for highestRollsToRemove parameter, it's not allowed to be lower than 0 or equal to or larger than the number of rolls")
 				highestRollsToRemove = argumentList[3]
 				if lowestRollsToRemove + highestRollsToRemove >= argumentList[0]:
-					return (False, u"Lowest and highest rolls to remove are equal to or larger than the total number of rolls")
+					raise GrammarException(u"Lowest and highest rolls to remove are equal to or larger than the total number of rolls")
 
 		#Roll the dice!
 		rolls = []
@@ -1257,7 +1253,7 @@ class GrammarCommands(object):
 		total = 0
 		for roll in rolls:
 			total += roll
-		return (True, total)
+		return total
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -1266,7 +1262,7 @@ class GrammarCommands(object):
 		<$choose|option1|option2|...>
 		Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for each of them
 		"""
-		return (True, random.choice(argumentList))
+		return random.choice(argumentList)
 
 	@staticmethod
 	@validateArguments(argumentCount=3, numericArgumentIndexes=0)
@@ -1280,9 +1276,9 @@ class GrammarCommands(object):
 		if numberOfOptionsToChoose <= 0 or numberOfOptionsToChoose >= len(argumentList):
 			#Invalid choice number, just shuffle the list and return that
 			random.shuffle(argumentList)
-			return (True, separator.join(argumentList))
+			return separator.join(argumentList)
 		#Number of options to choose is less than number of provided options, pick that number
-		return (True, separator.join(random.sample(argumentList, numberOfOptionsToChoose)))
+		return separator.join(random.sample(argumentList, numberOfOptionsToChoose))
 
 	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=1)
@@ -1294,7 +1290,7 @@ class GrammarCommands(object):
 		If the line number parameter is specified, that specific line will be returned instead of a random line (line count starts at 0)
 		Specifying a line number is mainly useful for testing
 		"""
-		return (True, Command.getLineFromFile(argumentList[0], lineNumber=None if len(argumentList) == 1 else argumentList[1]))
+		return Command.getLineFromFile(argumentList[0], lineNumber=None if len(argumentList) == 1 else argumentList[1])
 
 
 	#Miscellaneous
@@ -1311,9 +1307,9 @@ class GrammarCommands(object):
 		if len(argumentList) >= 4:
 			replacementCount = argumentList[3]
 			if replacementCount <= 0:
-				return (False, u"Invalid optional replacement count value '{}' passed to 'replace' call".format(argumentList[3]))
+				raise GrammarException(u"Invalid optional replacement count value '{}' passed to 'replace' call".format(argumentList[3]))
 		#Now replace what we need to replace
-		return (True, argumentList[0].replace(argumentList[1], argumentList[2], replacementCount))
+		return argumentList[0].replace(argumentList[1], argumentList[2], replacementCount)
 
 	@staticmethod
 	@validateArguments(argumentCount=3, numericArgumentIndexes=(3,))
@@ -1328,13 +1324,13 @@ class GrammarCommands(object):
 		if len(argumentList) >= 4:
 			replacementCount = argumentList[3]
 			if replacementCount <= 0:
-				return (False, u"Invalid optional replacement count value '{}' passed to 'regexreplace' call".format(argumentList[3]))
+				raise GrammarException(u"Invalid optional replacement count value '{}' passed to 'regexreplace' call".format(argumentList[3]))
 		try:
 			# Unescape any characters inside the regex (like < and |)
 			regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
-			return (True, re.sub(regex, argumentList[2], argumentList[0], count=replacementCount))
+			return re.sub(regex, argumentList[2], argumentList[0], count=replacementCount)
 		except re.error as e:
-			return (False, u"Unable to parse regular expression '{}' in 'regexreplace' call ({})".format(argumentList[1], e.message))
+			raise GrammarException(u"Unable to parse regular expression '{}' in 'regexreplace' call ({})".format(argumentList[1], e.message))
 
 	@staticmethod
 	@validateArguments(argumentCount=2, numericArgumentIndexes=0)
@@ -1346,7 +1342,7 @@ class GrammarCommands(object):
 		"""
 		#If there's nothing to repeat, stop immediately
 		if argumentList[0] <= 0:
-			return (True, u"")
+			return u""
 		#Check if there's something to put between the repeated string
 		joinString = None
 		if len(argumentList) > 2:
@@ -1358,7 +1354,7 @@ class GrammarCommands(object):
 				resultString += joinString
 			resultString += argumentList[1]
 		#Done!
-		return (True, resultString)
+		return resultString
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -1368,7 +1364,7 @@ class GrammarCommands(object):
 		Runs a shared command in another bot module. The first parameter is the name of that command, the rest are unnamed and named parameters to pass on, and are all optional
 		"""
 		if not GlobalStore.commandhandler.hasCommandFunction(argumentList[0]):
-			return (False, u"Unknown module command '{}'".format(argumentList[0]))
+			raise GrammarException(u"Unknown module command '{}'".format(argumentList[0]))
 		# Turn the arguments into something we can call a function with
 		commandArguments = []
 		keywordCommandArguments = {}
@@ -1392,6 +1388,12 @@ class GrammarCommands(object):
 		elif isinstance(moduleCommandResult, dict):
 			StringUtil.dictToString(moduleCommandResult)
 		else:
-			return (False, u"Module command '{}' returned non-text object".format(argumentList[0]))
+			raise GrammarException(u"Module command '{}' returned non-text object".format(argumentList[0]))
 		#Everything parsed and converted fine
-		return (True, moduleCommandResult)
+		return moduleCommandResult
+
+
+class GrammarException(Exception):
+	def __init__(self, errorMessage):
+		self.errorMessage = errorMessage if errorMessage else u"Something went wrong with executing a grammar command"
+
