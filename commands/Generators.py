@@ -531,6 +531,8 @@ class Command(CommandTemplate):
 			elif option == u"hide":
 				#Completely hides the replacement text. Useful in combination with 'storeas', if you don't want to store but not display the output
 				replacement = u""
+			else:
+				raise GrammarException(u"Unknown extra option '{}' in field '{}'".format(option, fieldKey))
 
 		# Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
 		if len(extraOptions) > 0 and not fieldKey.startswith(u'_') and isinstance(replacement, basestring) and replacement.startswith(u'<'):
