@@ -519,7 +519,7 @@ class Command(CommandTemplate):
 					replacement = replacement.upper()
 			elif option == u'bold':
 				replacement = IrcFormattingUtil.makeTextBold(replacement)
-			elif option.startswith(u'storeas'):
+			elif option.startswith(u'storeas') or option.startswith(u'setvar'):
 				#Store the replacement under the provided variable name
 				# (format 'storeas:[varname]')
 				if u':' not in option:
