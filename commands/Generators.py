@@ -330,6 +330,7 @@ class Command(CommandTemplate):
 					for param in parameters:
 						if self.isGenderParameter(param):
 							gender = param
+							break
 				variableDict.update(self.getGenderWords(gender))  #If no gender was provided, 'getGenderWords' will pick a random one
 			if u'generateName' in grammarDict[u'_options']:
 				#If a gender was provided or requested, use that to generate a name, otherwise make the function pick a gender
