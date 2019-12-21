@@ -323,8 +323,9 @@ class Command(CommandTemplate):
 
 		#Parse any options specified
 		if u'_options' in grammarDict:
+			options = grammarDict[u'_options']
 			# Parse arguments
-			if u'parseGender' in grammarDict[u'_options']:
+			if u'parseGender' in options:
 				gender = None
 				if parameters:
 					for param in parameters:
@@ -332,13 +333,28 @@ class Command(CommandTemplate):
 							gender = param
 							break
 				variableDict.update(self.getGenderWords(gender))  #If no gender was provided, 'getGenderWords' will pick a random one
-			if u'generateName' in grammarDict[u'_options']:
+			if u'generateName' in options:
 				#If a gender was provided or requested, use that to generate a name, otherwise make the function pick a gender
 				variableDict[u'name'] = self.generateName(variableDict.get(u'gender', None))
 				#Make first and last names separately accessible
 				nameparts = variableDict[u'name'].split(' ')
 				variableDict[u'firstname'] = nameparts[0]
 				variableDict[u'lastname'] = nameparts[-1] #Use -1 because names
+			# A lot of generators support repeating output. Support it through an option
+			if u'parseRepeat' in options or u'parseRepeats' in options:
+				Command.parseRepeatsFromParams(parameters, variableDict)
+			# Support an optional parameter indicating the max repeats allowed, check if that's in there
+			else:
+				for option in options:
+					if option.startswith(u'parseRepeat'):
+						# Separation character is a colon, check if that's there
+						if u':' not in option or option.endswith(u':'):
+							raise GrammarException(u"Option '{}' passed but it invalidly specifies a repeat count. Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(option))
+						maxRepeats = option.split(u':', 1)[1]
+						if not maxRepeats.isnumeric():
+							raise GrammarException(u"Option '{}' specifies a non-numeric maximum repeat count.  Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(option))
+						Command.parseRepeatsFromParams(parameters, variableDict, maxRepeats)
+						break
 
 		#Since chance dictionaries ('{"20": "20% of this text", "80": "60% (80-20) of this text", "100: "20% chance"}') have to have string keys to be valid JSON,
 		# the keys need to be converted to integers for correct sorting (so "100" doesn't come before "20"). We'll do that as we encounter them, so we need to
@@ -347,6 +363,28 @@ class Command(CommandTemplate):
 
 		#Start the parsing!
 		return self.parseGrammarString(startString, grammarDict, parameters, variableDict)
+
+	@staticmethod
+	def parseRepeatsFromParams(parameters, variableDict, maximumRepeats=None):
+		repeats = None
+		# Go through all the parameters and remove the first number from it, assuming it's the repeat count
+		if parameters:
+			for param in parameters:
+				if unicode(param, encoding='utf-8').isnumeric():
+					repeats = param
+					break
+		if not repeats:
+			repeats = 1
+		else:
+			# Remove the parameter from the parameters list, so the parameters can be used for other things in a generator too
+			parameters.remove(repeats)
+			# Make sure the repeat parameter is within the allowed range
+			repeats = int(repeats)
+			if repeats < 1:
+				repeats = 1
+			elif maximumRepeats and repeats > maximumRepeats:
+				repeats = maximumRepeats
+		variableDict[u'_repeats'] = repeats
 
 	def parseGrammarString(self, grammarString, grammar, parameters=None, variableDict=None):
 		if variableDict is None:
