@@ -582,9 +582,10 @@ class Command(CommandTemplate):
 				for option in extraOptions:
 					if option.endswith(u'case'):
 						optionsToPassOn.append(option)
-				orgReplacement = replacement
-				replacement = replacement[:closingBracketIndex] + u"|&" + u",".join(optionsToPassOn) + replacement[closingBracketIndex:]
-				self.logDebug(u"[Gen] Passed on case option, replaced '{}' with '{}'".format(orgReplacement, replacement))
+				if optionsToPassOn:
+					orgReplacement = replacement
+					replacement = replacement[:closingBracketIndex] + u"|&" + u",".join(optionsToPassOn) + replacement[closingBracketIndex:]
+					self.logDebug(u"[Gen] Passed on case option, replaced '{}' with '{}'".format(orgReplacement, replacement))
 
 		#The parser expects unicode, so make sure our replacement is unicode
 		if isinstance(replacement, str):
