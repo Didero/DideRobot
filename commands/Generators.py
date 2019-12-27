@@ -597,7 +597,8 @@ class Command(CommandTemplate):
 		#Done!
 		return replacement
 
-	def generateName(self, parameters=None):
+	@staticmethod
+	def generateName(parameters=None):
 		"""
 		Generates a random first and last name. You can provide a parameter to specify the gender
 		"""
@@ -610,8 +611,8 @@ class Command(CommandTemplate):
 				parameters = [parameters]
 			#Go through all parameters to see if they're either a gender specifier or a name count number
 			for param in parameters:
-				if self.isGenderParameter(param):
-					genderDict = self.getGenderWords(param, False)
+				if Command.isGenderParameter(param):
+					genderDict = Command.getGenderWords(param, False)
 				else:
 					try:
 						namecount = int(param)
@@ -623,21 +624,21 @@ class Command(CommandTemplate):
 
 		#If no gender parameter was passed, pick a random one
 		if not genderDict:
-			genderDict = self.getGenderWords(None, False)
+			genderDict = Command.getGenderWords(None, False)
 
 		names = []
 		for i in xrange(namecount):
 			# First get a last name
-			lastName = self.getLineFromFile("LastNames.txt")
+			lastName = Command.getLineFromFile("LastNames.txt")
 			#Get the right name for the provided gender
 			if genderDict['gender'] == 'f':
-				firstName = self.getLineFromFile("FirstNamesFemale.txt")
+				firstName = Command.getLineFromFile("FirstNamesFemale.txt")
 			else:
-				firstName = self.getLineFromFile("FirstNamesMale.txt")
+				firstName = Command.getLineFromFile("FirstNamesMale.txt")
 
 			#with a chance add a middle letter:
 			if (parameters and "addletter" in parameters) or random.randint(1, 100) <= 15:
-				names.append(u"{} {}. {}".format(firstName, self.getBasicOrSpecialLetter(50, 75).upper(), lastName))
+				names.append(u"{} {}. {}".format(firstName, Command.getBasicOrSpecialLetter(50, 75).upper(), lastName))
 			else:
 				names.append(u"{} {}".format(firstName, lastName))
 
