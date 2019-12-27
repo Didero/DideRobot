@@ -363,7 +363,7 @@ class Command(CommandTemplate):
 				maxRepeats = option.split(u':', 1)[1]
 				if not maxRepeats.isnumeric():
 					raise GrammarException(u"Option '{}' specifies a non-numeric maximum repeat count.  Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(option))
-				Command.parseRepeatsFromParams(parameters, variableDict, maxRepeats)
+				Command.parseRepeatsFromParams(parameters, variableDict, int(maxRepeats, 10))
 
 	@staticmethod
 	def parseRepeatsFromParams(parameters, variableDict, maximumRepeats=None):
