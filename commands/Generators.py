@@ -21,6 +21,7 @@ class Command(CommandTemplate):
 
 	generators = {}
 	filesLocation = os.path.join(GlobalStore.scriptfolder, "data", "generators")
+	MAX_LOOP_COUNT = 250
 
 	def onLoad(self):
 		#Make the grammar parsing function available to other modules
@@ -404,7 +405,7 @@ class Command(CommandTemplate):
 		outputString = grammarString
 		loopcount = 0
 		startIndex = 0
-		while loopcount < 250:
+		while loopcount < self.MAX_LOOP_COUNT:
 			loopcount += 1
 
 			nestedBracketLevel = 0
