@@ -377,16 +377,12 @@ class Command(CommandTemplate):
 	def parseRepeatsFromParams(parameters, variableDict, maximumRepeats=None):
 		repeats = None
 		# Go through all the parameters and remove the first number from it, assuming it's the repeat count
-		if parameters:
-			for param in parameters:
-				if unicode(param, encoding='utf-8').isnumeric():
-					repeats = param
-					break
+		if parameters and parameters[0].isnumeric():
+			# Remove the parameter from the parameters list, so the parameters can be used for other things in a generator too
+			repeats = parameters.pop(0)
 		if not repeats:
 			repeats = 1
 		else:
-			# Remove the parameter from the parameters list, so the parameters can be used for other things in a generator too
-			parameters.remove(repeats)
 			# Make sure the repeat parameter is within the allowed range
 			repeats = int(repeats, 10)
 			if repeats < 1:
