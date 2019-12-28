@@ -322,6 +322,10 @@ class Command(CommandTemplate):
 			self.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
 			raise GrammarException(u"Error: No 'start' field found!")
 
+		#Make sure the parameters are unicode, since for grammars everything should be unicode
+		if parameters and not isinstance(parameters[0], unicode):
+			parameters = [unicode(param, encoding='utf-8', errors='replace') for param in parameters if not isinstance(param, unicode)]
+
 		#Parse any initializers specified
 		for initializerKey in (u'_initializers', u'_initialisers', u'_init', u'_options'):
 			if initializerKey in grammarDict:
@@ -399,7 +403,10 @@ class Command(CommandTemplate):
 		# This to prevent abuse like infinite loops or creating heavy load
 		#Store that string inside the variableDict under the key '_params', makes lookup and checking easier
 		if parameters:
-			variableDict[u'_params'] = " ".join(parameters).decode("utf-8", errors="replace")
+			if not isinstance(parameters[0], unicode):
+				variableDict[u'_params'] = unicode(" ".join(parameters), encoding="utf-8", errors="replace")
+			else:
+				variableDict[u'_params'] = u" ".join(parameters)
 			variableDict[u'_params'] = variableDict[u'_params'].replace(u"/", u"//").replace(u"<", u"/<").replace(u">", u"/>")
 
 		#Make sure the input string is Unicode, since that's what we expect
