@@ -362,7 +362,10 @@ class Command(CommandTemplate):
 				maxRepeats = initializer.split(u':', 1)[1]
 				if not maxRepeats or not maxRepeats.isnumeric():
 					raise GrammarException(u"Initializer '{}' specifies a non-numeric maximum repeat count.  Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(initializer))
-				Command.parseRepeatsFromParams(parameters, variableDict, int(maxRepeats, 10))
+				maxRepeats = int(maxRepeats, 10)
+				if maxRepeats <= 0:
+					raise GrammarException(u"Initializer '{}' specifies a negative or zero maximum number of repeats, which isn't supported".format(initializer))
+				Command.parseRepeatsFromParams(parameters, variableDict, maxRepeats)
 			else:
 				raise GrammarException(u"Unkown initializer '{}' specified".format(initializer))
 
