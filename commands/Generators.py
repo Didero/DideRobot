@@ -131,7 +131,7 @@ class Command(CommandTemplate):
 					try:
 						message.reply(self.parseGrammarDict(grammarDict, parameters=parameters))
 					except GrammarException as e:
-						raise CommandException(e.errorMessage)
+						raise CommandException(e.message)
 			else:
 				#Function! Just call it, with the message so it can figure it out from there itself
 				message.reply(wantedGenerator(parameters))
@@ -1441,6 +1441,6 @@ class GrammarCommands(object):
 
 
 class GrammarException(Exception):
-	def __init__(self, errorMessage):
-		self.errorMessage = errorMessage if errorMessage else u"Something went wrong with executing a grammar command"
+	def __init__(self, message):
+		self.message = message if message else u"Something went wrong with executing a grammar command"
 
