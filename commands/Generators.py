@@ -220,7 +220,7 @@ class Command(CommandTemplate):
 
 			#If the number period is smaller than 20, it's in the base list
 			# Skip zero though, otherwise 100 becomes 'one hundred zero'
-			if periodValue < 20 and periodValue > 0:
+			if 0 < periodValue < 20:
 				numberTextParts.append(baseNumberNames[periodValue])
 			#Otherwise we need to split it up a bit more
 			else:
