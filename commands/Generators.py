@@ -457,7 +457,7 @@ class Command(CommandTemplate):
 		else:
 			#We reached the loop limit, so there's probably an infinite loop. Report that
 			self.logWarning(u"[Gen] Grammar '{}' reached the parse loop limit while parsing string '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
-			return u"Error: Loop limit reached, there's probably an infinite loop in the grammar file"
+			raise GrammarException(u"Error: Loop limit reached, there's probably an infinite loop in the grammar file")
 
 		#Unescape escaped characters so they display properly
 		outputString = re.sub(ur"/(.)", ur"\1", outputString)
