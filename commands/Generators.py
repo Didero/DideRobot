@@ -921,6 +921,8 @@ class GrammarCommands(object):
 		#All checks passed, call the command
 		try:
 			return command(argumentList, grammarDict, variableDict)
+		except GrammarException as grammarException:
+			raise grammarException
 		except Exception as e:
 			raise GrammarException(u"Something went wrong when executing the '{}' command ({})".format(commandName, e.message))
 
