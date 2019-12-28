@@ -940,6 +940,10 @@ class GrammarCommands(object):
 		return u"'{}' call needs at least {} parameter{}, but {}. Command usage: {}".format(command.__name__, requiredNumber, u's' if requiredNumber > 1 else u'',
 																						   foundNumberString, usageString)
 
+	@staticmethod
+	def _checkIfVariableIsWriteable(varname):
+		if varname.startswith(u"_"):
+			raise GrammarException(u"Variable '{}' starts with an underscore, which means it's an internal variables and can't be changed".format(varname))
 
 	#Saving and loading variables
 	@staticmethod
@@ -949,6 +953,7 @@ class GrammarCommands(object):
 		<$setvar|varname|value>
 		Stores a value under the provided name, for future use
 		"""
+		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
 		variableDict[argumentList[0]] = argumentList[1]
 		return u""
 
@@ -969,6 +974,7 @@ class GrammarCommands(object):
 		<$setvarrandom|varname|value1|value2|value3>
 		Picks one of the provided values at random, and stores it under the provided name, for future use
 		"""
+		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
 		variableDict[argumentList[0]] = random.choice(argumentList[1:])
 		return u""
 
@@ -1011,6 +1017,7 @@ class GrammarCommands(object):
 		If the variable wasn't set before, it will be set to 'stringToPrepend'.
 		Doesn't print anything, use the $var command to print the result
 		"""
+		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
 		if argumentList[0] not in variableDict:
 			variableDict[argumentList[0]] = argumentList[1]
 		else:
@@ -1026,6 +1033,7 @@ class GrammarCommands(object):
 		If the variable wasn't set before, it will be set to 'stringToAppend'.
 		Doesn't print anything, use the $var command to print the result
 		"""
+		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
 		if argumentList[0] not in variableDict:
 			variableDict[argumentList[0]] = argumentList[1]
 		else:
@@ -1039,6 +1047,7 @@ class GrammarCommands(object):
 		<$remvar|varname>
 		Removes the value stored under this variable name. Does nothing if the variable doesn't exist
 		"""
+		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
 		if argumentList[0] in variableDict:
 			del variableDict[argumentList[0]]
 		return u""
