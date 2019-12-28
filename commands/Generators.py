@@ -1444,3 +1444,6 @@ class GrammarException(Exception):
 	def __init__(self, message):
 		self.message = message if message else u"Something went wrong with executing a grammar command"
 
+	def __str__(self):
+		return self.message
+
