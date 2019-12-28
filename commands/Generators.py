@@ -322,9 +322,11 @@ class Command(CommandTemplate):
 			self.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
 			raise GrammarException(u"Error: No 'start' field found!")
 
-		#Parse any options specified
-		if u'_options' in grammarDict:
-			Command.parseInitializers(grammarDict[u'_options'], parameters, variableDict)
+		#Parse any initializers specified
+		for initializerKey in (u'_initializers', u'_initialisers', u'_init', u'_options'):
+			if initializerKey in grammarDict:
+				Command.parseInitializers(grammarDict[initializerKey], parameters, variableDict)
+				break
 
 		#Since chance dictionaries ('{"20": "20% of this text", "80": "60% (80-20) of this text", "100: "20% chance"}') have to have string keys to be valid JSON,
 		# the keys need to be converted to integers for correct sorting (so "100" doesn't come before "20"). We'll do that as we encounter them, so we need to
@@ -335,17 +337,16 @@ class Command(CommandTemplate):
 		return self.parseGrammarString(startString, grammarDict, parameters, variableDict)
 
 	@staticmethod
-	def parseInitializers(options, parameters, variableDict):
-		for option in options:
-			if option == u'parseGender':
+	def parseInitializers(initializers, parameters, variableDict):
+		# Parse initializers in order, and if an initializer needs a parameter, only look at the first parameter in the parameters list.
+		# This prevents odd behaviour where it thinks you specified a gender if in the middle of the parameters there's 'man', for instance
+		for initializer in initializers:
+			if initializer == u'parseGender':
 				gender = None
-				if parameters:
-					for param in parameters:
-						if Command.isGenderParameter(param):
-							gender = param
-							break
+				if parameters and Command.isGenderParameter(parameters[0]):
+					gender = parameters.pop(0)
 				variableDict.update(Command.getGenderWords(gender))  # If no gender was provided, 'getGenderWords' will pick a random one
-			elif option == u'generateName':
+			elif initializer == u'generateName':
 				# If a gender was provided or requested, use that to generate a name, otherwise make the function pick a gender
 				variableDict[u'name'] = Command.generateName(variableDict.get(u'gender', None))
 				# Make first and last names separately accessible
@@ -353,17 +354,19 @@ class Command(CommandTemplate):
 				variableDict[u'firstname'] = nameparts[0]
 				variableDict[u'lastname'] = nameparts[-1]  # Use -1 because names
 			# A lot of generators support repeating output. Support it through an option
-			elif option == u'parseRepeats':
+			elif initializer == u'parseRepeats':
 				Command.parseRepeatsFromParams(parameters, variableDict)
 			# Support an optional parameter indicating the max repeats allowed, check if that's in there
-			elif option.startswith(u"parseRepeats:"):
+			elif initializer.startswith(u"parseRepeats:"):
 				# Separation character is a colon
-				if option.endswith(u':'):
-					raise GrammarException(u"Option '{}' passed but it invalidly specifies a repeat count. Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(option))
-				maxRepeats = option.split(u':', 1)[1]
+				if initializer.endswith(u':'):
+					raise GrammarException(u"Initializer '{}' passed but it invalidly specifies a repeat count. Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(initializer))
+				maxRepeats = initializer.split(u':', 1)[1]
 				if not maxRepeats.isnumeric():
-					raise GrammarException(u"Option '{}' specifies a non-numeric maximum repeat count.  Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(option))
+					raise GrammarException(u"Initializer '{}' specifies a non-numeric maximum repeat count.  Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(initializer))
 				Command.parseRepeatsFromParams(parameters, variableDict, int(maxRepeats, 10))
+			else:
+				raise GrammarException(u"Unkown initializer '{}' specified".format(initializer))
 
 	@staticmethod
 	def parseRepeatsFromParams(parameters, variableDict, maximumRepeats=None):
