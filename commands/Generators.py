@@ -924,7 +924,7 @@ class GrammarCommands(object):
 		except GrammarException as grammarException:
 			raise grammarException
 		except Exception as e:
-			raise GrammarException(u"Something went wrong when executing the '{}' command ({})".format(commandName, e.message))
+			raise GrammarException(u"Something went wrong when executing the '{}' command: {}".format(commandName, e.message if e.message else e))
 
 	#Shared internal methods
 	@staticmethod
