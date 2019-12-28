@@ -359,10 +359,8 @@ class Command(CommandTemplate):
 			# Support an optional parameter indicating the max repeats allowed, check if that's in there
 			elif initializer.startswith(u"parseRepeats:"):
 				# Separation character is a colon
-				if initializer.endswith(u':'):
-					raise GrammarException(u"Initializer '{}' passed but it invalidly specifies a repeat count. Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(initializer))
 				maxRepeats = initializer.split(u':', 1)[1]
-				if not maxRepeats.isnumeric():
+				if not maxRepeats or not maxRepeats.isnumeric():
 					raise GrammarException(u"Initializer '{}' specifies a non-numeric maximum repeat count.  Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(initializer))
 				Command.parseRepeatsFromParams(parameters, variableDict, int(maxRepeats, 10))
 			else:
