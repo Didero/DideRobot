@@ -568,6 +568,8 @@ class Command(CommandTemplate):
 				if u':' not in option:
 					raise GrammarException(u"Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarBlockParts), u",".join(extraOptions)))
 				varname = option.split(u':', 1)[1]
+				if varname.startswith(u'_'):
+					raise GrammarException(u"'{}' tries to save to a variable name starting with an underscore, but those are read-only".format(option))
 				variableDict[varname] = replacement
 			elif option == u'numbertotext':
 				#Convert an actual number to text, like '4' to 'four'
