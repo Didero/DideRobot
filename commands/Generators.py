@@ -86,14 +86,14 @@ class Command(CommandTemplate):
 		if message.messagePartsLength == 0 or message.messageParts[0].lower() == 'help':
 			return message.reply(self.getHelp(message))
 
-		if len(self.generators) == 0:
-			return message.reply("That's weird, I don't seem to have any generators loaded, sorry. Try updating, reloading this module, or writing your own generator!", "say")
-
 		if message.messageParts[0].lower() == 'reload':
 			if 	not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				return message.reply("I'm sorry, only admins are allowed to make me reload my generators. Try asking one if my admins. Sorry!")
 			self.loadGenerators()
 			return message.reply("Ok, I reloaded all the generators from disk. I now have these {:,} generators loaded: {}".format(len(self.generators), ", ".join(self.getAvailableTriggers())))
+
+		if len(self.generators) == 0:
+			return message.reply("That's weird, I don't seem to have any generators loaded, sorry. Try updating, reloading this module, or writing your own generator!", "say")
 
 		wantedGeneratorName = message.messageParts[0].lower()
 		wantedGenerator = None
