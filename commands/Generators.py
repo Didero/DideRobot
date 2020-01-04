@@ -30,7 +30,7 @@ class Command(CommandTemplate):
 
 	def loadGenerators(self):
 		#First fill the generators dict with a few built-in generators
-		self.generators = {self.generateName: 'name', self.generateVideogame: ('game', 'videogame'), self.generateWord: 'word', self.generateWord2: 'word2'}
+		self.generators = {'name': self.generateName, 'game': self.generateVideogame, 'videogame': self.generateVideogame, 'word': self.generateWord, 'word2': self.generateWord2}
 		#Go through all available .grammar files and store their 'triggers'
 		for grammarFilename in glob.iglob(os.path.join(self.filesLocation, '*.grammar')):
 			with open(grammarFilename, 'r') as grammarFile:
@@ -41,43 +41,47 @@ class Command(CommandTemplate):
 				else:
 					if '_triggers' not in grammarJson:
 						self.logError("[Gen] Grammar file '{}' is missing a '_triggers' field so it can't be called".format(os.path.basename(grammarFilename)))
-					elif isinstance(grammarJson['_triggers'], basestring):
-						self.generators[grammarFilename] = grammarJson['_triggers'].lower()
 					else:
-						#Make sure all the triggers are lower-case, to make matching them easier when this module is called
-						triggers = [trigger.lower() for trigger in grammarJson['_triggers']]
-						#Store them so we know which grammar file to parse for which trigger(s)
-						self.generators[grammarFilename] = tuple(triggers)
+						triggers = grammarJson['_triggers']
+						if isinstance(triggers, basestring):
+							#If there's only one trigger, make it a list anyway so we can loop as normal, saves duplicate code
+							triggers = [triggers]
+						for trigger in triggers:
+							trigger = trigger.lower()
+							#Check if the trigger isn't in there already
+							if trigger in self.generators:
+								self.logError(u"[Gen] Trigger '{}' is in multiple generators ('{}' and '{}')".format(trigger, grammarJson.get('_name', grammarFilename), self.generators[trigger]))
+							else:
+								self.generators[trigger] = grammarFilename
 		self.logDebug("[Generators] Loaded {:,} generators".format(len(self.generators)))
-
 
 	def getHelp(self, message):
 		#If there's no parameters provided, just show the generic module help text
 		if message.messagePartsLength <= 1:
 			return CommandTemplate.getHelp(self, message) + ", ".join(self.getAvailableTriggers())
-		#Check if the parameter matches one of our generator triggers
 		requestedTrigger = message.messageParts[1].lower()
-		for generator, triggers in self.generators.iteritems():
-			#If the triggers is a single string check if it's identical, otherwise check if it's in the list
-			if (isinstance(triggers, basestring) and requestedTrigger == triggers) or requestedTrigger in triggers:
-				#Trigger match! If the match is a grammar file, retrieve its description
-				if isinstance(generator, basestring):
-					with open(os.path.join(self.filesLocation, generator), 'r') as grammarFile:
-						grammarDict = json.load(grammarFile)
-						if '_description' in grammarDict:
-							return u"{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, grammarDict['_description'])
-						else:
-							return "The '{}' generator file didn't specify a help text, sorry!".format(requestedTrigger)
-				#Match is one of the built-in functions
+		if requestedTrigger not in self.generators:
+			# No matching generator trigger was found
+			return "I'm not familiar with the '{}' generator, though if you think it would make a good one, feel free to inform my owner(s), maybe they'll create it!".format(requestedTrigger)
+		generator = self.generators[requestedTrigger]
+		if isinstance(generator, basestring):
+			with open(os.path.join(self.filesLocation, generator), 'r') as grammarFile:
+				grammarDict = json.load(grammarFile)
+				if '_description' in grammarDict:
+					return u"{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, grammarDict['_description'])
 				else:
-					#Show the function's docstring, if it has one, otherwise show an error
-					helptext = "No helptext was set for this generator, sorry"
-					if generator.__doc__:
-						#Get the docstring, with the newlines and tabs removed
-						helptext = inspect.cleandoc(generator.__doc__).replace('\n', ' ')
-					return "{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, helptext)
-		#No matching generator trigger was found
-		return "I'm not familiar with the '{}' generator, though if you think it would make a good one, feel free to inform my owner(s), maybe they'll create it!".format(requestedTrigger)
+					return "The '{}' generator file didn't specify a help text, sorry!".format(requestedTrigger)
+		#Match is one of the built-in functions
+		elif callable(generator):
+			#Show the function's docstring, if it has one, otherwise show an error
+			helptext = "No helptext was set for this generator, sorry"
+			if generator.__doc__:
+				#Get the docstring, with the newlines and tabs removed
+				helptext = inspect.cleandoc(generator.__doc__).replace('\n', ' ')
+			return "{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, helptext)
+		else:
+			self.logError("[Gen] Generator for trigger '{}' has type '{}', and we can't get the help from that".format(requestedTrigger, type(generator)))
+			return "I'm not sure how to get help for '{}', sorry. Maybe just try it out and see what happens instead?".format(requestedTrigger)
 
 	def execute(self, message):
 		"""
@@ -97,53 +101,35 @@ class Command(CommandTemplate):
 
 		wantedGeneratorName = message.messageParts[0].lower()
 		wantedGenerator = None
-
 		if wantedGeneratorName == 'random':
-			wantedGenerator = random.choice(self.generators.keys())
+			wantedGenerator = random.choice(self.generators.values())
+		elif wantedGeneratorName in self.generators:
+			wantedGenerator = self.generators[wantedGeneratorName]
 		else:
-			#Check to see if it's a registered generator
-			for generator, triggerEntry in self.generators.iteritems():
-				#Triggers are either a single string, or a list of strings
-				# So if the trigger is a string AND is equal to the wanted generator, return that
-				if isinstance(triggerEntry, basestring) and wantedGeneratorName == triggerEntry:
-					wantedGenerator = generator
-					break
-				# Otherwise the trigger entry is a list(-alike), check if the wanted name is in that list
-				elif isinstance(triggerEntry, (list,tuple)) and wantedGeneratorName in triggerEntry:
-					wantedGenerator = generator
-					break
-
-		if wantedGenerator is None:
 			#No suitable generator found, list the available ones
-			message.reply("That is not a valid generator name. Use 'random' to let me pick, or choose from: {}".format(", ".join(self.getAvailableTriggers())))
+			return message.reply("That is not a valid generator name. Use 'random' to let me pick, or choose from: {}".format(", ".join(self.getAvailableTriggers())))
+
+		parameters = message.messageParts[1:]
+		#The generator can either be a module function, or a string pointing to a grammar file. Check which it is
+		if isinstance(wantedGenerator, basestring):
+			path = os.path.join(self.filesLocation, wantedGenerator)
+			#Grammar file! First check if it still exists
+			if not os.path.isfile(path):
+				self.loadGenerators()
+				return message.reply("Huh, that generator did exist last time I looked, but now it's... gone, for some reason. Please don't rename my files without telling me. I'll just refresh my generator list", "say")
+			#It exists! Send it to the parser
+			with open(path, "r") as grammarfile:
+				grammarDict = json.load(grammarfile)
+				try:
+					message.reply(self.parseGrammarDict(grammarDict, parameters=parameters))
+				except GrammarException as e:
+					raise CommandException(e.message)
 		else:
-			parameters = message.messageParts[1:]
-			#The generator can either be a module function, or a string pointing to a grammar file. Check which it is
-			if isinstance(wantedGenerator, basestring):
-				path = os.path.join(self.filesLocation, wantedGenerator)
-				#Grammar file! First check if it still exists
-				if not os.path.isfile(path):
-					self.loadGenerators()
-					return message.reply("Huh, that generator did exist last time I looked, but now it's... gone, for some reason. Please don't rename my files without telling me. I'll just refresh my generator list", "say")
-				#It exists! Send it to the parser
-				with open(path, "r") as grammarfile:
-					grammarDict = json.load(grammarfile)
-					try:
-						message.reply(self.parseGrammarDict(grammarDict, parameters=parameters))
-					except GrammarException as e:
-						raise CommandException(e.message)
-			else:
-				#Function! Just call it, with the message so it can figure it out from there itself
-				message.reply(wantedGenerator(parameters))
+			#Function! Just call it, with the message so it can figure it out from there itself
+			message.reply(wantedGenerator(parameters))
 
 	def getAvailableTriggers(self):
-		availableTriggers = []
-		for generator, triggers in self.generators.iteritems():
-			if isinstance(triggers, basestring):
-				availableTriggers.append(triggers)
-			else:
-				availableTriggers.extend(triggers)
-		return sorted(availableTriggers)
+		return sorted(self.generators.keys())
 
 	@staticmethod
 	def getLineFromFile(filename, filelocation=None, lineNumber=None):
