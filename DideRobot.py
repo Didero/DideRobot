@@ -26,7 +26,8 @@ class DideRobot(object):
 
 		self.connectedAt = None  # Will be set to the timestamp on which we connect. 'None' means we're not connected
 		self.connectionManagerGreenlet = None  # This will get a reference to the greenlet keeping the connection alive. If this ends, the bot is closed down
-		self.shouldReconnect = True
+		self.shouldStayConnected = True  # Can be set to 'False' if the connection should be closed from our side, regardless of the server state
+		self.shouldReconnect = True  # If we somehow get disconnected, should we try to re-establish a connection?
 		self.reconnectionAttempCount = None  # Will keep a count of how many times we've tried to connect, to see if we've exceeded the limit (if any)
 		self.maxConnectionRetries = None  # None means unlimited attempts, can be set by settings file
 
@@ -76,6 +77,7 @@ class DideRobot(object):
 	#CONNECTION FUNCTIONS
 	def keepServerConnectionAlive(self):
 		while True:
+			self.shouldStayConnected = True
 			# Open a connection
 			self.ircSocket = gevent.socket.socket(gevent.socket.AF_INET, gevent.socket.SOCK_STREAM)
 			self.ircSocket.settimeout(20.0)  #Set the timout to establishing a connection, gets increased when we successfully connect
@@ -143,7 +145,7 @@ class DideRobot(object):
 		incomingData = ""
 		# Set the timeout to 10 minutes, so if our computer loses connection to the server/internet, we notice
 		self.ircSocket.settimeout(600)
-		while True:
+		while self.shouldStayConnected:
 			try:
 				incomingData += self.ircSocket.recv(2048)
 			except gevent.socket.timeout:
@@ -467,7 +469,14 @@ class DideRobot(object):
 			return
 		if shouldLogMessage:
 			self.logger.debug("|{}| > {}".format(self.serverfolder, lineToSend))
-		self.ircSocket.send(lineToSend + "\r\n")
+		try:
+			self.ircSocket.send(lineToSend + "\r\n")
+		except gevent.socket.error as socketError:
+			self.logger.error("|{}| Socket error occurred when sending line '{}': {}".format(self.serverfolder, lineToSend, socketError))
+			#If the socket is giving errors, we should close the socket and make the bot reconnect
+			self.shouldStayConnected = False
+		except Exception as e:
+			self.logger.error("|{}| Tried sending line '{}' to server, but a '{}' exception was raised: {}".format(self.serverfolder, lineToSend, type(e).__name__, e))
 
 	def irc_ERR_NOTEXTTOSEND(self, prefix, params):
 		self.logger.error("|{}| We just sent an empty line to the server, which is probably a bug in a module!".format(self.serverfolder))
