@@ -88,8 +88,8 @@ class DideRobot(object):
 				self.logger.error("Unable to connect to server '{}' ({}:{}), reason: {}".format(self.serverfolder, self.settings['server'], self.settings['port'], e))
 			else:
 				#Connecting was successful, authenticate
-				if 'password' in self.settings and len(self.settings['password']) > 0:
-					self.sendLineToServer("PASS " + self.settings['password'])
+				if self.settings.get('serverpassword', None):
+					self.sendLineToServer("PASS " + self.settings['serverpassword'])
 				self.sendLineToServer("NICK {}".format(self.settings['nickname']))
 				#Use the specified realname, or fall back to the username if none is provided
 				realname = self.settings.get('realname', self.settings['nickname'])
