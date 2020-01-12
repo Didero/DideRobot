@@ -101,7 +101,6 @@ class Command(CommandTemplate):
 			return message.reply("That's weird, I don't seem to have any generators loaded, sorry. Try updating, reloading this module, or writing your own generator!", "say")
 
 		wantedGeneratorName = message.messageParts[0].lower()
-		wantedGenerator = None
 		if wantedGeneratorName == 'random':
 			wantedGenerator = random.choice(self.generators.values())
 		elif wantedGeneratorName in self.generators:
