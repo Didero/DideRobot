@@ -116,7 +116,8 @@ class CommandTemplate(object):
 				try:
 					self.executeScheduledFunction()
 				except Exception as e:
-					logging.getLogger("DideRobot").exception("An exception occurred during a scheduled function", exc_info=e)
+					logmessage = "{} exception occurred during a scheduled function: {}".format(type(e).__name__, str(e))
+					logging.getLogger("DideRobot").exception(logmessage, exc_info=e)
 				self.scheduledFunctionIsExecuting = False
 				gevent.sleep(self.scheduledFunctionTime)
 		except gevent.GreenletExit:
