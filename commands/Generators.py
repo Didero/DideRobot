@@ -321,7 +321,7 @@ class Command(CommandTemplate):
 		#Since chance dictionaries ('{"20": "20% of this text", "80": "60% (80-20) of this text", "100: "20% chance"}') have to have string keys to be valid JSON,
 		# the keys need to be converted to integers for correct sorting (so "100" doesn't come before "20"). We'll do that as we encounter them, so we need to
 		# keep track of which dictionaries we've converted and which we haven't yet. We do that by storing references to them in a list, in the variableDict
-		variableDict['_convertedChanceDicts'] = []
+		variableDict[u'_convertedChanceDicts'] = []
 
 		#Start the parsing!
 		return self.parseGrammarString(startString, grammarDict, parameters, variableDict)
@@ -501,7 +501,7 @@ class Command(CommandTemplate):
 				# Dictionary! The keys are chance percentages, the values are the replacement strings
 
 				#JSON requires keys to be strings, but we want them to be numbers. Check to see if we need to convert them
-				if grammar[fieldKey] not in variableDict['_convertedChanceDicts']:
+				if grammar[fieldKey] not in variableDict[u'_convertedChanceDicts']:
 					for chanceDictKey in grammar[fieldKey].keys():
 						value = grammar[fieldKey][chanceDictKey]
 						#Remove the string key, and add in the integer key if the conversion succeeded
@@ -511,14 +511,14 @@ class Command(CommandTemplate):
 							#Check if the number is in the correct range of 0 - 100
 							if chanceDictKeyAsInt < 0 or chanceDictKeyAsInt > 100:
 								self.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains invalid key '{}'. Chance dictionary keys should be between 0 and 100. Ignoring it".format(
-									grammar.get('_name', "[unknown]"), fieldKey, chanceDictKey))
+									grammar.get(u'_name', "[unknown]"), fieldKey, chanceDictKey))
 							else:
 								grammar[fieldKey][chanceDictKeyAsInt] = value
 						except ValueError:
 							#Show a warning about a non-int key in a chance dict. Not an error, since we can just ignore it and move on
 							self.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains non-numeric key '{}', which isn't supported. Ignoring it".format(grammar.get('_name', "[unknown]"), fieldKey, chanceDictKey))
 					#Store that we converted the chance dict
-					variableDict['_convertedChanceDicts'].append(grammar[fieldKey])
+					variableDict[u'_convertedChanceDicts'].append(grammar[fieldKey])
 
 				#Now find the lowest chance dict key that's larger than our roll
 				# So in a dict '{20: "first", 100: "second"}', a roll of 18 would return 'first', and a roll of 73 would return 'second'
