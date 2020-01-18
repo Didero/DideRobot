@@ -396,10 +396,13 @@ class Command(CommandTemplate):
 			grammarString = grammarString.decode("utf-8", errors="replace")
 
 		outputString = grammarString
-		loopcount = 0
+		variableDict[u'_iteration'] = 0
+		variableDict[u'_maxIterations'] = self.MAX_LOOP_COUNT
+		variableDict[u'_maxIterationsLeft'] = self.MAX_LOOP_COUNT
 		startIndex = 0
-		while loopcount < self.MAX_LOOP_COUNT:
-			loopcount += 1
+		while variableDict[u'_iteration'] < self.MAX_LOOP_COUNT:
+			variableDict[u'_iteration'] += 1
+			variableDict[u'_maxIterationsLeft'] -= 1
 
 			nestedBracketLevel = 0
 			characterIsEscaped = False
