@@ -350,6 +350,8 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def parseInitializers(initializers, parameters, variableDict):
+		if isinstance(initializers, basestring):
+			initializers = [initializers]
 		# Parse initializers in order, and if an initializer needs a parameter, only look at the first parameter in the parameters list.
 		# This prevents odd behaviour where it thinks you specified a gender if in the middle of the parameters there's 'man', for instance
 		for initializer in initializers:
