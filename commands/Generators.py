@@ -102,6 +102,9 @@ class Command(CommandTemplate):
 
 		if len(self.generators) == 0:
 			return message.reply("That's weird, I don't seem to have any generators loaded, sorry. Try updating, reloading this module, or writing your own generator!", "say")
+	@staticmethod
+	def getAvailableTriggers():
+		return sorted(Command.generators.keys())
 
 		wantedGeneratorName = message.messageParts[0].lower()
 		if wantedGeneratorName == 'random':
@@ -130,9 +133,6 @@ class Command(CommandTemplate):
 		else:
 			#Function! Just call it, with the message so it can figure it out from there itself
 			message.reply(wantedGenerator(parameters))
-
-	def getAvailableTriggers(self):
-		return sorted(self.generators.keys())
 
 	@staticmethod
 	def getLineFromFile(filename, filelocation=None, lineNumber=None):
@@ -295,7 +295,8 @@ class Command(CommandTemplate):
 							   "isAre": "are", "wasWere": "were", "verbS": "", "verbEs": ""})
 		return genderDict
 
-	def parseGrammarDict(self, grammarDict, trigger, parameters=None, variableDict=None):
+	@staticmethod
+	def parseGrammarDict(grammarDict, trigger, parameters=None, variableDict=None):
 		if variableDict is None:
 			variableDict = {}
 		#Store the trigger so grammars can know how they got called
@@ -310,7 +311,7 @@ class Command(CommandTemplate):
 			del grammarDict[u'_start']
 			startString = u"<start>"
 		else:
-			self.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
+			Command.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
 			raise GrammarException(u"Error: No 'start' field found!")
 
 		#Make sure the parameters are unicode, since for grammars everything should be unicode
@@ -329,7 +330,7 @@ class Command(CommandTemplate):
 		variableDict[u'_convertedChanceDicts'] = []
 
 		#Start the parsing!
-		return self.parseGrammarString(startString, grammarDict, parameters, variableDict)
+		return Command.parseGrammarString(startString, grammarDict, parameters, variableDict)
 
 	@staticmethod
 	def parseInitializers(initializers, parameters, variableDict):
@@ -382,7 +383,8 @@ class Command(CommandTemplate):
 				repeats = maximumRepeats
 		variableDict[u'_repeats'] = repeats
 
-	def parseGrammarString(self, grammarString, grammar, parameters=None, variableDict=None):
+	@staticmethod
+	def parseGrammarString(grammarString, grammar, parameters=None, variableDict=None):
 		if variableDict is None:
 			variableDict = {}
 
@@ -402,10 +404,10 @@ class Command(CommandTemplate):
 
 		outputString = grammarString
 		variableDict[u'_iteration'] = 0
-		variableDict[u'_maxIterations'] = self.MAX_LOOP_COUNT
-		variableDict[u'_maxIterationsLeft'] = self.MAX_LOOP_COUNT
+		variableDict[u'_maxIterations'] = Command.MAX_LOOP_COUNT
+		variableDict[u'_maxIterationsLeft'] = Command.MAX_LOOP_COUNT
 		startIndex = 0
-		while variableDict[u'_iteration'] < self.MAX_LOOP_COUNT:
+		while variableDict[u'_iteration'] < Command.MAX_LOOP_COUNT:
 			variableDict[u'_iteration'] += 1
 			variableDict[u'_maxIterationsLeft'] -= 1
 
@@ -433,7 +435,7 @@ class Command(CommandTemplate):
 					grammarParts.append(u"")
 				elif nestedBracketLevel == 1 and character == u">":
 					#We found the end of the grammar block. Have it parsed
-					parsedGrammarBlock = self.parseGrammarBlock(grammarParts, grammar, variableDict)
+					parsedGrammarBlock = Command.parseGrammarBlock(grammarParts, grammar, variableDict)
 					#Everything went fine, replace the grammar block with the output
 					outputString = outputString[:startIndex] + parsedGrammarBlock + outputString[index + 1:]
 					#Done with this parsing loop, start a new one! (break out of the for-loop to start a new while-loop iteration)
@@ -450,13 +452,13 @@ class Command(CommandTemplate):
 			else:
 				#We reached the end of the output string. If we're not at top level, the gramamr block isn't closed
 				if nestedBracketLevel > 0:
-					self.logWarning(u"[Gen] Grammar '{}' is missing a closing bracket in line '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
+					Command.logWarning(u"[Gen] Grammar '{}' is missing a closing bracket in line '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
 					return u"Error: Missing closing bracket"
 				#Otherwise, we're done! Break out of the while-loop
 				break
 		else:
 			#We reached the loop limit, so there's probably an infinite loop. Report that
-			self.logWarning(u"[Gen] Grammar '{}' reached the parse loop limit while parsing string '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
+			Command.logWarning(u"[Gen] Grammar '{}' reached the parse loop limit while parsing string '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
 			raise GrammarException(u"Error: Loop limit reached, there's probably an infinite loop in the grammar file")
 
 		#Unescape escaped characters so they display properly
@@ -464,7 +466,8 @@ class Command(CommandTemplate):
 		#Done!
 		return outputString
 
-	def parseGrammarBlock(self, grammarBlockParts, grammar, variableDict=None):
+	@staticmethod
+	def parseGrammarBlock(grammarBlockParts, grammar, variableDict=None):
 		fieldKey = grammarBlockParts.pop(0)
 		replacement = u""
 
@@ -518,13 +521,13 @@ class Command(CommandTemplate):
 							chanceDictKeyAsInt = int(chanceDictKey, 10)
 							#Check if the number is in the correct range of 0 - 100
 							if chanceDictKeyAsInt < 0 or chanceDictKeyAsInt > 100:
-								self.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains invalid key '{}'. Chance dictionary keys should be between 0 and 100. Ignoring it".format(
-									grammar.get(u'_name', "[unknown]"), fieldKey, chanceDictKey))
+								Command.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains invalid key '{}'. Chance dictionary keys should be between 0 and 100. Ignoring it".format(
+									grammar.get(u'_name', u"[unknown]"), fieldKey, chanceDictKey))
 							else:
 								grammar[fieldKey][chanceDictKeyAsInt] = value
 						except ValueError:
 							#Show a warning about a non-int key in a chance dict. Not an error, since we can just ignore it and move on
-							self.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains non-numeric key '{}', which isn't supported. Ignoring it".format(grammar.get('_name', "[unknown]"), fieldKey, chanceDictKey))
+							Command.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains non-numeric key '{}', which isn't supported. Ignoring it".format(grammar.get(u'_name', u"[unknown]"), fieldKey, chanceDictKey))
 					#Store that we converted the chance dict
 					variableDict[u'_convertedChanceDicts'].append(grammar[fieldKey])
 
@@ -592,7 +595,7 @@ class Command(CommandTemplate):
 				if optionsToPassOn:
 					orgReplacement = replacement
 					replacement = replacement[:closingBracketIndex] + u"|&" + u",".join(optionsToPassOn) + replacement[closingBracketIndex:]
-					self.logDebug(u"[Gen] Passed on case option, replaced '{}' with '{}'".format(orgReplacement, replacement))
+					Command.logDebug(u"[Gen] Passed on case option, replaced '{}' with '{}'".format(orgReplacement, replacement))
 
 		#Done!
 		return replacement
