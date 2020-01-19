@@ -110,7 +110,7 @@ class Command(CommandTemplate):
 		return sorted(Command.generators.keys())
 
 	@staticmethod
-	def executeGrammarByTrigger(trigger, parameters=None):
+	def executeGrammarByTrigger(trigger, parameters=None, variableDict=None):
 		"""
 		Looks to see if there's a grammar that should fire on the provided trigger, and executes it if so.
 		If the grammar can't be found, or if something goes wrong during execution, a GrammarException will be thrown
@@ -145,7 +145,7 @@ class Command(CommandTemplate):
 				except ValueError as e:
 					Command.logError(u"[Gen] Grammar file '{}' is invalid JSON: {}".format(wantedGenerator, e))
 					raise GrammarException(u"The grammar file for '{}' is broken, for some reason. Tell my owner(s), hopefully they can fix it".format(trigger))
-				return Command.parseGrammarDict(grammarDict, trigger, parameters=parameters)
+				return Command.parseGrammarDict(grammarDict, trigger, parameters=parameters, variableDict=variableDict)
 		else:
 			#Function! Just call it, with the message so it can figure it out from there itself
 			return wantedGenerator(parameters)
