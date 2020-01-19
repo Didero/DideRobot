@@ -1505,6 +1505,44 @@ class GrammarCommands(object):
 		#Everything parsed and converted fine
 		return moduleCommandResult
 
+	@staticmethod
+	@validateArguments(argumentCount=3)
+	def command_hasgenerator(argumentList, grammarDict, variableDict):
+		"""
+		<$hasgenerator|generatorName|stringIfGeneratorExists|stringIfGeneratorDoesNotExist>
+		Check if the generator specified by 'generatorName' exists. If it does, 'stringIfGeneratorExists' is returned. If it doesn't exist, 'stringIfGeneratorDoesNotExist' is returned
+		"""
+		if argumentList[0].lower() in Command.generators:
+			return argumentList[1]
+		else:
+			return argumentList[2]
+
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_generator(argumentList, grammarDict, variableDict):
+		"""
+		<$generator|generatorName[|parameter1[|parameter2[...]]]>
+		Run a different generator specified by 'generatorName' and get the result. You can also pass parameters to that generator by adding them as arguments here
+		Please note that the iterations of the called generator count against the current iteration limit. So it's not possible to use this to bypass the iteration limit
+		"""
+		#To make sure the combined iterations don't exceed the limit, pass the current iteration to the execution method
+		calledGeneratorVariableDict = {u'_iteration': variableDict[u'_iteration']}
+		resultString = Command.executeGrammarByTrigger(argumentList[0].lower(), parameters=argumentList[1:], variableDict=calledGeneratorVariableDict)
+		#Set the iteration that the called generator reached as our current iteration, so we can't exceed the limit
+		variableDict[u'_iteration'] = calledGeneratorVariableDict[u'_iteration']
+		return resultString
+
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_generate(argumentList, grammarDict, variableDict):
+		"""
+		<$generate|generatorName[|parameter1[|parameter2[...]]]>
+		Run a different generator specified by 'generatorName' and get the result. You can also pass parameters to that generator by adding them as arguments here
+		Please note that the iterations of the called generator count against the current iteration limit. So it's not possible to use this to bypass the iteration limit
+		This is an alias for the 'generator' command
+		"""
+		return GrammarCommands.command_generator(argumentList, grammarDict, variableDict)
+
 
 class GrammarException(Exception):
 	def __init__(self, message):
