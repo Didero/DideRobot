@@ -29,8 +29,11 @@ class Command(CommandTemplate):
 		self.loadGenerators()
 
 	def loadGenerators(self):
+		#Since the 'generators' dict is on class-level, don't overwrite it with 'self.generators =...'. Instead, only change keys, so it can be accessed by grammar commands
+		#Make sure there aren't any lingering keys
+		self.generators.clear()
 		#First fill the generators dict with a few built-in generators
-		self.generators = {'name': self.generateName, 'game': self.generateVideogame, 'videogame': self.generateVideogame, 'word': self.generateWord, 'word2': self.generateWord2}
+		self.generators.update({'name': self.generateName, 'game': self.generateVideogame, 'videogame': self.generateVideogame, 'word': self.generateWord, 'word2': self.generateWord2})
 		#Go through all available .grammar files and store their 'triggers'
 		for grammarFilePath in glob.iglob(os.path.join(self.filesLocation, '*.grammar')):
 			grammarFileName = os.path.basename(grammarFilePath)
