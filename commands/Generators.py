@@ -421,9 +421,10 @@ class Command(CommandTemplate):
 			grammarString = grammarString.decode("utf-8", errors="replace")
 
 		outputString = grammarString
-		variableDict[u'_iteration'] = 0
+		if u'_iteration' not in variableDict:
+			variableDict[u'_iteration'] = 0
 		variableDict[u'_maxIterations'] = Command.MAX_LOOP_COUNT
-		variableDict[u'_maxIterationsLeft'] = Command.MAX_LOOP_COUNT
+		variableDict[u'_maxIterationsLeft'] = Command.MAX_LOOP_COUNT - variableDict[u'_iteration']
 		startIndex = 0
 		while variableDict[u'_iteration'] < Command.MAX_LOOP_COUNT:
 			variableDict[u'_iteration'] += 1
