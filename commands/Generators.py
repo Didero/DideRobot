@@ -33,7 +33,7 @@ class Command(CommandTemplate):
 		#Make sure there aren't any lingering keys
 		self.generators.clear()
 		#First fill the generators dict with a few built-in generators
-		self.generators.update({'name': self.generateName, 'game': self.generateVideogame, 'videogame': self.generateVideogame, 'word': self.generateWord, 'word2': self.generateWord2})
+		self.generators.update({u'name': self.generateName, u'game': self.generateVideogame, u'videogame': self.generateVideogame, u'word': self.generateWord, u'word2': self.generateWord2})
 		#Go through all available .grammar files and store their 'triggers'
 		for grammarFilePath in glob.iglob(os.path.join(self.filesLocation, '*.grammar')):
 			grammarFileName = os.path.basename(grammarFilePath)
