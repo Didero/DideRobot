@@ -26,25 +26,25 @@ class Command(CommandTemplate):
 	def onLoad(self):
 		#Make the grammar parsing function available to other modules
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'parseGrammarDict', self.parseGrammarDict)
-		self.loadGenerators()
+		Command.loadGenerators()
 
-	def loadGenerators(self):
-		#Since the 'generators' dict is on class-level, don't overwrite it with 'self.generators =...'. Instead, only change keys, so it can be accessed by grammar commands
+	@staticmethod
+	def loadGenerators():
 		#Make sure there aren't any lingering keys
-		self.generators.clear()
+		Command.generators.clear()
 		#First fill the generators dict with a few built-in generators
-		self.generators.update({u'name': self.generateName, u'game': self.generateVideogame, u'videogame': self.generateVideogame, u'word': self.generateWord, u'word2': self.generateWord2})
+		Command.generators.update({u'name': Command.generateName, u'game': Command.generateVideogame, u'videogame': Command.generateVideogame, u'word': Command.generateWord, u'word2': Command.generateWord2})
 		#Go through all available .grammar files and store their 'triggers'
-		for grammarFilePath in glob.iglob(os.path.join(self.filesLocation, '*.grammar')):
+		for grammarFilePath in glob.iglob(os.path.join(Command.filesLocation, '*.grammar')):
 			grammarFileName = os.path.basename(grammarFilePath)
 			with open(grammarFilePath, 'r') as grammarFile:
 				try:
 					grammarJson = json.load(grammarFile)
 				except ValueError as e:
-					self.logError("[Generators] Error parsing grammar file '{}', invalid JSON: {}".format(grammarFileName, e.message))
+					Command.logError("[Generators] Error parsing grammar file '{}', invalid JSON: {}".format(grammarFileName, e.message))
 				else:
 					if u'_triggers' not in grammarJson:
-						self.logError("[Gen] Grammar file '{}' is missing a '_triggers' field so it can't be called".format(os.path.basename(grammarFileName)))
+						Command.logError("[Gen] Grammar file '{}' is missing a '_triggers' field so it can't be called".format(os.path.basename(grammarFileName)))
 					else:
 						triggers = grammarJson[u'_triggers']
 						if isinstance(triggers, basestring):
@@ -53,11 +53,11 @@ class Command(CommandTemplate):
 						for trigger in triggers:
 							trigger = trigger.lower()
 							#Check if the trigger isn't in there already
-							if trigger in self.generators:
-								self.logError(u"[Gen] Trigger '{}' is in multiple generators ('{}' and '{}')".format(trigger, grammarJson.get(u'_name', grammarFileName), self.generators[trigger]))
+							if trigger in Command.generators:
+								Command.logError(u"[Gen] Trigger '{}' is in multiple generators ('{}' and '{}')".format(trigger, grammarJson.get(u'_name', grammarFileName), Command.generators[trigger]))
 							else:
-								self.generators[trigger] = grammarFileName
-		self.logDebug("[Generators] Loaded {:,} generators".format(len(self.generators)))
+								Command.generators[trigger] = grammarFileName
+		Command.logDebug("[Generators] Loaded {:,} generators".format(len(Command.generators)))
 
 	def getHelp(self, message):
 		#If there's no parameters provided, just show the generic module help text
@@ -97,7 +97,7 @@ class Command(CommandTemplate):
 		if message.messageParts[0].lower() == 'reload':
 			if 	not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				return message.reply("I'm sorry, only admins are allowed to make me reload my generators. Try asking one if my admins. Sorry!")
-			self.loadGenerators()
+			Command.loadGenerators()
 			return message.reply("Ok, I reloaded all the generators from disk. I now have these {:,} generators loaded: {}".format(len(self.generators), ", ".join(self.getAvailableTriggers())))
 
 		if len(self.generators) == 0:
@@ -118,7 +118,7 @@ class Command(CommandTemplate):
 			path = os.path.join(self.filesLocation, wantedGenerator)
 			#Grammar file! First check if it still exists
 			if not os.path.isfile(path):
-				self.loadGenerators()
+				Command.loadGenerators()
 				return message.reply("Huh, that generator did exist last time I looked, but now it's... gone, for some reason. Please don't rename my files without telling me. I'll just refresh my generator list", "say")
 			#It exists! Send it to the parser
 			with open(path, "r") as grammarfile:
