@@ -100,40 +100,55 @@ class Command(CommandTemplate):
 			Command.loadGenerators()
 			return message.reply(u"Ok, I reloaded all the generators from disk. I now have these {:,} generators loaded: {}".format(len(self.generators), u", ".join(self.getAvailableTriggers())))
 
+		try:
+			message.reply(Command.executeGrammarByTrigger(message.messageParts[0].lower(), message.messageParts[1:]))
+		except GrammarException as e:
+			raise CommandException(e.message)
 
-		if len(self.generators) == 0:
-			return message.reply("That's weird, I don't seem to have any generators loaded, sorry. Try updating, reloading this module, or writing your own generator!", "say")
 	@staticmethod
 	def getAvailableTriggers():
 		return sorted(Command.generators.keys())
 
-		wantedGeneratorName = message.messageParts[0].lower()
-		if wantedGeneratorName == 'random':
-			wantedGenerator = random.choice(self.generators.values())
-		elif wantedGeneratorName in self.generators:
-			wantedGenerator = self.generators[wantedGeneratorName]
+	@staticmethod
+	def executeGrammarByTrigger(trigger, parameters=None):
+		"""
+		Looks to see if there's a grammar that should fire on the provided trigger, and executes it if so.
+		If the grammar can't be found, or if something goes wrong during execution, a GrammarException will be thrown
+		:param trigger: The grammar trigger to execute
+		:param parameters: A string with space-delimited parameters to pass on to the grammar
+		:return: A string with the grammar result
+		:raises GrammarException if no generators are loaded, if there is no grammar that should fire on the provided trigger, or if something goes wrong during execution
+		"""
+		if not Command.generators:
+			raise GrammarException(u"That's weird, I don't seem to have any generators loaded, sorry. Try updating, reloading this module, or writing your own generator!")
+
+		trigger = StringUtil.forceToUnicode(trigger)
+		if trigger == u'random':
+			wantedGenerator = random.choice(Command.generators.values())
+		elif trigger in Command.generators:
+			wantedGenerator = Command.generators[trigger]
 		else:
 			#No suitable generator found, list the available ones
-			return message.reply("That is not a valid generator name. Use 'random' to let me pick, or choose from: {}".format(", ".join(self.getAvailableTriggers())))
+			raise GrammarException(u"'{}' is not a valid generator name. Use 'random' to let me pick, or choose from: {}".format(trigger, u", ".join(Command.getAvailableTriggers())))
 
-		parameters = message.messageParts[1:]
 		#The generator can either be a module function, or a string pointing to a grammar file. Check which it is
 		if isinstance(wantedGenerator, basestring):
-			path = os.path.join(self.filesLocation, wantedGenerator)
+			path = os.path.join(Command.filesLocation, wantedGenerator)
 			#Grammar file! First check if it still exists
 			if not os.path.isfile(path):
 				Command.loadGenerators()
-				return message.reply("Huh, that generator did exist last time I looked, but now it's... gone, for some reason. Please don't rename my files without telling me. I'll just refresh my generator list", "say")
+				raise GrammarException(u"Huh, the '{}' generator did exist last time I looked, but now it's... gone, for some reason. Please don't rename my files without telling me. I'll just refresh my generator list".format(trigger))
 			#It exists! Send it to the parser
 			with open(path, "r") as grammarfile:
-				grammarDict = json.load(grammarfile)
 				try:
-					message.reply(self.parseGrammarDict(grammarDict, wantedGeneratorName, parameters=parameters))
-				except GrammarException as e:
-					raise CommandException(e.message)
+					grammarDict = json.load(grammarfile)
+				except ValueError as e:
+					Command.logError(u"[Gen] Grammar file '{}' is invalid JSON: {}".format(wantedGenerator, e))
+					raise GrammarException(u"The grammar file for '{}' is broken, for some reason. Tell my owner(s), hopefully they can fix it".format(trigger))
+				return Command.parseGrammarDict(grammarDict, trigger, parameters=parameters)
 		else:
 			#Function! Just call it, with the message so it can figure it out from there itself
-			message.reply(wantedGenerator(parameters))
+			return wantedGenerator(parameters)
 
 	@staticmethod
 	def getLineFromFile(filename, filelocation=None, lineNumber=None):
