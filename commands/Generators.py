@@ -565,7 +565,7 @@ class Command(CommandTemplate):
 				try:
 					replacement = Command.numberToText(int(replacement))
 				except ValueError:
-					raise GrammarException(u"Asked to convert '{}' to a number with 'numberasword' option, but it isn't one")
+					raise GrammarException(u"Asked to convert '{}' to a number with 'numberasword' option, but it isn't one".format(replacement))
 			elif option == u"hide":
 				#Completely hides the replacement text. Useful in combination with 'storeas', if you don't want to store but not display the output
 				replacement = u""
