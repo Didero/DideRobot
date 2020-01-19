@@ -55,3 +55,12 @@ def removeNewlines(string):
 	if '\n' not in string:
 		return string
 	return re.sub(r"( ?\n+ ?)+", " ", string)
+
+def forceToUnicode(varToForceToUnicode):
+	if isinstance(varToForceToUnicode, unicode):
+		return varToForceToUnicode
+	if isinstance(varToForceToUnicode, dict):
+		return dictToString(varToForceToUnicode)
+	if not isinstance(varToForceToUnicode, basestring):
+		varToForceToUnicode = str(varToForceToUnicode)
+	return unicode(varToForceToUnicode, encoding='utf-8', errors='replace')
