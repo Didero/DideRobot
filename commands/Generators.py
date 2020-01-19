@@ -71,7 +71,7 @@ class Command(CommandTemplate):
 		if isinstance(generator, basestring):
 			with open(os.path.join(self.filesLocation, generator), 'r') as grammarFile:
 				grammarDict = json.load(grammarFile)
-				if '_description' in grammarDict:
+				if u'_description' in grammarDict:
 					return u"{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, grammarDict['_description'])
 				else:
 					return "The '{}' generator file didn't specify a help text, sorry!".format(requestedTrigger)
