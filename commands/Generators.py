@@ -538,6 +538,9 @@ class Command(CommandTemplate):
 			else:
 				raise GrammarException(u"No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey))
 
+		# We assume all replacements are unicode strings, so make sure this replacement is too
+		replacement = StringUtil.forceToUnicode(replacement)
+
 		# Process the possible extra options that can be provided, in the specified order
 		for option in extraOptions:
 			if option == u'lowercase':
@@ -587,12 +590,6 @@ class Command(CommandTemplate):
 					orgReplacement = replacement
 					replacement = replacement[:closingBracketIndex] + u"|&" + u",".join(optionsToPassOn) + replacement[closingBracketIndex:]
 					self.logDebug(u"[Gen] Passed on case option, replaced '{}' with '{}'".format(orgReplacement, replacement))
-
-		#The parser expects unicode, so make sure our replacement is unicode
-		if isinstance(replacement, str):
-			replacement = replacement.decode("utf-8", errors="replace")
-		elif not isinstance(replacement, unicode):
-			replacement = unicode(replacement)
 
 		#Done!
 		return replacement
