@@ -645,7 +645,8 @@ class Command(CommandTemplate):
 		return StringUtil.joinWithSeparator(names)
 
 
-	def generateWord(self, parameters=None):
+	@staticmethod
+	def generateWord(parameters=None):
 		"""
 		Generates a word by putting letters together in semi-random order. Provide a number to generate that many words
 		"""
@@ -700,7 +701,8 @@ class Command(CommandTemplate):
 		#Enough words generated, let's return the result
 		return u", ".join(words)
 
-	def generateWord2(self, parameters=None):
+	@staticmethod
+	def generateWord2(parameters=None):
 		"""
 		Another method to generate a word. Tries to generate pronounceable syllables and puts them together. Provide a number to generate that many words
 		"""
@@ -743,20 +745,20 @@ class Command(CommandTemplate):
 				#In most cases, add an onset
 				if random.randint(1, 100) <= 75:
 					if random.randint(1, 100) <= simpleLetterChance:
-						word += self.getBasicOrSpecialLetter("consonant", basicLetterChance)
+						word += Command.getBasicOrSpecialLetter("consonant", basicLetterChance)
 					else:
 						word += random.choice(onsets)
 
 				#Nucleus!
 				if random.randint(1, 100) <= simpleLetterChance:
-					word += self.getBasicOrSpecialLetter("vowel", basicLetterChance)
+					word += Command.getBasicOrSpecialLetter("vowel", basicLetterChance)
 				else:
 					word += random.choice(nuclei)
 
 				#Add a coda in most cases (Always add it if this is the last syllable of the word and it'd be too short otherwise)
 				if (j == syllableCount - 1 and len(word) < 3) or random.randint(1, 100) <= 75:
 					if random.randint(1, 100) <= simpleLetterChance:
-						word += self.getBasicOrSpecialLetter("consonant", basicLetterChance)
+						word += Command.getBasicOrSpecialLetter("consonant", basicLetterChance)
 					else:
 						word += random.choice(codas)
 
@@ -765,7 +767,8 @@ class Command(CommandTemplate):
 
 		return u", ".join(words)
 
-	def generateVideogame(self, parameters=None):
+	@staticmethod
+	def generateVideogame(parameters=None):
 		"""
 		Generates random video game names. Optionally provide a number to make it generate that many game names,
 		and replacement words that will get inserted into the generated name
