@@ -19,7 +19,7 @@ def parseInt(text, defaultValue=None, lowestValue=None, highestValue=None):
 def dictToString(dictionary):
 	dictstring = u""
 	for key, value in dictionary.iteritems():
-		dictstring += u"{}: {}, ".format(key, value)
+		dictstring += u"{}: {}, ".format(key, forceToUnicode(value))
 	if len(dictstring) > 2:
 		dictstring = dictstring[:-2]
 	return dictstring
