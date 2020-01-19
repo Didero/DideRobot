@@ -43,10 +43,10 @@ class Command(CommandTemplate):
 				except ValueError as e:
 					self.logError("[Generators] Error parsing grammar file '{}', invalid JSON: {}".format(grammarFileName, e.message))
 				else:
-					if '_triggers' not in grammarJson:
+					if u'_triggers' not in grammarJson:
 						self.logError("[Gen] Grammar file '{}' is missing a '_triggers' field so it can't be called".format(os.path.basename(grammarFileName)))
 					else:
-						triggers = grammarJson['_triggers']
+						triggers = grammarJson[u'_triggers']
 						if isinstance(triggers, basestring):
 							#If there's only one trigger, make it a list anyway so we can loop as normal, saves duplicate code
 							triggers = [triggers]
@@ -54,7 +54,7 @@ class Command(CommandTemplate):
 							trigger = trigger.lower()
 							#Check if the trigger isn't in there already
 							if trigger in self.generators:
-								self.logError(u"[Gen] Trigger '{}' is in multiple generators ('{}' and '{}')".format(trigger, grammarJson.get('_name', grammarFileName), self.generators[trigger]))
+								self.logError(u"[Gen] Trigger '{}' is in multiple generators ('{}' and '{}')".format(trigger, grammarJson.get(u'_name', grammarFileName), self.generators[trigger]))
 							else:
 								self.generators[trigger] = grammarFileName
 		self.logDebug("[Generators] Loaded {:,} generators".format(len(self.generators)))
