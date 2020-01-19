@@ -25,7 +25,7 @@ class Command(CommandTemplate):
 
 	def onLoad(self):
 		#Make the grammar parsing function available to other modules
-		GlobalStore.commandhandler.addCommandFunction(__file__, 'parseGrammarDict', self.parseGrammarDict)
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'parseGrammarDict', Command.parseGrammarDict)
 		Command.loadGenerators()
 
 	@staticmethod
@@ -62,14 +62,14 @@ class Command(CommandTemplate):
 	def getHelp(self, message):
 		#If there's no parameters provided, just show the generic module help text
 		if message.messagePartsLength <= 1:
-			return CommandTemplate.getHelp(self, message) + ", ".join(self.getAvailableTriggers())
+			return CommandTemplate.getHelp(self, message) + ", ".join(Command.getAvailableTriggers())
 		requestedTrigger = message.messageParts[1].lower()
-		if requestedTrigger not in self.generators:
+		if requestedTrigger not in Command.generators:
 			# No matching generator trigger was found
 			return "I'm not familiar with the '{}' generator, though if you think it would make a good one, feel free to inform my owner(s), maybe they'll create it!".format(requestedTrigger)
-		generator = self.generators[requestedTrigger]
+		generator = Command.generators[requestedTrigger]
 		if isinstance(generator, basestring):
-			with open(os.path.join(self.filesLocation, generator), 'r') as grammarFile:
+			with open(os.path.join(Command.filesLocation, generator), 'r') as grammarFile:
 				grammarDict = json.load(grammarFile)
 				if u'_description' in grammarDict:
 					return u"{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, grammarDict['_description'])
@@ -98,7 +98,7 @@ class Command(CommandTemplate):
 			if 	not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
 				return message.reply("I'm sorry, only admins are allowed to make me reload my generators. Try asking one if my admins. Sorry!")
 			Command.loadGenerators()
-			return message.reply(u"Ok, I reloaded all the generators from disk. I now have these {:,} generators loaded: {}".format(len(self.generators), u", ".join(self.getAvailableTriggers())))
+			return message.reply(u"Ok, I reloaded all the generators from disk. I now have these {:,} generators loaded: {}".format(len(Command.generators), u", ".join(Command.getAvailableTriggers())))
 
 		try:
 			message.reply(Command.executeGrammarByTrigger(message.messageParts[0].lower(), message.messageParts[1:]))
@@ -826,7 +826,7 @@ class Command(CommandTemplate):
 				repeatedSubjectFound = True
 				while repeatedSubjectFound:
 					repeatedSubjectFound = False
-					word = FileUtil.getRandomLineFromFile(os.path.join(self.filesLocation, "VideogameName{}.txt".format(partFilename)))
+					word = FileUtil.getRandomLineFromFile(os.path.join(Command.filesLocation, "VideogameName{}.txt".format(partFilename)))
 					#Some words are followed by a subject list, to prevent repeats
 					subjects = []
 					if '^' in word:
