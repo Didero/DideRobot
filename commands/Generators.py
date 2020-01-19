@@ -121,7 +121,7 @@ class Command(CommandTemplate):
 			with open(path, "r") as grammarfile:
 				grammarDict = json.load(grammarfile)
 				try:
-					message.reply(self.parseGrammarDict(grammarDict, parameters=parameters))
+					message.reply(self.parseGrammarDict(grammarDict, wantedGeneratorName, parameters=parameters))
 				except GrammarException as e:
 					raise CommandException(e.message)
 		else:
@@ -292,9 +292,11 @@ class Command(CommandTemplate):
 							   "isAre": "are", "wasWere": "were", "verbS": "", "verbEs": ""})
 		return genderDict
 
-	def parseGrammarDict(self, grammarDict, parameters=None, variableDict=None):
+	def parseGrammarDict(self, grammarDict, trigger, parameters=None, variableDict=None):
 		if variableDict is None:
 			variableDict = {}
+		#Store the trigger so grammars can know how they got called
+		variableDict[u'_trigger'] = StringUtil.forceToUnicode(trigger)
 
 		#First check if the starting field exists
 		if u'start' in grammarDict:
