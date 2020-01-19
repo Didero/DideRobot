@@ -1180,6 +1180,39 @@ class GrammarCommands(object):
 		return argumentList[0] - decreaseAmount
 
 	@staticmethod
+	@validateArguments(argumentCount=4, numericArgumentIndexes=1)
+	def command_islength(argumentList, grammarDict, variableDict):
+		"""
+		<$islength|stringToCheck|lengthToEqual|resultIfStringIsLength|resultOtherwise>
+		"""
+		if len(argumentList[0]) == argumentList[1]:
+			return argumentList[2]
+		else:
+			return argumentList[3]
+
+	@staticmethod
+	@validateArguments(argumentCount=4, numericArgumentIndexes=1)
+	def command_isshorter(argumentList, grammarDict, variableDict):
+		"""
+		<$isshorter|stringToCheck|lengthToEqual|resultIfStringIsShorter|resultOtherwise>
+		"""
+		if len(argumentList[0]) < argumentList[1]:
+			return argumentList[2]
+		else:
+			return argumentList[3]
+
+	@staticmethod
+	@validateArguments(argumentCount=4, numericArgumentIndexes=1)
+	def command_isshorterorequal(argumentList, grammarDict, variableDict):
+		"""
+		<$isshorterorequal|stringToCheck|lengthToEqual|resultIfStringIsShorterOrEqual|resultOtherwise>
+		"""
+		if len(argumentList[0]) <= argumentList[1]:
+			return argumentList[2]
+		else:
+			return argumentList[3]
+
+	@staticmethod
 	@validateArguments(argumentCount=2)
 	def command_switch(argumentList, grammarDict, variableDict):
 		"""
