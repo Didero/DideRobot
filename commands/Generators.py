@@ -421,14 +421,18 @@ class Command(CommandTemplate):
 			grammarString = grammarString.decode("utf-8", errors="replace")
 
 		outputString = grammarString
-		if u'_iteration' not in variableDict:
-			variableDict[u'_iteration'] = 0
-		variableDict[u'_maxIterations'] = Command.MAX_LOOP_COUNT
-		variableDict[u'_maxIterationsLeft'] = Command.MAX_LOOP_COUNT - variableDict[u'_iteration']
 		startIndex = 0
-		while variableDict[u'_iteration'] < Command.MAX_LOOP_COUNT:
-			variableDict[u'_iteration'] += 1
-			variableDict[u'_maxIterationsLeft'] -= 1
+
+		iteration = variableDict.get(u'_iteration', 0)
+		if not isinstance(iteration, int) or iteration < 0:
+			iteration = 0
+		variableDict[u'_iteration'] = iteration
+		variableDict[u'_maxIterations'] = Command.MAX_LOOP_COUNT
+		while iteration < Command.MAX_LOOP_COUNT:
+			# Some commands can increase the iterations, but don't allow them to decrease it
+			iteration = max(iteration, variableDict[u'_iteration']) + 1
+			variableDict[u'_iteration'] = iteration
+			variableDict[u'_maxIterationsLeft'] = Command.MAX_LOOP_COUNT - iteration
 
 			nestedBracketLevel = 0
 			characterIsEscaped = False
