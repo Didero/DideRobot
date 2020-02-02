@@ -21,7 +21,7 @@ class Command(CommandTemplate):
 
 	generators = {}
 	filesLocation = os.path.join(GlobalStore.scriptfolder, "data", "generators")
-	MAX_LOOP_COUNT = 250
+	MAX_LOOP_COUNT = 300
 
 	def onLoad(self):
 		#Make the grammar parsing function available to other modules
