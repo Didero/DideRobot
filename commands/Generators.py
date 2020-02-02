@@ -1439,7 +1439,7 @@ class GrammarCommands(object):
 		return IrcFormattingUtil.makeTextBold(argumentList[0])
 
 	@staticmethod
-	@validateArguments(argumentCount=1, numericArgumentIndexes=1)
+	@validateArguments(argumentCount=1, numericArgumentIndexes=0)
 	def command_numbertotext(argumentList, grammarDict, variableDict):
 		"""
 		<$numbertotext|numberToDisplayAsText>
