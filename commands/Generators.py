@@ -965,9 +965,12 @@ class GrammarCommands(object):
 	def command_storeas(argumentList, grammarDict, variableDict):
 		"""
 		<$storeas|varname|value>
-		Stores a value under the provided name, for future use. An alias for 'setvar'
+		Stores a value under the provided name for future use, and returns the value.
+		If you want to store a value but not show it, use '$setvar'
 		"""
-		return GrammarCommands.command_setvar(argumentList, grammarDict, variableDict)
+		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
+		variableDict[argumentList[0]] = argumentList[1]
+		return argumentList[1]
 
 
 	@staticmethod
