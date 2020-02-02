@@ -494,11 +494,16 @@ class Command(CommandTemplate):
 		fieldKey = grammarBlockParts.pop(0)
 		replacement = u""
 
-		#If the last field starts with '&', it specifies special options, like making text bold.
+		#If the last field starts with '&', it specifies one or more modifiers, like making text bold.
 		# Multiple options are separated by commas. Retrieve those options
-		extraOptions = []
+		firstModifier = None
+		remainingModifiers = None
 		if grammarBlockParts and grammarBlockParts[-1].startswith(postProcessorPrefix):
-			extraOptions = grammarBlockParts.pop()[1:].split(u',')
+			modifierBlockPart = grammarBlockParts.pop().lstrip(postProcessorPrefix)
+			if u',' in modifierBlockPart:
+				firstModifier, remainingModifiers = modifierBlockPart.split(u',', 1)
+			else:
+				firstModifier = modifierBlockPart
 
 		# Grammar commands start with the command prefix, check if this block is a grammar command
 		if fieldKey.startswith(fieldCommandPrefix):
@@ -570,55 +575,23 @@ class Command(CommandTemplate):
 		# We assume all replacements are unicode strings, so make sure this replacement is too
 		replacement = StringUtil.forceToUnicode(replacement)
 
-		# Process the possible extra options that can be provided, in the specified order
-		for option in extraOptions:
-			if option == u'lowercase':
-				replacement = replacement.lower()
-			elif option == u'uppercase':
-				replacement = replacement.upper()
-			elif option == u'camelcase' or option == u'titlecase':
-				replacement = replacement.title()
-			elif option == u'firstletteruppercase':
-				if len(replacement) > 1:
-					replacement = replacement[0].upper() + replacement[1:]
-				else:
-					replacement = replacement.upper()
-			elif option == u'bold':
-				replacement = IrcFormattingUtil.makeTextBold(replacement)
-			elif option.startswith(u'storeas') or option.startswith(u'setvar'):
-				#Store the replacement under the provided variable name
-				# (format 'storeas:[varname]')
-				if u':' not in option:
-					raise GrammarException(u"Invalid 'storeas' argument for field '<{}|{}|&{}>', should be 'storeas:[varname]'".format(fieldKey, u"|".join(grammarBlockParts), u",".join(extraOptions)))
-				varname = option.split(u':', 1)[1]
-				if varname.startswith(u'_'):
-					raise GrammarException(u"'{}' tries to save to a variable name starting with an underscore, but those are read-only".format(option))
-				variableDict[varname] = replacement
-			elif option == u'numbertotext':
-				#Convert an actual number to text, like '4' to 'four'
-				try:
-					replacement = Command.numberToText(int(replacement))
-				except ValueError:
-					raise GrammarException(u"Asked to convert '{}' to a number with 'numberasword' option, but it isn't one".format(replacement))
-			elif option == u"hide":
-				#Completely hides the replacement text. Useful in combination with 'storeas', if you don't want to store but not display the output
-				replacement = u""
+		#Turn the modifier into a new grammarblock
+		if firstModifier:
+			#Store the original replacement because we need to add it as a parameter to the modifier command
+			variableDict[u'_'] = replacement
+			#Check if there are any parameters passed
+			if u':' not in firstModifier:
+				modifierParams = [replacement]
 			else:
-				raise GrammarException(u"Unknown extra option '{}' in field '{}'".format(option, fieldKey))
-
-		# Sometimes decorations need to be passed on (like if we replace '<sentence|titlecase>' with '<word1> <word2>', 'word1' won't be titlecase)
-		if len(extraOptions) > 0 and not fieldKey.startswith(u'_') and isinstance(replacement, basestring) and replacement.startswith(u'<'):
-			closingBracketIndex = replacement.find(u'>')
-			if closingBracketIndex > -1:
-				# Only pass on the case changes
-				optionsToPassOn = []
-				for option in extraOptions:
-					if option.endswith(u'case'):
-						optionsToPassOn.append(option)
-				if optionsToPassOn:
-					orgReplacement = replacement
-					replacement = replacement[:closingBracketIndex] + u"|&" + u",".join(optionsToPassOn) + replacement[closingBracketIndex:]
-					Command.logDebug(u"[Gen] Passed on case option, replaced '{}' with '{}'".format(orgReplacement, replacement))
+				modifierParams = firstModifier.split(u':')
+				firstModifier = modifierParams.pop(0)
+				#If the replacement string isn't used explicitely as a parameter, add it as the last parameter
+				if argumentIsVariablePrefix + u'_' not in modifierParams:
+					modifierParams.append(replacement)
+			replacement = u"<{commandPrefix}{firstModifier}|{params}".format(commandPrefix=fieldCommandPrefix, firstModifier=firstModifier, params=u"|".join(modifierParams))
+			if remainingModifiers:
+				replacement += u"|" + postProcessorPrefix + remainingModifiers
+			replacement += u">"
 
 		#Done!
 		return replacement
