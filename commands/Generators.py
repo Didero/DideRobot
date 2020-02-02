@@ -1416,7 +1416,63 @@ class GrammarCommands(object):
 		"""
 		return Command.getLineFromFile(argumentList[0], lineNumber=None if len(argumentList) == 1 else argumentList[1])
 
+	#################
+	#Text formatting
 
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_lowercase(argumentList, grammarDict, variableDict):
+		"""
+		<$lowercase|stringToMakeLowercase>
+		Returns the provided string with every letter made lowercase
+		"""
+		return argumentList[0].lower()
+
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_uppercase(argumentList, grammarDict, variableDict):
+		"""
+		<$uppercase|stringToMakeUppercase>
+		Returns the provided string with every letter made uppercase
+		"""
+		return argumentList[0].upper()
+
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_titlecase(argumentList, grammarDict, variableDict):
+		"""
+		<$titlecase|stringToMakeTitlecase>
+		Returns the provided string with every word starting with a capital letter and the rest of the word lowercase
+		"""
+		return argumentList[0].title()
+
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_firstletteruppercase(argumentList, grammarDict, variableDict):
+		"""
+		<$firstletteruppercase|stringToFormat>
+		Returns the provided string with the first character made uppercase and the rest left as provided
+		"""
+		s = argumentList[0]
+		return s[0].upper() + s[1:]
+
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_bold(argumentList, grammarDict, variableDict):
+		"""
+		<$bold|stringToMakeBold>
+		Returns the provided string formatted so it looks like bold text in IRC
+		"""
+		return IrcFormattingUtil.makeTextBold(argumentList[0])
+
+	@staticmethod
+	@validateArguments(argumentCount=1, numericArgumentIndexes=1)
+	def command_numbertotext(argumentList, grammarDict, variableDict):
+		"""
+		<$numbertotext|numberToDisplayAsText>
+		Converts the provided number to its English representation. For instance, '4' would get turned into 'four'
+		"""
+		return Command.numberToText(argumentList[0])
 
 	#################
 	#Miscellaneous
@@ -1556,6 +1612,16 @@ class GrammarCommands(object):
 		This is an alias for the 'generator' command
 		"""
 		return GrammarCommands.command_generator(argumentList, grammarDict, variableDict)
+
+	@staticmethod
+	@validateArguments(argumentCount=0)
+	def command_hide(argumentList, grammarDict, variableDict):
+		"""
+		<$hide[|optionalText]>
+		This command returns nothing. Useful if you want to add comments in your grammar.
+		Mainly added for backwards compatibility with the old 'extraOptions' system which had a 'hide' option
+		"""
+		return u""
 
 
 class GrammarException(Exception):
