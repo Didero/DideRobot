@@ -973,7 +973,9 @@ class GrammarCommands(object):
 		if varname.startswith(u"_"):
 			raise GrammarException(u"Variable '{}' starts with an underscore, which means it's an internal variables and can't be changed".format(varname))
 
+	#################
 	#Saving and loading variables
+
 	@staticmethod
 	@validateArguments(argumentCount=2)
 	def command_setvar(argumentList, grammarDict, variableDict):
@@ -1089,8 +1091,9 @@ class GrammarCommands(object):
 		"""
 		return GrammarCommands.command_remvar(argumentList, grammarDict, variableDict)
 
-
+	#################
 	#Variable checking
+
 	@staticmethod
 	@validateArguments(argumentCount=4)
 	def command_ifequals(argumentList, grammarDict, variableDict):
@@ -1263,7 +1266,9 @@ class GrammarCommands(object):
 		else:
 			raise GrammarException(u"'switch' command contains no case for '{}', and no '_default' fallback case".format(argumentList[0]))
 
+	#################
 	#Parameter functions
+
 	@staticmethod
 	@validateArguments(argumentCount=2)
 	def command_hasparams(argumentList, grammarDict, variableDict):
@@ -1309,7 +1314,9 @@ class GrammarCommands(object):
 		# Fill in the provided parameter(s) in this field
 		return variableDict.get(u'_params', u"")
 
+	#################
 	#Random choices
+
 	@staticmethod
 	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1))
 	def command_randint(argumentList, grammarDict, variableDict):
@@ -1410,7 +1417,10 @@ class GrammarCommands(object):
 		return Command.getLineFromFile(argumentList[0], lineNumber=None if len(argumentList) == 1 else argumentList[1])
 
 
+
+	#################
 	#Miscellaneous
+
 	@staticmethod
 	@validateArguments(argumentCount=3, numericArgumentIndexes=(3,))
 	def command_replace(argumentList, grammarDict, variableDict):
