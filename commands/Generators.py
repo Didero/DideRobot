@@ -953,12 +953,17 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=2)
 	def command_setvar(argumentList, grammarDict, variableDict):
 		"""
-		<$setvar|varname|value>
-		Stores a value under the provided name, for future use
+		<$setvar|varname|value[|shouldShowValue]>
+		Stores a value under the provided name, for future use.
+		By default this produces no output, but if the optional parameter 'shouldShowValue' is 'show' or 'true', the value will be displayed
+		If you want to always show the value, use '$storeas'
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
 		variableDict[argumentList[0]] = argumentList[1]
-		return u""
+		if len(argumentList) > 2 and argumentList[2].lower() in (u'show', u'true'):
+			return argumentList[1]
+		else:
+			return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
