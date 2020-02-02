@@ -11,7 +11,7 @@ from CommandException import CommandException
 
 fieldCommandPrefix = u"$"
 argumentIsVariablePrefix = u"%"
-postProcessorPrefix = u"&"
+modifiersPrefix = u"&"
 
 
 class Command(CommandTemplate):
@@ -498,8 +498,8 @@ class Command(CommandTemplate):
 		# Multiple options are separated by commas. Retrieve those options
 		firstModifier = None
 		remainingModifiers = None
-		if grammarBlockParts and grammarBlockParts[-1].startswith(postProcessorPrefix):
-			modifierBlockPart = grammarBlockParts.pop().lstrip(postProcessorPrefix)
+		if grammarBlockParts and grammarBlockParts[-1].startswith(modifiersPrefix):
+			modifierBlockPart = grammarBlockParts.pop().lstrip(modifiersPrefix)
 			if u',' in modifierBlockPart:
 				firstModifier, remainingModifiers = modifierBlockPart.split(u',', 1)
 			else:
@@ -590,7 +590,7 @@ class Command(CommandTemplate):
 					modifierParams.append(replacement)
 			replacement = u"<{commandPrefix}{firstModifier}|{params}".format(commandPrefix=fieldCommandPrefix, firstModifier=firstModifier, params=u"|".join(modifierParams))
 			if remainingModifiers:
-				replacement += u"|" + postProcessorPrefix + remainingModifiers
+				replacement += u"|" + modifiersPrefix + remainingModifiers
 			replacement += u">"
 
 		#Done!
