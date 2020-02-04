@@ -2,7 +2,7 @@
 "_name": "Spaceship Name Generator",
 "_description": "Generates a spaceship name. Provide a number to generate multiple names (Max 10). Or provide your own name with one or more underscores somewhere, and those underscores will get replaced by generated names",
 "_triggers": ["spaceship"],
-"_options": ["parseRepeats:10"],
+"_init": ["parseRepeats:10"],
 "start": "<init><$repeat|%_repeats|<optionalIdentifierPrefix><$var|middlePart><optionalSuffix>|, >",
 "init": "<$hasParams|<parseParams>|<$setvar|middlePart|<mainPart>>>",
 "parseParams": "<$ifcontains|%_params|_|<$regexreplace|%_params|_+|<mainPart>|&setvar:middlePart>|<$setvar|middlePart|<$params> <mainPart>>>",
