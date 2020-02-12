@@ -63,7 +63,7 @@ class Command(CommandTemplate):
 
 		replytext = u"{} ({} players, {} min, {}): ".format(IrcFormattingUtil.makeTextBold(item.find('name').attrib['value']), self.getValueRangeDescription(item, 'minplayers', 'maxplayers'),
 															self.getValueRangeDescription(item, 'minplaytime', 'maxplaytime'), item.find('yearpublished').attrib['value'])
-		url = u"{}http://boardgamegeek.com/boardgame/{})".format(Constants.GREY_SEPARATOR, gameId)
+		url = u"{}http://boardgamegeek.com/boardgame/{}".format(Constants.GREY_SEPARATOR, gameId)
 		#Fit in as much of the description as we can
 		lengthLeft = Constants.MAX_MESSAGE_LENGTH - len(replytext) - len(url)
 		description = HTMLParser.HTMLParser().unescape(item.find('description').text)
