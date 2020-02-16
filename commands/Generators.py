@@ -270,45 +270,45 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def isGenderParameter(arg):
-		return arg.lower() in ("f", "female", "woman", "girl", "m", "male", "man", "boy", "misc", "other", "queer")
+		return arg.lower() in (u"f", u"female", u"woman", u"girl", u"m", u"male", u"man", u"boy", u"misc", u"other", u"queer")
 
 	@staticmethod
 	def getGenderWords(genderString, allowUnspecified=True):
 		if genderString is not None:
 			genderString = genderString.lower()
 
-		if genderString in ("f", "female", "woman", "girl"):
-			gender = "f"
-		elif genderString in ("m", "male", "man", "boy"):
-			gender = "m"
-		elif allowUnspecified and genderString in ("misc", "other", "queer"):
-			gender = "misc"
+		if genderString in (u"f", u"female", u"woman", u"girl"):
+			gender = u"f"
+		elif genderString in (u"m", u"male", u"man", u"boy"):
+			gender = u"m"
+		elif allowUnspecified and genderString in (u"misc", u"other", u"queer"):
+			gender = u"misc"
 		else:
 			# No gender specified, pick one on our own
 			roll = random.randint(1, 100)
 			if allowUnspecified and roll <= 45 or roll <= 50:
-				gender = "f"
+				gender = u"f"
 			elif allowUnspecified and roll <= 90 or roll <= 100:
-				gender = "m"
+				gender = u"m"
 			else:
-				gender = "misc"
+				gender = u"misc"
 
 		#Set some verb variables, so using both 'they' and 'he/his' in sentences is easier
 		#For instance in grammar files you can do '<_var|they> <_var|isAre>' or '<_var|they> make<_var|verbS>'
-		#First set them ot the 'he' and 'she' values, since then we only have to change them in one case
-		genderDict = {"isAre": "is", "wasWere": "was", "verbS": "s", "verbEs": "es"}
+		#First set them to the 'he' and 'she' values, since then we only have to change them in one case
+		genderDict = {u"isAre": u"is", u"wasWere": u"was", u"verbS": u"s", u"verbEs": u"es"}
 		#Then set the pronouns
-		if gender == "f":
-			genderDict.update({"gender": "f", "genderNoun": "Woman", "genderNounYoung": "Girl", "pronoun": "she", "possessivePronoun": "her", "personalPronoun": "her",
-							   "they": "she", "their": "her", "them": "her"})
-		elif gender == "m":
-			genderDict.update({"gender": "m", "genderNoun": "Man", "genderNounYoung": "Boy", "pronoun": "he", "possessivePronoun": "his", "personalPronoun": "him",
-							   "they": "he", "their": "his", "them": "him"})
+		if gender == u"f":
+			genderDict.update({u"gender": u"f", u"genderNoun": u"Woman", u"genderNounYoung": u"Girl", u"pronoun": u"she", u"possessivePronoun": u"her", u"personalPronoun": u"her",
+							   u"they": u"she", u"their": u"her", u"them": u"her"})
+		elif gender == u"m":
+			genderDict.update({u"gender": u"m", u"genderNoun": u"Man", u"genderNounYoung": u"Boy", u"pronoun": u"he", u"possessivePronoun": u"his", u"personalPronoun": u"him",
+							   u"they": u"he", u"their": u"his", u"them": u"him"})
 		else:
 			#Since the pronoun is 'they', verbs need other forms, so set them too here
-			genderDict.update({"gender": "misc", "genderNoun": "Person", "genderNounYoung": "Kid", "pronoun": "they", "possessivePronoun": "their", "personalPronoun": "them",
-							   "they": "they", "their": "their", "them": "them",
-							   "isAre": "are", "wasWere": "were", "verbS": "", "verbEs": ""})
+			genderDict.update({u"gender": u"misc", u"genderNoun": u"Person", u"genderNounYoung": u"Kid", u"pronoun": u"they", u"possessivePronoun": u"their", u"personalPronoun": u"them",
+							   u"they": u"they", u"their": u"their", u"them": u"them",
+							   u"isAre": u"are", u"wasWere": u"were", u"verbS": u"", u"verbEs": u""})
 		return genderDict
 
 	@staticmethod
