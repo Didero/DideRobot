@@ -997,7 +997,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=2)
 	def command_setvarrandom(argumentList, grammarDict, variableDict):
 		"""
-		<$setvarrandom|varname|value1|value2|value3>
+		<$setvarrandom|varname|value1|value2|...>
 		Picks one of the provided values at random, and stores it under the provided name, for future use
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
