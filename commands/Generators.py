@@ -946,6 +946,21 @@ class GrammarCommands(object):
 		if varname.startswith(u"_"):
 			raise GrammarException(u"Variable '{}' starts with an underscore, which means it's an internal variables and can't be changed".format(varname))
 
+	@staticmethod
+	def _evaluateAsBoolean(inputToEvaluate, *extraValuesToAcceptAsTrue):
+		"""
+		Checks whether the inputToEvaluate should evaluate to 'True'. The input should be a unicode string
+		'True' is when the string is 'true' or '1' (case-insensitive)
+		You can also specify extra values that should qualify as truthy too (these ARE case-sensitive)
+		:param inputToEvaluate: The unicode string to parse as a boolean
+		:param extraValuesToAcceptAsTrue: One or more strings that should also qualify as truthy
+		:return: True if the input should evaluate to true, False otherwise
+		"""
+		if not inputToEvaluate or not isinstance(inputToEvaluate, unicode):
+			return False
+		inputToEvaluate = inputToEvaluate.lower()
+		return inputToEvaluate in (u'true', u'1') or inputToEvaluate in extraValuesToAcceptAsTrue
+
 	#################
 	#Saving and loading variables
 
@@ -960,7 +975,7 @@ class GrammarCommands(object):
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
 		variableDict[argumentList[0]] = argumentList[1]
-		if len(argumentList) > 2 and argumentList[2].lower() in (u'show', u'true'):
+		if len(argumentList) > 2 and GrammarCommands._evaluateAsBoolean(argumentList[2], u'show'):
 			return argumentList[1]
 		else:
 			return u""
@@ -1120,7 +1135,7 @@ class GrammarCommands(object):
 		"""
 		#First check which regex flags we need to use
 		regexFlags = re.DOTALL  # DOTALL so it can handle newlines in messages properly
-		if len(argumentList) > 4 and len(argumentList[4]) > 0 and argumentList[4].lower() != "false":
+		if len(argumentList) > 4 and len(argumentList[4]) > 0 and GrammarCommands._evaluateAsBoolean(argumentList[4]):
 			regexFlags |= re.IGNORECASE
 		#Make sure we un-escape the regex, so it can use characters like < and | without messing up our parsing
 		regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=regexFlags)
