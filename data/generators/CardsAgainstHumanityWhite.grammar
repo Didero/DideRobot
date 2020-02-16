@@ -1,7 +1,0 @@
-{
-"_name": "Cards Against Humanity Card Combinator - Custom White Card Edition",
-"_description": "Picks a random black card, and fills it in with one or multiple white cards, optionally one entered by the user",
-"_triggers": ["cahw", "cardsagainsthumanitywhite"],
-"_start": "<$hasparams|<$setvar|customwhitecard|true>|><$file|CardsAgainstHumanityBlackCards.txt>",
-"whitecard": "<$hasvar|customwhitecard|<$remvar|customwhitecard><$params|&storeandshow:lastwhitecard,bold>|<$file|CardsAgainstHumanityWhiteCards.txt|&storeandshow:lastwhitecard,bold>>"
-}
