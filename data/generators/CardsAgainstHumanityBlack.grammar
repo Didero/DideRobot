@@ -6,5 +6,5 @@
 "paramscheck": "<$ifcontains|%_params|_|<usercardWithUnderscore>|<usercardWithoutUnderscore>>",
 "usercardWithUnderscore": "<$regexreplace|%_params|_+|<whitecard>>",
 "usercardWithoutUnderscore": "<$params> <whitecard>",
-"whitecard": "<$file|CardsAgainstHumanityWhiteCards.txt|&storeas:lastwhitecard,bold>"
+"whitecard": "<$file|CardsAgainstHumanityWhiteCards.txt|&storeandshow:lastwhitecard,bold>"
 }

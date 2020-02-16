@@ -982,15 +982,27 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
-	def command_storeas(argumentList, grammarDict, variableDict):
+	def command_storeandhide(argumentList, grammarDict, variableDict):
 		"""
-		<$storeas|varname|value>
-		Stores a value under the provided name for future use, and returns the value.
-		If you want to store a value but not show it, use '$setvar'
+		<$storeandhide|varname|value>
+		Stores a value under the provided name for future use, with empty output
+		If you want to see the variable value, use <$storeandshow>.
+		Also look at <$setvar>, which has a 'shouldShowValue' argument
 		"""
-		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
-		variableDict[argumentList[0]] = argumentList[1]
-		return argumentList[1]
+		modifiedArgs = [argumentList[0], argumentList[1], u'false']
+		return GrammarCommands.command_setvar(modifiedArgs, grammarDict, variableDict)
+
+	@staticmethod
+	@validateArguments(argumentCount=2)
+	def command_storeandshow(argumentList, grammarDict, variableDict):
+		"""
+		<$storeandshow|varname|value>
+		Stores a value under the provided name for future use, with the value as output
+		If you don't want to see the variable value, use <$storeandhide>
+		Also look at <$setvar>, which has a 'shouldShowValue' argument
+		"""
+		modifiedArgs = [argumentList[0], argumentList[1], u'true']
+		return GrammarCommands.command_setvar(modifiedArgs, grammarDict, variableDict)
 
 
 	@staticmethod

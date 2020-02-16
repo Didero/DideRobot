@@ -18,6 +18,6 @@
 "land": "<$retrieveAndFormatCardTitle|(?/<!basic )land|(,/|')>",
 "artifact": "<$retrieveAndFormatCardTitle|artifact(?! creature)|'s>",
 "creature": "<$retrieveAndFormatCardTitle|creature|(,/|\bthe\b)>",
-"$retrieveAndFormatCardTitle": "<$modulecommand|searchMagicTheGatheringCards|random|type: %1|&storeas:card,hide><getTitleFromCard><$ifmatch|%card|%2||<$prependtovar|card|the >|true><$var|card>",
-"getTitleFromCard": "<$regexreplace|%card|^.*?\\x02(.+?)\\x02.+$|\\1|&storeas:card,hide>"
+"$retrieveAndFormatCardTitle": "<$modulecommand|searchMagicTheGatheringCards|random|type: %1|&storeandhide:card><getTitleFromCard><$ifmatch|%card|%2||<$prependtovar|card|the >|true><$var|card>",
+"getTitleFromCard": "<$regexreplace|%card|^.*?\\x02(.+?)\\x02.+$|\\1|&storeandhide:card>"
 }
