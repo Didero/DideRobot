@@ -1584,17 +1584,6 @@ class GrammarCommands(object):
 		return resultString
 
 	@staticmethod
-	@validateArguments(argumentCount=1)
-	def command_generate(argumentList, grammarDict, variableDict):
-		"""
-		<$generate|generatorName[|parameter1[|parameter2[...]]]>
-		Run a different generator specified by 'generatorName' and get the result. You can also pass parameters to that generator by adding them as arguments here
-		Please note that the iterations of the called generator count against the current iteration limit. So it's not possible to use this to bypass the iteration limit
-		This is an alias for the 'generator' command
-		"""
-		return GrammarCommands.command_generator(argumentList, grammarDict, variableDict)
-
-	@staticmethod
 	@validateArguments(argumentCount=0)
 	def command_hide(argumentList, grammarDict, variableDict):
 		"""
