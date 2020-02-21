@@ -2,11 +2,11 @@
 "_name": "New Age Bullshit Generator",
 "_description": "Generates some profound-sounding text. Taken from http://sebpearce.com/bullshit",
 "_triggers": ["newage"],
-"_start": "<sentenceType|&firstletteruppercase> <sentenceType|&firstletteruppercase>",
+"_start": "<sentenceType> <sentenceType>",
 "sentenceType": ["<explainingSentence>", "<warningSentence>", "<futureHopeSentence>", "<problemSentence>", "<historySentence>"],
 "explainingSentence": [
-	"<nMass> is the driver of <nMass>.",
-	"<nMass> is the <nTheXOf> of <nMass> and of us.",
+	"<nMass|&firstletteruppercase> is the driver of <nMass>.",
+	"<nMass|&firstletteruppercase> is the <nTheXOf> of <nMass> and of us.",
 	"You and I are <nPersonPlural> of the <nCosmos>.",
 	"We exist as <fixedNP>.",
 	"We <viPerson>, we <viPerson>, we are reborn.",
@@ -14,12 +14,12 @@
 	"This life is nothing short of a <ing> <nOf> of <adj> <nMass>.",
 	"Consciousness consists of <fixedNP> of quantum energy. “Quantum” means a <ing> of the <adj>.",
 	"The goal of <fixedNP> is to plant the seeds of <nMass> rather than <nMassBad>.",
-	"<nMass> is a constant.",
+	"<nMass|&firstletteruppercase> is a constant.",
 	"By <ing>, we <viPerson>.",
 	"The <nCosmos> is <adjWith> <fixedNP>.",
 	"To <vTraverse> the <nPath> is to become one with it.",
 	"Today, science tells us that the essence of nature is <nMass>.",
-	"<nMass> requires exploration."
+	"<nMass|&firstletteruppercase> requires exploration."
 ],
 "warningSentence": [
 	"We can no longer afford to live with <nMassBad>.",
@@ -27,10 +27,10 @@
 	"Only a <nPerson> of the <nCosmos> may <vtMass> this <nOf> of <nMass>.",
 	"You must take a stand against <nMassBad>.",
 	"Yes, it is possible to <vtDestroy> the things that can <vtDestroy> us, but not without <nMass> on our side.",
-	"<nMassBad> is the antithesis of <nMass>.",
+	"<nMassBad|&firstletteruppercase> is the antithesis of <nMass>.",
 	"You may be ruled by <nMassBad> without realizing it. Do not let it <vtDestroy> the <nTheXOf> of your <nPath>.",
 	"The complexity of the present time seems to demand a <ing> of our <nOurPlural> if we are going to survive.",
-	"<nMassBad> is born in the gap where <nMass> has been excluded.",
+	"<nMassBad|&firstletteruppercase> is born in the gap where <nMass> has been excluded.",
 	"Where there is <nMassBad>, <nMass> cannot thrive."
 ],
 "futureHopeSentence": [
@@ -51,7 +51,7 @@
 ],
 "problemSentence": [
 	"Although you may not realize it, you are <adj>.",
-	"<nPerson>, look within and <vtPerson> yourself.",
+	"<nPerson|&firstletteruppercase>, look within and <vtPerson> yourself.",
 	"Have you found your <nPath>?",
 	"How should you navigate this <adj> <nCosmos>?",
 	"It can be difficult to know where to begin.",
