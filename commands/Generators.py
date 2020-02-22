@@ -1066,16 +1066,13 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=2)
 	def command_appendtovar(argumentList, grammarDict, variableDict):
 		"""
-		<$appendtovar|varname|stringToAppend>
-		Appends stringToAppend to what is stored in the specified variable name, and stores it under that name.
-		If the variable wasn't set before, it will be set to 'stringToAppend'.
+		<$appendtovar|varname|stringToAppend[|string2ToAppend[|string3ToAppend[|...]]]>
+		Appends all the 'stringToAppend' arguments to what is stored in the specified variable name, and stores it under that name.
+		If the variable wasn't set before, it will be set to the joined 'stringToAppend's.
 		Doesn't print anything, use the $var command to print the result
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
-		if argumentList[0] not in variableDict:
-			variableDict[argumentList[0]] = argumentList[1]
-		else:
-			variableDict[argumentList[0]] += argumentList[1]
+		variableDict[argumentList[0]] = variableDict.get(argumentList[0], u"") + u"".join(argumentList[1:])
 		return u""
 
 	@staticmethod
