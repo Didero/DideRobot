@@ -1128,7 +1128,6 @@ class GrammarCommands(object):
 		<$ifcontains|string|substringToCheckFor|resultIfSubstringInString|resultIfSubstringNotInString>
 		Checks if the provided string contains the provided substring. Returns the 'InString' result if it is, and the 'NotInString' result otherwise
 		"""
-		#Check if the provided variable exists and if it contains the provided string
 		if argumentList[1] in argumentList[0]:
 			return argumentList[2]
 		else:
