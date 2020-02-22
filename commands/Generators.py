@@ -1135,6 +1135,24 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4)
+	def command_ifstartswith(argumentList, grammarDict, variableDict):
+		"""
+		<$ifstartswith|string|substringToCheckFor|resultIfStringStartsWithSubstring|resultIfStringDoesntStartWithSubstring>
+		Checks if the provided string starts with the provided substring
+		"""
+		return argumentList[2] if argumentList[0].startswith(argumentList[1]) else argumentList[3]
+
+	@staticmethod
+	@validateArguments(argumentCount=4)
+	def command_ifendswith(argumentList, grammarDict, variableDict):
+		"""
+		<$ifendswith|string|substringToCheckFor|resultIfStringEndsWithSubstring|resultIfStringDoesntEndWithSubstring>
+		Checks if the provided string ends with the provided substring
+		"""
+		return argumentList[2] if argumentList[0].endswith(argumentList[1]) else argumentList[3]
+
+	@staticmethod
+	@validateArguments(argumentCount=4)
 	def command_ifmatch(argumentList, grammarDict, variableDict):
 		"""
 		<$ifmatch|string|regexToMatch|resultIfMatch|resultIfNoMatch[|shouldIgnoreCase]>
