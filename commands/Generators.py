@@ -33,7 +33,7 @@ class Command(CommandTemplate):
 		#Make sure there aren't any lingering keys
 		Command.generators.clear()
 		#First fill the generators dict with a few built-in generators
-		Command.generators.update({u'name': Command.generateName, u'game': Command.generateVideogame, u'videogame': Command.generateVideogame, u'word': Command.generateWord, u'word2': Command.generateWord2})
+		Command.generators.update({u'name': Command.generateName, u'word': Command.generateWord, u'word2': Command.generateWord2})
 		#Go through all available .grammar files and store their 'triggers'
 		for grammarFilePath in glob.iglob(os.path.join(Command.filesLocation, '*.grammar')):
 			grammarFileName = os.path.basename(grammarFilePath)
@@ -765,83 +765,6 @@ class Command(CommandTemplate):
 			words.append(word)
 
 		return u", ".join(words)
-
-	@staticmethod
-	def generateVideogame(parameters=None):
-		"""
-		Generates random video game names. Optionally provide a number to make it generate that many game names,
-		and replacement words that will get inserted into the generated name
-		"""
-		repeats = 1
-		replacementText = None
-		if parameters and len(parameters) > 0:
-			#Accepted parameters are either a number, which would be the game name repeats, or a word, which will replace a generated word later
-			try:
-				repeats = int(parameters[0])
-				replacementWords = parameters[1:]
-			except ValueError:
-				replacementWords = parameters
-
-			#Make the replacement text titlecase (But not with .title() because that also capitalizes "'s" at the end of words)
-			replacementText = ""
-			for word in replacementWords:
-				if len(word) > 1:
-					replacementText += word[0].upper() + word[1:] + " "
-				else:
-					replacementText += word.upper() + " "
-			replacementText = replacementText.rstrip()
-			#Game names are unicode, best make this unicode too
-			replacementText = replacementText.decode("utf-8", errors="replace")
-
-			#Clamp the repeats to a max of 5
-			repeats = min(repeats, 5)
-			repeats = max(repeats, 1)
-
-		#Both data and functioning completely stolen from http://videogamena.me/
-		gamenames = []
-		for r in xrange(0, repeats):
-			subjectsPicked = []
-			gamenameparts = []
-			for partFilename in ("FirstPart", "SecondPart", "ThirdPart"):
-				repeatedSubjectFound = True
-				while repeatedSubjectFound:
-					repeatedSubjectFound = False
-					word = FileUtil.getRandomLineFromFile(os.path.join(Command.filesLocation, "VideogameName{}.txt".format(partFilename)))
-					#Some words are followed by a subject list, to prevent repeats
-					subjects = []
-					if '^' in word:
-						parts = word.split('^')
-						word = parts[0]
-						subjects = parts[1].split('|')
-					#Check if the word has appeared in the name already, or is too similar in subject to an already picked word
-					if word in gamenameparts or word in subjectsPicked:
-						repeatedSubjectFound = True
-						continue
-					elif len(subjects) > 0:
-						for subject in subjects:
-							if subject in subjectsPicked:
-								repeatedSubjectFound = True
-								continue
-						#If it's not a repeated subject, add the current subjects to the list
-						subjectsPicked.extend(subjects)
-					gamenameparts.append(word)
-
-			gamename = u" ".join(gamenameparts)
-			if replacementText and len(replacementText) > 0:
-				#Replace a word with the provided replacement text
-				#  (but not words like 'of' and 'the', so only words that start with upper-case)
-				if replacementText.endswith("'s"):
-					#Possessive, try to match it with an existing possessive
-					words = re.findall(r"\w+'s?(?= )", gamename)
-					if len(words) == 0:
-						#No possessive words in the gamename, pick other words (but not the last one)
-						words = re.findall(r"[A-Z]\w+(?= )", gamename)
-				else:
-					words = re.findall(r"[A-Z]\w+", gamename)
-				gamename = gamename.replace(random.choice(words), replacementText, 1)
-			gamenames.append(gamename)
-
-		return StringUtil.joinWithSeparator(gamenames)
 
 
 #Store some data about grammar commands, so we can do some initial argument verification. Keeps the actual commands nice and short

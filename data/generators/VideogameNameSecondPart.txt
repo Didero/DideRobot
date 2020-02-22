@@ -12,7 +12,7 @@ Architecture
 Army
 Assault
 Axe
-Badminton^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Badminton
 Baking
 Ballet
 Balloon
@@ -21,12 +21,12 @@ Bandicoot
 Banjo
 Barbarian
 Barcode
-Baseball^Base|Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
-Basketball^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Baseball
+Basketball
 Bass
 Batman
-Battle^Battalion
-Battleship^Battle|Battalion
+Battle
+Battleship
 Bazooka
 Beach
 Beast
@@ -34,13 +34,13 @@ Beat
 Beautician
 Bedtime
 Bible
-Big Game Hunter^Hunt|Hunter
+Big Game Hunter
 Bimbo
 Bingo
 Biplane
 Blade
 Blimp
-Blood^Bloodbath|of the Blood God
+Blood
 BMX
 Bobsled
 Bomb
@@ -48,10 +48,10 @@ Bomberman
 Bong
 Bongo
 Booty
-Bow Hunter^Hunt|Hunter
-Bowling^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
-Boxing^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
-Breakdancing^Dance Mix|Dance Party|Dancers
+Bow Hunter
+Bowling
+Boxing
+Breakdancing
 Bubble
 Bubblegum
 Buddhist
@@ -65,7 +65,7 @@ Carnival
 Casino
 Castlevania
 Catapult
-Caveman^Man
+Caveman
 Chainsaw
 Chase
 Cheese
@@ -83,23 +83,23 @@ Conga
 Cookie
 Cooking
 Cowboy
-Cricket^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
-Croquet^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Cricket
+Croquet
 Crossdressing
 Crowbar
 Crystal
 Cyborg
-Dance^Dance Mix|Dance Party|Dancers
+Dance
 Dating
-Death^Deathmatch|of Death|of the Dead
+Death
 Deer Hunter
 Demon
 Dentist
-Desert^in the Desert
+Desert
 Devil
 Dinosaur
 Disco
-Dodgeball^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Dodgeball
 Dog
 Donkey
 Dragon
@@ -112,14 +112,14 @@ Elevator
 Equestrian
 Fashion
 Fantasy
-Farm^Farmer
+Farm
 Fencing
-Fighter^Fight|Fight Club
+Fighter
 Fire
-Fishing^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Fishing
 Flatulence
 Florist
-Football^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Football
 Forklift
 Frisbee
 Frog
@@ -151,12 +151,12 @@ Harvest
 Helicopter
 Hillbilly
 Hippo
-Hitman^Man
+Hitman
 Hobo
 Hockey
-Hoedown^Beatdown|Showdown|Smackdown|Takedown
+Hoedown
 Hovercraft
-Horse Racing^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Horse Racing
 Ice
 Ice Cream
 Indian
@@ -177,7 +177,7 @@ Kart
 Katana
 Kitchen
 Kung-fu
-Lacrosse^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Lacrosse
 Landmine
 Laser
 Lawnmower
@@ -187,10 +187,10 @@ Lightning
 Limbo
 Lizard
 Llama
-Love^of Love|Romance
+Love
 Lowrider
 Mafia
-Magic^of Magic|of Might and Magic
+Magic
 Mahjong
 Makeout
 Makeover
@@ -215,11 +215,11 @@ Mountain Climber
 Mummy
 Murder
 Mushroom
-Music^DJ
+Music
 Mutant
 NASCAR
 Nazi
-Night^Knights|Nightmare
+Night
 Ninja
 Nuclear
 Nudist
@@ -228,11 +228,11 @@ Office
 Ostrich
 Outlaw
 Pachinko
-Paintball^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Paintball
 Penguin
 Piano
-Pinball^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
-Ping Pong^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Pinball
+Ping Pong
 Pirate
 Platypus
 Plumber
@@ -253,15 +253,15 @@ Quantum
 Quiz
 Rabbit
 Raccoon
-Racing^Racer
+Racing
 Railroad
 Rainbow
 River
 Robot
 Rocket
 Rodeo
-Rollerball^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
-Rugby^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Rollerball
+Rugby
 Sailboat
 Sailor
 Samurai
@@ -289,7 +289,7 @@ Spelling
 Spelunking
 Spider
 Spork
-Square Dancing^Dance Mix|Dance Party|Dancers
+Square Dancing
 Squirrel
 Stapler
 STD
@@ -308,18 +308,18 @@ Techno
 Tennis
 Terrorist
 Tetris
-Theme Park^Park
+Theme Park
 Thief
 Thunder
 Toon
-Trailer Park^Park
+Trailer Park
 Train
 Trampoline
 Tricycle
 Turtle
 Typing
 UFO
-Underwear^Under Fire|Underground|Underworld
+Underwear
 Unicorn
 Unicycle
 Valkyrie
@@ -328,7 +328,7 @@ Vegetarian
 Vigilante
 Viking
 Vocabulary
-Volleyball^Baseball|Basketball|Boxing|Football|Paintbrawl|Pinball|Polo
+Volleyball
 Wagon
 Walrus
 Wedding
@@ -342,9 +342,9 @@ Worm
 Wrestling
 Writing
 WWE
-WWII^Warfare|Warrior|Wars|World|World Cup|World Tour|- Total War
+WWII
 Yak
 Yeti
 Yoga
 Zamboni
-Zombie^Zombies
+Zombie

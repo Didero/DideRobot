@@ -1,0 +1,9 @@
+{
+"_name": "Videogame Name Generator",
+"_triggers": ["videogame", "game"],
+"_init": "parseRepeats:5",
+"start": "<$repeat|%_repeats|<gamename>|/| >",
+"gamename": "<$setvar|gamename|><$parseLine|VideogameNameFirstPart.txt><$parseLine|VideogameNameSecondPart.txt><$parseLine|VideogameNameThirdPart.txt><$hasParams|<injectParam>|<$var|gamename>>",
+"$parseLine": "<$file|%1|&appendtovar:gamename:%_: >",
+"injectParam": "<$replacerandomword|%gamename|%_params|&storeandshow:gamename><$ifendswith|%gamename| || >"
+}
