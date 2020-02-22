@@ -1538,6 +1538,28 @@ class GrammarCommands(object):
 			raise GrammarException(u"Unable to parse regular expression '{}' in 'regexreplace' call ({})".format(argumentList[1], e.message))
 
 	@staticmethod
+	@validateArguments(argumentCount=2, numericArgumentIndexes=2)
+	def command_replacerandomword(argumentList, grammarDict, variableDict):
+		"""
+		<$replacerandomword|stringToReplaceIn|replacementString[|amountOfWordsToReplace]>
+		Replaces a random word in the provided 'stringToReplace' with the 'replacementString', where words are assumed to be separated by spaces
+		If the 'amountOfWordsToReplace' is provided, this many words are replaced instead of just one
+		"""
+		inputParts = argumentList[0].split(u' ')
+		replacementCount = max(1, argumentList[2]) if len(argumentList) > 2 else 1
+		if replacementCount >= len(inputParts):
+			# Asked to replace more sections than we can, replace everything, with a space in between
+			if replacementCount == 1:
+				return argumentList[1]
+			else:
+				return (argumentList[1] + u" ") * (replacementCount - 1) + argumentList[1]
+		else:
+			indexesToReplace = random.sample(xrange(0, len(inputParts)), replacementCount)
+			for indexToReplace in indexesToReplace:
+				inputParts[indexToReplace] = argumentList[1]
+			return u" ".join(inputParts)
+
+	@staticmethod
 	@validateArguments(argumentCount=2, numericArgumentIndexes=0)
 	def command_repeat(argumentList, grammarDict, variableDict):
 		"""
