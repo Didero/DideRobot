@@ -761,9 +761,13 @@ class Command(CommandTemplate):
 		except ValueError:
 			self.logError("[MTG] Unable to parse downloaded version file, returned text is: " + versionRequest.text if versionRequest else "[not a request]")
 			return (False, "Unable to parse downloaded version file")
-		if 'version' not in latestVersionData:
+		if u'version' not in latestVersionData:
 			return (False, "'version' field does not exist in downloaded version file, data is" + json.dumps(latestVersionData))
-		return (True, latestVersionData['version'])
+		versionNumber = latestVersionData[u'version']
+		# The version string is constructed like 'major.minor.patch+priceUpdateDate'. We don't need the last part, so strip it off
+		if u'+' in versionNumber:
+			versionNumber = versionNumber.split(u'+', 1)[0]
+		return (True, versionNumber)
 
 	@staticmethod
 	def doNeededFilesExist():
