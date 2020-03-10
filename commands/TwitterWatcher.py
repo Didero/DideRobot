@@ -253,12 +253,9 @@ class Command(CommandTemplate):
 		return presentTimeToUse - datetime.datetime.strptime(createdAt, "%a %b %d %H:%M:%S +0000 %Y")
 
 	def getDisplayName(self, username, alternativeName=None):
-		if not alternativeName:
-			alternativeName = username
 		if username not in self.watchData:
-			self.logDebug("[TwitterWatcher] Asked to look up display name for '{}', but there's no data stored for that name".format(username))
-			return ''
-		return self.watchData[username].get('displayname', alternativeName)
+			return username
+		return self.watchData[username].get('displayname', alternativeName if alternativeName else username)
 
 	def saveWatchData(self):
 		watchDataFilePath = os.path.join(GlobalStore.scriptfolder, 'data', 'WatchedTwitterAccounts.json')
