@@ -94,8 +94,16 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 		tweets.extend(apireply)
 	return (True, tweets)
 
-def downloadTweet(username, tweetId):
-	downloadedTweet = downloadTweets(username, maxTweetCount=1, downloadNewerThanId=tweetId-1, downloadOlderThanId=tweetId+1)
+def downloadTweet(username, tweetId=None):
+	"""
+	Download a single tweet for the provided username
+	:param username: The username to retrieve the tweet of
+	:param tweetId: The tweetId to retrieve. If this is None or not provided, the latest tweet will be retrieved
+	:return: A success-tuple, with the first value a success boolean and the second either the error message or the downloaded tweet
+	"""
+	downloadedTweet = downloadTweets(username, maxTweetCount=1,
+									 downloadNewerThanId=tweetId-1 if tweetId else None,
+									 downloadOlderThanId=tweetId+1 if tweetId else None)
 	#If something went wrong, pass on the error
 	if not downloadedTweet[0]:
 		return downloadedTweet
