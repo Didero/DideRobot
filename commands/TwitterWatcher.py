@@ -113,16 +113,13 @@ class Command(CommandTemplate):
 				self.saveWatchData()
 				replytext = "Ok, I won't keep you updated on whatever {} posts. Tweets. Messages? I don't know the proper verb".format(accountName)
 		elif parameter == 'latest':
-			#Download a specific tweet
-			if not isUserBeingWatchedHere:
-				replytext = "I'm not watching {}, so I don't know what they've been up to. On Twitter or anywhere else".format(accountName)
+			#Download the latest tweet for the provided username
+			singleTweet = TwitterUtil.downloadTweet(accountNameLowered)
+			if not singleTweet[0]:
+				self.logError("[TwitterWatcher] Error occured while downloading single tweet user {}: {}".format(accountName, singleTweet[1]))
+				replytext = "Woops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe it's Twitter's fault, in which case all we can do is wait"
 			else:
-				singleTweet = TwitterUtil.downloadTweet(accountNameLowered, self.watchData[accountNameLowered]['highestId'])
-				if not singleTweet[0]:
-					self.logError("[TwitterWatcher] Error occured while downloading single tweet id {} of user {}: {}".format(accountName, self.watchData[accountNameLowered]['highestId'], singleTweet[1]))
-					replytext = "Woops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe it's Twitter's fault, in which case all we can do is wait"
-				else:
-					replytext = self.formatNewTweetText(accountName, singleTweet[1], addTweetAge=True).replace(u'New', u'Latest', 1)
+				replytext = self.formatNewTweetText(accountName, singleTweet[1], addTweetAge=True)
 		elif parameter == 'setname':
 			#Allow users to set a display name
 			if not isUserBeingWatchedHere:
