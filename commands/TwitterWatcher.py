@@ -11,7 +11,7 @@ from IrcMessage import IrcMessage
 
 
 class Command(CommandTemplate):
-	triggers = ['twitterwatcher']
+	triggers = ['twitterwatcher', 'twitterwatch']
 	helptext = "Automatically says new tweets of watched accounts. Use parameter 'add' to add an account to watch and 'remove' to stop watching an account. 'latest' shows latest tweet. " \
 			   "Use 'setname' and 'removename' to set and remove a display name. These parameters need to be followed by a Twitter name. 'list' lists all accounts being watched"
 	scheduledFunctionTime = 300.0  #Check every 5 minutes
