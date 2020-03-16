@@ -5,6 +5,7 @@ import requests
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
+from CommandException import CommandException
 
 
 class Command(CommandTemplate):
@@ -21,7 +22,7 @@ class Command(CommandTemplate):
 		try:
 			page = requests.get('http://en.m.wikipedia.org/wiki/Special:Random/#/random', timeout=10.0)
 		except requests.exceptions.Timeout:
-			return (False, "Apparently Wikipedia couldn't pick between all of its interesting articles, so it took too long to reply. Sorry!")
+			raise CommandException("Apparently Wikipedia couldn't pick between all of its interesting articles, so it took too long to reply. Sorry!")
 		self.logDebug("[wiki] Random page url: {}".format(page.url))
 		articleName = re.search(ur"<title.*?>(.+?) - Wikipedia</title>", page.text, re.IGNORECASE).group(1)
 		return self.getArticleText(articleName, addExtendedText)
@@ -35,19 +36,18 @@ class Command(CommandTemplate):
 		try:
 			result = requests.get(url, params=params, timeout=10.0)
 		except requests.exceptions.Timeout:
-			return (False, "Either that's a difficult search query, or Wikipedia is tired. Either way, that search took too long, sorry")
+			raise CommandException("Either that's a difficult search query, or Wikipedia is tired. Either way, that search took too long, sorry")
 		result = json.loads(result.text)
 		if 'error' in result:
 			self.logError("[wiki] An error occurred while searching. Search term: '{}'; Search url: '{}'; error: '{}'".format(searchterm, url, result['error']['info']))
-			return (False, "Sorry, an error occurred while searching. Please tell my owner(s) to check my logs ({})".format(result['error']['code']))
+			raise CommandException("Sorry, an error occurred while searching. Please tell my owner(s) to check my logs ({})".format(result['error']['code']))
 		#Check if any results were found
 		elif 'search' not in result['query'] or len(result['query']['search']) == 0:
-			return (False, "No search results for '{}'".format(searchterm))
+			return "No search results for '{}'".format(searchterm)
 		else:
 			return self.getArticleText(result['query']['search'][0]['title'], addExtendedText)
 
 	def getArticleText(self, pagename, addExtendedText=False, limitLength=True):
-
 		url = u'https://en.wikipedia.org/w/api.php'
 		params = {'format': 'json', 'utf8': '1', 'action': 'query', 'prop': 'extracts', 'redirects': '1',
 				  'exintro': '1', 'explaintext': '1', 'exsectionformat': 'plain', 'titles': pagename}
@@ -60,14 +60,14 @@ class Command(CommandTemplate):
 		try:
 			apireply = requests.get(url, params=params, timeout=10.0)
 		except requests.exceptions.Timeout:
-			return (False, "Article retrieval took too long, sorry")
+			raise CommandException(u"Retrieving article '{]' took too long, sorry".format(pagename))
 		result = json.loads(apireply.text)
 		if 'error' in result:
 			self.logError("[wiki] An error occurred while retrieving an article. Page name: '{}'; url: '{}'; error: '{}'".format(pagename, url, result['error']['info']))
-			return (False, "Sorry, an error occurred while retrieving the page. Please tell my owner(s) to check my logs ({})".format(result['error']['info']))
+			raise CommandException("Sorry, an error occurred while retrieving the page. Please tell my owner(s) to check my logs ({})".format(result['error']['info']))
 		result = result['query']
 		if 'pages' not in result or '-1' in result['pages']:
-			return (False, "No page about '{}' found, sorry".format(pagename))
+			raise CommandException("No page about '{}' found, sorry".format(pagename))
 		else:
 			#The 'pages' dictionary contains a single key-value pair. The key is the (unknown) revision number. So just get the single entry
 			pagedata = result['pages'].popitem()[1]
@@ -91,14 +91,14 @@ class Command(CommandTemplate):
 				replytext += ' [...]'
 			#Add the URL
 			replytext += u'{}http://en.wikipedia.org/wiki/{}'.format(Constants.GREY_SEPARATOR, pagedata['title'].replace(u' ', u'_'))
-			return (True, replytext)
+			return replytext
 
 
 	def execute(self, message):
 		if message.trigger == 'wikirandom':
-			replytext = self.getRandomWikipediaArticle()[1]
+			replytext = self.getRandomWikipediaArticle()
 		elif message.messagePartsLength == 0:
 			replytext = "Please provide a term to search for"
 		else:
-			replytext = self.searchWikipedia(message.message, message.trigger=='wikipedia')[1]
+			replytext = self.searchWikipedia(message.message, message.trigger=='wikipedia')
 		message.reply(replytext, "say")
