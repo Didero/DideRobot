@@ -1378,7 +1378,7 @@ class GrammarCommands(object):
 		return separator.join(random.sample(argumentList, numberOfOptionsToChoose))
 
 	@staticmethod
-	@validateArguments(argumentCount=2)
+	@validateArguments(argumentCount=1)
 	def command_choosewithchance(argumentList, grammarDict, variableDict):
 		"""
 		<$choosewithchance|chancegroup1:optionIfChance[|chancegroup2:optionIfChance[|...]]>
