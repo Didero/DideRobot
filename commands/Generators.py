@@ -119,6 +119,7 @@ class Command(CommandTemplate):
 		If the grammar can't be found, or if something goes wrong during execution, a GrammarException will be thrown
 		:param trigger: The grammar trigger to execute
 		:param parameters: A string with space-delimited parameters to pass on to the grammar
+		:param variableDict: An optional dictionary with pre-set variables to use while parsing
 		:return: A string with the grammar result
 		:raises GrammarException if no generators are loaded, if there is no grammar that should fire on the provided trigger, or if something goes wrong during execution
 		"""
