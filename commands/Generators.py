@@ -72,9 +72,12 @@ class Command(CommandTemplate):
 			with open(os.path.join(Command.filesLocation, generator), 'r') as grammarFile:
 				grammarDict = json.load(grammarFile)
 				if u'_description' in grammarDict:
-					return u"{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, grammarDict['_description'])
+					helpstring = u"{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, grammarDict[u'_description'])
+					if u'_version' in grammarDict:
+						helpstring += u" [Version {}]".format(grammarDict[u'_version'])
+					return helpstring
 				else:
-					return "The '{}' generator file didn't specify a help text, sorry!".format(requestedTrigger)
+					return u"The '{}' generator file didn't specify a help text, sorry!".format(requestedTrigger)
 		#Match is one of the built-in functions
 		elif callable(generator):
 			#Show the function's docstring, if it has one, otherwise show an error
