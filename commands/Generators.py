@@ -542,34 +542,10 @@ class Command(CommandTemplate):
 				replacement = random.choice(grammar[fieldKey])
 			elif isinstance(grammar[fieldKey], dict):
 				# Dictionary! The keys are chance percentages, the values are the replacement strings
-
-				#JSON requires keys to be strings, but we want them to be numbers. Check to see if we need to convert them
-				if grammar[fieldKey] not in variableDict[u'_convertedChanceDicts']:
-					for chanceDictKey in grammar[fieldKey].keys():
-						value = grammar[fieldKey][chanceDictKey]
-						#Remove the string key, and add in the integer key if the conversion succeeded
-						del grammar[fieldKey][chanceDictKey]
-						try:
-							chanceDictKeyAsInt = int(chanceDictKey, 10)
-							#Check if the number is in the correct range of 0 - 100
-							if chanceDictKeyAsInt < 0 or chanceDictKeyAsInt > 100:
-								Command.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains invalid key '{}'. Chance dictionary keys should be between 0 and 100. Ignoring it".format(
-									grammar.get(u'_name', u"[unknown]"), fieldKey, chanceDictKey))
-							else:
-								grammar[fieldKey][chanceDictKeyAsInt] = value
-						except ValueError:
-							#Show a warning about a non-int key in a chance dict. Not an error, since we can just ignore it and move on
-							Command.logWarning(u"[Gen] Grammar '{}' chance dictionary field '{}' contains non-numeric key '{}', which isn't supported. Ignoring it".format(grammar.get(u'_name', u"[unknown]"), fieldKey, chanceDictKey))
-					#Store that we converted the chance dict
-					variableDict[u'_convertedChanceDicts'].append(grammar[fieldKey])
-
-				#Now find the lowest chance dict key that's larger than our roll
-				# So in a dict '{20: "first", 100: "second"}', a roll of 18 would return 'first', and a roll of 73 would return 'second'
-				roll = random.randint(1, 100)
-				for chance in sorted(grammar[fieldKey].keys()):
-					if roll <= chance:
-						replacement = grammar[fieldKey][chance]
-						break
+				if fieldKey not in variableDict[u'_convertedChanceDicts']:
+					Command.convertChanceDict(grammar[fieldKey])
+					variableDict[u'_convertedChanceDicts'].append(fieldKey)
+				replacement = Command.parseChanceDict(grammar[fieldKey], variableDict)
 			elif isinstance(grammar[fieldKey], basestring):
 				# If it's a string (either the string class or the unicode class), just dump it in
 				replacement = grammar[fieldKey]
@@ -599,6 +575,54 @@ class Command(CommandTemplate):
 
 		#Done!
 		return replacement
+
+	@staticmethod
+	def parseChanceDict(chanceDict, variableDict):
+		closestChanceMatch = 101
+		closestChanceMatchValue = u""
+		randomValue = random.randint(1, 100)
+		#Find the lowest chance dict key that's higher than our roll
+		for chanceKey, chanceValue in chanceDict.iteritems():
+			#If the key is a variable name, replace it with the variable's value
+			if isinstance(chanceKey, basestring) and chanceKey.startswith(argumentIsVariablePrefix):
+				#Replace variable with current value
+				varName = chanceKey[1:]
+				if varName not in variableDict:
+					raise GrammarException(u"Variable '{}' used in chance dictionary, but that variable isn't set".format(varName))
+				varValue = variableDict[varName]
+				if not isinstance(varValue, int):
+					try:
+						varValue = int(varValue, 10)
+					except ValueError:
+						raise GrammarException(u"Variable '{}' used in chance dictionary is set to '{}', which could not be parsed as a number".format(varName, varValue))
+				chanceKey = varValue
+			#Check if this chance dict key is closer to the stored chance dict key while still being larger than the roll
+			if chanceKey >= randomValue and chanceKey < closestChanceMatch:
+				closestChanceMatchValue = chanceValue
+				closestChanceMatch = chanceKey
+		return closestChanceMatchValue
+
+	@staticmethod
+	def convertChanceDict(grammarDictToConvert):
+		"""
+		Convert a chance dict with the chances as strings to a dict with the chances as ints
+		:param grammarDictToConvert: The dict to convert the keys of
+		:return: The converted dictionary. It also gets stored in the grammar dict under the original key
+		"""
+		for key in grammarDictToConvert.keys():
+			if not isinstance(key, (basestring, int)):
+				raise GrammarException(u"Key '{}' of chance dictionary is an invalid type, should be a variable string or a number".format(key))
+			#If they value is already an integer, or if it's a variable name, no need to do anything
+			if isinstance(key, int) or key.startswith(argumentIsVariablePrefix):
+				continue
+			try:
+				keyAsInt = int(key, 10)
+				grammarDictToConvert[keyAsInt] = grammarDictToConvert.pop(key)
+			except ValueError:
+				raise GrammarException(u"Key '{}' from chance dictionary could not be parsed as a number".format(key))
+		print u"Converted dict: " + repr(grammarDictToConvert)
+		return grammarDictToConvert
+
 
 	@staticmethod
 	def generateName(parameters=None):
