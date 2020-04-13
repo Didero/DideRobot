@@ -1378,6 +1378,28 @@ class GrammarCommands(object):
 		return separator.join(random.sample(argumentList, numberOfOptionsToChoose))
 
 	@staticmethod
+	@validateArguments(argumentCount=2)
+	def command_choosewithchance(argumentList, grammarDict, variableDict):
+		"""
+		<$choosewithchance|chancegroup1:optionIfChance[|chancegroup2:optionIfChance[|...]]>
+		Works the same as a separate chance dict field: Chances have to be between 0 and 100 (inclusive)
+		When called, a random number is chosen also between 1 and 100. Then the proper chance group is chosen by picking the lowest chancegroup chance that's larger than the random number
+		So if the command field is '<$choosewithchance|15:option1|100:option2>', if the random number is 8, 'option1' is chosen. If then random number is 64, 'option2' is chosen
+		If no chancegroup is provided for the random number, and empty string is returned
+		"""
+		chanceDict = {}
+		for arg in argumentList:
+			if not u":" in arg:
+				raise GrammarException(u"Invalid option '{}' in 'choosewithchance' field, arguments should be 'chance:optionIfChance'".format(arg))
+			chance, optionIfChance = arg.split(u":", 1)
+			try:
+				chance = int(chance, 10)
+			except ValueError:
+				raise GrammarException(u"Chance '{}' from 'choosewithchance' field argument '{}' could not be parsed to a number".format(chance, arg))
+			chanceDict[chance] = optionIfChance
+		return Command.parseChanceDict(chanceDict, variableDict)
+
+	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=1)
 	def command_file(argumentList, grammarDict, variableDict):
 		"""
