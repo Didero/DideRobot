@@ -496,7 +496,6 @@ class Command(CommandTemplate):
 	@staticmethod
 	def parseGrammarBlock(grammarBlockParts, grammar, variableDict=None):
 		fieldKey = grammarBlockParts.pop(0)
-		replacement = u""
 
 		#If the last field starts with '&', it specifies one or more modifiers, like making text bold.
 		# Multiple options are separated by commas. Retrieve those options
