@@ -317,6 +317,15 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def parseGrammarDict(grammarDict, trigger, parameters=None, variableDict=None):
+		"""
+		Parse the provided grammar dict, filling in fields and running grammar commands until only a string remains
+		:param grammarDict: The grammar dictionary to parse
+		:param trigger: The trigger with which the grammar parsing was initiated (Usually one of the values in the '_triggers' grammar dict field
+		:param parameters: A list of strings with parameters that can be used during the parsing. Can be None if no parameters are provided or needed
+		:param variableDict: An optional dict with pre-set variables that can be used during the parsing
+		:return: A string resulting from parsing the grammar dict
+		:raises GrammarException: Raised if something goes wrong during parsing or if parsing takes too many steps
+		"""
 		if variableDict is None:
 			variableDict = {}
 		#Store the trigger so grammars can know how they got called
