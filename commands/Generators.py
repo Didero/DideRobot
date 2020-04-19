@@ -611,13 +611,13 @@ class Command(CommandTemplate):
 		return closestChanceMatchValue
 
 	@staticmethod
-	def convertChanceDict(grammarDictToConvert):
+	def convertChanceDict(chanceDictToConvert):
 		"""
 		Convert a chance dict with the chances as strings to a dict with the chances as ints
-		:param grammarDictToConvert: The dict to convert the keys of
+		:param chanceDictToConvert: The dict to convert the keys of
 		:return: The converted dictionary. It also gets stored in the grammar dict under the original key
 		"""
-		for key in grammarDictToConvert.keys():
+		for key in chanceDictToConvert.keys():
 			if not isinstance(key, (basestring, int)):
 				raise GrammarException(u"Key '{}' of chance dictionary is an invalid type, should be a variable string or a number".format(key))
 			#If they value is already an integer, or if it's a variable name, no need to do anything
@@ -625,11 +625,10 @@ class Command(CommandTemplate):
 				continue
 			try:
 				keyAsInt = int(key, 10)
-				grammarDictToConvert[keyAsInt] = grammarDictToConvert.pop(key)
+				chanceDictToConvert[keyAsInt] = chanceDictToConvert.pop(key)
 			except ValueError:
 				raise GrammarException(u"Key '{}' from chance dictionary could not be parsed as a number".format(key))
-		print u"Converted dict: " + repr(grammarDictToConvert)
-		return grammarDictToConvert
+		return chanceDictToConvert
 
 
 	@staticmethod
