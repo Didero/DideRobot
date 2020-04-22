@@ -326,63 +326,49 @@ class Command(CommandTemplate):
 		:return: A string resulting from parsing the grammar dict
 		:raises GrammarException: Raised if something goes wrong during parsing or if parsing takes too many steps
 		"""
-		if variableDict is None:
-			variableDict = {}
+
+		grammarParseState = GrammarParseState(grammarDict, variableDict, parameters)
+
 		#Store the trigger so grammars can know how they got called
-		variableDict[u'_trigger'] = StringUtil.forceToUnicode(trigger)
-
-		#First check if the starting field exists
-		if u'start' in grammarDict:
-			startString = u"<start>"
-		elif u'_start' in grammarDict:
-			#Force the old '_start' into 'start' to prevent 'unknown command' errors
-			grammarDict[u'start'] = grammarDict[u'_start']
-			del grammarDict[u'_start']
-			startString = u"<start>"
-		else:
-			Command.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
-			raise GrammarException(u"Error: No 'start' field found!")
-
-		#Make sure the parameters are unicode, since for grammars everything should be unicode
-		if parameters and not isinstance(parameters[0], unicode):
-			parameters = [unicode(param, encoding='utf-8', errors='replace') for param in parameters if not isinstance(param, unicode)]
+		grammarParseState.variableDict[u'_trigger'] = StringUtil.forceToUnicode(trigger)
 
 		#Parse any initializers specified
 		for initializerKey in (u'_initializers', u'_initialisers', u'_init', u'_options'):
 			if initializerKey in grammarDict:
-				Command.parseInitializers(grammarDict[initializerKey], parameters, variableDict)
+				Command.parseInitializers(grammarDict[initializerKey], grammarParseState)
 				break
 
-		#Since chance dictionaries ('{"20": "20% of this text", "80": "60% (80-20) of this text", "100: "20% chance"}') have to have string keys to be valid JSON,
-		# the keys need to be converted to integers for correct sorting (so "100" doesn't come before "20"). We'll do that as we encounter them, so we need to
-		# keep track of which dictionaries we've converted and which we haven't yet. We do that by storing references to them in a list, in the variableDict
-		variableDict[u'_convertedChanceDicts'] = []
-
 		#Start the parsing!
-		return Command.parseGrammarString(startString, grammarDict, parameters, variableDict)
+		return Command.parseGrammarString(grammarParseState)
 
 	@staticmethod
-	def parseInitializers(initializers, parameters, variableDict):
+	def parseInitializers(initializers, grammarParseState):
+		"""
+		:type grammarParseState: GrammarParseState
+		"""
 		if isinstance(initializers, basestring):
 			initializers = [initializers]
+		shouldUpdateParamsVar = False
 		# Parse initializers in order, and if an initializer needs a parameter, only look at the first parameter in the parameters list.
 		# This prevents odd behaviour where it thinks you specified a gender if in the middle of the parameters there's 'man', for instance
 		for initializer in initializers:
 			if initializer == u'parseGender':
 				gender = None
-				if parameters and Command.isGenderParameter(parameters[0]):
-					gender = parameters.pop(0)
-				variableDict.update(Command.getGenderWords(gender))  # If no gender was provided, 'getGenderWords' will pick a random one
+				if grammarParseState.parameterList and Command.isGenderParameter(grammarParseState.parameterList[0]):
+					gender = grammarParseState.parameterList.pop(0)
+					shouldUpdateParamsVar = True
+				grammarParseState.variableDict.update(Command.getGenderWords(gender))  # If no gender was provided, 'getGenderWords' will pick a random one
 			elif initializer == u'generateName':
 				# If a gender was provided or requested, use that to generate a name, otherwise make the function pick a gender
-				variableDict[u'name'] = Command.generateName(variableDict.get(u'gender', None))
+				grammarParseState.variableDict[u'name'] = Command.generateName(grammarParseState.variableDict.get(u'gender', None))
 				# Make first and last names separately accessible
-				nameparts = variableDict[u'name'].split(' ')
-				variableDict[u'firstname'] = nameparts[0]
-				variableDict[u'lastname'] = nameparts[-1]  # Use -1 because names
+				nameparts = grammarParseState.variableDict[u'name'].split(u' ')
+				grammarParseState.variableDict[u'firstname'] = nameparts[0]
+				grammarParseState.variableDict[u'lastname'] = nameparts[-1]  # Use -1 because names might have a middle initial
 			# A lot of generators support repeating output. Support it through an option
 			elif initializer == u'parseRepeats':
-				Command.parseRepeatsFromParams(parameters, variableDict)
+				Command.parseRepeatsFromParams(grammarParseState)
+				shouldUpdateParamsVar = True
 			# Support an optional parameter indicating the max repeats allowed, check if that's in there
 			elif initializer.startswith(u"parseRepeats:"):
 				# Separation character is a colon
@@ -392,17 +378,20 @@ class Command(CommandTemplate):
 				maxRepeats = int(maxRepeats, 10)
 				if maxRepeats <= 0:
 					raise GrammarException(u"Initializer '{}' specifies a negative or zero maximum number of repeats, which isn't supported".format(initializer))
-				Command.parseRepeatsFromParams(parameters, variableDict, maxRepeats)
+				Command.parseRepeatsFromParams(grammarParseState, maxRepeats)
+				shouldUpdateParamsVar = True
 			else:
 				raise GrammarException(u"Unkown initializer '{}' specified".format(initializer))
+		if shouldUpdateParamsVar:
+			grammarParseState.updateParamsVar()
 
 	@staticmethod
-	def parseRepeatsFromParams(parameters, variableDict, maximumRepeats=None):
+	def parseRepeatsFromParams(grammarParseState, maximumRepeats=None):
 		repeats = None
 		# Go through all the parameters and remove the first number from it, assuming it's the repeat count
-		if parameters and parameters[0].isnumeric():
+		if grammarParseState.parameterList and grammarParseState.parameterList[0].isnumeric():
 			# Remove the parameter from the parameters list, so the parameters can be used for other things in a generator too
-			repeats = parameters.pop(0)
+			repeats = grammarParseState.parameterList.pop(0)
 		if not repeats:
 			repeats = 1
 		else:
@@ -412,47 +401,31 @@ class Command(CommandTemplate):
 				repeats = 1
 			elif maximumRepeats and repeats > maximumRepeats:
 				repeats = maximumRepeats
-		variableDict[u'_repeats'] = repeats
+		grammarParseState.variableDict[u'_repeats'] = repeats
 
 	@staticmethod
-	def parseGrammarString(grammarString, grammar, parameters=None, variableDict=None):
-		if variableDict is None:
-			variableDict = {}
-
-		#Parse the parameters as a string (if there are any) in such a way that users don't have access to special fields
-		# This to prevent abuse like infinite loops or creating heavy load
-		#Store that string inside the variableDict under the key '_params', makes lookup and checking easier
-		if parameters:
-			if not isinstance(parameters[0], unicode):
-				variableDict[u'_params'] = unicode(" ".join(parameters), encoding="utf-8", errors="replace")
-			else:
-				variableDict[u'_params'] = u" ".join(parameters)
-			variableDict[u'_params'] = variableDict[u'_params'].replace(u"/", u"//").replace(u"<", u"/<").replace(u">", u"/>")
-
-		#Make sure the input string is Unicode, since that's what we expect
-		if not isinstance(grammarString, unicode):
-			grammarString = grammarString.decode("utf-8", errors="replace")
-
-		outputString = grammarString
+	def parseGrammarString(grammarParseState):
+		"""
+		:type grammarParseState: GrammarParseState
+		"""
 		startIndex = 0
 
-		iteration = variableDict.get(u'_iteration', 0)
+		iteration = grammarParseState.variableDict.get(u'_iteration', 0)
 		if not isinstance(iteration, int) or iteration < 0:
 			iteration = 0
-		variableDict[u'_iteration'] = iteration
-		variableDict[u'_maxIterations'] = Command.MAX_LOOP_COUNT
+		grammarParseState.variableDict[u'_iteration'] = iteration
 		while iteration < Command.MAX_LOOP_COUNT:
 			# Some commands can increase the iterations, but don't allow them to decrease it
-			iteration = max(iteration, variableDict[u'_iteration']) + 1
-			variableDict[u'_iteration'] = iteration
-			variableDict[u'_maxIterationsLeft'] = Command.MAX_LOOP_COUNT - iteration
+			iteration = max(iteration, grammarParseState.variableDict[u'_iteration']) + 1
+			grammarParseState.variableDict[u'_iteration'] = iteration
+			grammarParseState.variableDict[u'_maxIterationsLeft'] = Command.MAX_LOOP_COUNT - iteration
 
 			nestedBracketLevel = 0
 			characterIsEscaped = False
 			grammarParts = [u""]
 			#Go through the string to find the first bracketed section
-			for index in xrange(startIndex, len(outputString)):
-				character = outputString[index]
+			for index in xrange(startIndex, len(grammarParseState.currentParseString)):
+				character = grammarParseState.currentParseString[index]
 
 				#Handle character escaping first, since that overrides everything else
 				if characterIsEscaped or character == u"/":
@@ -471,9 +444,9 @@ class Command(CommandTemplate):
 					grammarParts.append(u"")
 				elif nestedBracketLevel == 1 and character == u">":
 					#We found the end of the grammar block. Have it parsed
-					parsedGrammarBlock = Command.parseGrammarBlock(grammarParts, grammar, variableDict)
+					parsedGrammarBlock = Command.parseGrammarBlock(grammarParts, grammarParseState)
 					#Everything went fine, replace the grammar block with the output
-					outputString = outputString[:startIndex] + parsedGrammarBlock + outputString[index + 1:]
+					grammarParseState.currentParseString = grammarParseState.currentParseString[:startIndex] + parsedGrammarBlock + grammarParseState.currentParseString[index + 1:]
 					#Done with this parsing loop, start a new one! (break out of the for-loop to start a new while-loop iteration)
 					break
 				#Don't append characters if we're not inside a grammar block
@@ -488,22 +461,26 @@ class Command(CommandTemplate):
 			else:
 				#We reached the end of the output string. If we're not at top level, the gramamr block isn't closed
 				if nestedBracketLevel > 0:
-					Command.logWarning(u"[Gen] Grammar '{}' is missing a closing bracket in line '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
+					Command.logWarning(u"[Gen] Grammar '{}' is missing a closing bracket in line '{}'".format(grammarParseState.grammarDict.get(u"_name", u"[noname]"), grammarParseState.currentParseString))
 					return u"Error: Missing closing bracket"
 				#Otherwise, we're done! Break out of the while-loop
 				break
 		else:
 			#We reached the loop limit, so there's probably an infinite loop. Report that
-			Command.logWarning(u"[Gen] Grammar '{}' reached the parse loop limit while parsing string '{}'".format(grammar.get(u"_name", u"[noname]"), outputString))
+			Command.logWarning(u"[Gen] Grammar '{}' reached the parse loop limit while parsing string '{}'".format(grammarParseState.grammarDict.get(u"_name", u"[noname]"), grammarParseState.currentParseString))
 			raise GrammarException(u"Error: Loop limit reached, there's probably an infinite loop in the grammar file")
 
 		#Unescape escaped characters so they display properly
-		outputString = re.sub(ur"/(.)", ur"\1", outputString)
+		grammarParseState.currentParseString = re.sub(ur"/(.)", ur"\1", grammarParseState.currentParseString)
 		#Done!
-		return outputString
+		return grammarParseState.currentParseString
 
 	@staticmethod
-	def parseGrammarBlock(grammarBlockParts, grammar, variableDict=None):
+	def parseGrammarBlock(grammarBlockParts, grammarParseState):
+		"""
+		:type grammarBlockParts: list
+		:type grammarParseState: GrammarParseState
+		"""
 		fieldKey = grammarBlockParts.pop(0)
 
 		#If the last field starts with '&', it specifies one or more modifiers, like making text bold.
@@ -520,7 +497,7 @@ class Command(CommandTemplate):
 		# Grammar commands start with the command prefix, check if this block is a grammar command
 		if fieldKey.startswith(fieldCommandPrefix):
 			# First check if the requested command exists as a custom command inside the grammar dict
-			if fieldKey in grammar:
+			if fieldKey in grammarParseState.grammarDict:
 				# Custom command, declared in the grammar dict like '"$myCommand": "First argument is %1"',
 				# where '%1' should be replaced with the first argument, '%2' with the second, etc.
 				# Numbered arguments when there's less than that amount of arguments will be replaced with an empty string
@@ -535,30 +512,31 @@ class Command(CommandTemplate):
 					if argumentIndex < len(grammarBlockParts):
 						returnstring += grammarBlockParts[argumentIndex]
 					return returnstring
-				replacement = re.sub(r"(/*)%(\d+)", replaceNumberedArguments, grammar[fieldKey])
+				replacement = re.sub(r"(/*)%(\d+)", replaceNumberedArguments, grammarParseState.grammarDict[fieldKey])
 			#Otherwise let the Commands class handle it
 			else:
 				#Have the GrammarCommands class try and execute the provided command name
-				replacement = GrammarCommands.runCommand(fieldKey[len(fieldCommandPrefix):], grammarBlockParts, grammar, variableDict)
+				replacement = GrammarCommands.runCommand(fieldKey[len(fieldCommandPrefix):], grammarBlockParts, grammarParseState)
 		# No command, so check if it's a valid key
-		elif fieldKey not in grammar:
+		elif fieldKey not in grammarParseState.grammarDict:
 			raise GrammarException(u"Field '{}' not found in grammar file".format(fieldKey))
-		# All's well, fill it in
 		else:
-			if isinstance(grammar[fieldKey], list):
+			# All's well, fill it in
+			fieldValue = grammarParseState.grammarDict[fieldKey]
+			if isinstance(fieldValue, list):
 				# It's a list! Just pick a random entry
-				replacement = random.choice(grammar[fieldKey])
-			elif isinstance(grammar[fieldKey], dict):
+				replacement = random.choice(fieldValue)
+			elif isinstance(fieldValue, dict):
 				# Dictionary! The keys are chance percentages, the values are the replacement strings
-				if fieldKey not in variableDict[u'_convertedChanceDicts']:
-					Command.convertChanceDict(grammar[fieldKey])
-					variableDict[u'_convertedChanceDicts'].append(fieldKey)
-				replacement = Command.parseChanceDict(grammar[fieldKey], variableDict)
-			elif isinstance(grammar[fieldKey], basestring):
+				if fieldKey not in grammarParseState.convertedChanceDicts:
+					Command.convertChanceDict(fieldValue)
+					grammarParseState.convertedChanceDicts.append(fieldKey)
+				replacement = Command.parseChanceDict(fieldValue, grammarParseState.variableDict)
+			elif isinstance(fieldValue, basestring):
 				# If it's a string (either the string class or the unicode class), just dump it in
-				replacement = grammar[fieldKey]
+				replacement = fieldValue
 			else:
-				raise GrammarException(u"No handling defined for type '{}' found in field '{}'".format(type(grammar[fieldKey]), fieldKey))
+				raise GrammarException(u"No handling defined for type '{}' found in field '{}'".format(type(fieldValue), fieldKey))
 
 		# We assume all replacements are unicode strings, so make sure this replacement is too
 		replacement = StringUtil.forceToUnicode(replacement)
@@ -566,14 +544,14 @@ class Command(CommandTemplate):
 		#Turn the modifier into a new grammarblock
 		if firstModifier:
 			#Store the original replacement because we need to add it as a parameter to the modifier command
-			variableDict[u'_'] = replacement
+			grammarParseState.variableDict[u'_'] = replacement
 			#Check if there are any parameters passed
 			if u':' not in firstModifier:
 				modifierParams = [replacement]
 			else:
 				modifierParams = firstModifier.split(u':')
 				firstModifier = modifierParams.pop(0)
-				#If the replacement string isn't used explicitely as a parameter, add it as the last parameter
+				#If the replacement string isn't used explicitly as a parameter, add it as the last parameter
 				if argumentIsVariablePrefix + u'_' not in modifierParams:
 					modifierParams.append(replacement)
 			replacement = u"<{commandPrefix}{firstModifier}|{params}".format(commandPrefix=fieldCommandPrefix, firstModifier=firstModifier, params=u"|".join(modifierParams))
@@ -802,6 +780,43 @@ class Command(CommandTemplate):
 		return u", ".join(words)
 
 
+class GrammarParseState(object):
+	def __init__(self, grammarDict, variableDict=None, parameterList=None):
+		self.grammarDict = grammarDict
+		if variableDict is None or not isinstance(variableDict, dict):
+			self.variableDict = {}
+		else:
+			self.variableDict = variableDict
+		self.convertedChanceDicts = []
+
+		#Set up user-provided parameters
+		self.parameterList = []
+		if parameterList:
+			if isinstance(parameterList, basestring):
+				parameterList = [parameterList]
+			for param in parameterList:
+				if not isinstance(param, unicode):
+					param = unicode(param, encoding='utf-8', errors='replace')
+				self.parameterList.append(param)
+		self.updateParamsVar()
+
+		#Set up the initial string to parse
+		if u'start' in grammarDict:
+			self.currentParseString = u"<start>"
+		elif u'_start' in grammarDict:
+			self.currentParseString = u"<_start>"
+		else:
+			Command.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
+			raise GrammarException(u"Error: No 'start' field found!")
+
+	def updateParamsVar(self):
+		# Escape special characters to prevent abuse by users
+		self.variableDict[u'_params'] = u" ".join(self.parameterList).replace(u"/", u"//").replace(u"<", u"/<").replace(u">", u"/>")
+
+	def __str__(self):
+		return u"GrammarParseState for generator '{}', output string: '{}', variables: {}, params: {}".format(self.grammarDict.get(u'_name', u'[noname]'), self.currentParseString, self.variableDict, self.parameterList)
+
+
 #Store some data about grammar commands, so we can do some initial argument verification. Keeps the actual commands nice and short
 grammarCommandOptions = {}
 
@@ -837,14 +852,13 @@ class GrammarCommands(object):
 	"""
 
 	@staticmethod
-	def runCommand(commandName, argumentList, grammarDict, variableDict):
+	def runCommand(commandName, argumentList, grammarParseState):
 		"""
 		This method calls a grammar command method if it exists, and optionally does some sanity checks beforehand, depending on their decorator
 		:param commandName: The name of the grammar command that should be executed (without the preceding underscore from the grammar file)
 		:param argumentList: A list of arguments to pass along to the command. Is optionally checked for length before the command is called, depending on decorator settings
-		:param grammarDict: The grammar dictionary that's currently being parsed. Is only passed on to the command
-		:param variableDict: The variable dictionary that's being used during the parsing. If the command enabled first-argument-variable checking, this dictionary is checked
-			to contain a variable named the same as the first argument
+		:param grammarParseState: An instance of GrammarParseState, that contains data on the grammar being parsed and variables and the like
+		:type grammarParseState: GrammarParseState
 		:return: A tuple, with the first entry a boolean indicating success, and the second entry a string. If something went wrong, either with the preliminary checks
 			or during the grammar command execution, this is False, and the string is the error message. If everything went right, the boolean is True and the string is
 			the outcome of the grammar command, ready to be substituted into the grammar string in place of the command
@@ -868,9 +882,10 @@ class GrammarCommands(object):
 				if u':' in varname:
 					varname, argumentSuffix = varname.split(u':', 1)
 					argumentSuffix = u':' + argumentSuffix
-				if varname not in variableDict:
+				if varname not in grammarParseState.variableDict:
+					Command.logError(u"Variable '{}' referenced but it isn't set, {}".format(varname, grammarParseState))
 					raise GrammarException(u"Field '{}' references variable name '{}', but that isn't set".format(commandName, varname))
-				argumentList[argIndex] = u"{}{}".format(variableDict[varname], argumentSuffix)
+				argumentList[argIndex] = u"{}{}".format(grammarParseState.variableDict[varname], argumentSuffix)
 			#If the arg is in the 'numericalArg' list, (try to) convert it to a number
 			if numericArgIndexes and argIndex in numericArgIndexes:
 				try:
@@ -879,7 +894,7 @@ class GrammarCommands(object):
 					raise GrammarException(u"Argument '{}' (index {}) of command '{}' should be numeric, but couldn't get properly converted to a number".format(argumentList[argIndex], argIndex, commandName))
 		#All checks passed, call the command
 		try:
-			return command(argumentList, grammarDict, variableDict)
+			return command(argumentList, grammarParseState)
 		except GrammarException as grammarException:
 			raise grammarException
 		except Exception as e:
@@ -924,7 +939,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
-	def command_setvar(argumentList, grammarDict, variableDict):
+	def command_setvar(argumentList, grammarParseState):
 		"""
 		<$setvar|varname|value[|shouldShowValue]>
 		Stores a value under the provided name, for future use.
@@ -932,7 +947,7 @@ class GrammarCommands(object):
 		If you want to always show the value, use '$storeas'
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
-		variableDict[argumentList[0]] = argumentList[1]
+		grammarParseState.variableDict[argumentList[0]] = argumentList[1]
 		if len(argumentList) > 2 and GrammarCommands._evaluateAsBoolean(argumentList[2], u'show'):
 			return argumentList[1]
 		else:
@@ -940,7 +955,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
-	def command_storeandhide(argumentList, grammarDict, variableDict):
+	def command_storeandhide(argumentList, grammarParseState):
 		"""
 		<$storeandhide|varname|value>
 		Stores a value under the provided name for future use, with empty output
@@ -948,11 +963,11 @@ class GrammarCommands(object):
 		Also look at <$setvar>, which has a 'shouldShowValue' argument
 		"""
 		modifiedArgs = [argumentList[0], argumentList[1], u'false']
-		return GrammarCommands.command_setvar(modifiedArgs, grammarDict, variableDict)
+		return GrammarCommands.command_setvar(modifiedArgs, grammarParseState)
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
-	def command_storeandshow(argumentList, grammarDict, variableDict):
+	def command_storeandshow(argumentList, grammarParseState):
 		"""
 		<$storeandshow|varname|value>
 		Stores a value under the provided name for future use, with the value as output
@@ -960,42 +975,42 @@ class GrammarCommands(object):
 		Also look at <$setvar>, which has a 'shouldShowValue' argument
 		"""
 		modifiedArgs = [argumentList[0], argumentList[1], u'true']
-		return GrammarCommands.command_setvar(modifiedArgs, grammarDict, variableDict)
+		return GrammarCommands.command_setvar(modifiedArgs, grammarParseState)
 
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
-	def command_setvarrandom(argumentList, grammarDict, variableDict):
+	def command_setvarrandom(argumentList, grammarParseState):
 		"""
 		<$setvarrandom|varname|value1|value2|...>
 		Picks one of the provided values at random, and stores it under the provided name, for future use
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
-		variableDict[argumentList[0]] = random.choice(argumentList[1:])
+		grammarParseState.variableDict[argumentList[0]] = random.choice(argumentList[1:])
 		return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=3)
-	def command_hasvar(argumentList, grammarDict, variableDict):
+	def command_hasvar(argumentList, grammarParseState):
 		"""
 		<$hasvar|varname|stringIfVarnameExists|stringIfVarnameDoesntExist>
 		Checks if the variable with the provided name exists. Returns the first string if it does, and the second one if it doesn't
 		"""
-		if argumentList[0] in variableDict:
+		if argumentList[0] in grammarParseState.variableDict:
 			return argumentList[1]
 		else:
 			return argumentList[2]
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_var(argumentList, grammarDict, variableDict):
+	def command_var(argumentList, grammarParseState):
 		"""
 		<$var|varname|[valueIfVarNotSet]>
 		Returns the value stored under the provided variable name. The second argument is optional, and if set will be returned if the variable isn't stored
 		"""
 		# Check if the named variable was stored
-		if argumentList[0] in variableDict:
-			return variableDict[argumentList[0]]
+		if argumentList[0] in grammarParseState.variableDict:
+			return grammarParseState.variableDict[argumentList[0]]
 		else:
 			# If a second parameter was passed, use it as a fallback value
 			if len(argumentList) > 1:
@@ -1006,7 +1021,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
-	def command_prependtovar(argumentList, grammarDict, variableDict):
+	def command_prependtovar(argumentList, grammarParseState):
 		"""
 		<$prependtovar|varname|stringToPrepend>
 		Prepends stringToPrepend to what is stored in the specified variable name, and stores it under that name.
@@ -1014,15 +1029,15 @@ class GrammarCommands(object):
 		Doesn't print anything, use the $var command to print the result
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
-		if argumentList[0] not in variableDict:
-			variableDict[argumentList[0]] = argumentList[1]
+		if argumentList[0] not in grammarParseState.variableDict:
+			grammarParseState.variableDict[argumentList[0]] = argumentList[1]
 		else:
-			variableDict[argumentList[0]] = argumentList[1] + variableDict[argumentList[0]]
+			grammarParseState.variableDict[argumentList[0]] = argumentList[1] + grammarParseState.variableDict[argumentList[0]]
 		return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
-	def command_appendtovar(argumentList, grammarDict, variableDict):
+	def command_appendtovar(argumentList, grammarParseState):
 		"""
 		<$appendtovar|varname|stringToAppend[|string2ToAppend[|string3ToAppend[|...]]]>
 		Appends all the 'stringToAppend' arguments to what is stored in the specified variable name, and stores it under that name.
@@ -1030,36 +1045,36 @@ class GrammarCommands(object):
 		Doesn't print anything, use the $var command to print the result
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
-		variableDict[argumentList[0]] = variableDict.get(argumentList[0], u"") + u"".join(argumentList[1:])
+		grammarParseState.variableDict[argumentList[0]] = grammarParseState.variableDict.get(argumentList[0], u"") + u"".join(argumentList[1:])
 		return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_remvar(argumentList, grammarDict, variableDict):
+	def command_remvar(argumentList, grammarParseState):
 		"""
 		<$remvar|varname>
 		Removes the value stored under this variable name. Does nothing if the variable doesn't exist
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
-		if argumentList[0] in variableDict:
-			del variableDict[argumentList[0]]
+		if argumentList[0] in grammarParseState.variableDict:
+			del grammarParseState.variableDict[argumentList[0]]
 		return u""
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_removevar(argumentList, grammarDict, variableDict):
+	def command_removevar(argumentList, grammarParseState):
 		"""
 		<$removevar|varname>
 		Alias for 'remvar', removes the stored variable
 		"""
-		return GrammarCommands.command_remvar(argumentList, grammarDict, variableDict)
+		return GrammarCommands.command_remvar(argumentList, grammarParseState)
 
 	#################
 	#Variable checking
 
 	@staticmethod
 	@validateArguments(argumentCount=4)
-	def command_ifequals(argumentList, grammarDict, variableDict):
+	def command_ifequals(argumentList, grammarParseState):
 		"""
 		<$ifequals|firstStringToMatch|secondStringToMatch|resultIfIdentical|resultIfNotIdentical>
 		Checks if the first string is identical to the second string. Returns the 'IfIdentical' result if they're identical, and the 'IfNotIdentical' result otherwise
@@ -1072,16 +1087,16 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4)
-	def command_if(argumentList, grammarDict, variableDict):
+	def command_if(argumentList, grammarParseState):
 		"""
 		<$if|varname|stringToMatch|stringIfIdentical|stringIfNotIdentical>
 		Alias for 'ifequals' left in for backwards compatibility. Functionality could change in the future, use 'ifequals' instead
 		"""
-		return GrammarCommands.command_ifequals(argumentList, grammarDict, variableDict)
+		return GrammarCommands.command_ifequals(argumentList, grammarParseState)
 
 	@staticmethod
 	@validateArguments(argumentCount=4)
-	def command_ifcontains(argumentList, grammarDict, variableDict):
+	def command_ifcontains(argumentList, grammarParseState):
 		"""
 		<$ifcontains|string|substringToCheckFor|resultIfSubstringInString|resultIfSubstringNotInString>
 		Checks if the provided string contains the provided substring. Returns the 'InString' result if it is, and the 'NotInString' result otherwise
@@ -1093,7 +1108,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4)
-	def command_ifstartswith(argumentList, grammarDict, variableDict):
+	def command_ifstartswith(argumentList, grammarParseState):
 		"""
 		<$ifstartswith|string|substringToCheckFor|resultIfStringStartsWithSubstring|resultIfStringDoesntStartWithSubstring>
 		Checks if the provided string starts with the provided substring
@@ -1102,7 +1117,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4)
-	def command_ifendswith(argumentList, grammarDict, variableDict):
+	def command_ifendswith(argumentList, grammarParseState):
 		"""
 		<$ifendswith|string|substringToCheckFor|resultIfStringEndsWithSubstring|resultIfStringDoesntEndWithSubstring>
 		Checks if the provided string ends with the provided substring
@@ -1111,7 +1126,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4)
-	def command_ifmatch(argumentList, grammarDict, variableDict):
+	def command_ifmatch(argumentList, grammarParseState):
 		"""
 		<$ifmatch|string|regexToMatch|resultIfMatch|resultIfNoMatch[|shouldIgnoreCase]>
 		Checks if the provided regular expression matches the provided string
@@ -1134,7 +1149,7 @@ class GrammarCommands(object):
 	#Numeric functions
 	@staticmethod
 	@validateArguments(argumentCount=3)
-	def command_isnumber(argumentList, grammarDict, variableDict):
+	def command_isnumber(argumentList, grammarParseState):
 		"""
 		<$isnumber|stringToCheckAsNumber|resultIfNumber|resultIfNotNumber>
 		Checks if the provided string can be converted to a number. Returns the 'IfNumber' result if it can, and the 'IfNotNumber' result otherwise
@@ -1149,7 +1164,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4, numericArgumentIndexes=(0, 1))
-	def command_ifsmaller(argumentList, grammarDict, variableDict):
+	def command_ifsmaller(argumentList, grammarParseState):
 		"""
 		<$ifsmaller|firstValue|secondValue|resultIfFirstValueIsSmaller|resultIfFirstValueIsNotSmaller>
 		Returns the first result if the first value is smaller than the second value, and the second result if the first value is equal to or larger than the second value
@@ -1161,7 +1176,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4, numericArgumentIndexes=(0, 1))
-	def command_ifsmallerorequal(argumentList, grammarDict, variableDict):
+	def command_ifsmallerorequal(argumentList, grammarParseState):
 		"""
 		<$ifsmallerorequal|firstValue|secondValue|resultIfFirstValueIsSmallerOrEqual|resulOtherwise>
 		Returns the first result if the first value is smaller than or equal to the second value, and the second result if the first value is larger than the second value
@@ -1173,7 +1188,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=(0, 1))
-	def command_increase(argumentList, grammarDict, variableDict):
+	def command_increase(argumentList, grammarParseState):
 		"""
 		<$increase|numberToIncrease[|increaseAmount]>
 		Increases the provided number. If the 'increaseAmount' is specified, numberToIncrease is increased by that amount, otherwise 1 is added
@@ -1183,7 +1198,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=(0, 1))
-	def command_decrease(argumentList, grammarDict, variableDict):
+	def command_decrease(argumentList, grammarParseState):
 		"""
 		<$decrease|numberToDecrease[|decreaseAmount]>
 		Decreases the provided number. If the 'decreaseAmount' is specified, numberToDecrease is decreased by that amount, otherwise 1 is subtracted
@@ -1193,7 +1208,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4, numericArgumentIndexes=1)
-	def command_islength(argumentList, grammarDict, variableDict):
+	def command_islength(argumentList, grammarParseState):
 		"""
 		<$islength|stringToCheck|lengthToEqual|resultIfStringIsLength|resultOtherwise>
 		"""
@@ -1204,7 +1219,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4, numericArgumentIndexes=1)
-	def command_isshorter(argumentList, grammarDict, variableDict):
+	def command_isshorter(argumentList, grammarParseState):
 		"""
 		<$isshorter|stringToCheck|lengthToEqual|resultIfStringIsShorter|resultOtherwise>
 		"""
@@ -1215,7 +1230,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=4, numericArgumentIndexes=1)
-	def command_isshorterorequal(argumentList, grammarDict, variableDict):
+	def command_isshorterorequal(argumentList, grammarParseState):
 		"""
 		<$isshorterorequal|stringToCheck|lengthToEqual|resultIfStringIsShorterOrEqual|resultOtherwise>
 		"""
@@ -1226,7 +1241,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
-	def command_switch(argumentList, grammarDict, variableDict):
+	def command_switch(argumentList, grammarParseState):
 		"""
 		<$switch|stringToCheck|case1:stringIfCase1|case2:stringIfCase2|...|[_default:stringIfNoCaseMatch]>
 		Checks which provided case matches the string to check. The '_default' field is not mandatory, but if it's missing and no suitable case can be found, an error is returned
@@ -1251,55 +1266,55 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2)
-	def command_hasparams(argumentList, grammarDict, variableDict):
+	def command_hasparams(argumentList, grammarParseState):
 		"""
 		<$hasparams|stringIfHasParams|stringIfDoesntHaveParams>
 		Checks if there are any parameters provided. Returns the first string if any parameters exist, and the second one if not
 		"""
-		if variableDict.get(u'_params', None):
+		if grammarParseState.variableDict.get(u'_params', None):
 			return argumentList[0]
 		else:
 			return argumentList[1]
 
 	@staticmethod
 	@validateArguments(argumentCount=3)
-	def command_hasparameter(argumentList, grammarDict, variableDict):
+	def command_hasparameter(argumentList, grammarParseState):
 		"""
 		<$hasparameter|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 		Checks if the the provided parameter string is equal to a string. Returns the first string if it matches, and the second one if it doesn't.
 		If no parameter string was provided, the 'doesn't match' string is returned
 		"""
-		if u'_params' in variableDict and argumentList[0] == variableDict[u'_params']:
+		if u'_params' in grammarParseState.variableDict and argumentList[0] == grammarParseState.variableDict[u'_params']:
 			return argumentList[1]
 		else:
 			return argumentList[2]
 
 	@staticmethod
 	@validateArguments(argumentCount=3)
-	def command_hasparam(argumentList, grammarDict, variableDict):
+	def command_hasparam(argumentList, grammarParseState):
 		"""
 		<$hasparam|paramToCheck|stringIfHasParam|stringIfDoesntHaveParam>
 		Checks if the the provided parameters are equal to a string. Returns the first string if it matches, and the second one if it doesn't.
 		If no parameter string was provided, the 'doesn't match' string is returned
 		"""
-		return GrammarCommands.command_hasparameter(argumentList, grammarDict, variableDict)
+		return GrammarCommands.command_hasparameter(argumentList, grammarParseState)
 
 	@staticmethod
 	@validateArguments(argumentCount=0)
-	def command_params(argumentList, grammarDict, variableDict):
+	def command_params(argumentList, grammarParseState):
 		"""
 		<$params>
 		Returns the user-provided parameter string, or an empty string if no parameter string was provided
 		"""
 		# Fill in the provided parameter(s) in this field
-		return variableDict.get(u'_params', u"")
+		return grammarParseState.variableDict.get(u'_params', u"")
 
 	#################
 	#Random choices
 
 	@staticmethod
 	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1))
-	def command_randint(argumentList, grammarDict, variableDict):
+	def command_randint(argumentList, grammarParseState):
 		"""
 		<$randint|lowerBound|higherBound>
 		Returns a number between the lower and upper bound, inclusive on both sides
@@ -1312,7 +1327,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1, 2, 3))
-	def command_dice(argumentList, grammarDict, variableDict):
+	def command_dice(argumentList, grammarParseState):
 		"""
 		<$dice|numberOfDice|numberOfSides[lowestRollsToRemove|highestRollsToRemove]>
 		Rolls a number of dice and returns the total. First argument is how many dice to roll, second argument is how many sides each die should have
@@ -1361,7 +1376,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_choose(argumentList, grammarDict, variableDict):
+	def command_choose(argumentList, grammarParseState):
 		"""
 		<$choose|option1|option2|...>
 		Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for each of them
@@ -1370,7 +1385,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=3, numericArgumentIndexes=0)
-	def command_choosemultiple(argumentList, grammarDict, variableDict):
+	def command_choosemultiple(argumentList, grammarParseState):
 		"""
 		<$choosemultiple|numberOfOptionsToChoose|separator|option1|option2|...>
 		Chooses the provided number of random options from the option list, and returns them in a random order,	with the provided separator between the options
@@ -1386,7 +1401,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_choosewithchance(argumentList, grammarDict, variableDict):
+	def command_choosewithchance(argumentList, grammarParseState):
 		"""
 		<$choosewithchance|chancegroup1:optionIfChance[|chancegroup2:optionIfChance[|...]]>
 		Works the same as a separate chance dict field: Chances have to be between 0 and 100 (inclusive)
@@ -1404,11 +1419,11 @@ class GrammarCommands(object):
 			except ValueError:
 				raise GrammarException(u"Chance '{}' from 'choosewithchance' field argument '{}' could not be parsed to a number".format(chance, arg))
 			chanceDict[chance] = optionIfChance
-		return Command.parseChanceDict(chanceDict, variableDict)
+		return Command.parseChanceDict(chanceDict, grammarParseState.variableDict)
 
 	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=1)
-	def command_file(argumentList, grammarDict, variableDict):
+	def command_file(argumentList, grammarParseState):
 		"""
 		<$file|filename[|lineNumber]>
 		Load a random line from the specified file. Useful for not cluttering up the grammar file with a lot of options
@@ -1423,7 +1438,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_lowercase(argumentList, grammarDict, variableDict):
+	def command_lowercase(argumentList, grammarParseState):
 		"""
 		<$lowercase|stringToMakeLowercase>
 		Returns the provided string with every letter made lowercase
@@ -1432,7 +1447,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_uppercase(argumentList, grammarDict, variableDict):
+	def command_uppercase(argumentList, grammarParseState):
 		"""
 		<$uppercase|stringToMakeUppercase>
 		Returns the provided string with every letter made uppercase
@@ -1441,7 +1456,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_titlecase(argumentList, grammarDict, variableDict):
+	def command_titlecase(argumentList, grammarParseState):
 		"""
 		<$titlecase|stringToMakeTitlecase>
 		Returns the provided string with every word starting with a capital letter and the rest of the word lowercase
@@ -1450,7 +1465,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_firstletteruppercase(argumentList, grammarDict, variableDict):
+	def command_firstletteruppercase(argumentList, grammarParseState):
 		"""
 		<$firstletteruppercase|stringToFormat>
 		Returns the provided string with the first character made uppercase and the rest left as provided
@@ -1460,7 +1475,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_bold(argumentList, grammarDict, variableDict):
+	def command_bold(argumentList, grammarParseState):
 		"""
 		<$bold|stringToMakeBold>
 		Returns the provided string formatted so it looks like bold text in IRC
@@ -1469,7 +1484,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=0)
-	def command_numbertotext(argumentList, grammarDict, variableDict):
+	def command_numbertotext(argumentList, grammarParseState):
 		"""
 		<$numbertotext|numberToDisplayAsText>
 		Converts the provided number to its English representation. For instance, '4' would get turned into 'four'
@@ -1481,7 +1496,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=3, numericArgumentIndexes=(3,))
-	def command_replace(argumentList, grammarDict, variableDict):
+	def command_replace(argumentList, grammarParseState):
 		"""
 		<$replace|stringToReplaceIn|whatToReplace|whatToReplaceItWith[|replacementCount]>
 		Returns the provided string but with part of it replaced. The substring 'whatToReplace' is replaced by 'whatToReplaceItBy'
@@ -1498,7 +1513,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=3, numericArgumentIndexes=(3,))
-	def command_regexreplace(argumentList, grammarDict, variableDict):
+	def command_regexreplace(argumentList, grammarParseState):
 		"""
 		<$regexreplace|stringToReplaceIn|regexOfWhatToReplace|whatToReplaceItWith[|replacementCount]>
 		Returns the provided string with part of it replaced. The part to replace is determined with the provided regular expression
@@ -1519,7 +1534,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2, numericArgumentIndexes=2)
-	def command_replacerandomword(argumentList, grammarDict, variableDict):
+	def command_replacerandomword(argumentList, grammarParseState):
 		"""
 		<$replacerandomword|stringToReplaceIn|replacementString[|amountOfWordsToReplace]>
 		Replaces a random word in the provided 'stringToReplace' with the 'replacementString', where words are assumed to be separated by spaces
@@ -1541,7 +1556,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=2, numericArgumentIndexes=0)
-	def command_repeat(argumentList, grammarDict, variableDict):
+	def command_repeat(argumentList, grammarParseState):
 		"""
 		<$repeat|timesToRepeat|stringToRepeat[|stringToPutBetweenRepeats]>
 		Repeats the provided stringToRepeat the amount of times specified in timesToRepeat. If timesToRepeat is zero or less, nothing will be returned
@@ -1565,7 +1580,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_modulecommand(argumentList, grammarDict, variableDict):
+	def command_modulecommand(argumentList, grammarParseState):
 		"""
 		<$modulecommand|commandName[|argument1|argument2|key1=value1|key2=value2|...]>
 		Runs a shared command in another bot module. The first parameter is the name of that command, the rest are unnamed and named parameters to pass on, and are all optional
@@ -1601,7 +1616,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=3)
-	def command_hasgenerator(argumentList, grammarDict, variableDict):
+	def command_hasgenerator(argumentList, grammarParseState):
 		"""
 		<$hasgenerator|generatorName|stringIfGeneratorExists|stringIfGeneratorDoesNotExist>
 		Check if the generator specified by 'generatorName' exists. If it does, 'stringIfGeneratorExists' is returned. If it doesn't exist, 'stringIfGeneratorDoesNotExist' is returned
@@ -1613,7 +1628,7 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_generator(argumentList, grammarDict, variableDict):
+	def command_generator(argumentList, grammarParseState):
 		"""
 		<$generator|generatorName|shouldCopyVariableDict[|parameter1[|parameter2[...]]]>
 		Run a different generator specified by 'generatorName' and get the result. If 'shouldCopyVariableDict' is 'true', then all variables stored by the called generator will be copied to our variableDict
@@ -1621,19 +1636,19 @@ class GrammarCommands(object):
 		Please note that the iterations of the called generator count against the current iteration limit. So it's not possible to use this to bypass the iteration limit
 		"""
 		#To make sure the combined iterations don't exceed the limit, pass the current iteration to the execution method
-		calledGeneratorVariableDict = {u'_iteration': variableDict[u'_iteration']}
+		calledGeneratorVariableDict = {u'_iteration': grammarParseState.variableDict[u'_iteration']}
 		resultString = Command.executeGrammarByTrigger(argumentList[0].lower(), parameters=argumentList[2:], variableDict=calledGeneratorVariableDict)
 		#Copy the variables from the called generator if requested
 		if GrammarCommands._evaluateAsBoolean(argumentList[1]):
-			variableDict.update(calledGeneratorVariableDict)
+			grammarParseState.variableDict.update(calledGeneratorVariableDict)
 		else:
 			#Set the iteration that the called generator reached as our current iteration, so we can't exceed the iteration limit
-			variableDict[u'_iteration'] = calledGeneratorVariableDict[u'_iteration']
+			grammarParseState.variableDict[u'_iteration'] = calledGeneratorVariableDict[u'_iteration']
 		return resultString
 
 	@staticmethod
 	@validateArguments(argumentCount=0)
-	def command_hide(argumentList, grammarDict, variableDict):
+	def command_hide(argumentList, grammarParseState):
 		"""
 		<$hide[|optionalText]>
 		This command returns nothing. Useful if you want to add comments in your grammar.
