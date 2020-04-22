@@ -316,32 +316,6 @@ class Command(CommandTemplate):
 		return genderDict
 
 	@staticmethod
-	def parseGrammarDict(grammarDict, trigger, parameters=None, variableDict=None):
-		"""
-		Parse the provided grammar dict, filling in fields and running grammar commands until only a string remains
-		:param grammarDict: The grammar dictionary to parse
-		:param trigger: The trigger with which the grammar parsing was initiated (Usually one of the values in the '_triggers' grammar dict field
-		:param parameters: A list of strings with parameters that can be used during the parsing. Can be None if no parameters are provided or needed
-		:param variableDict: An optional dict with pre-set variables that can be used during the parsing
-		:return: A string resulting from parsing the grammar dict
-		:raises GrammarException: Raised if something goes wrong during parsing or if parsing takes too many steps
-		"""
-
-		grammarParseState = GrammarParseState(grammarDict, variableDict, parameters)
-
-		#Store the trigger so grammars can know how they got called
-		grammarParseState.variableDict[u'_trigger'] = StringUtil.forceToUnicode(trigger)
-
-		#Parse any initializers specified
-		for initializerKey in (u'_initializers', u'_initialisers', u'_init', u'_options'):
-			if initializerKey in grammarDict:
-				Command.parseInitializers(grammarDict[initializerKey], grammarParseState)
-				break
-
-		#Start the parsing!
-		return Command.parseGrammarString(grammarParseState)
-
-	@staticmethod
 	def parseInitializers(initializers, grammarParseState):
 		"""
 		:type grammarParseState: GrammarParseState
@@ -404,12 +378,30 @@ class Command(CommandTemplate):
 		grammarParseState.variableDict[u'_repeats'] = repeats
 
 	@staticmethod
-	def parseGrammarString(grammarParseState):
+	def parseGrammarDict(grammarDict, trigger, parameters=None, variableDict=None):
 		"""
-		:type grammarParseState: GrammarParseState
+		Parse the provided grammar dict, filling in fields and running grammar commands until only a string remains
+		:param grammarDict: The grammar dictionary to parse
+		:param trigger: The trigger with which the grammar parsing was initiated (Usually one of the values in the '_triggers' grammar dict field
+		:param parameters: A list of strings with parameters that can be used during the parsing. Can be None if no parameters are provided or needed
+		:param variableDict: An optional dict with pre-set variables that can be used during the parsing
+		:return: A string resulting from parsing the grammar dict
+		:raises GrammarException: Raised if something goes wrong during parsing or if parsing takes too many steps
 		"""
-		startIndex = 0
 
+		grammarParseState = GrammarParseState(grammarDict, variableDict, parameters)
+
+		#Store the trigger so grammars can know how they got called
+		grammarParseState.variableDict[u'_trigger'] = StringUtil.forceToUnicode(trigger)
+
+		#Parse any initializers specified
+		for initializerKey in (u'_initializers', u'_initialisers', u'_init', u'_options'):
+			if initializerKey in grammarDict:
+				Command.parseInitializers(grammarDict[initializerKey], grammarParseState)
+				break
+
+		#Start the parsing!
+		startIndex = 0
 		iteration = grammarParseState.variableDict.get(u'_iteration', 0)
 		if not isinstance(iteration, int) or iteration < 0:
 			iteration = 0
