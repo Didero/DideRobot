@@ -1,4 +1,4 @@
-import glob, inspect, json, os, random, re
+import glob, inspect, json, os, random, re, string
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
@@ -532,7 +532,7 @@ class Command(CommandTemplate):
 		# We assume all replacements are unicode strings, so make sure this replacement is too
 		replacement = StringUtil.forceToUnicode(replacement)
 
-		#Turn the modifier into a new grammarblock
+		#Turn the modifier into a new
 		if firstModifier:
 			#Store the original replacement because we need to add it as a parameter to the modifier command
 			grammarParseState.variableDict[u'_'] = replacement
@@ -791,6 +791,12 @@ class GrammarParseState(object):
 				self.parameterList.append(param)
 		self.updateParamsVar()
 
+		#Because formatting has to be done after a grammar block is fully parsed, we need to store where a formatting block starts
+		#This should be a dict, key is start index, value is a list of formatting functions to call
+		# The value is a list because one start index can be the start of multiple formatting blocks
+		#The formatting function should take a single string parameter and return a formatted string
+		self.formattingBlocks = {}
+
 		#Set up the initial string to parse
 		if u'start' in grammarDict:
 			self.currentParseString = u"<start>"
@@ -806,7 +812,7 @@ class GrammarParseState(object):
 		self.variableDict[u'_params'] = u" ".join(self.parameterList).replace(u"/", u"//").replace(u"<", u"/<").replace(u">", u"/>")
 
 	def __str__(self):
-		return u"GrammarParseState for generator '{}', output string: '{}', variables: {}, params: {}".format(self.grammarDict.get(u'_name', u'[noname]'), self.currentParseString, self.variableDict, self.parameterList)
+		return u"GrammarParseState for generator '{}', output string: '{}', variables: {}, params: {}, formatting blocks: {}".format(self.grammarDict.get(u'_name', u'[noname]'), self.currentParseString, self.variableDict, self.parameterList, self.formattingBlocks)
 
 
 #Store some data about grammar commands, so we can do some initial argument verification. Keeps the actual commands nice and short
@@ -925,6 +931,25 @@ class GrammarCommands(object):
 			return False
 		inputToEvaluate = inputToEvaluate.lower()
 		return inputToEvaluate in (u'true', u'1') or inputToEvaluate in extraValuesToAcceptAsTrue
+
+	@staticmethod
+	def _startFormattingBlock(grammarParseState, textToFormat, formattingFunctionToCall):
+		"""
+		For formatting commands, this method stores where the formatting should start and the formatting function,
+		and it will return an unformatted string with an '<$endFormattingBlock>' command at the end
+		:param grammarParseState: The current grammar's parse state
+		:type grammarParseState: GrammarParseState
+		:param formattingFunctionToCall: The function that will do the actual formatting. Should take a single string argument and return a formatted string
+		:return: The text to format followed by an 'endOfFormattingBlock' command, that can be returned as the formatting command's result
+		"""
+		if not u"<" in textToFormat and not u">" in textToFormat:
+			#The provided text doesn't contain any grammar blocks, so it won't change later. We can do the formatting now
+			return formattingFunctionToCall(textToFormat)
+		print u"Storing formatting block for text '{}', {}".format(textToFormat, grammarParseState)
+		if grammarParseState.currentParseStringIndex not in grammarParseState.formattingBlocks:
+			grammarParseState.formattingBlocks[grammarParseState.currentParseStringIndex] = []
+		grammarParseState.formattingBlocks[grammarParseState.currentParseStringIndex].append(formattingFunctionToCall)
+		return u"{}<{}endofformattingblock|{}>".format(textToFormat, fieldCommandPrefix, grammarParseState.currentParseStringIndex)
 
 	#################
 	#Saving and loading variables
@@ -1435,7 +1460,7 @@ class GrammarCommands(object):
 		<$lowercase|stringToMakeLowercase>
 		Returns the provided string with every letter made lowercase
 		"""
-		return argumentList[0].lower()
+		return GrammarCommands._startFormattingBlock(grammarParseState, argumentList[0], string.lower)
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -1444,7 +1469,7 @@ class GrammarCommands(object):
 		<$uppercase|stringToMakeUppercase>
 		Returns the provided string with every letter made uppercase
 		"""
-		return argumentList[0].upper()
+		return GrammarCommands._startFormattingBlock(grammarParseState, argumentList[0], string.upper)
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -1453,7 +1478,7 @@ class GrammarCommands(object):
 		<$titlecase|stringToMakeTitlecase>
 		Returns the provided string with every word starting with a capital letter and the rest of the word lowercase
 		"""
-		return argumentList[0].title()
+		return GrammarCommands._startFormattingBlock(grammarParseState, argumentList[0], string.capwords)
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -1462,8 +1487,10 @@ class GrammarCommands(object):
 		<$firstletteruppercase|stringToFormat>
 		Returns the provided string with the first character made uppercase and the rest left as provided
 		"""
-		s = argumentList[0]
-		return s[0].upper() + s[1:]
+		if not argumentList[0]:
+			#If the provided string is empty, do nothing
+			return u""
+		return GrammarCommands._startFormattingBlock(grammarParseState, argumentList[0], lambda s: s[0].upper() + s[1:])
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -1482,6 +1509,39 @@ class GrammarCommands(object):
 		Converts the provided number to its English representation. For instance, '4' would get turned into 'four'
 		"""
 		return Command.numberToText(argumentList[0])
+
+	@staticmethod
+	@validateArguments(argumentCount=1, numericArgumentIndexes=0)
+	def command_endofformattingblock(argumentList, grammarParseState):
+		"""
+		<$endofformattingblock|startIndexOfFormattingBlock>
+		This command is only for internal use, and shouldn't be used in grammar files
+		It is used to indicate the end of a formatting block, when we know which text we for instance need to make lowercase
+		This is needed because formatting can only be properly done after all grammar blocks are fully parsed
+		The argument is the index in the outputstring where the formatting block starts. It needs to have been stored before,
+		by calling the '_startFormattingBlock' method from another grammar command method
+		:type grammarParseState: GrammarParseState
+		"""
+		if not grammarParseState.formattingBlocks:
+			raise GrammarException(u"Unable to process end of formatting block because no formatting blocks are stored, {}".format(grammarParseState))
+		if argumentList[0] not in grammarParseState.formattingBlocks:
+			raise GrammarException(u"Can't format block starting at index {} because no info on it is stored, {}".format(argumentList[0], grammarParseState))
+		formattingFunction = grammarParseState.formattingBlocks[argumentList[0]].pop(0)
+		#Because formatting can change parse string length, we need to know the length change,
+		# so we can update the new parsing starting index
+		formatString = grammarParseState.currentParseString[argumentList[0]:grammarParseState.currentParseStringIndex]
+		formatStringLengthBeforeFormatting = len(formatString)
+		formatString = formattingFunction(formatString)
+		parseStringLengthChange = len(formatString) - formatStringLengthBeforeFormatting
+		#Update the parse index so we continue at the same place in the parse string as before
+		grammarParseState.currentParseStringIndex += parseStringLengthChange
+		#Insert the formatted string back into the parse string
+		grammarParseState.currentParseString = grammarParseState.currentParseString[:argumentList[0]] + formatString + grammarParseState.currentParseString[grammarParseState.currentParseStringIndex:]
+		#If this was the last formatting block for the provided start index, remove it from the formattingblocks dict
+		if not grammarParseState.formattingBlocks[argumentList[0]]:
+			del grammarParseState.formattingBlocks[argumentList[0]]
+		#Done!
+		return u""
 
 	#################
 	#Miscellaneous
