@@ -401,7 +401,6 @@ class Command(CommandTemplate):
 				break
 
 		#Start the parsing!
-		startIndex = 0
 		iteration = grammarParseState.variableDict.get(u'_iteration', 0)
 		if not isinstance(iteration, int) or iteration < 0:
 			iteration = 0
@@ -416,7 +415,7 @@ class Command(CommandTemplate):
 			characterIsEscaped = False
 			grammarParts = [u""]
 			#Go through the string to find the first bracketed section
-			for index in xrange(startIndex, len(grammarParseState.currentParseString)):
+			for index in xrange(grammarParseState.currentParseStringIndex, len(grammarParseState.currentParseString)):
 				character = grammarParseState.currentParseString[index]
 
 				#Handle character escaping first, since that overrides everything else
@@ -428,7 +427,7 @@ class Command(CommandTemplate):
 
 				if nestedBracketLevel == 0 and character == u"<":
 					#Store this position for the next loop, so we don't needlessly check bracket-less text multiple times
-					startIndex = index
+					grammarParseState.currentParseStringIndex = index
 					#And go up a level
 					nestedBracketLevel = 1
 				elif nestedBracketLevel == 1 and character == u"|":
@@ -438,7 +437,7 @@ class Command(CommandTemplate):
 					#We found the end of the grammar block. Have it parsed
 					parsedGrammarBlock = Command.parseGrammarBlock(grammarParts, grammarParseState)
 					#Everything went fine, replace the grammar block with the output
-					grammarParseState.currentParseString = grammarParseState.currentParseString[:startIndex] + parsedGrammarBlock + grammarParseState.currentParseString[index + 1:]
+					grammarParseState.currentParseString = grammarParseState.currentParseString[:grammarParseState.currentParseStringIndex] + parsedGrammarBlock + grammarParseState.currentParseString[index + 1:]
 					#Done with this parsing loop, start a new one! (break out of the for-loop to start a new while-loop iteration)
 					break
 				#Don't append characters if we're not inside a grammar block
@@ -800,6 +799,7 @@ class GrammarParseState(object):
 		else:
 			Command.logWarning(u"[Gen] Missing 'start' or '_start' field in grammar '{}'".format(grammarDict.get(u'_name', u'[noname]')))
 			raise GrammarException(u"Error: No 'start' field found!")
+		self.currentParseStringIndex = 0
 
 	def updateParamsVar(self):
 		# Escape special characters to prevent abuse by users
