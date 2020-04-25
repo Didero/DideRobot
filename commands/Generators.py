@@ -945,7 +945,6 @@ class GrammarCommands(object):
 		if not u"<" in textToFormat and not u">" in textToFormat:
 			#The provided text doesn't contain any grammar blocks, so it won't change later. We can do the formatting now
 			return formattingFunctionToCall(textToFormat)
-		print u"Storing formatting block for text '{}', {}".format(textToFormat, grammarParseState)
 		if grammarParseState.currentParseStringIndex not in grammarParseState.formattingBlocks:
 			grammarParseState.formattingBlocks[grammarParseState.currentParseStringIndex] = []
 		grammarParseState.formattingBlocks[grammarParseState.currentParseStringIndex].append(formattingFunctionToCall)
