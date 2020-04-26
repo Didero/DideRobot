@@ -273,6 +273,10 @@ class Command(CommandTemplate):
 		matchingCards = {}
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json')) as jsonfile:
 			for cardlineNumber, cardline in enumerate(jsonfile):
+				# Don't hog the CPU
+				if cardlineNumber % 500 == 0:
+					gevent.idle()
+
 				cardname, carddata = json.loads(cardline).popitem()
 
 				#Store how much sets we started with, so we know at the end if any sets got removed
@@ -688,7 +692,11 @@ class Command(CommandTemplate):
 
 		#Get all cards from that set
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), 'r') as jsonfile:
-			for cardline in jsonfile:
+			for cardLineNumber, cardline in enumerate(jsonfile):
+				#Don't hog the CPU
+				if cardLineNumber % 500 == 0:
+					gevent.idle()
+				
 				cardname, carddata = json.loads(cardline).popitem()
 				if properSetname not in carddata[1]:
 					continue
