@@ -19,13 +19,23 @@ class Command(CommandTemplate):
 	# Format: {"(playlist_id)": "channelname": "(channelname to display when there's a new video)", "playlistname": "(playlist name to display when there's a new video) [[optional, only if not Uploads playlist]]",
 	# 	"latestVideoId": "(video_id)", "latestVideoTitle": "(Video Title)", "latestVideoUploadTime": (timestamp), "reportChannels": ["DesertBusCommunityServer #desertbus"]}}
 	watchedPlaylistsData = {}
-	datetimeFormatString = "%Y-%m-%dT%H:%M:%S.%fZ"
+	datetimeFormatString = "%Y-%m-%dT%H:%M:%S%fZ"
 	newVideoReportCutoffAge = scheduledFunctionTime * 20
 
 	#The 'add' command accepts either a  channel name, or a playlist url. These regexes should match any playlist url. URL formats:
 	#  https://www.youtube.com/playlist?list=PLV_qemO0oatisNFQMcP3hl4P7XvP3pqem
 	#  https://www.youtube.com/watch?v=ufvjjMp1rUg&list=PLV_qemO0oatisNFQMcP3hl4P7XvP3pqem
 	playlistUrlMatcher = re.compile(r"^https?://(?:www\.)?youtube.com/.+[?&]list=(?P<playlistid>[^&]+)(?:&.+)*$")
+
+	def parseVideoPublishDateTime(self, publishedAtDateTimeString):
+		"""
+		Parse the provided video published-at date time string as a datetime instance
+		:param publishedAtDateTimeString: The video publish datetime as a string
+		:type publishedAtDateTimeString: str
+		:return: The publish date time as a datetime object instance
+		"""
+		#The publish date sometimes seems to have a period and sometimes not. Remove it if it's there
+		return datetime.datetime.strptime(publishedAtDateTimeString.replace('.', ''), self.datetimeFormatString)
 
 	def onLoad(self):
 		if 'google' not in GlobalStore.commandhandler.apikeys:
@@ -38,7 +48,7 @@ class Command(CommandTemplate):
 				self.watchedPlaylistsData = json.load(datafile)
 			#Turn all the video timestamps into datetime objects, for easy comparison later
 			for playlistId in self.watchedPlaylistsData:
-				self.watchedPlaylistsData[playlistId]['latestVideoUploadTime'] = datetime.datetime.strptime(self.watchedPlaylistsData[playlistId]['latestVideoUploadTime'], self.datetimeFormatString)
+				self.watchedPlaylistsData[playlistId]['latestVideoUploadTime'] = self.parseVideoPublishDateTime(self.watchedPlaylistsData[playlistId]['latestVideoUploadTime'])
 
 	def executeScheduledFunction(self):
 		newVideosPerServerChannelString = {}
@@ -54,7 +64,7 @@ class Command(CommandTemplate):
 			#Check if these videos are newer than the latest video we have stored
 			while videoResultTuple[1]:
 				videoDict = videoResultTuple[1].pop(0)
-				videoDict['publishedAt'] = datetime.datetime.strptime(videoDict['publishedAt'], self.datetimeFormatString)
+				videoDict['publishedAt'] = self.parseVideoPublishDateTime(videoDict['publishedAt'])
 				if videoDict['publishedAt'] > playlistData['latestVideoUploadTime']:
 					#Store the video info in the 'new' list, but only the data we need
 					newVideoList.append(DictUtil.getValuesFromDict(videoDict, 'publishedAt', 'videoId', 'title', 'playlistId'))
@@ -184,7 +194,7 @@ class Command(CommandTemplate):
 		if not latestVideoInfoTuple[0]:
 			return latestVideoInfoTuple[1]
 		latestVideoInfo = latestVideoInfoTuple[1][0]
-		latestVideoUploadTime = None if not latestVideoInfo else datetime.datetime.strptime(latestVideoInfo['publishedAt'], self.datetimeFormatString)
+		latestVideoUploadTime = None if not latestVideoInfo else self.parseVideoPublishDateTime(latestVideoInfo['publishedAt'])
 		self.watchedPlaylistsData[uploadsPlaylistId] = {'channelname': channelName, 'latestVideoId': latestVideoInfo.get('videoId'), 'latestVideoTitle': latestVideoInfo.get('title'),
 														  'latestVideoUploadTime': latestVideoUploadTime, 'reportChannels': [serverChannelString]}
 		self.saveWatchedChannelsData()
@@ -209,7 +219,7 @@ class Command(CommandTemplate):
 		if not latestVideoInfoTuple[0]:
 			return latestVideoInfoTuple[1]
 		latestVideoInfo = latestVideoInfoTuple[1][0]
-		latestVideoUploadTime = None if not latestVideoInfo else datetime.datetime.strptime(latestVideoInfo['publishedAt'], self.datetimeFormatString)
+		latestVideoUploadTime = None if not latestVideoInfo else self.parseVideoPublishDateTime(latestVideoInfo['publishedAt'])
 		self.watchedPlaylistsData[playlistId] = {'playlistname': playlistInfo['title'], 'channelname': playlistInfo['channelTitle'],'latestVideoId': latestVideoInfo.get('videoId'),
 												 'latestVideoTitle': latestVideoInfo.get('title'), 'latestVideoUploadTime': latestVideoUploadTime, 'reportChannels': [serverChannelString]}
 		self.saveWatchedChannelsData()
