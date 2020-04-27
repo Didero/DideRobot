@@ -1,4 +1,4 @@
-import glob, inspect, json, os, random, re, string
+import datetime, glob, inspect, json, os, random, re, string
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
@@ -15,7 +15,7 @@ modifiersPrefix = u"&"
 
 
 class Command(CommandTemplate):
-	triggers = ['generate', 'gen']
+	triggers = ['generate', 'gen', 'generateseeded', 'genseeded']
 	helptext = "Generate random stories or words. Reload generators with '{commandPrefix}generate reload'. Call a specific generator with '{commandPrefix}generate [genName]'. Enter 'random' to let me pick, or choose from: "
 	callInThread = True
 
@@ -103,8 +103,20 @@ class Command(CommandTemplate):
 			Command.loadGenerators()
 			return message.reply(u"Ok, I reloaded all the generators from disk. I now have these {:,} generators loaded: {}".format(len(Command.generators), u", ".join(Command.getAvailableTriggers())))
 
+		if message.trigger.endswith('seeded'):
+			#Extract the seed prompt from the message parameters
+			if message.messagePartsLength < 2:
+				raise CommandException("If you want to use a seed, it'll probably help if you provide that seed (I don't know how to phrase this without sounding creepy, sorry)")
+			seedInput = StringUtil.forceToUnicode(message.messageParts[1])
+			parameters = message.messageParts[2:]
+		else:
+			seedInput = None
+			parameters = message.messageParts[1:]
+
 		try:
-			message.reply(Command.executeGrammarByTrigger(message.messageParts[0].lower(), message.messageParts[1:]))
+			#Add some variables from the IRC message
+			variableDict = {u'_sourceserver': message.bot.serverfolder, u'_sourcechannel': message.source, u'_sourcenick': message.userNickname}
+			message.reply(Command.executeGrammarByTrigger(trigger=message.messageParts[0].lower(), parameters=parameters, variableDict=variableDict, seedInput=seedInput))
 		except GrammarException as e:
 			raise CommandException(e.message)
 
@@ -113,13 +125,14 @@ class Command(CommandTemplate):
 		return sorted(Command.generators.keys())
 
 	@staticmethod
-	def executeGrammarByTrigger(trigger, parameters=None, variableDict=None):
+	def executeGrammarByTrigger(trigger, parameters=None, variableDict=None, seedInput=None):
 		"""
 		Looks to see if there's a grammar that should fire on the provided trigger, and executes it if so.
 		If the grammar can't be found, or if something goes wrong during execution, a GrammarException will be thrown
 		:param trigger: The grammar trigger to execute
 		:param parameters: A string with space-delimited parameters to pass on to the grammar
 		:param variableDict: An optional dictionary with pre-set variables to use while parsing
+		:param seedInput: An optional string with comma-separated values to use in building a seed for random generation
 		:return: A string with the grammar result
 		:raises GrammarException if no generators are loaded, if there is no grammar that should fire on the provided trigger, or if something goes wrong during execution
 		"""
@@ -135,6 +148,8 @@ class Command(CommandTemplate):
 			#No suitable generator found, list the available ones
 			raise GrammarException(u"'{}' is not a valid generator name. Use 'random' to let me pick, or choose from: {}".format(trigger, u", ".join(Command.getAvailableTriggers())))
 
+		seed = Command.parseSeedString(seedInput.split(u','), variableDict) if seedInput else None
+
 		#The generator can either be a module function, or a string pointing to a grammar file. Check which it is
 		if isinstance(wantedGenerator, basestring):
 			path = os.path.join(Command.filesLocation, wantedGenerator)
@@ -149,15 +164,19 @@ class Command(CommandTemplate):
 				except ValueError as e:
 					Command.logError(u"[Gen] Grammar file '{}' is invalid JSON: {}".format(wantedGenerator, e))
 					raise GrammarException(u"The grammar file for '{}' is broken, for some reason. Tell my owner(s), hopefully they can fix it".format(trigger))
-				return Command.parseGrammarDict(grammarDict, trigger, parameters=parameters, variableDict=variableDict)
+				return Command.parseGrammarDict(grammarDict, trigger, parameters=parameters, variableDict=variableDict, seed=seed)
 		else:
+			randomizer = random.Random()
+			if seed:
+				randomizer.seed(seed)
 			#Function! Just call it, with the message so it can figure it out from there itself
-			return wantedGenerator(parameters)
+			return wantedGenerator(randomizer, parameters)
 
 	@staticmethod
-	def getLineFromFile(filename, filelocation=None, lineNumber=None):
+	def getLineFromFile(randomizer, filename, filelocation=None, lineNumber=None):
 		"""
 		Gets a line from the provided file. If no line number is provided, a random line will be returned
+		:param randomizer: An instance of random.Random(), possibly a seeded one
 		:param filename: The name of the file to get the line from
 		:param filelocation: The path to the file. If it's empty or None, the default location will be prepended
 		:param lineNumber: If provided, the specified line will be retrieved from the file (line counts start at 0). If not specified, a random line is returned
@@ -176,7 +195,9 @@ class Command(CommandTemplate):
 		if lineNumber and lineNumber >= 0:
 			line = FileUtil.getLineFromFile(filepath, lineNumber)
 		else:
-			line = FileUtil.getRandomLineFromFile(filepath)
+			linecount = FileUtil.getLineCount(filepath)
+			randomLineNumber = randomizer.randrange(0, linecount)
+			line = FileUtil.getLineFromFile(filepath, randomLineNumber)
 		if not line:
 			#The line function encountered an error, so it returned None
 			# Since we expect a string, provide an empty one
@@ -251,10 +272,10 @@ class Command(CommandTemplate):
 		return " ".join(numberTextParts)
 
 	@staticmethod
-	def getBasicOrSpecialLetter(vowelOrConsonant, basicLetterChance):
+	def getBasicOrSpecialLetter(randomizer, vowelOrConsonant, basicLetterChance):
 		if isinstance(vowelOrConsonant, int):
 			#Assume the provided argument is a chance percentage of vowel
-			if random.randint(1, 100) <= vowelOrConsonant:
+			if randomizer.randint(1, 100) <= vowelOrConsonant:
 				vowelOrConsonant = "vowel"
 			else:
 				vowelOrConsonant = "consonant"
@@ -266,10 +287,10 @@ class Command(CommandTemplate):
 			basicLetters = ('b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't')
 			specialLetters = ('j', 'q', 'v', 'w', 'x', 'z')
 
-		if random.randint(1, 100) <= basicLetterChance:
-			return random.choice(basicLetters)
+		if randomizer.randint(1, 100) <= basicLetterChance:
+			return randomizer.choice(basicLetters)
 		else:
-			return random.choice(specialLetters)
+			return randomizer.choice(specialLetters)
 
 
 	@staticmethod
@@ -277,7 +298,7 @@ class Command(CommandTemplate):
 		return arg.lower() in (u"f", u"female", u"woman", u"girl", u"m", u"male", u"man", u"boy", u"misc", u"other", u"queer")
 
 	@staticmethod
-	def getGenderWords(genderString, allowUnspecified=True):
+	def getGenderWords(randomizer, genderString, allowUnspecified=True):
 		if genderString is not None:
 			genderString = genderString.lower()
 
@@ -289,7 +310,7 @@ class Command(CommandTemplate):
 			gender = u"misc"
 		else:
 			# No gender specified, pick one on our own
-			roll = random.randint(1, 100)
+			roll = randomizer.randint(1, 100)
 			if allowUnspecified and roll <= 45 or roll <= 50:
 				gender = u"f"
 			elif allowUnspecified and roll <= 90 or roll <= 100:
@@ -318,6 +339,7 @@ class Command(CommandTemplate):
 	@staticmethod
 	def parseInitializers(initializers, grammarParseState):
 		"""
+		:type initializers: list[str]
 		:type grammarParseState: GrammarParseState
 		"""
 		if isinstance(initializers, basestring):
@@ -331,10 +353,10 @@ class Command(CommandTemplate):
 				if grammarParseState.parameterList and Command.isGenderParameter(grammarParseState.parameterList[0]):
 					gender = grammarParseState.parameterList.pop(0)
 					shouldUpdateParamsVar = True
-				grammarParseState.variableDict.update(Command.getGenderWords(gender))  # If no gender was provided, 'getGenderWords' will pick a random one
+				grammarParseState.variableDict.update(Command.getGenderWords(grammarParseState.random, gender))  # If no gender was provided, 'getGenderWords' will pick a random one
 			elif initializer == u'generateName':
 				# If a gender was provided or requested, use that to generate a name, otherwise make the function pick a gender
-				grammarParseState.variableDict[u'name'] = Command.generateName(grammarParseState.variableDict.get(u'gender', None))
+				grammarParseState.variableDict[u'name'] = Command.generateName(grammarParseState.random, grammarParseState.variableDict.get(u'gender', None))
 				# Make first and last names separately accessible
 				nameparts = grammarParseState.variableDict[u'name'].split(u' ')
 				grammarParseState.variableDict[u'firstname'] = nameparts[0]
@@ -354,6 +376,11 @@ class Command(CommandTemplate):
 					raise GrammarException(u"Initializer '{}' specifies a negative or zero maximum number of repeats, which isn't supported".format(initializer))
 				Command.parseRepeatsFromParams(grammarParseState, maxRepeats)
 				shouldUpdateParamsVar = True
+			elif initializer.startswith(u"setSeed:"):
+				#If a seed has already been set, don't overwrite it
+				if not grammarParseState.seed:
+					seedParts = initializer.split(u":")[1:]  # Remove the first element since that's the 'setSeed' text
+					grammarParseState.setSeed(Command.parseSeedString(seedParts))
 			else:
 				raise GrammarException(u"Unkown initializer '{}' specified".format(initializer))
 		if shouldUpdateParamsVar:
@@ -378,18 +405,50 @@ class Command(CommandTemplate):
 		grammarParseState.variableDict[u'_repeats'] = repeats
 
 	@staticmethod
-	def parseGrammarDict(grammarDict, trigger, parameters=None, variableDict=None):
+	def parseSeedString(seedParts, variableDict=None):
+		"""
+		Turn the provided seed parts into a seed usable for random generation
+		:param seedParts: A list of parts touse in creating the seed
+		:type seedParts: list of str
+		:return: A seed to use in random generation
+		"""
+		parsedSeedParts = []
+		#A lot of possible seed part variables depend on the date, so retrieve that now
+		now = datetime.datetime.utcnow()
+		dateRelatedSeedParts = {u'year': "%y", u'month': "%m", u'week': "%W", u'date': "%y-%m-%d", u'dayofyear': "%j", u'hour': "%H"}
+		variableRelatedSeedParts = {u'server': u'_sourceserver', u'channel': u'_sourcechannel', u'nick': u'_sourcenick'}
+		for seedPart in seedParts:
+			if seedPart.startswith(argumentIsVariablePrefix):
+				seedPart = seedPart[len(argumentIsVariablePrefix):].lower()
+				if seedPart in dateRelatedSeedParts:
+					seedPart = now.strftime(dateRelatedSeedParts[seedPart])
+				elif seedPart in variableRelatedSeedParts:
+					varToGet = variableRelatedSeedParts[seedPart]
+					if not variableDict or varToGet not in variableDict:
+						raise GrammarException(u"Unable to get the '{}' variable from the variable dictionary for building the seed, because either the variable isn't stored or there is no variable dictionary".format(varToGet))
+					seedPart = variableDict[varToGet]
+				elif seedPart == u"source":
+					#'%source' is a combination of server, channel, and nick
+					seedPart = Command.parseSeedString([u'%server', u'%channel', u'%nick'], variableDict)
+				else:
+					raise GrammarException(u"Unknown variable '{}' used in the seed parameter".format(seedPart))
+			parsedSeedParts.append(seedPart)
+		return u"|".join(parsedSeedParts)
+
+	@staticmethod
+	def parseGrammarDict(grammarDict, trigger, parameters=None, variableDict=None, seed=None):
 		"""
 		Parse the provided grammar dict, filling in fields and running grammar commands until only a string remains
 		:param grammarDict: The grammar dictionary to parse
 		:param trigger: The trigger with which the grammar parsing was initiated (Usually one of the values in the '_triggers' grammar dict field
 		:param parameters: A list of strings with parameters that can be used during the parsing. Can be None if no parameters are provided or needed
 		:param variableDict: An optional dict with pre-set variables that can be used during the parsing
+		:param seed: Provide a seed for the random generator. Optional
 		:return: A string resulting from parsing the grammar dict
 		:raises GrammarException: Raised if something goes wrong during parsing or if parsing takes too many steps
 		"""
 
-		grammarParseState = GrammarParseState(grammarDict, variableDict, parameters)
+		grammarParseState = GrammarParseState(grammarDict, variableDict, parameters, seed)
 
 		#Store the trigger so grammars can know how they got called
 		grammarParseState.variableDict[u'_trigger'] = StringUtil.forceToUnicode(trigger)
@@ -516,13 +575,13 @@ class Command(CommandTemplate):
 			fieldValue = grammarParseState.grammarDict[fieldKey]
 			if isinstance(fieldValue, list):
 				# It's a list! Just pick a random entry
-				replacement = random.choice(fieldValue)
+				replacement = grammarParseState.random.choice(fieldValue)
 			elif isinstance(fieldValue, dict):
 				# Dictionary! The keys are chance percentages, the values are the replacement strings
 				if fieldKey not in grammarParseState.convertedChanceDicts:
 					Command.convertChanceDict(fieldValue)
 					grammarParseState.convertedChanceDicts.append(fieldKey)
-				replacement = Command.parseChanceDict(fieldValue, grammarParseState.variableDict)
+				replacement = Command.parseChanceDict(fieldValue, grammarParseState)
 			elif isinstance(fieldValue, basestring):
 				# If it's a string (either the string class or the unicode class), just dump it in
 				replacement = fieldValue
@@ -554,19 +613,19 @@ class Command(CommandTemplate):
 		return replacement
 
 	@staticmethod
-	def parseChanceDict(chanceDict, variableDict):
+	def parseChanceDict(chanceDict, grammarParseState):
 		closestChanceMatch = 101
 		closestChanceMatchValue = u""
-		randomValue = random.randint(1, 100)
+		randomValue = grammarParseState.random.randint(1, 100)
 		#Find the lowest chance dict key that's higher than our roll
 		for chanceKey, chanceValue in chanceDict.iteritems():
 			#If the key is a variable name, replace it with the variable's value
 			if isinstance(chanceKey, basestring) and chanceKey.startswith(argumentIsVariablePrefix):
 				#Replace variable with current value
 				varName = chanceKey[1:]
-				if varName not in variableDict:
+				if varName not in grammarParseState.variableDict:
 					raise GrammarException(u"Variable '{}' used in chance dictionary, but that variable isn't set".format(varName))
-				varValue = variableDict[varName]
+				varValue = grammarParseState.variableDict[varName]
 				if not isinstance(varValue, int):
 					try:
 						varValue = int(varValue, 10)
@@ -601,9 +660,10 @@ class Command(CommandTemplate):
 
 
 	@staticmethod
-	def generateName(parameters=None):
+	def generateName(randomizer, parameters=None):
 		"""
 		Generates a random first and last name. You can provide a parameter to specify the gender
+		:type randomizer: random.Random
 		"""
 		genderDict = None
 		namecount = 1
@@ -615,7 +675,7 @@ class Command(CommandTemplate):
 			#Go through all parameters to see if they're either a gender specifier or a name count number
 			for param in parameters:
 				if Command.isGenderParameter(param):
-					genderDict = Command.getGenderWords(param, False)
+					genderDict = Command.getGenderWords(randomizer, param, False)
 				else:
 					try:
 						namecount = int(param)
@@ -627,21 +687,21 @@ class Command(CommandTemplate):
 
 		#If no gender parameter was passed, pick a random one
 		if not genderDict:
-			genderDict = Command.getGenderWords(None, False)
+			genderDict = Command.getGenderWords(randomizer, None, False)
 
 		names = []
 		for i in xrange(namecount):
 			# First get a last name
-			lastName = Command.getLineFromFile("LastNames.txt")
+			lastName = Command.getLineFromFile(randomizer, "LastNames.txt")
 			#Get the right name for the provided gender
 			if genderDict['gender'] == 'f':
-				firstName = Command.getLineFromFile("FirstNamesFemale.txt")
+				firstName = Command.getLineFromFile(randomizer, "FirstNamesFemale.txt")
 			else:
-				firstName = Command.getLineFromFile("FirstNamesMale.txt")
+				firstName = Command.getLineFromFile(randomizer, "FirstNamesMale.txt")
 
 			#with a chance add a middle letter:
-			if (parameters and "addletter" in parameters) or random.randint(1, 100) <= 15:
-				names.append(u"{} {}. {}".format(firstName, Command.getBasicOrSpecialLetter(50, 75).upper(), lastName))
+			if (parameters and "addletter" in parameters) or randomizer.randint(1, 100) <= 15:
+				names.append(u"{} {}. {}".format(firstName, Command.getBasicOrSpecialLetter(randomizer, 50, 75).upper(), lastName))
 			else:
 				names.append(u"{} {}".format(firstName, lastName))
 
@@ -649,9 +709,10 @@ class Command(CommandTemplate):
 
 
 	@staticmethod
-	def generateWord(parameters=None):
+	def generateWord(randomizer, parameters=None):
 		"""
 		Generates a word by putting letters together in semi-random order. Provide a number to generate that many words
+		:type randomizer: random.Random
 		"""
 		# Initial set-up
 		vowels = ['a', 'e', 'i', 'o', 'u']
@@ -674,24 +735,24 @@ class Command(CommandTemplate):
 			currentVowelChance = vowelChance
 			currentNewLetterFraction = newLetterFraction
 			consonantCount = 0
-			while random.randint(0, currentNewLetterFraction) <= 6:
-				if random.randint(1, 100) <= currentVowelChance:
+			while randomizer.randint(0, currentNewLetterFraction) <= 6:
+				if randomizer.randint(1, 100) <= currentVowelChance:
 					consonantCount = 0
 					#vowel. Check if we're going to add a special or normal vowel
-					if random.randint(1, 100) <= 10:
-						word += random.choice(specialVowels)
+					if randomizer.randint(1, 100) <= 10:
+						word += randomizer.choice(specialVowels)
 						currentVowelChance -= 30
 					else:
-						word += random.choice(vowels)
+						word += randomizer.choice(vowels)
 						currentVowelChance -= 20
 				else:
 					consonantCount += 1
 					#consonant, same deal
-					if random.randint(1, 100) <= 25:
-						word += random.choice(specialConsonants)
+					if randomizer.randint(1, 100) <= 25:
+						word += randomizer.choice(specialConsonants)
 						currentVowelChance += 30
 					else:
-						word += random.choice(consonants)
+						word += randomizer.choice(consonants)
 						currentVowelChance += 20
 					if consonantCount > 3:
 						currentVowelChance = 100
@@ -705,9 +766,10 @@ class Command(CommandTemplate):
 		return u", ".join(words)
 
 	@staticmethod
-	def generateWord2(parameters=None):
+	def generateWord2(randomizer, parameters=None):
 		"""
 		Another method to generate a word. Tries to generate pronounceable syllables and puts them together. Provide a number to generate that many words
+		:type randomizer: random.Random
 		"""
 
 		##Initial set-up
@@ -738,32 +800,32 @@ class Command(CommandTemplate):
 		words = []
 		for i in xrange(0, repeats):
 			syllableCount = 2
-			if random.randint(1, 100) <= 50:
+			if randomizer.randint(1, 100) <= 50:
 				syllableCount -= 1
-			if random.randint(1, 100) <= 35:
+			if randomizer.randint(1, 100) <= 35:
 				syllableCount += 1
 
 			word = u""
 			for j in range(0, syllableCount):
 				#In most cases, add an onset
-				if random.randint(1, 100) <= 75:
-					if random.randint(1, 100) <= simpleLetterChance:
-						word += Command.getBasicOrSpecialLetter("consonant", basicLetterChance)
+				if randomizer.randint(1, 100) <= 75:
+					if randomizer.randint(1, 100) <= simpleLetterChance:
+						word += Command.getBasicOrSpecialLetter(randomizer, "consonant", basicLetterChance)
 					else:
-						word += random.choice(onsets)
+						word += randomizer.choice(onsets)
 
 				#Nucleus!
-				if random.randint(1, 100) <= simpleLetterChance:
-					word += Command.getBasicOrSpecialLetter("vowel", basicLetterChance)
+				if randomizer.randint(1, 100) <= simpleLetterChance:
+					word += Command.getBasicOrSpecialLetter(randomizer, "vowel", basicLetterChance)
 				else:
-					word += random.choice(nuclei)
+					word += randomizer.choice(nuclei)
 
 				#Add a coda in most cases (Always add it if this is the last syllable of the word and it'd be too short otherwise)
-				if (j == syllableCount - 1 and len(word) < 3) or random.randint(1, 100) <= 75:
-					if random.randint(1, 100) <= simpleLetterChance:
-						word += Command.getBasicOrSpecialLetter("consonant", basicLetterChance)
+				if (j == syllableCount - 1 and len(word) < 3) or randomizer.randint(1, 100) <= 75:
+					if randomizer.randint(1, 100) <= simpleLetterChance:
+						word += Command.getBasicOrSpecialLetter(randomizer, "consonant", basicLetterChance)
 					else:
-						word += random.choice(codas)
+						word += randomizer.choice(codas)
 
 			word = word[0].upper() + word[1:]
 			words.append(word)
@@ -772,7 +834,7 @@ class Command(CommandTemplate):
 
 
 class GrammarParseState(object):
-	def __init__(self, grammarDict, variableDict=None, parameterList=None):
+	def __init__(self, grammarDict, variableDict=None, parameterList=None, seed=None):
 		self.grammarDict = grammarDict
 		if variableDict is None or not isinstance(variableDict, dict):
 			self.variableDict = {}
@@ -797,6 +859,11 @@ class GrammarParseState(object):
 		#The formatting function should take a single string parameter and return a formatted string
 		self.formattingBlocks = {}
 
+		#We need a 'random' instance in case we need to use a seed
+		self.random = random.Random()
+		self.seed = None # First set to None to make clear that the field exists
+		self.setSeed(seed)
+
 		#Set up the initial string to parse
 		if u'start' in grammarDict:
 			self.currentParseString = u"<start>"
@@ -811,8 +878,13 @@ class GrammarParseState(object):
 		# Escape special characters to prevent abuse by users
 		self.variableDict[u'_params'] = u" ".join(self.parameterList).replace(u"/", u"//").replace(u"<", u"/<").replace(u">", u"/>")
 
+	def setSeed(self, seed):
+		if seed:
+			self.seed = seed
+			self.random.seed(seed)
+
 	def __str__(self):
-		return u"GrammarParseState for generator '{}', output string: '{}', variables: {}, params: {}, formatting blocks: {}".format(self.grammarDict.get(u'_name', u'[noname]'), self.currentParseString, self.variableDict, self.parameterList, self.formattingBlocks)
+		return u"GrammarParseState for generator '{}', output string: '{}', variables: {}, params: {}, formatting blocks: {}, seed: {}".format(self.grammarDict.get(u'_name', u'[noname]'), self.currentParseString, self.variableDict, self.parameterList, self.formattingBlocks, self.seed)
 
 
 #Store some data about grammar commands, so we can do some initial argument verification. Keeps the actual commands nice and short
@@ -1002,7 +1074,7 @@ class GrammarCommands(object):
 		Picks one of the provided values at random, and stores it under the provided name, for future use
 		"""
 		GrammarCommands._checkIfVariableIsWriteable(argumentList[0])
-		grammarParseState.variableDict[argumentList[0]] = random.choice(argumentList[1:])
+		grammarParseState.variableDict[argumentList[0]] = grammarParseState.random.choice(argumentList[1:])
 		return u""
 
 	@staticmethod
@@ -1336,9 +1408,9 @@ class GrammarCommands(object):
 		Returns a number between the lower and upper bound, inclusive on both sides
 		"""
 		if argumentList[1] < argumentList[0]:
-			value = random.randint(argumentList[1], argumentList[0])
+			value = grammarParseState.random.randint(argumentList[1], argumentList[0])
 		else:
-			value = random.randint(argumentList[0], argumentList[1])
+			value = grammarParseState.random.randint(argumentList[0], argumentList[1])
 		return unicode(str(value), 'utf-8')
 
 	@staticmethod
@@ -1375,7 +1447,7 @@ class GrammarCommands(object):
 		#Roll the dice!
 		rolls = []
 		for i in xrange(argumentList[0]):
-			rolls.append(random.randint(1, argumentList[1]))
+			rolls.append(grammarParseState.random.randint(1, argumentList[1]))
 		rolls.sort()
 
 		#The time of (possibly) removing high and low rolls is now
@@ -1397,7 +1469,7 @@ class GrammarCommands(object):
 		<$choose|option1|option2|...>
 		Chooses a random option from the ones provided. Useful if the options are short and it'd feel like a waste to make a separate field for each of them
 		"""
-		return random.choice(argumentList)
+		return grammarParseState.random.choice(argumentList)
 
 	@staticmethod
 	@validateArguments(argumentCount=3, numericArgumentIndexes=0)
@@ -1410,10 +1482,10 @@ class GrammarCommands(object):
 		separator = argumentList.pop(0)
 		if numberOfOptionsToChoose <= 0 or numberOfOptionsToChoose >= len(argumentList):
 			#Invalid choice number, just shuffle the list and return that
-			random.shuffle(argumentList)
+			grammarParseState.random.shuffle(argumentList)
 			return separator.join(argumentList)
 		#Number of options to choose is less than number of provided options, pick that number
-		return separator.join(random.sample(argumentList, numberOfOptionsToChoose))
+		return separator.join(grammarParseState.random.sample(argumentList, numberOfOptionsToChoose))
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -1435,7 +1507,7 @@ class GrammarCommands(object):
 			except ValueError:
 				raise GrammarException(u"Chance '{}' from 'choosewithchance' field argument '{}' could not be parsed to a number".format(chance, arg))
 			chanceDict[chance] = optionIfChance
-		return Command.parseChanceDict(chanceDict, grammarParseState.variableDict)
+		return Command.parseChanceDict(chanceDict, grammarParseState)
 
 	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=1)
@@ -1447,7 +1519,7 @@ class GrammarCommands(object):
 		If the line number parameter is specified, that specific line will be returned instead of a random line (line count starts at 0)
 		Specifying a line number is mainly useful for testing
 		"""
-		return Command.getLineFromFile(argumentList[0], lineNumber=None if len(argumentList) == 1 else argumentList[1])
+		return Command.getLineFromFile(grammarParseState.random, argumentList[0], lineNumber=None if len(argumentList) == 1 else argumentList[1])
 
 	#################
 	#Text formatting
@@ -1600,7 +1672,7 @@ class GrammarCommands(object):
 			else:
 				return (argumentList[1] + u" ") * (replacementCount - 1) + argumentList[1]
 		else:
-			indexesToReplace = random.sample(xrange(0, len(inputParts)), replacementCount)
+			indexesToReplace = grammarParseState.random.sample(xrange(0, len(inputParts)), replacementCount)
 			for indexToReplace in indexesToReplace:
 				inputParts[indexToReplace] = argumentList[1]
 			return u" ".join(inputParts)
@@ -1688,7 +1760,7 @@ class GrammarCommands(object):
 		"""
 		#To make sure the combined iterations don't exceed the limit, pass the current iteration to the execution method
 		calledGeneratorVariableDict = {u'_iteration': grammarParseState.variableDict[u'_iteration']}
-		resultString = Command.executeGrammarByTrigger(argumentList[0].lower(), parameters=argumentList[2:], variableDict=calledGeneratorVariableDict)
+		resultString = Command.executeGrammarByTrigger(argumentList[0].lower(), parameters=argumentList[2:], variableDict=calledGeneratorVariableDict, seedInput=grammarParseState.seed)
 		#Copy the variables from the called generator if requested
 		if GrammarCommands._evaluateAsBoolean(argumentList[1]):
 			grammarParseState.variableDict.update(calledGeneratorVariableDict)
