@@ -1760,9 +1760,9 @@ class GrammarCommands(object):
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
-	def command_generator(argumentList, grammarParseState):
+	def command_generate(argumentList, grammarParseState):
 		"""
-		<$generator|generatorName|shouldCopyVariableDict[|parameter1[|parameter2[...]]]>
+		<$generate|generatorName|shouldCopyVariableDict[|parameter1[|parameter2[...]]]>
 		Run a different generator specified by 'generatorName' and get the result. If 'shouldCopyVariableDict' is 'true', then all variables stored by the called generator will be copied to our variableDict
 		You can also pass parameters to that generator by adding them as arguments here
 		Please note that the iterations of the called generator count against the current iteration limit. So it's not possible to use this to bypass the iteration limit
@@ -1777,6 +1777,14 @@ class GrammarCommands(object):
 			#Set the iteration that the called generator reached as our current iteration, so we can't exceed the iteration limit
 			grammarParseState.variableDict[u'_iteration'] = calledGeneratorVariableDict[u'_iteration']
 		return resultString
+
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_generator(argumentList, grammarParseState):
+		"""
+		Alias for '$generate'
+		"""
+		return GrammarCommands.command_generate(argumentList, grammarParseState)
 
 	@staticmethod
 	@validateArguments(argumentCount=0)
