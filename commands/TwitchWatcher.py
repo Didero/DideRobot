@@ -511,7 +511,8 @@ class Command(CommandTemplate):
 			if not tokenUpdateResult[0]:
 				return tokenUpdateResult
 		#Valid token, construct the header, ready to be passed to requests's 'headers=' keyword argument
-		return (True, {"Authorization": "Bearer " + GlobalStore.commandhandler.apikeys['twitch']['access_token']})
+		return (True, {"Client-ID": GlobalStore.commandhandler.apikeys['twitch']['client_id'],
+					   "Authorization": "Bearer " + GlobalStore.commandhandler.apikeys['twitch']['access_token']})
 
 	def isTokenValid(self):
 		apikeys = GlobalStore.commandhandler.apikeys['twitch']
