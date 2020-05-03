@@ -786,15 +786,15 @@ class Command(CommandTemplate):
 		#Sources:
 		# http://en.wikipedia.org/wiki/English_phonology#Phonotactics
 		# http://en.wiktionary.org/wiki/Appendix:English_pronunciation
-		onsets = ["ch", "pl", "bl", "cl", "gl", "pr", "br", "tr", "dr", "cr", "gr", "tw", "dw", "qu", "pu",
+		onsets = ("ch", "pl", "bl", "cl", "gl", "pr", "br", "tr", "dr", "cr", "gr", "tw", "dw", "qu", "pu",
 				  "fl", "sl", "fr", "thr", "shr", "wh", "sw",
-				  "sp", "st", "sk", "sm", "sn", "sph", "spl", "spr", "str", "scr", "squ", "sm"]  #Plus the normal consonants
-		nuclei = ["ai", "ay", "ea", "ee", "y", "oa", "au", "oi", "oo", "ou"]  #Plus the normal vowels
-		codas = ["ch", "lp", "lb", "lt", "ld", "lch", "lg", "lk", "rp", "rb", "rt", "rd", "rch", "rk", "lf", "lth",
+				  "sp", "st", "sk", "sm", "sn", "sph", "spl", "spr", "str", "scr", "squ", "sm")  #Plus the normal consonants
+		nuclei = ("ai", "ay", "ea", "ee", "y", "oa", "au", "oi", "oo", "ou")  #Plus the normal vowels
+		codas = ("ch", "lp", "lb", "lt", "ld", "lch", "lg", "lk", "rp", "rb", "rt", "rd", "rch", "rk", "lf", "lth",
 				 "lsh", "rf", "rth", "rs", "rsh", "lm", "ln", "rm", "rn", "rl", "mp", "nt", "nd", "nch", "nk", "mph",
 				 "mth", "nth", "ngth", "ft", "sp", "st", "sk", "fth", "pt", "ct", "kt", "pth", "ghth", "tz", "dth",
 				 "ks", "lpt", "lfth", "ltz", "lst", "lct", "lx","rmth", "rpt", "rtz", "rst", "rct","mpt", "dth",
-				 "nct", "nx", "xth", "xt"]  #Plus normal consonants
+				 "nct", "nx", "xth", "xt")  #Plus normal consonants
 
 		simpleLetterChance = 65  #percent, whether a single letter is chosen instead of an onset/nucleus/coda
 		basicLetterChance = 75  #percent, whether a simple consonant/vowel is chosen over  a more rare one
