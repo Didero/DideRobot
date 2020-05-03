@@ -117,7 +117,9 @@ class Command(CommandTemplate):
 				self.aliases[server] = {}
 			elif (parameter == "channeladd" or parameter == "add") and serverChannelString not in self.aliases:
 				self.aliases[serverChannelString] = {}
-			self.aliases[server if parameter == "serveradd" else serverChannelString][aliasname] = u" ".join(message.messageParts[2:])
+			#Make sure it's unicode, since that's what the Generator module expects
+			aliasToAdd = unicode(" ".join(message.messageParts[2:]), 'utf-8', 'replace')
+			self.aliases[server if parameter == "serveradd" else serverChannelString][aliasname] = aliasToAdd
 			self.saveAliases()
 			if aliasname not in self.aliasNameList:
 				self.aliasNameList.append(aliasname)
