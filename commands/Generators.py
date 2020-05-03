@@ -701,7 +701,15 @@ class Command(CommandTemplate):
 				firstName = Command.getLineFromFile(randomizer, "FirstNamesMale.txt")
 
 			#with a chance add a middle letter:
-			if (parameters and "addletter" in parameters) or randomizer.randint(1, 100) <= 15:
+			shouldAddInitial = None
+			if parameters:
+				if "addLetter" in parameters:
+					shouldAddInitial = True
+				elif "noLetter" in parameters:
+					shouldAddInitial = False
+			if shouldAddInitial is None:
+				shouldAddInitial = randomizer.randint(1, 100) <= 15
+			if shouldAddInitial:
 				names.append(u"{} {}. {}".format(firstName, Command.getBasicOrSpecialLetter(randomizer, 50, 75).upper(), lastName))
 			else:
 				names.append(u"{} {}".format(firstName, lastName))
