@@ -410,6 +410,7 @@ class Command(CommandTemplate):
 		Turn the provided seed parts into a seed usable for random generation
 		:param seedParts: A list of parts touse in creating the seed
 		:type seedParts: list of str
+		:param variableDict: A dictionary with shared variables used in parsing the grammar. Seed parts may need some of these
 		:return: A seed to use in random generation
 		"""
 		parsedSeedParts = []
