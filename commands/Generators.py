@@ -724,11 +724,11 @@ class Command(CommandTemplate):
 		:type randomizer: random.Random
 		"""
 		# Initial set-up
-		vowels = ['a', 'e', 'i', 'o', 'u']
-		specialVowels = ['y']
+		vowels = ('a', 'e', 'i', 'o', 'u')
+		specialVowels = ('y',)
 
-		consonants = ['b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't']
-		specialConsonants = ['j', 'q', 'v', 'w', 'x', 'z']
+		consonants = ('b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't')
+		specialConsonants = ('j', 'q', 'v', 'w', 'x', 'z')
 
 		newLetterFraction = 5
 		vowelChance = 50  #percent
