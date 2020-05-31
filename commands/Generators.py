@@ -1796,6 +1796,16 @@ class GrammarCommands(object):
 		"""
 		return u""
 
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_stop(argumentList, grammarParseState):
+		"""
+		<$stop|stopMessage>
+		This command stops execution of the generator. The stop message will be displayed to the user.
+		This can be useful if for instance the grammar only accepts certain parameters and a wrong one is provided
+		"""
+		raise GrammarException(argumentList[0], shouldLogError=False)
+
 
 class GrammarException(Exception):
 	def __init__(self, message, shouldLogError=True):
