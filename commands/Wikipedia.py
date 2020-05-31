@@ -67,7 +67,7 @@ class Command(CommandTemplate):
 			raise CommandException("Sorry, an error occurred while retrieving the page. Please tell my owner(s) to check my logs ({})".format(result['error']['info']))
 		result = result['query']
 		if 'pages' not in result or '-1' in result['pages']:
-			raise CommandException("No page about '{}' found, sorry".format(pagename))
+			raise CommandException("No page about '{}' found, sorry".format(pagename), shouldLogError=False)
 		else:
 			#The 'pages' dictionary contains a single key-value pair. The key is the (unknown) revision number. So just get the single entry
 			pagedata = result['pages'].popitem()[1]
