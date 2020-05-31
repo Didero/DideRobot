@@ -106,7 +106,7 @@ class Command(CommandTemplate):
 		if message.trigger.endswith('seeded'):
 			#Extract the seed prompt from the message parameters
 			if message.messagePartsLength < 2:
-				raise CommandException("If you want to use a seed, it'll probably help if you provide that seed (I don't know how to phrase this without sounding creepy, sorry)")
+				return message.reply("If you want to use a seed, it'll probably help if you provide that seed (I don't know how to phrase this without sounding creepy, sorry)")
 			seedInput = StringUtil.forceToUnicode(message.messageParts[1])
 			parameters = message.messageParts[2:]
 		else:
