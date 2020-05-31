@@ -11,6 +11,7 @@ import Constants
 import GlobalStore
 from util import WebUtil
 from IrcMessage import IrcMessage
+from CommandException import CommandException
 
 
 class Command(CommandTemplate):
@@ -33,7 +34,7 @@ class Command(CommandTemplate):
 	def fetchWolframData(self, query, podsToFetch=5):
 		#First check if there is an API key
 		if 'wolframalpha' not in GlobalStore.commandhandler.apikeys:
-			return (False, "No Wolfram Alpha API key found")
+			raise CommandException("No Wolfram Alpha API key found")
 
 		params = {'appid': GlobalStore.commandhandler.apikeys['wolframalpha'], 'input': query}
 		if podsToFetch > 0:
@@ -45,35 +46,32 @@ class Command(CommandTemplate):
 		try:
 			apireturn = requests.get("http://api.wolframalpha.com/v2/query", params=params, timeout=10.0)
 		except requests.exceptions.Timeout:
-			return (False, "Sorry, Wolfram Alpha took too long to respond")
+			raise CommandException("Sorry, Wolfram Alpha took too long to respond")
 		xmltext = apireturn.text
 		#Wolfram sends errors back in HTML apparently. Check for that
 		if xmltext.startswith('<!DOCTYPE html>'):
 			self.logError("Wolfram API returned an HTML page:")
 			self.logError(xmltext)
-			return (False, "Sorry, Wolfram returned unusable data")
+			raise CommandException("Sorry, Wolfram returned unusable data")
 		#Since Wolfram apparently doesn't really understand unicode, fix '\:XXXX' characters by turning them into their proper '\uXXXX' characters
 		#  (Thanks, ekimekim!)
 		xmltext = re.sub(r"\\:[0-9a-f]{4}", lambda x: unichr(int(x.group(0)[2:], 16)), xmltext)
 		# When making changes to the encoding, always test a 'euro to gbp' conversion (euro for utf8, gbp for latin-1),
 		# power-of-ten conversion (e.g. minutes to millenia), and pokemon (accented e and Japanese characters)
 		xmltext = xmltext.encode('utf8')  #Return a string, not a Unicode object
-		return (True, xmltext)
+		return xmltext
 
 	
 	def searchWolfram(self, query, podsToParse=5, cleanUpText=True, includeUrl=True):
 		replystring = ""
 		wolframResult = self.fetchWolframData(query, podsToParse)
-		#First check if the query succeeded
-		if not wolframResult[0]:
-			return wolframResult[1]
 
 		try:
-			xml = ElementTree.fromstring(wolframResult[1])
+			xml = ElementTree.fromstring(wolframResult)
 		except ElementTree.ParseError:
 			self.logError("[Wolfram] Unexpected reply, invalid XML:")
-			self.logError(wolframResult[1])
-			return "Wow, that's some weird data. I don't know what to do with this, sorry. Try reformulating your query, or just try again and see what happens"
+			self.logError(wolframResult)
+			raise CommandException("Wow, that's some weird data. I don't know what to do with this, sorry. Try reformulating your query, or just try again and see what happens")
 
 		if xml.attrib['error'] != 'false':
 			replystring = "Sorry, an error occurred. Tell my owner(s) to check the error log, maybe they can fix it. It could also be an error on WolframAlpha's side though"
