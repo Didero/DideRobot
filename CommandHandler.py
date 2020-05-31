@@ -101,17 +101,20 @@ class CommandHandler:
 			self.commands[commandname].execute(message)
 		except Exception as e:
 			displayMessage = "Sorry, an error occurred while executing this command. It has been logged, and if you tell my owner(s), they could probably fix it"
+			shouldLogError = True
 			shouldLogStacktrace = True
 			# Check if it's a special Command Exception, which should have a more specific display error
 			# And It should have logged more extensive information if available, so we don't need a stacktrace here
 			if isinstance(e, CommandException):
+				shouldLogError = e.shouldLogError
 				shouldLogStacktrace = False
 				if e.displayMessage:
 					displayMessage = e.displayMessage
 
 			# Show the user the (custom or generic) error message, and log the error to the program log
 			message.reply(displayMessage, "say")
-			self.logger.error("{} exception thrown while handling command '{}' and message '{}': {}".format(type(e).__name__, commandname, message.rawText, str(e)), exc_info=shouldLogStacktrace)
+			if shouldLogError:
+				self.logger.error("{} exception thrown while handling command '{}' and message '{}': {}".format(type(e).__name__, commandname, message.rawText, str(e)), exc_info=shouldLogStacktrace)
 
 	@staticmethod
 	def isCommandAllowedForBot(bot, commandname):
