@@ -3,6 +3,7 @@
 	"port": 6667,
     "serverpassword": "",
 	"nickname": "DideRobot",
+	"nicknamepassword": "",
 	"realname": "DideRobot",
 	"maxConnectionRetries": 5,
 	"minSecondsBetweenMessages": 0.0,
