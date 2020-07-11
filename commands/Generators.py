@@ -22,10 +22,11 @@ class Command(CommandTemplate):
 	generators = {}
 	filesLocation = os.path.join(GlobalStore.scriptfolder, "data", "generators")
 	MAX_LOOP_COUNT = 300
+	sharedCommandFunctionName = 'parseGrammarDict'
 
 	def onLoad(self):
 		#Make the grammar parsing function available to other modules
-		GlobalStore.commandhandler.addCommandFunction(__file__, 'parseGrammarDict', Command.parseGrammarDict)
+		GlobalStore.commandhandler.addCommandFunction(__file__, Command.sharedCommandFunctionName, Command.parseGrammarDict)
 		Command.loadGenerators()
 
 	@staticmethod
@@ -1726,6 +1727,8 @@ class GrammarCommands(object):
 		<$modulecommand|commandName[|argument1|argument2|key1=value1|key2=value2|...]>
 		Runs a shared command in another bot module. The first parameter is the name of that command, the rest are unnamed and named parameters to pass on, and are all optional
 		"""
+		if argumentList[0] == Command.sharedCommandFunctionName:
+			raise GrammarException(u"Please use the '{}generate' grammar command to call another generator".format(fieldCommandPrefix))
 		if not GlobalStore.commandhandler.hasCommandFunction(argumentList[0]):
 			raise GrammarException(u"Unknown module command '{}'".format(argumentList[0]))
 		# Turn the arguments into something we can call a function with
