@@ -1423,6 +1423,15 @@ class GrammarCommands(object):
 		return unicode(str(value), 'utf-8')
 
 	@staticmethod
+	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1))
+	def command_randomnumber(argumentList, grammarParseState):
+		"""
+		<$randomnumber|lowerBound|higherBound>
+		Returns a number between the lower and upper bound, inclusive on both sides
+		"""
+		return GrammarCommands.command_randint(argumentList, grammarParseState)
+
+	@staticmethod
 	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1, 2, 3))
 	def command_dice(argumentList, grammarParseState):
 		"""
