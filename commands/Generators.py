@@ -1529,6 +1529,50 @@ class GrammarCommands(object):
 		return Command.parseChanceDict(chanceDict, grammarParseState)
 
 	@staticmethod
+	@validateArguments(argumentCount=2)
+	def command_chooseunique(argumentList, grammarParseState):
+		"""
+		<$chooseunique|fieldOrListToPickFrom|option1ToSkip[|option2ToSkip[|...]]>
+		Pick a random entry from the provided field or list, but it will never return one of the provided optionsToSkip
+		'fieldOrListToPickFrom' can be either the name of a list field in the grammar file, or it can be a colon-separated list of possible options
+		"""
+		if argumentList[0] in grammarParseState.grammarDict:
+			listToPickFrom = grammarParseState.grammarDict[argumentList[0]]
+			if not isinstance(listToPickFrom, list):
+				raise GrammarException(u"Invalid first argument specified in 'chooseunique' command: The grammar field '{}' is not a list".format(listToPickFrom))
+			valuesToSkip = argumentList[1:]
+			#Make a list of indexes to skip in the list to pick from. We'll later pick a random index, and adjust based on this list
+			indexesToSkip = []
+			for entryIndex, entry in enumerate(listToPickFrom):
+				if entry in valuesToSkip:
+					indexesToSkip.append(entryIndex)
+			if len(indexesToSkip) >= len(listToPickFrom):
+				#We can't pick any entry without returning a duplicate. Give up
+				raise GrammarException(u"'{}chooseunique|{}' command can't pick an option that isn't a duplicate".format(fieldCommandPrefix, argumentList[0]))
+			#Pick a random index, then increase that index for each indexToSkip below or equal to the picked index
+			#This should ensure we don't pick a value we should skip, while giving the allowed entries an equal chance to be picked
+			randomIndex = random.randrange(0, len(listToPickFrom) - len(indexesToSkip))
+			for indexToSkip in indexesToSkip:
+				#For each skip index smaller than the one we picked, we need to move up the picked index, to compensate for the reduced range when picking the index
+				if indexToSkip <= randomIndex:
+					randomIndex += 1
+				else:
+					#Skip indexes higher than our picked index don't matter, so stop checking
+					break
+			return listToPickFrom[randomIndex]
+		elif u":" in argumentList[0]:
+			listToPickFrom = argumentList[0].split(u":")
+			for index in xrange(1, len(argumentList)):
+				#Use 'while' instead of 'if' to handle possible duplicate values in 'listToPickFrom'
+				while argumentList[index] in listToPickFrom:
+					listToPickFrom.remove(argumentList[index])
+			if len(listToPickFrom) == 0:
+				raise GrammarException(u"'{}chooseunique' command can't pick an option that isn't a duplicate".format(fieldCommandPrefix, argumentList[0]))
+			return random.choice(listToPickFrom)
+		else:
+			raise GrammarException(u"Invalid first argument '{}' specified in 'chooseunique' command: It should either refer to a list field in the grammar or be a colon-separated list of options".format(argumentList[0]))
+
+	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=1)
 	def command_file(argumentList, grammarParseState):
 		"""
