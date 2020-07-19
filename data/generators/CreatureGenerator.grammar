@@ -29,10 +29,10 @@
 "legs": ["no legs", "a single pair of legs", "four legs", "five oddly placed legs", "a total of eight legs placed in pairs", "an almost uncountable number of small legs"],
 "arms": ["no arms", "a small grasping appendage", "two arms", "three arms placed haphazardly around the body", "four arms"],
 "eyes": ["is sightless", "a single large eye", "small eyes all over its head", "two cute-looking eyes"],
-"colourDescription": ["<colourShade> <colour>", "<colourShade> <colour> with <colour> <colourPattern>"],
+"colourDescription": ["<colourShade> <colour>", "<colourShade> <colour|&storeandshow:bodyColour> with <$chooseunique|colour|%bodyColour> <colourPattern>"],
 "colourShade": ["brightly", "dimly", "<colour>-ishly", "glowing", "an odd shade of"],
 "colour": ["purple", "blue", "yellow", "green", "red", "white", "black", "turquoise", "pink", "violet", "aquamarine", "cyan", "orange", "khaki"],
 "colourPattern": ["dots", "stripes", "spots"],
-"specialPartsLine": {"25": "It also has <specialPart>.", "50": "It also has <specialPart> and <specialPart>."},
+"specialPartsLine": {"25": "It also has <specialPart>.", "50": "It also has <specialPart|&storeandshow:firstSpecialPart> and <$chooseunique|specialPart|%firstSpecialPart>."},
 "specialPart": ["<$randint|2|4|&numbertotext> horns", "fins", "a <size> tail", "a <size>, prehensile tail", "<$randint|2|4|&numbertotext> <size> ears", "a lot of hair", "feathers", "<$randint|2|4|&numbertotext> tentacles"]
 }
