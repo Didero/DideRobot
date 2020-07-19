@@ -4,7 +4,7 @@
 "_triggers": ["rpgitem", "rpgequipment"],
 "_init": "parseRepeats:5",
 "start": "<$repeat|%_repeats|<prefixChoice><materialChoice><itemType><suffixChoice>|, >",
-"prefixChoice": {"5": "<possessiveChoice> ", "70": "<prefix> ", "85": "<prefix|&storeandshow:firstPrefix> <prefix|&storeandhide:secondPrefix><$ifequals|%firstPrefix|%secondPrefix|<prefix>|%secondPrefix> ", "90": "<possessiveChoice> <prefix> ", "100": ""},
+"prefixChoice": {"5": "<possessiveChoice> ", "70": "<prefix> ", "85": "<prefix|&storeandshow:firstPrefix> <$chooseunique|prefix|%firstPrefix> ", "90": "<possessiveChoice> <prefix> ", "100": ""},
 "possessiveChoice": {"25": "<name>'s", "100": "<possessive>'s"},
 "possessive": ["Acolyte", "Adventurer", "Apprentice", "Assassin", "Bard", "Child", "Crafter", "Cultist", "Expert", "Explorer", "King", "Knight", "Master", "Novice", "Officer", "Philosopher", "Prophet", "Queen", "Soldier", "Spy", "Student", "Veteran"],
 "name": "<$choose|<$file|FirstNamesFemale.txt>|<$file|FirstNamesMale.txt>|<$file|LastNames.txt>>",

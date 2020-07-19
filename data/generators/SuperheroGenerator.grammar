@@ -34,7 +34,7 @@
 	"<$var|firstname> is still learning to use <$var|possessivePronoun> talent, <powerLayout>, properly. There are plenty of stories where <$var|pronoun> only barely survived <$var|possessivePronoun> own powers"
 ],
 "powerLayout": {"25": "<power> and <power>", "100": "<power>"},
-"power": ["<powerWord>", "<powerSentence>"],
+"power": ["<$hasvar|previousPowerWord|<$chooseunique|powerWord|%previousPowerWord>|<powerWord|&storeandshow:previousPowerWord>>", "<powerSentence>"],
 "powerWord": ["super strength", "telekinesis", "mind control", "flight", "radiation control", "super smarts"],
 "powerSentence": [
 	"the ability to <creationVerb> <powerElement> <powerManifestation>",
