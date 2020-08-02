@@ -147,7 +147,7 @@ class Command(CommandTemplate):
 			wantedGenerator = Command.generators[trigger]
 		else:
 			#No suitable generator found, list the available ones
-			raise GrammarException(u"'{}' is not a valid generator name. Use 'random' to let me pick, or choose from: {}".format(trigger, u", ".join(Command.getAvailableTriggers())))
+			raise GrammarException(u"'{}' is not a valid generator name. Use 'random' to let me pick, or choose from: {}".format(trigger, u", ".join(Command.getAvailableTriggers())), False)
 
 		seed = Command.parseSeedString(seedInput.split(u','), variableDict) if seedInput else None
 
