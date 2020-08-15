@@ -193,6 +193,8 @@ class Command(CommandTemplate):
 			#Trying to get out of the 'generators' folder
 			Command.logWarning("[Gen] User is trying to access files outside the 'generators' folder with filename '{}'".format(filename))
 			return "[Access error]"
+		if not os.path.isfile(filepath):
+			raise GrammarException(u"The file '{}' does not seem to exist".format(filename))
 		if lineNumber and lineNumber >= 0:
 			line = FileUtil.getLineFromFile(filepath, lineNumber)
 		else:
@@ -325,14 +327,14 @@ class Command(CommandTemplate):
 		genderDict = {u"isAre": u"is", u"wasWere": u"was", u"verbS": u"s", u"verbEs": u"es"}
 		#Then set the pronouns
 		if gender == u"f":
-			genderDict.update({u"gender": u"f", u"genderNoun": u"Woman", u"genderNounYoung": u"Girl", u"pronoun": u"she", u"possessivePronoun": u"her", u"personalPronoun": u"her",
+			genderDict.update({u"gender": u"f", u"genderNoun": u"woman", u"genderNounYoung": u"girl", u"pronoun": u"she", u"possessivePronoun": u"her", u"personalPronoun": u"her",
 							   u"they": u"she", u"their": u"her", u"them": u"her"})
 		elif gender == u"m":
-			genderDict.update({u"gender": u"m", u"genderNoun": u"Man", u"genderNounYoung": u"Boy", u"pronoun": u"he", u"possessivePronoun": u"his", u"personalPronoun": u"him",
+			genderDict.update({u"gender": u"m", u"genderNoun": u"man", u"genderNounYoung": u"boy", u"pronoun": u"he", u"possessivePronoun": u"his", u"personalPronoun": u"him",
 							   u"they": u"he", u"their": u"his", u"them": u"him"})
 		else:
 			#Since the pronoun is 'they', verbs need other forms, so set them too here
-			genderDict.update({u"gender": u"misc", u"genderNoun": u"Person", u"genderNounYoung": u"Kid", u"pronoun": u"they", u"possessivePronoun": u"their", u"personalPronoun": u"them",
+			genderDict.update({u"gender": u"misc", u"genderNoun": u"person", u"genderNounYoung": u"kid", u"pronoun": u"they", u"possessivePronoun": u"their", u"personalPronoun": u"them",
 							   u"they": u"they", u"their": u"their", u"them": u"them",
 							   u"isAre": u"are", u"wasWere": u"were", u"verbS": u"", u"verbEs": u""})
 		return genderDict
