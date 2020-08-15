@@ -2,8 +2,10 @@
 "_name": "Superhero Generator",
 "_description": "Generates the description of a superhero, including powers and possibly weaknesses",
 "_triggers": ["hero", "superhero"],
-"_options": ["parseGender", "generateName"],
-"_start": "<intro>! <powerDescription>.",
+"_options": ["parseGender"],
+"_start": "<generateName><intro>! <powerDescription>.",
+"generateName": "<$generate|name|false|%gender|&storeandhide:name>",
+"firstname": "<$regexreplace|%name| .*||&storeandshow:firstname>",
 "intro": [
 	"By day <$var|name>, by night, <heroname|&bold>",
 	"At night, <$var|name> turns into the <positiveAdjective> <heroname|&bold>",
@@ -27,11 +29,11 @@
 	"The power crucial to <$var|possessivePronoun> success is <powerLayout> (though it's been instrumental in a few of <$var|possessivePronoun> failures too)",
 	"But it wasn't until <$var|pronoun> discovered <$var|pronoun> had <powerLayout> that <$var|pronoun> became <$var|possessivePronoun> now-famous alter ego",
 	"It's a good thing <$var|pronoun> decided to use <$var|possessivePronoun> <positiveAdjective> talent, <powerLayout>, for good",
-	"When <$var|pronoun> first discovered <$var|pronoun> had <powerLayout>, <$var|pronoun> didn't really know how to use that talent. But soon <$var|pronoun> grew into it and <$var|firstname> has saved many a life since",
-	"Finding out that <$var|pronoun> had <powerLayout> came as a huge shock, but <$var|firstname> has been going from high to high since",
+	"When <$var|pronoun> first discovered <$var|pronoun> had <powerLayout>, <$var|pronoun> didn't really know how to use that talent. But soon <$var|pronoun> grew into it and <firstname> has saved many a life since",
+	"Finding out that <$var|pronoun> had <powerLayout> came as a huge shock, but <firstname> has been going from high to high since",
 	"<powerLayout|&firstletteruppercase> has been a blast for <$var|personalPronoun> from the very start. And occasionally terrifying for the people around <$var|personalPronoun>",
 	"It took years for <$var|personalPronoun> to get familiar with what <$var|pronoun> could do with <powerLayout>, but <$var|pronoun> finally learned the full extent of <$var|possessivePronoun> capabilities",
-	"<$var|firstname> is still learning to use <$var|possessivePronoun> talent, <powerLayout>, properly. There are plenty of stories where <$var|pronoun> only barely survived <$var|possessivePronoun> own powers"
+	"<firstname> is still learning to use <$var|possessivePronoun> talent, <powerLayout>, properly. There are plenty of stories where <$var|pronoun> only barely survived <$var|possessivePronoun> own powers"
 ],
 "powerLayout": {"25": "<power> and <power>", "100": "<power>"},
 "power": ["<$hasvar|previousPowerWord|<$chooseunique|powerWord|%previousPowerWord>|<powerWord|&storeandshow:previousPowerWord>>", "<powerSentence>"],
