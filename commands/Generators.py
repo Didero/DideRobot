@@ -888,7 +888,7 @@ class GrammarParseState(object):
 
 	def updateParamsVar(self):
 		# Escape special characters to prevent abuse by users
-		self.variableDict[u'_params'] = u" ".join(self.parameterList).replace(u"/", u"//").replace(u"<", u"/<").replace(u">", u"/>")
+		self.variableDict[u'_params'] = escapeString(u" ".join(self.parameterList))
 
 	def setSeed(self, seed):
 		if seed:
@@ -1872,3 +1872,12 @@ class GrammarException(Exception):
 
 	def __str__(self):
 		return self.message
+
+def escapeString(stringToEscape):
+	"""
+	Escape special grammar characters in the provided string
+	Special characters are <, |, and >, and the escape character is /
+	:param stringToEscape: The string to escape special grammar characters in
+	:return: The provided string with the special characters escaped
+	"""
+	return stringToEscape.replace(u"/", u"//").replace(u"<", u"/<").replace(u"|", u"/|").replace(u">", u"/>")
