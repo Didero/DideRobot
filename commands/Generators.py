@@ -1784,11 +1784,11 @@ class GrammarCommands(object):
 			# Make sure they're all converted from unicode to string, since that's what functions will expect
 			argument = argument.encode('utf-8', errors='replace')
 			# Remove any character escaping (so arguments can contain '<' without messing up)
-			argument = re.sub(r"/(.)", r"\1", argument)
-			if '=' not in argument:
+			argument = re.sub(ur"/(.)", ur"\1", argument)
+			if u'=' not in argument:
 				commandArguments.append(argument)
 			else:
-				key, value = argument.split('=', 1)
+				key, value = argument.split(u'=', 1)
 				keywordCommandArguments[key] = value
 		# Call the module function!
 		moduleCommandResult = GlobalStore.commandhandler.runCommandFunction(argumentList[0], u"", *commandArguments, **keywordCommandArguments)
