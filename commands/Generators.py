@@ -1794,6 +1794,8 @@ class GrammarCommands(object):
 		moduleCommandResult = GlobalStore.commandhandler.runCommandFunction(argumentList[0], u"", *commandArguments, **keywordCommandArguments)
 		# Make sure the result is unicode
 		moduleCommandResult = StringUtil.forceToUnicode(moduleCommandResult)
+		# Escape special characters in the result, so for instance |' don't confuse future command calls
+		moduleCommandResult = escapeString(moduleCommandResult)
 		#Everything parsed and converted fine
 		return moduleCommandResult
 
