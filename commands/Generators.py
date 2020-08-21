@@ -1792,15 +1792,8 @@ class GrammarCommands(object):
 				keywordCommandArguments[key] = value
 		# Call the module function!
 		moduleCommandResult = GlobalStore.commandhandler.runCommandFunction(argumentList[0], u"", *commandArguments, **keywordCommandArguments)
-		# Make sure the replacement is a unicode string
-		if isinstance(moduleCommandResult, basestring):
-			moduleCommandResult = moduleCommandResult.decode('utf-8', errors='replace')
-		elif isinstance(moduleCommandResult, (list, tuple)):
-			moduleCommandResult = u", ".join(moduleCommandResult)
-		elif isinstance(moduleCommandResult, dict):
-			StringUtil.dictToString(moduleCommandResult)
-		else:
-			raise GrammarException(u"Module command '{}' returned non-text object".format(argumentList[0]))
+		# Make sure the result is unicode
+		moduleCommandResult = StringUtil.forceToUnicode(moduleCommandResult)
 		#Everything parsed and converted fine
 		return moduleCommandResult
 
