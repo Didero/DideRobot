@@ -1553,7 +1553,7 @@ class GrammarCommands(object):
 				raise GrammarException(u"'{}chooseunique|{}' command can't pick an option that isn't a duplicate".format(fieldCommandPrefix, argumentList[0]))
 			#Pick a random index, then increase that index for each indexToSkip below or equal to the picked index
 			#This should ensure we don't pick a value we should skip, while giving the allowed entries an equal chance to be picked
-			randomIndex = random.randrange(0, len(listToPickFrom) - len(indexesToSkip))
+			randomIndex = grammarParseState.random.randrange(0, len(listToPickFrom) - len(indexesToSkip))
 			for indexToSkip in indexesToSkip:
 				#For each skip index smaller than the one we picked, we need to move up the picked index, to compensate for the reduced range when picking the index
 				if indexToSkip <= randomIndex:
@@ -1570,7 +1570,7 @@ class GrammarCommands(object):
 					listToPickFrom.remove(argumentList[index])
 			if len(listToPickFrom) == 0:
 				raise GrammarException(u"'{}chooseunique' command can't pick an option that isn't a duplicate".format(fieldCommandPrefix, argumentList[0]))
-			return random.choice(listToPickFrom)
+			return grammarParseState.random.choice(listToPickFrom)
 		else:
 			raise GrammarException(u"Invalid first argument '{}' specified in 'chooseunique' command: It should either refer to a list field in the grammar or be a colon-separated list of options".format(argumentList[0]))
 
