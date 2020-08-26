@@ -1438,7 +1438,7 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=2, numericArgumentIndexes=(0, 1, 2, 3))
 	def command_dice(argumentList, grammarParseState):
 		"""
-		<$dice|numberOfDice|numberOfSides[lowestRollsToRemove|highestRollsToRemove]>
+		<$dice|numberOfDice|numberOfSides|[lowestRollsToRemove|highestRollsToRemove]>
 		Rolls a number of dice and returns the total. First argument is how many dice to roll, second argument is how many sides each die should have
 		The third argument is how many of the lowest rolls should be removed. So if you roll three dice - say 1, 3, 4 - and specify 1 for this argument, it'll ignore the 1 and return 7
 		The fourth argument works the same way, except for the highest rolls (so the total would be 4 in the example if you specify 1 here instead of 1 for lowest)
