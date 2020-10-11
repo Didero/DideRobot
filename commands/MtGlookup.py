@@ -15,6 +15,7 @@ from util import FileUtil
 from util import StringUtil
 from util import WebUtil
 from IrcMessage import IrcMessage
+from CommandException import CommandException, CommandInputException
 
 
 class Command(CommandTemplate):
@@ -73,7 +74,7 @@ class Command(CommandTemplate):
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.resetScheduledFunctionGreenlet()
 				#Actually update
-				success, replytext = self.updateCardFile()
+				replytext = self.updateCardFile()
 			message.reply(replytext)
 			return
 
@@ -115,7 +116,7 @@ class Command(CommandTemplate):
 				message.reply("Please provide a set name, so I can open a boosterpack from that set. Or use 'random' to have me pick one")
 				return
 			setname = ' '.join(message.messageParts[1:]).lower() if searchType == 'booster' else message.message.lower()
-			message.reply(self.openBoosterpack(setname)[1])
+			message.reply(self.openBoosterpack(setname))
 			return
 
 		#Default search
@@ -128,34 +129,27 @@ class Command(CommandTemplate):
 				searchType = 'search'
 				searchString = message.message
 			#Do the search
-			searchResult = self.getMatchingCardsFromSearchString(searchType, searchString)
+			searchDict, matchingCards = self.getMatchingCardsFromSearchString(searchType, searchString)
 			#Show the results
-			if not searchResult[0]:
-				#Something went wrong, just reply the error message
-				replytext = searchResult[1]
-			elif len(searchResult[2]) == 0:
+			if len(matchingCards) == 0:
 				#No matches
 				replytext = "Sorry, I couldn't find any cards that match your search query"
 			else:
-				#SearchResult[1] is the parsed searchDict, searchResult[2] is the matching cards
 				numberOfCardsToList = 20 if message.isPrivateMessage else 10
 				shouldPickRandomCard = searchType.startswith('random')
 				if message.trigger == 'mtglink':
-					replytext = self.getLinksFromSearchString(searchResult[1], searchResult[2], shouldPickRandomCard, numberOfCardsToList)
+					replytext = self.getLinksFromSearchString(searchDict, matchingCards, shouldPickRandomCard, numberOfCardsToList)
 				else:
 					#Normal search, format it
-					replytext = self.formatSearchResult(searchResult[2], message.trigger.endswith('f'), shouldPickRandomCard, numberOfCardsToList, searchResult[1].get('name', None), True)
+					replytext = self.formatSearchResult(matchingCards, message.trigger.endswith('f'), shouldPickRandomCard, numberOfCardsToList, searchDict.get('name', None), True)
 			message.reply(replytext, "say")
 
 	def getFormattedResultFromSearchString(self, searchType, searchString, extendedInfo=False, resultListLength=10):
 		if self.areCardfilesInUse:
 			return "[Updating cardfiles]"
-		result = self.getMatchingCardsFromSearchString(searchType, searchString)
-		if not result[0]:
-			#Something went wrong, second parameter is the error message, return that
-			return u"[Error: {}]".format(result[1])
+		searchDict, matchingCards = self.getMatchingCardsFromSearchString(searchType, searchString)
 		#Search was successful, second parameter is the parsed search dictionary, third is the matching cards. Return a formatted result
-		return self.formatSearchResult(result[2], extendedInfo, searchType.startswith('random'), resultListLength, result[1].get('name', None), True)
+		return self.formatSearchResult(matchingCards, extendedInfo, searchType.startswith('random'), resultListLength, searchDict.get('name', None), True)
 
 	def getMatchingCardsFromSearchString(self, searchType, searchString):
 		#Special case to prevent it having to load in all the cards before picking one
@@ -164,44 +158,39 @@ class Command(CommandTemplate):
 			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')) as versionfile:
 				linecount = json.load(versionfile)['cardCount']
 			if linecount <= 0:
-				return (False, "I don't seem to know how many cards I have, that's weird... Tell my owner(s), they should help me with updating")
+				raise CommandException("I don't seem to know how many cards I have, that's weird... Tell my owner(s), they should help me with updating")
 			randomLineNumber = random.randint(1, linecount) - 1 # minus 1 because getLineFromFile() starts at 0
 			card = json.loads(FileUtil.getLineFromFile(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), randomLineNumber))
 			cardname, carddata = card.popitem()
-			return (True, {}, {cardname: (randomLineNumber, None)})
+			return ({}, {cardname: (randomLineNumber, None)})
 
 		#Make sure the search string is an actual string, and not None or something
 		if searchString is None:
 			searchString = ""
 
 		#Check if the user passed valid search terms
-		parseSuccess, searchDict = self.parseSearchParameters(searchType, searchString)
-		if not parseSuccess:
-			#If an error occurred, the second returned parameter isn't the searchdict but an error message
-			return (False, searchDict)
+		searchDict = self.parseSearchParameters(searchType, searchString)
 		#Check if the entered search terms can be converted to the regex we need
-		parseSuccess, regexDict = self.searchDictToRegexDict(searchDict)
-		if not parseSuccess:
-			#Again, 'regexDict' is the error string if an error occurred
-			return (False, regexDict)
+		regexDict = self.searchDictToRegexDict(searchDict)
+		#Search for cards matching the regex dict
 		matchingCards = self.searchCardStore(regexDict)
 		#Clear the stored regexes, since we don't need them anymore
 		del regexDict
 		re.purge()
 		#Done, return the search dictionary (possibly needed for further parsing), and the matching cards
-		return (True, searchDict, matchingCards)
+		return (searchDict, matchingCards)
 
 	@staticmethod
 	def parseSearchParameters(searchType, searchString):
 		searchDict = {}
 		if searchType == 'search' and not searchString:
-			return (False, "Error: 'search' parameter requires a search query too")
+			raise CommandInputException("Error: 'search' parameter requires a search query too")
 		#Check if there is an actual search (with colon as key-value separator)
 		elif ':' in searchString:
 			#Advanced search! Turn the search string into a usable dictionary
 			searchDict = StringUtil.stringToDict(searchString.lower(), True)
 			if len(searchDict) == 0:
-				return (False, "That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
+				raise CommandInputException("That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
 							  "For a list of valid keys, see https://mtgjson.com/structures/card/ (though not all keys may be available)")
 		#Not a special search, just set the whole message as a 'name' search, since that's the most common search
 		elif searchString:
@@ -222,7 +211,7 @@ class Command(CommandTemplate):
 					if correctTerm not in searchDict:
 						searchDict[correctTerm] = searchDict[wrongTerm]
 					searchDict.pop(wrongTerm)
-		return (True, searchDict)
+		return searchDict
 
 	def searchDictToRegexDict(self, searchDict):
 		#Turn the search strings into actual regexes
@@ -260,8 +249,8 @@ class Command(CommandTemplate):
 			#Multiple errors, list them all
 			else:
 				replytext = "Errors occurred while parsing attributes: {}. Please check your search query for errors".format(", ".join(errors))
-			return (False, replytext)
-		return (True, regexDict)
+			raise CommandInputException(replytext)
+		return regexDict
 
 	@staticmethod
 	def searchCardStore(regexDict):
@@ -606,7 +595,7 @@ class Command(CommandTemplate):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGsets.json'), 'r') as setsfile:
 			setdata = json.load(setsfile)
 		if not setdata:
-			return (False, "That's weird, I should have set data, but this file is just... empty. Tell my owner(s), something's probably broken, maybe they can fix it")
+			raise CommandException("That's weird, I should have set data, but this file is just... empty. Tell my owner(s), something's probably broken, maybe they can fix it")
 		if askedSetname == 'random':
 			properSetname = random.choice(setdata['_setsWithBoosterpacks'])
 		elif askedSetname in setdata:
@@ -645,14 +634,14 @@ class Command(CommandTemplate):
 					#Both matching sets we found contain boosters. Inform the user of the conflict
 					else:
 						#A match has been found previously. We can't make a boosterpack from two sets, so show an error
-						return (False, u"That setname matches at least two sets, '{}' and '{}'. I can't make a boosterpack from more than one set. "
+						raise CommandInputException(u"That setname matches at least two sets, '{}' and '{}'. I can't make a boosterpack from more than one set. "
 									   u"Please be a bit more specific".format(setname, properSetname))
 		#If we still haven't found anything, give up
 		if properSetname == u'':
-			return (False, "I'm sorry, I don't know the set '{}'. Did you make a typo?".format(askedSetname))
+			raise CommandInputException("I'm sorry, I don't know the set '{}'. Did you make a typo?".format(askedSetname))
 		#Some sets don't have booster packs, check for that too
 		if 'booster' not in setdata[properSetname]:
-			return (False, "The set '{}' doesn't have booster packs, according to my data. Sorry".format(properSetname))
+			raise CommandInputException("The set '{}' doesn't have booster packs, according to my data. Sorry".format(properSetname))
 		boosterRarities = setdata[properSetname]['booster']
 
 		#Resolve any random choices (in the '_choice' field). It's a list of lists, since there can be multiple cards with choices
@@ -733,9 +722,9 @@ class Command(CommandTemplate):
 					raritySubstitutions.append((rarity, fallbackRarity))
 
 			if rarity not in possibleCards:
-				return (False, u"No cards with rarity '{}' found in set '{}', and I can't make a booster pack without it!".format(rarity, properSetname))
+				raise CommandException(u"No cards with rarity '{}' found in set '{}', and I can't make a booster pack without it!".format(rarity, properSetname))
 			elif len(possibleCards[rarity]) < count:
-				return (False, u"The set '{}' doesn't seem to contain enough '{}'-rarity cards for a boosterpack. "
+				raise CommandException(u"The set '{}' doesn't seem to contain enough '{}'-rarity cards for a boosterpack. "
 							   u"I need {:,}, but I only found {:,}".format(properSetname, rarity, boosterRarities[rarity], len(possibleCards[rarity])))
 
 		#Draw the cards!
@@ -748,16 +737,16 @@ class Command(CommandTemplate):
 			for substitutionPair in raritySubstitutions:
 				replytext += "'{}' as '{}',".format(substitutionPair[1], substitutionPair[0])
 			replytext = replytext.rstrip(',') + ")"
-		return (True, replytext)
+		return replytext
 
 	def downloadCardDataset(self):
 		url = "http://mtgjson.com/files/AllSetFiles.zip"
 		cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
-		success, extraInfo = WebUtil.downloadFile(url, cardzipFilename)
+		success, exceptionOrFilepath = WebUtil.downloadFile(url, cardzipFilename)
 		if not success:
-			self.logError("[MTG] An error occurred while trying to download the card file: " + extraInfo)
-			return (False, "Something went wrong while trying to download the card file.")
-		return (True, extraInfo)
+			self.logError("[MTG] An error occurred while trying to download the card file: " + exceptionOrFilepath)
+			raise CommandException("Error while downloading the MtG card data")
+		return exceptionOrFilepath
 
 	def getLatestVersionNumber(self):
 		versionRequest = None
@@ -766,17 +755,18 @@ class Command(CommandTemplate):
 			latestVersionData = versionRequest.json()
 		except requests.exceptions.Timeout:
 			self.logError("[MTG] Fetching card version timed out")
-			return (False, "Fetching online card version took too long")
+			raise CommandException("Fetching online card version took too long")
 		except ValueError:
 			self.logError("[MTG] Unable to parse downloaded version file, returned text is: " + versionRequest.text if versionRequest else "[not a request]")
-			return (False, "Unable to parse downloaded version file")
+			raise CommandException("Unable to parse downloaded version file")
 		if u'version' not in latestVersionData:
-			return (False, "'version' field does not exist in downloaded version file, data is" + json.dumps(latestVersionData))
+			self.logError("'version' field does not exist in downloaded version file, data is" + json.dumps(latestVersionData))
+			raise CommandException("Missing 'version' field in version file")
 		versionNumber = latestVersionData[u'version']
 		# The version string is constructed like 'major.minor.patch+priceUpdateDate'. We don't need the last part, so strip it off
 		if u'+' in versionNumber:
 			versionNumber = versionNumber.split(u'+', 1)[0]
-		return (True, versionNumber)
+		return versionNumber
 
 	@staticmethod
 	def doNeededFilesExist():
@@ -807,10 +797,7 @@ class Command(CommandTemplate):
 		if time.time() - versiondata['lastUpdateTime'] < self.scheduledFunctionTime - 5.0:
 			return False
 		#Get the latest online version to see if we're behind
-		success, result = self.getLatestVersionNumber()
-		if success and result != versiondata['dataVersion']:
-			return True
-		return False
+		return self.getLatestVersionNumber() != versiondata['dataVersion']
 
 	def updateCardFile(self, shouldUpdateDefinitions=True):
 		starttime = time.time()
@@ -826,12 +813,7 @@ class Command(CommandTemplate):
 		self.logInfo("[MtG] Updating card database!")
 
 		#Download the wrongly-formatted (for our purposes) card data
-		success, result = self.downloadCardDataset()
-		if not success:
-			self.areCardfilesInUse = False
-			return (False, result)
-		else:
-			cardDatasetFilename = result
+		cardDatasetFilename = self.downloadCardDataset()
 
 		#Set up the dicts we're going to store our data in
 		newcardstore = {}
@@ -1059,7 +1041,7 @@ class Command(CommandTemplate):
 				definitionsFile.close()
 				os.remove(definitionsTempFilename)
 			self.areCardfilesInUse = False
-			return (False, "I couldn't download or read the card data from MTGJSON, sorry. I'll just keep my old data for now")
+			raise CommandException(displayMessage="I couldn't download or read the card data from MTGJSON, sorry. I'll just keep my old data for now")
 
 		#Save the new databases to disk
 		with open(setStoreFilename, 'w') as setsfile:
@@ -1085,25 +1067,22 @@ class Command(CommandTemplate):
 		os.remove(gamewideCardStoreFilename)
 
 		#Store the new version data
-		getVersionSuccess, latestVersionNumber = self.getLatestVersionNumber()
-		if not getVersionSuccess:
-			self.logError("[MTG] Error when retrieving latest version number: " + latestVersionNumber)
-		else:
-			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
-				versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': latestVersionNumber, 'lastUpdateTime': time.time(), 'cardCount': numberOfCards}))
+		latestVersionNumber = self.getLatestVersionNumber()
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w') as versionFile:
+			versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': latestVersionNumber, 'lastUpdateTime': time.time(), 'cardCount': numberOfCards}))
 
 		replytext = "MtG card database successfully updated (Changelog: https://mtgjson.com/changelog/)"
 		if shouldUpdateDefinitions and definitionsFile:
 			#Download the definitions too, and add them to the definitions we found in the card texts
-			success, downloadedDefinitions = self.downloadDefinitions(definitions)
-			if success:
+			try:
+				downloadedDefinitions = self.downloadDefinitions(definitions)
+				for term, definition in downloadedDefinitions.iteritems():
+					definitionsFile.write(json.dumps({term: definition}))
+					definitionsFile.write('\n')
 				replytext += ", definitions also updated"
-			else:
+			except CommandException:
 				replytext += ", but an error occurred when trying to download the definitions, check the logs for the error"
 			#Save the definitions to file
-			for term, definition in downloadedDefinitions.iteritems():
-				definitionsFile.write(json.dumps({term: definition}))
-				definitionsFile.write('\n')
 			definitionsFile.close()
 			FileUtil.deleteIfExists(definitionsFilename)
 			os.rename(definitionsTempFilename, definitionsFilename)
@@ -1117,7 +1096,7 @@ class Command(CommandTemplate):
 
 		self.areCardfilesInUse = False
 		self.logInfo("[MtG] updating database took {} seconds".format(time.time() - starttime))
-		return (True, replytext)
+		return replytext
 
 	@staticmethod
 	def parseKeywordDefinitionsFromCardText(cardtext, cardname, existingDefinitions=None):
@@ -1203,5 +1182,5 @@ class Command(CommandTemplate):
 				self.logError("[MTG] request headers:", e.request.headers)
 			except AttributeError:
 				self.logError(" no request attribute found")
-			return (False, newDefinitions)
-		return (True, newDefinitions)
+			raise CommandException("An exception occurred while downloading or parsing MTG definitions")
+		return newDefinitions
