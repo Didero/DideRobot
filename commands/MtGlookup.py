@@ -191,7 +191,7 @@ class Command(CommandTemplate):
 			searchDict = StringUtil.stringToDict(searchString.lower(), True)
 			if len(searchDict) == 0:
 				raise CommandInputException("That is not a valid search query. It should be entered like JSON, so 'name: ooze, type: creature,...'. "
-							  "For a list of valid keys, see https://mtgjson.com/structures/card/ (though not all keys may be available)")
+							  "For a list of valid keys, see https://mtgjson.com/data-models/card/ (though not all keys may be available)")
 		#Not a special search, just set the whole message as a 'name' search, since that's the most common search
 		elif searchString:
 			searchDict['name'] = searchString.lower()
