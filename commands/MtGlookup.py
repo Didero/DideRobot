@@ -806,12 +806,12 @@ class Command(CommandTemplate):
 		definitionsFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')
 		definitionsTempFilename = definitionsFilename + ".tmp"
 
+		#Download the wrongly-formatted (for our purposes) card data
+		cardDatasetFilename = self.downloadCardDataset()
+
 		#Inform everything that we're going to be changing the card files
 		self.areCardfilesInUse = True
 		self.logInfo("[MtG] Updating card database!")
-
-		#Download the wrongly-formatted (for our purposes) card data
-		cardDatasetFilename = self.downloadCardDataset()
 
 		#Set up the dicts we're going to store our data in
 		newcardstore = {}
