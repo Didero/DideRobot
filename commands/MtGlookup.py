@@ -198,10 +198,8 @@ class Command(CommandTemplate):
 
 		#Commander search. Regardless of everything else, it has to be a legendary creature
 		if searchType == 'randomcommander':
-			if 'type' not in searchDict:
-				searchDict['type'] = ""
 			#Don't just search for 'legendary creature.*', because there are legendary artifact creatures too
-			searchDict['type'] = 'legendary.+creature.*' + searchDict['type']
+			searchDict['type'] = 'legendary.+creature.*' + searchDict.get('type', '')
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
 		searchTermsToCorrect = {'set': ('sets', 'setname'), 'colors': ('color', 'colour', 'colours'), 'type': ('types', 'supertypes', 'subtypes'), 'flavor': ('flavour', 'flavortext', 'flavourtext'), 'cmc': ('convertedmanacost', 'manacost')}
