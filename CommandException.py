@@ -28,4 +28,4 @@ class CommandInputException(CommandException):
 		Create a new InputException. The display message will be shown to the user
 		:param displayMessage: The message to show to the user that called the command. This message should explain how the input should be correctly formatted
 		"""
-		super(CommandException, self).__init__(displayMessage, False)
+		super(CommandInputException, self).__init__(displayMessage, False)
