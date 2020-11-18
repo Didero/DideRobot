@@ -594,6 +594,7 @@ class Command(CommandTemplate):
 			setdata = json.load(setsfile)
 		if not setdata:
 			raise CommandException("That's weird, I should have set data, but this file is just... empty. Tell my owner(s), something's probably broken, maybe they can fix it")
+
 		if askedSetname == 'random':
 			properSetname = random.choice(setdata['_setsWithBoosterpacks'])
 		elif askedSetname in setdata:
@@ -609,6 +610,7 @@ class Command(CommandTemplate):
 					properSetname = setname
 					#Since setcodes are unique, no need to keep looking
 					break
+
 		if properSetname == u'':
 			#Setname not found literally. Try and find the closest match
 			try:
@@ -634,6 +636,7 @@ class Command(CommandTemplate):
 						#A match has been found previously. We can't make a boosterpack from two sets, so show an error
 						raise CommandInputException(u"That setname matches at least two sets, '{}' and '{}'. I can't make a boosterpack from more than one set. "
 									   u"Please be a bit more specific".format(setname, properSetname))
+
 		#If we still haven't found anything, give up
 		if properSetname == u'':
 			raise CommandInputException("I'm sorry, I don't know the set '{}'. Did you make a typo?".format(askedSetname))
