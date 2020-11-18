@@ -28,7 +28,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.4.4'
+	dataFormatVersion = '4.5.0'
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.getFormattedResultFromSearchString)
@@ -57,7 +57,7 @@ class Command(CommandTemplate):
 
 		#Check if we have all the files we need
 		if not self.doNeededFilesExist():
-			message.reply("Whoops, I don't seem to have all the files I need. I'll update now, try again in like 15 seconds. Sorry!", "say")
+			message.reply("Whoops, I don't seem to have all the files I need. I'll update now, try again in like 25 seconds. Sorry!", "say")
 			self.resetScheduledFunctionGreenlet()
 			self.updateCardFile(True)
 			return
@@ -379,8 +379,8 @@ class Command(CommandTemplate):
 			cardInfoList.append(handLife)
 		if 'layout' in card:
 			cardInfoList.append(card['layout'])
-			if 'names' in card:
-				cardInfoList[-1] += u", with " + card['names']
+			if 'otherfaces' in card:
+				cardInfoList[-1] += u", with " + card['otherfaces']
 		#All cards have a 'text' key set (for search reasons), it's just empty on ones that didn't have one
 		if len(card['text']) > 0:
 			cardInfoList.append(card['text'])
@@ -643,106 +643,57 @@ class Command(CommandTemplate):
 		#Some sets don't have booster packs, check for that too
 		if 'booster' not in setdata[properSetname]:
 			raise CommandInputException("The set '{}' doesn't have booster packs, according to my data. Sorry".format(properSetname))
-		boosterRarities = setdata[properSetname]['booster']
-
-		#Resolve any random choices (in the '_choice' field). It's a list of lists, since there can be multiple cards with choices
-		if '_choice' in boosterRarities:
-			for rarityOptions in boosterRarities['_choice']:
-				#Make it a weighted choice ('mythic rare' should happen far less often than 'rare', for instance)
-				if 'mythic rare' in rarityOptions:
-					if random.randint(0, 1000) <= 125:  #Chance of 1 in 8, which is supposedly the real-world chance
-						rarityPick = 'mythic rare'
-					else:
-						rarityOptions.remove('mythic rare')
-						rarityPick = random.choice(rarityOptions)
-				else:
-					rarityPick = random.choice(rarityOptions)
-				#Add the rarity we picked to the list of rarities we already have
-				if rarityPick not in boosterRarities:
-					boosterRarities[rarityPick] = 1
-				else:
-					boosterRarities[rarityPick] += 1
-			del boosterRarities['_choice']
+		boosterData = setdata[properSetname]['booster']
 
 		#Name exists, get the proper spelling, since in other places setnames aren't lower-case
 		properSetname = setdata[properSetname]['name']
 
-		#Check if we need to collect some special-case types too instead of just rarities
-		typesToCollect = []  #This will become a tuple with the first entry being the type in text and the second entry the compiled regex
-		defaultRarities = ('common', 'uncommon', 'rare', 'mythic', '_choice')
-		for rarity in boosterRarities:
-			if rarity not in defaultRarities:
-				typesToCollect.append((rarity, re.compile(rarity, re.IGNORECASE)))
-		collectTypes = True if len(typesToCollect) > 0 else False
+		#First pick which sheet division we should use
+		totalBoosterWeight = boosterData['boostersTotalWeight']
+		pickedWeight = random.randint(1, totalBoosterWeight)
+		for sheetContents in boosterData['boosters']:
+			if sheetContents['weight'] < pickedWeight:
+				#Skip this sheet
+				pickedWeight -= sheetContents['weight']
+			else:
+				#Use this sheet
+				break
 
-		#A dictionary with the found cards, sorted by rarity
-		possibleCards = {}
-		#First fill in the required rarities
-		for rarity in boosterRarities:
-			possibleCards[rarity.lower()] = []
+		#Pick cards according to the sheet
+		boosterResult = {}
+		for sheetName, cardCount in sheetContents['contents'].iteritems():
+			#The sheet's card selection is either a list, or a dict with cardnames as keys and their weight as values
+			sheet = boosterData['sheets'][sheetName]
+			if isinstance(sheet, list):
+				boosterResult[sheetName] = random.sample(sheet, cardCount)
+			else:
+				#Weighted dict, use the same approach as in picking the sheet:
+				# Picking a random number from total weight, iterating through entries, and lowering picked weight unti it matches the current card weight
+				boosterResult[sheetName] = []
+				for i in xrange(cardCount):
+					pickedWeight = random.randint(1, sheet['totalWeight'])
+					for cardName, cardWeight in sheet['cards'].iteritems():
+						if cardWeight < pickedWeight:
+							#Card doesn't match the wanted weight. Skip this card and lower the weight we want to find
+							pickedWeight -= cardWeight
+						else:
+							#This is the card we randomly weighted-picked, store it
+							boosterResult[sheetName].append(cardName)
+							#Remove this card from the list so it can't get picked twice
+							del sheet['cards'][cardName]
+							#Also lower the total weight so it still matches
+							sheet['totalWeight'] -= cardWeight
+							break
 
-		#Get all cards from that set
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGcards.json'), 'r') as jsonfile:
-			for cardLineNumber, cardline in enumerate(jsonfile):
-				#Don't hog the CPU
-				if cardLineNumber % 500 == 0:
-					gevent.idle()
-				
-				cardname, carddata = json.loads(cardline).popitem()
-				if properSetname not in carddata[1]:
-					continue
-				#Skip cards whose number ends with 'b', since they're the backside of doublefaced cards or the upside-down part of split cards
-				if 'number' in carddata[0] and carddata[0]['number'].endswith('b'):
-					continue
-				if collectTypes:
-					for typeName, typeRegex in typesToCollect:
-						if typeRegex.search(carddata[0]['type']):
-							possibleCards[typeName].append(carddata[0]['name'])
-							continue
-				rarity = carddata[1][properSetname]['rarity'].lower()
-				if rarity in boosterRarities:
-					possibleCards[rarity].append(carddata[0]['name'])
-
-		#Some sets don't have basic lands, but need them in their boosterpacks (Gatecrash f.i.) Fix that
-		#TODO: Handle rarities properly, a 'land' shouldn't be a 'basic land' but a land from that set
-		if 'basic land' in boosterRarities and len(possibleCards['basic land']) == 0:
-			CommandTemplate.logWarning(u"[MTG] Booster for set '{}' needs {:,} basic lands, but set doesn't have any! Adding manually".format(properSetname, boosterRarities['basic land']))
-			possibleCards['basic land'] = ['Forest', 'Island', 'Mountain', 'Plains', 'Swamp']
-
-		#Check if we found enough cards
-		raritySubstitutions = []
-		for rarity, count in boosterRarities.iteritems():
-			if rarity == '_choice':
-				continue
-
-			#Use normal rarity cards if there aren't enough 'double faced [rarity]' cards (Solves problem with e.g. 'Shadows Over Innistrad' and 'Eldritch Moon')
-			if rarity.startswith('double faced') or rarity.startswith('double-faced'):
-				fallbackRarity = rarity.split('faced ', 1)[-1]
-				if fallbackRarity in possibleCards and (rarity not in possibleCards or len(possibleCards[rarity]) < count):
-					possibleCards[rarity].extend(possibleCards[fallbackRarity])
-					raritySubstitutions.append((rarity, fallbackRarity))
-
-			if rarity not in possibleCards:
-				raise CommandException(u"No cards with rarity '{}' found in set '{}', and I can't make a booster pack without it!".format(rarity, properSetname))
-			elif len(possibleCards[rarity]) < count:
-				raise CommandException(u"The set '{}' doesn't seem to contain enough '{}'-rarity cards for a boosterpack. "
-							   u"I need {:,}, but I only found {:,}".format(properSetname, rarity, boosterRarities[rarity], len(possibleCards[rarity])))
-
-		#Draw the cards!
-		replytext = "{}{}".format(properSetname.encode('utf-8'), Constants.GREY_SEPARATOR)
-		for rarity, count in boosterRarities.iteritems():
-			cardlist = "; ".join(random.sample(possibleCards[rarity], count)).encode('utf-8')
-			replytext += "{}: {}. ".format(IrcFormattingUtil.makeTextBold(rarity.encode('utf-8').capitalize()), cardlist)
-		if raritySubstitutions:
-			replytext += "(Rarity subsitutions: "
-			for substitutionPair in raritySubstitutions:
-				replytext += "'{}' as '{}',".format(substitutionPair[1], substitutionPair[0])
-			replytext = replytext.rstrip(',') + ")"
+		#Format the result
+		replytext = properSetname.encode('utf-8') + Constants.GREY_SEPARATOR
+		for category, cardlist in boosterResult.iteritems():
+			replytext += u"{}: {}. ".format(IrcFormattingUtil.makeTextBold(category.capitalize()), u"; ".join(cardlist)).encode('utf-8', errors='replace')
 		return replytext
 
 	def downloadCardDataset(self):
-		url = "http://mtgjson.com/files/AllSetFiles.zip"
-		cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', url.split('/')[-1])
+		url = "https://mtgjson.com/api/v5/AllSetFiles.zip"
+		cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'AllSetFiles.zip')
 		success, exceptionOrFilepath = WebUtil.downloadFile(url, cardzipFilename)
 		if not success:
 			self.logError("[MTG] An error occurred while trying to download the card file: " + exceptionOrFilepath)
@@ -752,8 +703,8 @@ class Command(CommandTemplate):
 	def getLatestVersionNumber(self):
 		versionRequest = None
 		try:
-			versionRequest = requests.get("http://mtgjson.com/json/version.json", timeout=10.0)
-			latestVersionData = versionRequest.json()
+			versionRequest = requests.get("https://mtgjson.com/api/v5/Meta.json", timeout=10.0)
+			latestVersionData = versionRequest.json()[u'data']
 		except requests.exceptions.Timeout:
 			self.logError("[MTG] Fetching card version timed out")
 			raise CommandException("Fetching online card version took too long")
@@ -822,13 +773,13 @@ class Command(CommandTemplate):
 		#Since definitions from cards get written to file immediately, just keep a list of which keywords we already stored
 		definitions = []
 		#Lists of what to do with certain set keys
-		setKeysToKeep = ('block', 'boosterV3', 'cards', 'code', 'mtgoCode', 'name', 'releaseDate', 'type')
+		setKeysToKeep = ('block', 'booster', 'cards', 'code', 'mtgoCode', 'name', 'releaseDate', 'type')
 		raritiesToRemove = ('checklist', 'double faced', 'draft-matters', 'foil', 'full art print', 'marketing', 'power nine', 'timeshifted purple', 'token', 'Steamflogger Boss')
 		raritiesToRename = {'land': 'basic land', 'urza land': 'land — urza’s', 'mythic rare': 'mythic'}  #Non-standard rarities are interpreted as regexes for type
 		rarityPrefixesToRemove = {'double faced ': 13, 'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls. Removing 'double faced' makes the result less accurate but it's far easier this way
 		#Lists of what to do with certain card keys
 		setSpecificCardKeys = ('artist', 'flavor', 'multiverseid', 'number', 'rarity', 'watermark')
-		cardKeysToKeep = ('colors', 'convertedManaCost', 'layout', 'loyalty', 'manaCost', 'name', 'names', 'power', 'text', 'toughness', 'type')
+		cardKeysToKeep = ('colors', 'convertedManaCost', 'layout', 'loyalty', 'manaCost', 'name', 'names', 'othercards', 'power', 'text', 'toughness', 'type')
 		setSpecificCardKeysToRename = {'flavorText': 'flavor', 'multiverseId': 'multiverseid'}
 		cardKeysToRename = {'convertedManaCost': 'cmc', 'manaCost': 'manacost'}
 		keysToFormatNicer = ('manacost', 'text')  #'flavor' also needs to be formatted nicer, but that's done separately since it's a set-specific key, in contrast with the others listed here
@@ -836,6 +787,8 @@ class Command(CommandTemplate):
 		nullFieldsToX = ('loyalty',)
 		layoutTypesToRemove = ('normal', 'phenomenon', 'plane', 'scheme', 'vanguard')
 		listKeysToMakeString = ('colors', 'names')
+		#Some values are stored inside a sub-dict. Move them out of there. In the following dict, the key is the sub-dict key, and the values are the sub-dict values to move up a layer
+		nestedValuesToKeep = {'identifiers': 'multiverseId'}
 
 		# This function will be called on the 'keysToFormatNicer' keys
 		#  Made into a function, because it's used in two places
@@ -863,8 +816,9 @@ class Command(CommandTemplate):
 				self.logError("[MTG] Downloaded card data file is empty")
 			#Go through each file in the sets zip
 			for setfilename in setfilesZip.namelist():
+				# Set JSON has a 'meta' key with version and date, and a 'data' key with the actual data
 				# Keep numbers as strings, saves on converting them back later
-				setData = json.loads(setfilesZip.read(setfilename), parse_int=lambda x: x, parse_float=lambda x: x)
+				setData = json.loads(setfilesZip.read(setfilename), parse_int=lambda x: x, parse_float=lambda x: x)[u'data']
 				#Clean up the set data a bit
 				for setKey in setData.keys():
 					if setKey not in setKeysToKeep:
@@ -878,9 +832,31 @@ class Command(CommandTemplate):
 
 				#Pop off cards when we need them, to save on memory
 				cardlist = setData.pop('cards')
+				uuidToCardName = {}
 				for cardcount in xrange(0, len(cardlist)):
 					card = cardlist.pop()
+
+					# Handle split or double-faced cards. The 'name is the current side, then ' // ' and then the other card name
+					# Turn that into the name being just this card and a 'names' array with the other card(s)
+					# We need to do this before anything else because it can change the card name, which we use as the unique key
+					if 'faceName' in card or u' // ' in card['name']:
+						card['othercards'] = card['name'].split(u' // ')
+						card['name'] = card.get('faceName', card['othercards'][0])
+						card['othercards'].remove(card['name'])
+						#Turn it into a string for easy display later
+						card['othercards'] = u"; ".join(card['othercards'])
+
 					cardname = card['name'].lower()  #lowering the keys makes searching easier later, especially when comparing against the literal searchstring
+
+					#For the set booster, we need to be able to match uuids to card names
+					uuidToCardName[card['uuid']] = card['name']
+
+					#Move wanted values out of sub-dictionaries
+					for nameOfSubDict, subDictKeyToKeep in nestedValuesToKeep.iteritems():
+						if nameOfSubDict in card:
+							subDict = card.pop(nameOfSubDict)
+							if subDictKeyToKeep in subDict:
+								card[subDictKeyToKeep] = subDict[subDictKeyToKeep]
 
 					for setSpecificCardKeyToRename, newKeyName in setSpecificCardKeysToRename.iteritems():
 						if setSpecificCardKeyToRename in card:
@@ -912,10 +888,6 @@ class Command(CommandTemplate):
 						#The 'Colors' field benefits from some ordering, for readability.
 						if 'colors' in card:
 							card['colors'] = sorted(card['colors'])
-
-						#Remove the current card from the list of names this card also contains (for flip cards), saves on having to remove it during display
-						if 'names' in card and card['name'] in card['names']:
-							card['names'].remove(card['name'])
 
 						#Make sure all stored values are strings, that makes searching later much easier
 						for attrib in listKeysToMakeString:
@@ -964,70 +936,58 @@ class Command(CommandTemplate):
 					newcardstore[cardname][setData['name']] = setSpecificCardData
 
 				#The 'booster' set field is a bit verbose, make that shorter and easier to use
-				if 'boosterV3' in setData:
-					originalBoosterList = setData.pop('boosterV3')
-					countedBoosterData = {}
-					try:
-						for rarity in originalBoosterList:
-							#If the entry is a list, it's a list of possible choices for that card
-							#  ('['rare', 'mythic rare']' means a booster pack contains a rare OR a mythic rare)
-							if isinstance(rarity, list):
-								#Remove useless options here too
-								for rarityToRemove in raritiesToRemove:
-									if rarityToRemove in rarity:
-										rarity.remove(rarityToRemove)
-								#Rename 'wrongly' named rarities
-								for r in raritiesToRename:
-									if r in rarity:
-										rarity.remove(r)
-										rarity.append(raritiesToRename[r])
-								#Check if any of the choices have a prefix that needs to be removed (use a copy so we can delete elements in the loop)
-								for choice in rarity[:]:
-									for rp in rarityPrefixesToRemove:
-										if choice.startswith(rp):
-											#Remove the original choice...
-											rarity.remove(choice)
-											newRarity = choice[rarityPrefixesToRemove[rp]:]
-											#...and put in the choice without the prefix, if it's not there already
-											if newRarity not in rarity:
-												rarity.append(newRarity)
-								#If we removed all options and just have an empty list now, replace it with a rare
-								if len(rarity) == 0:
-									rarity = 'rare'
-								#If we've removed all but one option, it's not a choice anymore, so treat it like a 'normal' rarity
-								elif len(rarity) == 1:
-									rarity = rarity[0]
-								else:
-									#If it's still a list, keep it like that
-									if '_choice' not in countedBoosterData:
-										countedBoosterData['_choice'] = [rarity]
-									else:
-										countedBoosterData['_choice'].append(rarity)
-									#...but don't do any of the other stuff
-									continue
-							#Some keys are dumb and useless ('marketing'). Ignore those
-							if rarity in raritiesToRemove:
-								continue
-							#Here the rarity for a basic land is called 'land', while in the cards themselves it's 'basic land'. Correct that
-							for rarityToRename in raritiesToRename:
-								if rarity == rarityToRename:
-									rarity = raritiesToRename[rarity]
-							#Remove any useless prefixes like 'foil'
-							for rp in rarityPrefixesToRemove:
-								if rarity.startswith(rp):
-									rarity = rarity[rarityPrefixesToRemove[rp]:]
-							#Finally, count the rarity
-							if rarity not in countedBoosterData:
-								countedBoosterData[rarity] = 1
-							else:
-								countedBoosterData[rarity] += 1
-					except Exception as e:
-						self.logError("Error while parsing booster field of set '{}' ({}): {!r}".format(setData['name'], setfilename, e))
+				if 'booster' in setData:
+					boosterData = setData.pop('booster')
+					if 'default' in boosterData:
+						boosterData = boosterData['default']
 					else:
-						#If no parsing error occurred, add the parsed booster data
-						setData['booster'] = countedBoosterData
-						# Keep a list of sets that have booster packs
-						setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
+						boosterData = boosterData.popitem()[1]
+
+					#Convert all sheet layout values from string to int
+					# (Needed because automatic conversion in 'json.load' is disabled, because we want card power etc as string)
+					boosterData['boostersTotalWeight'] = int(boosterData['boostersTotalWeight'], 10)
+					for boosterLayout in boosterData['boosters']:
+						boosterLayout['weight'] = int(boosterLayout['weight'], 10)
+						for sheetName in boosterLayout['contents']:
+							boosterLayout['contents'][sheetName] = int(boosterLayout['contents'][sheetName], 10)
+
+					#Boosters are based on 'sheets': the list and weights of cards in each booster category. We need to rewrite them a bit
+					for sheetName, sheetData in boosterData['sheets'].iteritems():
+						#We don't care about the 'foil' field
+						if 'foil' in sheetData:
+							del sheetData['foil']
+
+						#The booster card weighted dict uses card uuids, replace those with card names
+						sheetCardNamesAndWeights = {}
+						for sheetCardCount in xrange(len(sheetData['cards'])):
+							sheetCardUuid, sheetCardWeight = sheetData['cards'].popitem()
+							if sheetCardUuid in uuidToCardName:
+								sheetCardName = uuidToCardName[sheetCardUuid]
+								if sheetCardName not in sheetCardNamesAndWeights:
+									sheetCardNamesAndWeights[sheetCardName] = int(sheetCardWeight, 10)
+								else:
+									sheetCardNamesAndWeights[sheetCardName] += int(sheetCardWeight, 10)
+						sheetData['cards'] = sheetCardNamesAndWeights
+						sheetData['totalWeight'] = int(sheetData['totalWeight'], 10)
+
+						#If the whole card list has weight 1, simplify it from a weight dict to a list
+						if len(sheetData['cards']) == sheetData['totalWeight']:
+							#Every card has a weight of 1, simplify cards to a list
+							boosterData['sheets'][sheetName] = sheetData['cards'].keys()
+						#The list could also be the same weight, in which case we could simplify it too. Check for that
+						elif len(sheetData['cards']) > 0:
+							weightToCheckAgainst = sheetData['cards'].values()[0]
+							for weightToCheck in sheetData['cards'].itervalues():
+								if weightToCheck != weightToCheckAgainst:
+									#Not all weights are the same, so we can stop checking
+									break
+							else:
+								#If we reach here, all the weights were the same, so we can turn the dict into a list
+								boosterData['sheets'][sheetName] = sheetData['cards'].keys()
+
+					setData['booster'] = boosterData
+					# Keep a list of sets that have booster packs
+					setstore['_setsWithBoosterpacks'].append(setData['name'].lower())
 
 				#Don't hog the execution thread for too long, give it up after each set
 				gevent.idle()
