@@ -20,6 +20,8 @@ class Command(CommandTemplate):
 	lookupTimeoutSeconds = 5.0
 
 	def shouldExecute(self, message):
+		if message.isPrivateMessage:
+			return False
 		if message.messageType != 'say':
 			return False
 		for trigger in self.triggers:
