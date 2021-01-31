@@ -60,13 +60,19 @@ class Command(CommandTemplate):
 
 			#Finally, display the result of all the hard work, if there was any
 			if title is not None:
-				title = title.replace('\n', Constants.GREY_SEPARATOR).strip()
-				#Convert weird characters like &#39 back into normal ones like '
-				title = HTMLParser.HTMLParser().unescape(title)
-				#Make sure titles aren't too long
-				if len(title) > 250:
-					title = title[:250] + "[...]"
-				message.reply(u"Title: {}".format(title), "say")
+				title = Command.cleanUpRetrievedTitle(title)
+				message.reply(u"Title: {}".format(title))
+
+	@staticmethod
+	def cleanUpRetrievedTitle(retrievedTitle):
+		cleanedUpTitle = retrievedTitle.strip()
+		cleanedUpTitle = cleanedUpTitle.replace(' *\n *', Constants.GREY_SEPARATOR)
+		# Convert weird characters like &#39 back into normal ones like '
+		cleanedUpTitle = HTMLParser.HTMLParser().unescape(cleanedUpTitle)
+		# Make sure titles aren't too long
+		if len(cleanedUpTitle) >= Constants.MAX_MESSAGE_LENGTH:
+			cleanedUpTitle = cleanedUpTitle[:Constants.MAX_MESSAGE_LENGTH - 5] + "[...]"
+		return cleanedUpTitle
 
 	@staticmethod
 	def retrieveGenericTitle(url, timeout=5.0):
