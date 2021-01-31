@@ -8,6 +8,7 @@ import Constants
 import GlobalStore
 from util import DateTimeUtil
 from IrcMessage import IrcMessage
+from CommandException import CommandException
 
 class Command(CommandTemplate):
 
@@ -93,30 +94,12 @@ class Command(CommandTemplate):
 		channelmatches = re.search("https?://(?:www\.)?twitch\.tv/([^/]+)/?$", url)
 		if channelmatches:
 			channel = channelmatches.group(1)
-			channeldata = {}
-			isChannelOnline = False
-			twitchheaders = {'Accept': 'application/vnd.twitchtv.v2+json'}
-			twitchStreamPage = requests.get(u"https://api.twitch.tv/kraken/streams/" + channel, headers=twitchheaders, timeout=Command.lookupTimeoutSeconds)
-			streamdata = json.loads(twitchStreamPage.text.encode('utf-8'))
-			if 'stream' in streamdata and streamdata['stream'] is not None:
-				channeldata = streamdata['stream']['channel']
-				isChannelOnline = True
-			elif 'error' not in streamdata:
-				twitchChannelPage = requests.get(u"https://api.twitch.tv/kraken/channels/" + channel, headers=twitchheaders, timeout=Command.lookupTimeoutSeconds)
-				channeldata = json.loads(twitchChannelPage.text.encode('utf-8'))
-
-			if len(channeldata) > 0:
-				title = u"Twitch - {username}"
-				if channeldata['game'] is not None:
-					title += u", playing {game}"
-				if channeldata['mature']:
-					title += u" [Mature]"
-				if isChannelOnline:
-					title += u" (Online)"
-				else:
-					title += u" (Offline)"
-				return title.format(username=channeldata['display_name'], game=channeldata['game'])
-		return None
+			#Make the TwitchWatcher module look up the streamer info
+			# If that doesn't work for some reason (TwitchWatcher not loaded, Twitch API being down), return None to fall back on the generic lookup
+			try:
+				return GlobalStore.commandhandler.runCommandFunction('getTwitchStreamInfo', None, channel)
+			except CommandException:
+				return None
 
 	@staticmethod
 	def retrieveYoutubetitle(url):
