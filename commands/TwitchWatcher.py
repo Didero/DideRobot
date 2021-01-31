@@ -3,6 +3,7 @@ import json, os, time
 import requests
 
 import GlobalStore
+import Constants
 from util import IrcFormattingUtil
 from util import StringUtil
 from CommandTemplate import CommandTemplate
@@ -302,14 +303,16 @@ class Command(CommandTemplate):
 				reportStrings.append(StringUtil.removeNewlines(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url)))
 		return StringUtil.joinWithSeparator(reportStrings)
 
-	def getStreamerInfo(self, streamername, serverChannelString=None):
+	def getStreamerInfo(self, streamername, serverChannelString=None, shouldIncludeUrl=True):
 		"""
 		Get info on the provided streamer, if they're live
 		:param streamername: The name of the streamer to get info on
 		:param serverChannelString: The server-channel pair where the request originated from. Needed to determine whether we need to use a nickname
+		:param shouldIncludeUrl: Whether the output should include a link to the Twitch channel at the end of the output
 		:return: A user-aimed message describing whether the action succeeded or not
 		"""
 		# Check if we happen to have the streamer's ID on file, saves retrieving it
+		channelInfo = None
 		if streamername in self.watchedStreamersData:
 			streamerId = self.watchedStreamersData[streamername]['clientId']
 			displayName = self.getStreamerNickname(streamername, serverChannelString)
@@ -320,12 +323,25 @@ class Command(CommandTemplate):
 
 		# Get stream info
 		streamerData = self.retrieveStreamDataForIds([streamerId], True)
-		if len(streamerData) == 0:
-			return u"{0} doesn't appear to be streaming at the moment. Maybe they've got some old streams you can watch though, here: https://twitch.tv/{0}/videos/all".format(streamername)
-		#Streamer is live, return info on them
 		url = "https://twitch.tv/" + streamername
-		providedStreamerData = streamerData[streamerId]
-		return StringUtil.removeNewlines(u"{}: {} [{}] ({})".format(displayName, providedStreamerData['title'], providedStreamerData['game_name'], url))
+		if len(streamerData) == 0:
+			#Streamer is offline, return general channel info
+			if channelInfo is None:
+				channelInfo = self.retrieveChannelInfo(streamername)
+			description = StringUtil.removeNewlines(channelInfo['description'])
+			maxDescriptionLength = Constants.MAX_MESSAGE_LENGTH - len(displayName) - 12 #12 is the number of other characters in the output string
+			if shouldIncludeUrl:
+				maxDescriptionLength -= len(url) + 3 # Url addition adds the url length plus the brackets and a space, so 3 extra characters
+			if len(description) > maxDescriptionLength:
+				description = description[:maxDescriptionLength - 5] + u'[...]' #-5 to leave room for the brackets and dots
+			streamerInfoOutput = u"{} (offline): {}".format(displayName, description)
+		else:
+			#Streamer is live, return info on them
+			providedStreamerData = streamerData[streamerId]
+			streamerInfoOutput = u"{}: {} [{}]".format(displayName, StringUtil.removeNewlines(providedStreamerData['title']), providedStreamerData['game_name'], url)
+		if shouldIncludeUrl:
+			streamerInfoOutput += u' ({})'.format(url)
+		return streamerInfoOutput
 
 
 	def executeScheduledFunction(self):
