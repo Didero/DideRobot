@@ -33,7 +33,7 @@ class Command(CommandTemplate):
 		"""
 		urlmatch = re.search(r"(https?://\S+)", message.message)
 		if not urlmatch:
-			self.logWarning("[url] Module triggered, but no url found in message '{}'".format(message.rawText))
+			self.logWarning("[url] Module triggered, but no url found in message '{}'".format(message.message))
 		else:
 			url = urlmatch.group()
 			while url.endswith(")") or url.endswith('/'):
