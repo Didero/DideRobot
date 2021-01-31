@@ -72,7 +72,7 @@ class Command(CommandTemplate):
 		# Convert weird characters like &#39 back into normal ones like '
 		cleanedUpTitle = HTMLParser.HTMLParser().unescape(cleanedUpTitle)
 		# Make sure titles aren't too long
-		if len(cleanedUpTitle) >= Constants.MAX_MESSAGE_LENGTH:
+		if len(cleanedUpTitle) > Constants.MAX_MESSAGE_LENGTH:
 			cleanedUpTitle = cleanedUpTitle[:Constants.MAX_MESSAGE_LENGTH - 5] + "[...]"
 		return cleanedUpTitle
 
