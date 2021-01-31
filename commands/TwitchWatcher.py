@@ -36,6 +36,11 @@ class Command(CommandTemplate):
 			#Disable the automatic scheduled function if we don't have an API key because that won't work
 			self.scheduledFunctionTime = None
 			return
+
+		#Register the stream lookup method as a globally accessible command function
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'getTwitchStreamInfo', self.getStreamerInfo)
+
+		#Load stored data on followed streams and the like
 		datafilepath = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitchWatcherData.json')
 		if os.path.isfile(datafilepath):
 			with open(datafilepath, 'r') as datafile:
