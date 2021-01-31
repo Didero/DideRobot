@@ -88,7 +88,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveTwitchTitle(url):
-		channelmatches = re.search("https?://w*\.twitch\.tv/([^/]+)", url)
+		channelmatches = re.search("https?://(?:www\.)?twitch\.tv/([^/]+)/?$", url)
 		if channelmatches:
 			channel = channelmatches.group(1)
 			channeldata = {}
