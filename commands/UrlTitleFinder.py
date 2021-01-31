@@ -16,6 +16,9 @@ class Command(CommandTemplate):
 	showInCommandList = False
 	callInThread = True  #We can't know how slow sites are, so prevent the bot from locking up on slow sites
 
+	#The maximum time a title look-up is allowed to take
+	lookupTimeoutSeconds = 5.0
+
 	def shouldExecute(self, message):
 		if message.messageType != 'say':
 			return False
@@ -28,7 +31,6 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		timeout = 5.0  #Time to try and get a title, in seconds
 		urlmatch = re.search(r"(https?://\S+)", message.message)
 		if not urlmatch:
 			self.logWarning("[url] Module triggered, but no url found in message '{}'".format(message.rawText))
@@ -41,18 +43,18 @@ class Command(CommandTemplate):
 			try:
 				#There's some special cases for often used pages.
 				if 'twitch.tv' in url:
-					title = self.retrieveTwitchTitle(url, timeout)
+					title = self.retrieveTwitchTitle(url)
 				elif 'youtube.com' in url or 'youtu.be' in url:
-					title = self.retrieveYoutubetitle(url, timeout)
+					title = self.retrieveYoutubetitle(url)
 				elif 'imgur.com' in url:
-					title = self.retrieveImgurTitle(url, timeout)
+					title = self.retrieveImgurTitle(url)
 				elif 'twitter.com' in url:
-					title = self.retrieveTwitterTitle(url, timeout)
+					title = self.retrieveTwitterTitle(url)
 				elif re.match('https?://.{2}(?:\.m)?\.wikipedia.org', url, re.IGNORECASE):
 					title = GlobalStore.commandhandler.runCommandFunction('getWikipediaArticle', None, url, False)
 				#If nothing has been found so far, just display whatever is between the <title> tags
 				if title is None:
-					title = self.retrieveGenericTitle(url, timeout)
+					title = self.retrieveGenericTitle(url)
 			except requests.exceptions.Timeout:
 				self.logError("[url] '{}' took too long to respond, ignoring".format(url))
 			except requests.exceptions.ConnectionError as error:
@@ -75,30 +77,30 @@ class Command(CommandTemplate):
 		return cleanedUpTitle
 
 	@staticmethod
-	def retrieveGenericTitle(url, timeout=5.0):
+	def retrieveGenericTitle(url):
 		for ext in ('.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf'):
 			if url.endswith(ext):
 				return None
-		titlematch = re.search(r'<title ?.*?>(.+)</title>', requests.get(url, timeout=timeout).text, re.DOTALL | re.IGNORECASE)
+		titlematch = re.search(r'<title ?.*?>(.+)</title>', requests.get(url, timeout=Command.lookupTimeoutSeconds).text, re.DOTALL | re.IGNORECASE)
 		if titlematch:
 			return titlematch.group(1)  #No need to do clean-up, that's handled in the main 'execute' function
 		return None
 
 	@staticmethod
-	def retrieveTwitchTitle(url, timeout=5.0):
+	def retrieveTwitchTitle(url):
 		channelmatches = re.search("https?://w*\.twitch\.tv/([^/]+)", url)
 		if channelmatches:
 			channel = channelmatches.group(1)
 			channeldata = {}
 			isChannelOnline = False
 			twitchheaders = {'Accept': 'application/vnd.twitchtv.v2+json'}
-			twitchStreamPage = requests.get(u"https://api.twitch.tv/kraken/streams/" + channel, headers=twitchheaders, timeout=timeout)
+			twitchStreamPage = requests.get(u"https://api.twitch.tv/kraken/streams/" + channel, headers=twitchheaders, timeout=Command.lookupTimeoutSeconds)
 			streamdata = json.loads(twitchStreamPage.text.encode('utf-8'))
 			if 'stream' in streamdata and streamdata['stream'] is not None:
 				channeldata = streamdata['stream']['channel']
 				isChannelOnline = True
 			elif 'error' not in streamdata:
-				twitchChannelPage = requests.get(u"https://api.twitch.tv/kraken/channels/" + channel, headers=twitchheaders, timeout=timeout)
+				twitchChannelPage = requests.get(u"https://api.twitch.tv/kraken/channels/" + channel, headers=twitchheaders, timeout=Command.lookupTimeoutSeconds)
 				channeldata = json.loads(twitchChannelPage.text.encode('utf-8'))
 
 			if len(channeldata) > 0:
@@ -115,7 +117,7 @@ class Command(CommandTemplate):
 		return None
 
 	@staticmethod
-	def retrieveYoutubetitle(url, timeout=5.0):
+	def retrieveYoutubetitle(url):
 		if 'google' not in GlobalStore.commandhandler.apikeys:
 			CommandTemplate.logError("[url] Google API key not found!")
 			return None
@@ -134,7 +136,7 @@ class Command(CommandTemplate):
 		googleUrl = "https://www.googleapis.com/youtube/v3/videos"
 		params = {'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': GlobalStore.commandhandler.apikeys['google'],
 				  'fields': 'items/snippet(title,description),items/contentDetails/duration,items/statistics(viewCount,likeCount,dislikeCount)'}
-		googleJson = json.loads(requests.get(googleUrl, params=params, timeout=timeout).text.encode('utf-8'))
+		googleJson = json.loads(requests.get(googleUrl, params=params, timeout=Command.lookupTimeoutSeconds).text.encode('utf-8'))
 
 		if 'error' in googleJson:
 			CommandTemplate.logError(u"[url] ERROR with Google requests. {}: {}. [{}]".format(googleJson['error']['code'],
@@ -164,7 +166,7 @@ class Command(CommandTemplate):
 																				  description=description)
 
 	@staticmethod
-	def retrieveImgurTitle(url, timeout=5.0):
+	def retrieveImgurTitle(url):
 		if 'imgur' not in GlobalStore.commandhandler.apikeys or 'clientid' not in GlobalStore.commandhandler.apikeys['imgur']:
 			CommandTemplate.logError("[url] Imgur API key not found!")
 			return None
@@ -182,7 +184,7 @@ class Command(CommandTemplate):
 			imageId = imageId[imageId.rfind('/')+1:]
 		headers = {"Authorization": "Client-ID " + GlobalStore.commandhandler.apikeys['imgur']['clientid']}
 		imgurUrl = "https://api.imgur.com/3/{type}/{id}".format(type=imageType, id=imageId)
-		imgurDataPage = requests.get(imgurUrl, headers=headers, timeout=timeout)
+		imgurDataPage = requests.get(imgurUrl, headers=headers, timeout=Command.lookupTimeoutSeconds)
 		imgdata = json.loads(imgurDataPage.text.encode('utf-8'))
 		if imgdata['success'] is not True or imgdata['status'] != 200:
 			CommandTemplate.logError("[url] Error while retrieving ImgUr image data: {}".format(imgurDataPage.text.encode('utf-8')))
@@ -208,7 +210,7 @@ class Command(CommandTemplate):
 		return title.format(imgdata=imgdata)
 
 	@staticmethod
-	def retrieveTwitterTitle(url, timeout=5.0):
+	def retrieveTwitterTitle(url):
 		tweetMatches = re.search('twitter.com/(?P<name>[^/]+)(?:/status/(?P<id>[^/]+).*)?', url)
 		if not tweetMatches:
 			CommandTemplate.logWarning("[url] No twitter matches found in '{}'".format(url))
@@ -221,7 +223,7 @@ class Command(CommandTemplate):
 		if 'id' in tweetMatches.groupdict() and tweetMatches.group('id') is not None:
 			#Specific tweet
 			twitterUrl = "https://api.twitter.com/1.1/statuses/show.json?id={id}".format(id=tweetMatches.group('id'))
-			twitterDataPage = requests.get(twitterUrl, headers=headers, timeout=timeout)
+			twitterDataPage = requests.get(twitterUrl, headers=headers, timeout=Command.lookupTimeoutSeconds)
 			twitterdata = json.loads(twitterDataPage.text.encode('utf-8'))
 
 			return u"@{username} ({name}): {text} [{timestamp}]".format(username=twitterdata['user']['screen_name'], name=twitterdata['user']['name'],
@@ -229,7 +231,7 @@ class Command(CommandTemplate):
 		else:
 			#User page
 			twitterUrl = u"https://api.twitter.com/1.1/users/show.json?screen_name={name}".format(name=tweetMatches.group('name'))
-			twitterDataPage = requests.get(twitterUrl, headers=headers, timeout=timeout)
+			twitterDataPage = requests.get(twitterUrl, headers=headers, timeout=Command.lookupTimeoutSeconds)
 			twitterdata = json.loads(twitterDataPage.text.encode('utf-8'))
 
 			title = u"{name} (@{screen_name}): {description} ({statuses_count:,} tweets posted, {followers_count:,} followers, following {friends_count:,})"
