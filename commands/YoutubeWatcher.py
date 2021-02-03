@@ -5,6 +5,7 @@ import requests
 import GlobalStore
 from util import DateTimeUtil, DictUtil
 from CommandTemplate import CommandTemplate
+from CommandException import CommandException, CommandInputException
 
 
 class Command(CommandTemplate):
@@ -56,14 +57,11 @@ class Command(CommandTemplate):
 		now = datetime.datetime.now()
 		#Retrieve the latest videos of each of the channels we're watching
 		for playlistId, playlistData in self.watchedPlaylistsData.iteritems():
-			videoResultTuple = self.retrieveLatestVideos(playlistId, 2)
-			if not videoResultTuple[0]:
-				self.logError("[YoutubeWatcher] An error occurred while checking for new videos for channel '{}': {}".format(playlistData['channelname'], videoResultTuple[1]))
-				continue
+			videosList = self.retrieveLatestVideos(playlistId, 2)
 			newVideoList = []
 			#Check if these videos are newer than the latest video we have stored
-			while videoResultTuple[1]:
-				videoDict = videoResultTuple[1].pop(0)
+			while videosList:
+				videoDict = videosList.pop(0)
 				videoDict['publishedAt'] = self.parseVideoPublishDateTime(videoDict['publishedAt'])
 				if videoDict['publishedAt'] > playlistData['latestVideoUploadTime']:
 					#Store the video info in the 'new' list, but only the data we need
@@ -186,14 +184,8 @@ class Command(CommandTemplate):
 				self.saveWatchedChannelsData()
 				return "Ok, I'll start watching the {} Youtube channel, and I'll shout when they upload a new video".format(channelName)
 		#We're not watching this Youtube channel yet, so we need to retrieve some info on it first
-		channelInfoTuple = self.findChannelInfoByChannelName(channelName)
-		if not channelInfoTuple[0]:
-			return channelInfoTuple[1]
-		uploadsPlaylistId = channelInfoTuple[1]
-		latestVideoInfoTuple = self.retrieveLatestVideos(uploadsPlaylistId, 1)
-		if not latestVideoInfoTuple[0]:
-			return latestVideoInfoTuple[1]
-		latestVideoInfo = latestVideoInfoTuple[1][0]
+		uploadsPlaylistId = self.findChannelInfoByChannelName(channelName)
+		latestVideoInfo = self.retrieveLatestVideos(uploadsPlaylistId, 1)[0]
 		latestVideoUploadTime = None if not latestVideoInfo else self.parseVideoPublishDateTime(latestVideoInfo['publishedAt'])
 		self.watchedPlaylistsData[uploadsPlaylistId] = {'channelname': channelName, 'latestVideoId': latestVideoInfo.get('videoId'), 'latestVideoTitle': latestVideoInfo.get('title'),
 														  'latestVideoUploadTime': latestVideoUploadTime, 'reportChannels': [serverChannelString]}
@@ -210,15 +202,9 @@ class Command(CommandTemplate):
 			return "Ok, I'll keep an eye on the '{}' playlist of {}, and I'll shout in here when a new video gets added to it".format(playlistData['playlistname'], playlistData['channelname'])
 		#We're not watching this playlist yet, so we should add a new entry to the watch dict
 		#We need to retrieve the channel name and the playlist name
-		playlistInfoTuple = self.retrievePlaylistInfoById(playlistId)
-		if not playlistInfoTuple[0]:
-			return playlistInfoTuple[1]
-		playlistInfo = playlistInfoTuple[1]
+		playlistInfo = self.retrievePlaylistInfoById(playlistId)
 		#Retrieve info on the latest video in the playlist too
-		latestVideoInfoTuple = self.retrieveLatestVideos(playlistId, 1)
-		if not latestVideoInfoTuple[0]:
-			return latestVideoInfoTuple[1]
-		latestVideoInfo = latestVideoInfoTuple[1][0]
+		latestVideoInfo = self.retrieveLatestVideos(playlistId, 1)[0]
 		latestVideoUploadTime = None if not latestVideoInfo else self.parseVideoPublishDateTime(latestVideoInfo['publishedAt'])
 		self.watchedPlaylistsData[playlistId] = {'playlistname': playlistInfo['title'], 'channelname': playlistInfo['channelTitle'],'latestVideoId': latestVideoInfo.get('videoId'),
 												 'latestVideoTitle': latestVideoInfo.get('title'), 'latestVideoUploadTime': latestVideoUploadTime, 'reportChannels': [serverChannelString]}
@@ -286,43 +272,46 @@ class Command(CommandTemplate):
 		"""
 		This method returns the playlist ID that points to all the uploaded videos of the provided channel name
 		:param channelName: The name of the channel to get the 'Uploads' playlist for
-		:return: A tuple with the first entry being a success boolean. If the success boolean is False, the second entry is an error message. If the success boolean is True, the second entry is Uploads playlist ID
+		:return: The ID of the uploads playlist of the provided channel
+		:raises CommandException: Raised when something went wrong on Youtube's end
+		:raises CommandInputExcepiton: Raised when the provided channel name could not be found
 		"""
 
 		#First get the channel ID, which we need to get the playlists
 		request = requests.get('https://www.googleapis.com/youtube/v3/search', timeout=10.0, params={'key': GlobalStore.commandhandler.apikeys['google'], 'part': 'snippet', 'maxResults': 1, 'type': 'channel', 'q': channelName})
 		if request.status_code != 200:
 			self.logError("[YoutubeWatcher] An error occurred while searching for the channel ID of channel '{}': {} (status code {})".format(channelName, request.content, request.status_code))
-			return (False, "Something went wrong searching for channel {}, sorry (status code {})".format(channelName, request.status_code))
+			raise CommandException("Something went wrong searching for channel {}, sorry (status code {})".format(channelName, request.status_code))
 		requestJson = request.json()
 		if not requestJson['items']:
-			return (False, "No channel found with the name '{}', maybe you made a typo?".format(channelName))
+			raise CommandInputException("No channel found with the name '{}', maybe you made a typo?".format(channelName))
 		channelId = requestJson['items'][0]['snippet']['channelId']
 
 		#Use the found channel ID to retrieve the playlists and in particular the 'Uploads' playlist
 		request = requests.get('https://www.googleapis.com/youtube/v3/channels', timeout=10.0, params={'key': GlobalStore.commandhandler.apikeys['google'], 'part': 'contentDetails', 'id': channelId})
 		if request.status_code != 200:
 			self.logError("[YoutubeWatcher] An error occurred while searching for the upload playlist ID of channel '{}' (ID '{}'): {} (status code {})".format(channelName, channelId, request.content, request.status_code))
-			return (False, "Something went wrong with searching for the uploads of channel {}, sorry (status code {})".format(channelName, request.status_code))
+			raise CommandException("Something went wrong with searching for the uploads of channel {}, sorry (status code {})".format(channelName, request.status_code))
 		requestJson = request.json()
 		if not requestJson['items']:
-			return (False, "No playlists found for channel {}, maybe try again later?".format(channelName))
-		return (True, requestJson['items'][0]['contentDetails']['relatedPlaylists']['uploads'])
+			raise CommandException("No playlists found for channel {}, maybe try again later?".format(channelName), shouldLogError=False)
+		return requestJson['items'][0]['contentDetails']['relatedPlaylists']['uploads']
 
 	def retrievePlaylistInfoById(self, playlistId):
 		"""
 		This method retrieves info on a playlist by its playlist ID
 		:param playlistId: The ID of the playlist to retrieve the info of
-		:return: A tuple withe the first entry being a success boolean. If the boolean is False, the second tuple entry will be the error message. If it's True, the second entry will be a dict with the playlist info
+		:return: A dict with the playlist info
+		:raises CommandException: Raised when something goes wrong with accessing teh Youtube API
 		"""
 		request = requests.get("https://www.googleapis.com/youtube/v3/playlists", timeout=10.0, params={'key': GlobalStore.commandhandler.apikeys['google'], 'part': 'snippet', 'id': playlistId})
 		if request.status_code != 200:
 			self.logError("[YoutubeWatcher] An error occurred while searching for the playlist info for playlist ID '{}': {} (status code {})".format(playlistId, request.content, request.status_code))
-			return (False, "Something went wrong searching for info on playlist ID {}, sorry (status code {})".format(playlistId, request.status_code))
+			raise CommandException("Something went wrong searching for info on playlist ID {}, sorry (status code {})".format(playlistId, request.status_code))
 		requestJson = request.json()
 		if not requestJson['items']:
-			return (False, "No playlist found with the ID '{}', sorry".format(playlistId))
-		return (True, requestJson['items'][0]['snippet'])
+			raise CommandException("No playlist found with the ID '{}', sorry".format(playlistId))
+		return requestJson['items'][0]['snippet']
 
 	def retrieveLatestVideos(self, playlistId, numberOfVideos=5):
 		if numberOfVideos < 1 or numberOfVideos > 50:
@@ -330,18 +319,18 @@ class Command(CommandTemplate):
 		request = requests.get('https://www.googleapis.com/youtube/v3/playlistItems', timeout=10.0, params={'key': GlobalStore.commandhandler.apikeys['google'], 'playlistId': playlistId, 'part': 'snippet', 'maxResults': numberOfVideos})
 		if request.status_code != 200:
 			self.logError("[YoutubeWatcher] An error occurred while retrieving videos from playlist ID '{}': {} (status code {})".format(playlistId, request.content, request.status_code))
-			return (False, "Something went wrong with the request (Status code {})".format(request.status_code))
+			raise CommandException("Something went wrong with the request (Status code {})".format(request.status_code))
 		requestJson = request.json()
 		#If there's no matching items, just return an empty list
 		if len(requestJson['items']) == 0:
-			return (True, [{}])
+			return [{}]
 		videoDictList = []
 		for item in requestJson['items']:
 			snippet = item['snippet']
 			#The video ID is hidden in a sub-dict, but that sub-dict doesn't contain anything else important, so move the video ID one dict up
 			snippet['videoId'] = snippet.pop('resourceId')['videoId']
 			videoDictList.append(snippet)
-		return (True, videoDictList)
+		return videoDictList
 
 	def getVideoAge(self, videoPublishDatetime, precision='m'):
 		return DateTimeUtil.durationSecondsToText((datetime.datetime.now() - videoPublishDatetime).total_seconds(), precision)
