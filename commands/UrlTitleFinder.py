@@ -170,7 +170,11 @@ class Command(CommandTemplate):
 		headers = {"Authorization": "Client-ID " + GlobalStore.commandhandler.apikeys['imgur']['clientid']}
 		imgurUrl = "https://api.imgur.com/3/{type}/{id}".format(type=imageType, id=imageId)
 		imgurDataPage = requests.get(imgurUrl, headers=headers, timeout=Command.lookupTimeoutSeconds)
-		imgdata = json.loads(imgurDataPage.text.encode('utf-8'))
+		try:
+			imgdata = json.loads(imgurDataPage.text.encode('utf-8'))
+		except ValueError as e:
+			CommandTemplate.logError("[url] Imgur API didn't return JSON for type {} image id {}".format(imageType, imageId))
+			return None
 		if imgdata['success'] is not True or imgdata['status'] != 200:
 			CommandTemplate.logError("[url] Error while retrieving ImgUr image data: {}".format(imgurDataPage.text.encode('utf-8')))
 			return None
