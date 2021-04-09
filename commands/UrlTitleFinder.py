@@ -141,7 +141,7 @@ class Command(CommandTemplate):
 		durationstring += u"{minute:02}:{second:02}"
 		durationstring = durationstring.format(**durationtimes)
 		#Check if there's a description
-		description = videoData['snippet']['description'].strip()
+		description = videoData['snippet']['description'].strip().replace('\n', ' ')
 		if description == u"":
 			description = u"<No description>"
 
