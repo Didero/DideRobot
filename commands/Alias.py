@@ -175,7 +175,12 @@ class Command(CommandTemplate):
 			aliasDict[str(i+1)] = message.messageParts[i] if i < message.messagePartsLength else u""
 		aliasDict[u'nick'] = message.userNickname
 		aliasDict[u'CP'] = message.bot.commandPrefix
-		variableDict = {u'lastMessage': GlobalStore.commandhandler.runCommandFunction('getLastMessage', '', server, message.source, '')}
+		# Pass along the last message so the alias can use it
+		lastMessage = GlobalStore.commandhandler.runCommandFunction('getLastMessage', '', server, message.source, '')
+		# Generator module expects all text to be unicode
+		if not isinstance(lastMessage, unicode):
+			lastMessage = unicode(lastMessage, 'utf-8', errors='replace')
+		variableDict = {u'lastMessage': lastMessage}
 		#Always send along parameters
 		parameters = message.messageParts if message.messagePartsLength > 0 else None
 		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, message.trigger,
