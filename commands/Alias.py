@@ -175,15 +175,17 @@ class Command(CommandTemplate):
 			aliasDict[str(i+1)] = message.messageParts[i] if i < message.messagePartsLength else u""
 		aliasDict[u'nick'] = message.userNickname
 		aliasDict[u'CP'] = message.bot.commandPrefix
-		# Pass along the last message so the alias can use it
-		lastMessage = GlobalStore.commandhandler.runCommandFunction('getLastMessage', '', server, message.source, '')
-		# Generator module expects all text to be unicode
-		if not isinstance(lastMessage, unicode):
-			lastMessage = unicode(lastMessage, 'utf-8', errors='replace')
-		# Escape any special grammar characters in the message, otherwise stuff like URLs get parsed wrong because of the /
-		lastMessage = GlobalStore.commandhandler.runCommandFunction('escapeGrammarString', lastMessage, lastMessage)
-		# Pass it along as a variable to the alias
-		variableDict = {u'lastMessage': lastMessage}
+		variableDict = None
+		# Pass along the last message so the alias can use it, if needed
+		if u'%lastMessage' in aliasText:
+			lastMessage = GlobalStore.commandhandler.runCommandFunction('getLastMessage', '', server, message.source, '')
+			# Generator module expects all text to be unicode
+			if not isinstance(lastMessage, unicode):
+				lastMessage = unicode(lastMessage, 'utf-8', errors='replace')
+			# Escape any special grammar characters in the message, otherwise stuff like URLs get parsed wrong because of the /
+			lastMessage = GlobalStore.commandhandler.runCommandFunction('escapeGrammarString', lastMessage, lastMessage)
+			# Pass it along as a variable to the alias
+			variableDict = {u'lastMessage': lastMessage}
 		#Always send along parameters
 		parameters = message.messageParts if message.messagePartsLength > 0 else None
 		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, message.trigger,
