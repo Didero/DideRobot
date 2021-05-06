@@ -27,6 +27,8 @@ class Command(CommandTemplate):
 	def onLoad(self):
 		#Make the grammar parsing function available to other modules
 		GlobalStore.commandhandler.addCommandFunction(__file__, Command.sharedCommandFunctionName, Command.parseGrammarDict)
+		#Some modules may want to escape strings before sending them to be parsed, so make the escape method also available
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'escapeGrammarString', escapeString)
 		Command.loadGenerators()
 
 	@staticmethod
