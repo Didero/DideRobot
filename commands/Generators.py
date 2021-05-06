@@ -1868,6 +1868,7 @@ class GrammarException(Exception):
 	def __str__(self):
 		return self.message
 
+
 def escapeString(stringToEscape):
 	"""
 	Escape special grammar characters in the provided string
@@ -1875,4 +1876,4 @@ def escapeString(stringToEscape):
 	:param stringToEscape: The string to escape special grammar characters in
 	:return: The provided string with the special characters escaped
 	"""
-	return stringToEscape.replace(u"/", u"//").replace(u"<", u"/<").replace(u"|", u"/|").replace(u">", u"/>")
+	return re.sub(ur"([</|>])", ur"/\1", stringToEscape)
