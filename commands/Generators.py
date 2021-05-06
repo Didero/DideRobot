@@ -1714,9 +1714,9 @@ class GrammarCommands(object):
 			if replacementCount <= 0:
 				raise GrammarException(u"Invalid optional replacement count value '{}' passed to 'regexreplace' call".format(argumentList[3]))
 		try:
-			# Unescape any characters inside the regex (like < and |)
+			# Unescape any characters inside the regex that are used both in regexes and in grammar command (like < and |)
 			regex = re.compile(re.sub(r"/(.)", r"\1", argumentList[1]), flags=re.DOTALL)  # DOTALL so it can handle newlines in messages properly
-			return re.sub(regex, argumentList[2], argumentList[0], count=replacementCount)
+			return regex.sub(argumentList[2], argumentList[0], count=replacementCount)
 		except re.error as e:
 			raise GrammarException(u"Unable to parse regular expression '{}' in 'regexreplace' call ({})".format(argumentList[1], e.message))
 
