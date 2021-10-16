@@ -11,6 +11,9 @@ class Command(CommandTemplate):
 	triggers = ['speedrunlookup', 'speedrun']
 	helptext = "Looks up speedruns for the provided game name on www.speedrun.com"
 
+	_SKIPPED_TEXT = " | {} more"
+	_SKIPPED_TEXT_LENGTH = len(_SKIPPED_TEXT)
+
 	def execute(self, message):
 		"""
 		:type message: IrcMessage
@@ -39,14 +42,22 @@ class Command(CommandTemplate):
 			return
 		# The API should return the speedrun categories and records in display order
 		replytext = "{} | {}".format(IrcFormattingUtil.makeTextBold(returnedGameName), gameUrl)
+		skippedCategoryCount = 0
+		currentReplyLength = len(replytext) + self._SKIPPED_TEXT_LENGTH
 		for entry in apiJson['data']:
 			categoryName = entry['category']['data']['name']
 			runTimeString = entry['runs'][0]['run']['times']['primary'].lower()
 			if runTimeString.startswith('pt'):
 				runTimeString = runTimeString[2:]
 			runDisplayString = " | {}: {}".format(categoryName, runTimeString)
-			if len(replytext) + len(runDisplayString) <= Constants.MAX_MESSAGE_LENGTH:
+			runDisplayStringLength = len(runDisplayString)
+			if currentReplyLength + runDisplayStringLength <= Constants.MAX_MESSAGE_LENGTH:
 				replytext += runDisplayString
+				currentReplyLength += runDisplayStringLength
+			else:
+				skippedCategoryCount += 1
+		if skippedCategoryCount > 0:
+			replytext += self._SKIPPED_TEXT.format(skippedCategoryCount)
 		message.reply(replytext)
 
 	def _retrieveAndVerify(self, url, params):
