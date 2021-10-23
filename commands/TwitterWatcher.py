@@ -223,7 +223,7 @@ class Command(CommandTemplate):
 			tweetAge = ' ({} ago)'.format(tweetAge)
 		else:
 			tweetAge = ''
-		tweetUrl = "http://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
+		tweetUrl = "https://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
 		#Remove newlines
 		formattedTweetText = tweetData['full_text'].replace('\n\n', '\n').replace('\n', Constants.GREY_SEPARATOR)
 		#Fix special characters (convert '&amp;' to '&' for instance)
