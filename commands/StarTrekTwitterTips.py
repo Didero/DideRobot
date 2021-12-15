@@ -5,6 +5,7 @@ import GlobalStore
 from util import FileUtil
 from util import TwitterUtil
 from IrcMessage import IrcMessage
+from CommandException import CommandException, CommandInputException
 
 
 class Command(CommandTemplate):
@@ -50,11 +51,11 @@ class Command(CommandTemplate):
 		if name == 'random':
 			name = random.choice(self.twitterUsernames.keys())
 		if name not in self.twitterUsernames:
-			return (False, "I don't know anybody by the name of '{}', sorry. ".format(name))
+			raise CommandInputException("I don't know anybody by the name of '{}', sorry. ".format(name))
 		tweetFileName = os.path.join(GlobalStore.scriptfolder, 'data', 'tweets', '{}.txt'.format(self.twitterUsernames[name]))
 		if not os.path.exists(tweetFileName):
 			self.executeScheduledFunction()
-			return (False, "I don't seem to have the tweets for '{}', sorry! I'll retrieve them right away, try again in a bit".format(name))
+			raise CommandException("I don't seem to have the tweets for '{}', sorry! I'll retrieve them right away, try again in a bit".format(name), shouldLogError=False)
 		tweets = FileUtil.getAllLinesFromFile(tweetFileName)
 		if searchterm is not None:
 			#Search terms provided! Go through all the tweets to find matches
@@ -69,31 +70,27 @@ class Command(CommandTemplate):
 				if regex and regex.search(tweet) or searchterm in tweet:
 					tweets.append(tweet)
 		if len(tweets) == 0:
-			return (False, "Sorry, no tweets matching your search were found")
+			raise CommandException("Sorry, no tweets matching your search were found", shouldLogError=False)
 		else:
-			return (True, tweets)
+			return tweets
 
 	def getTip(self, name='random', searchterm=None):
 		name = name.lower()
 		if name == 'random':
 			name = random.choice(self.twitterUsernames.keys())
-		getTweetsReply = self.getTweets(name, searchterm)
-		if not getTweetsReply[0]:
-			return getTweetsReply[1]
-		else:
-			tweets = getTweetsReply[1]
-			tweetCount = len(tweets)
-			replytext = random.choice(tweets).strip()
-			#Always make sure the result starts with "[name] tip: "
-			if not replytext.lower().startswith(name):
-				#Get the special prefix, if any. Otherwise, just do the default "[name] tip: "
-				tipPrefix = self.resultPrefix.get(name, u"{} tip".format(name.capitalize()))
-				replytext = u"{}: {}".format(tipPrefix, replytext)
-			#Only add a tweet count if a search term was provided and there's more than one
-			if searchterm is not None and tweetCount > 1:
-				replytext += u" [{:,} more matching tweet{}]".format(tweetCount - 1, u's' if tweetCount > 2 else u'')
-			replytext = replytext.encode('utf-8', 'replace')
-			return replytext
+		tweets = self.getTweets(name, searchterm)
+		tweetCount = len(tweets)
+		replytext = random.choice(tweets).strip()
+		#Always make sure the result starts with "[name] tip: "
+		if not replytext.lower().startswith(name):
+			#Get the special prefix, if any. Otherwise, just do the default "[name] tip: "
+			tipPrefix = self.resultPrefix.get(name, u"{} tip".format(name.capitalize()))
+			replytext = u"{}: {}".format(tipPrefix, replytext)
+		#Only add a tweet count if a search term was provided and there's more than one
+		if searchterm is not None and tweetCount > 1:
+			replytext += u" [{:,} more matching tweet{}]".format(tweetCount - 1, u's' if tweetCount > 2 else u'')
+		replytext = replytext.encode('utf-8', 'replace')
+		return replytext
 
 
 	def executeScheduledFunction(self):
