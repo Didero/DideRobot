@@ -34,6 +34,15 @@ class CommandHandler:
 			apifile.write(json.dumps(self.apikeys, sort_keys=True, indent=4))
 
 	def addCommandFunction(self, module, name, function):
+		"""
+		Add a global function available to all commands thorugh 'CommandHandler.runCommandFunction'
+		Usually called in the 'onLoad' of a command
+		The command function gets removed automatically when the command is unloaded, or it can be manually removed with 'removeCommandFunction'
+		:param module: The name of the module, usually '__file__' in the command class. This is needed to automatically remove the command function when the command module gets unloaded
+		:param name: The name of the command function. This is the string other command modules have to use with 'runCommandFunction'. Not case-sensitive
+		:param function: The local function inside the command module that 'runCommandFunction' should call when the name is called
+		:return: True if the adding succeeded, False otherwise (for instance if the name already exists)
+		"""
 		name = name.lower()
 		if name in self.commandFunctions:
 			self.logger.warning("Trying to add a commandFuction called '{}' but it already exists".format(name))
@@ -66,6 +75,14 @@ class CommandHandler:
 		return name.lower() in self.commandFunctions
 
 	def runCommandFunction(self, name, defaultValue=None, *args, **kwargs):
+		"""
+		Run a command function, which is a function another command module registered for global access
+		:param name: The name of the command function to run. Not case sensitive
+		:param defaultValue: The default value to return if the provided name isn't a registered command function
+		:param args: The argument(s) to pass to the command function. Optional
+		:param kwargs: The keyword argument(s) to pass to the command function. Optional
+		:return: The result of the command function, or the default value if there is no command function with the provided name
+		"""
 		name = name.lower()
 		if name not in self.commandFunctions:
 			self.logger.warning("Unknown commandFunction '{}' called".format(name))
