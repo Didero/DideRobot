@@ -8,6 +8,7 @@ from CommandTemplate import CommandTemplate
 import GlobalStore
 from util import StringUtil
 from IrcMessage import IrcMessage
+from CommandException import CommandException
 
 
 class Command(CommandTemplate):
@@ -45,7 +46,7 @@ class Command(CommandTemplate):
 			elif not searchType == 'forceupdate' and not self.shouldUpdate():
 				replytext = "The last update check was done pretty recently, there's no need to check again so soon"
 			else:
-				replytext = self.updateCardFile()[1]
+				replytext = self.updateCardFile()
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.resetScheduledFunctionGreenlet()
 			message.reply(replytext, "say")
@@ -282,19 +283,23 @@ class Command(CommandTemplate):
 
 	def updateCardFile(self):
 		starttime = time.time()
+		requestReply = None
 		try:
 			requestReply = requests.get("http://netrunnerdb.com/api/2.0/public/cards", timeout=60.0)
 			carddata = json.loads(requestReply.text)
 		except requests.exceptions.Timeout:
 			self.logError("[Netrunner] Data retrieval took too long")
-			return (False, "Card retrieval took too long")
+			raise CommandException("Card retrieval took too long")
 		except ValueError:
-			self.logError("[Netrunner] Invalid JSON when updating card database: " + requestReply.text)
-			return (False, "Invalid JSON data")
+			logmessage = "[Netrunner] Invalid JSON when updating card database"
+			if requestReply:
+				logmessage += ": " + requestReply.text
+			self.logError(logmessage)
+			raise CommandException("Invalid JSON data")
 
 		if 'data' not in carddata:
 			self.logError("[Netrunner] API reply did not contain card data: " + requestReply.text)
-			return (False, "API did not return card data")
+			raise CommandException("API did not return card data")
 
 		carddata = carddata['data']
 
@@ -356,4 +361,4 @@ class Command(CommandTemplate):
 		#Done! Free the file read, log the update, and report our success
 		self.areCardfilesBeingUpdated = False
 		self.logInfo("[NetRunner] Updating cards took {} seconds".format(time.time() - starttime))
-		return (True, "Netrunner card database successfully updated")
+		return "Netrunner card database successfully updated"
