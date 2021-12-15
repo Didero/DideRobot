@@ -20,7 +20,7 @@ class Command(CommandTemplate):
 
 	def getRandomWikipediaArticle(self, addExtendedText=False):
 		try:
-			page = requests.get('http://en.m.wikipedia.org/wiki/Special:Random/#/random', timeout=10.0)
+			page = requests.get('https://en.m.wikipedia.org/wiki/Special:Random/#/random', timeout=10.0)
 		except requests.exceptions.Timeout:
 			raise CommandException("Apparently Wikipedia couldn't pick between all of its interesting articles, so it took too long to reply. Sorry!")
 		self.logDebug("[wiki] Random page url: {}".format(page.url))
@@ -90,7 +90,7 @@ class Command(CommandTemplate):
 					replytext = replytext[:lastSpaceIndex]
 				replytext += ' [...]'
 			#Add the URL
-			replytext += u'{}http://en.wikipedia.org/wiki/{}'.format(Constants.GREY_SEPARATOR, pagedata['title'].replace(u' ', u'_'))
+			replytext += u'{}https://en.wikipedia.org/wiki/{}'.format(Constants.GREY_SEPARATOR, pagedata['title'].replace(u' ', u'_'))
 			return replytext
 
 
