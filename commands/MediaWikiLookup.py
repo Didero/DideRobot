@@ -27,9 +27,8 @@ class Command(CommandTemplate):
 		elif message.messagePartsLength == 0:
 			return message.reply("Please tell me which Fandom wiki you want me to use, there's a LOT of them. Turns out humans write a lot of stories!", "say")
 		else:
-			wikiName = message.messageParts[0]
-			wikiDisplayName = "the {} Fandom wiki".format(wikiName)
-			wikiApiUrl = "https://{}.fandom.com/api.php".format(wikiName)
+			wikiDisplayName = "the {} Fandom wiki".format(message.messageParts[0])
+			wikiApiUrl = "https://{}.fandom.com/api.php".format(message.messageParts[0])
 			searchQuery = u" ".join(message.messageParts[1:])
 
 		shouldPickRandomPage = message.trigger.endswith('random')
