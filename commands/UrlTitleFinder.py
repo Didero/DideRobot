@@ -53,8 +53,8 @@ class Command(CommandTemplate):
 					title = self.retrieveImgurTitle(url)
 				elif 'twitter.com' in url:
 					title = self.retrieveTwitterTitle(url)
-				elif re.match('https?://.{2}(?:\.m)?\.wikipedia.org', url, re.IGNORECASE):
-					title = GlobalStore.commandhandler.runCommandFunction('getWikipediaArticle', None, url, False)
+				elif re.match('https?://en(?:\.m)?\.wikipedia.org/wiki', url, re.IGNORECASE):
+					title = self.retrieveWikipediaTitle(url)
 				#If nothing has been found so far, just display whatever is between the <title> tags
 				if title is None:
 					title = self.retrieveGenericTitle(url)
@@ -227,3 +227,17 @@ class Command(CommandTemplate):
 			if 'verified' in twitterdata and twitterdata['verified'] is True:
 				title += u". Verified account"
 			return title.format(**twitterdata)
+
+	@staticmethod
+	def retrieveWikipediaTitle(url):
+		articleTitle = url.rsplit('/', 1)[-1]
+		apiReturn = requests.get("https://en.wikipedia.org/w/api.php", params={'format': 'json', 'utf8': True, 'redirects': True, 'action': 'query', 'prop': 'extracts',
+																			   'exchars': Constants.MAX_MESSAGE_LENGTH, 'exlimit': 1, 'explaintext': True, 'exsectionformat': 'plain'})
+		if apiReturn.status_code != 200:
+			return None
+		apiData = apiReturn.json()
+		if 'query' not in apiData or 'pages' not in apiData['query'] or "-1" in apiData['query']['pages']:
+			return None
+		articleText = apiData['query']['pages'].popitem()[1]['extracts']
+		articleText = re.sub('[\n\t]+', ' ', articleText)
+		return articleText
