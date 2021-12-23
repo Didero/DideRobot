@@ -1112,7 +1112,7 @@ class Command(CommandTemplate):
 
 		#Get keyword definitions and slang term meanings from other sites
 		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content"),
-			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-body")]
+			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-parser-output")]
 		try:
 			for url, section in definitionSources:
 				defHeaders = BeautifulSoup(requests.get(url, timeout=10.0).text.replace('\n', ''), 'html.parser').find(class_=section).find_all(['h3', 'h4'])
