@@ -238,6 +238,6 @@ class Command(CommandTemplate):
 		apiData = apiReturn.json()
 		if 'query' not in apiData or 'pages' not in apiData['query'] or "-1" in apiData['query']['pages']:
 			return None
-		articleText = apiData['query']['pages'].popitem()[1]['extracts']
+		articleText = apiData['query']['pages'].popitem()[1]['extract']
 		articleText = re.sub('[\n\t]+', ' ', articleText)
 		return articleText
