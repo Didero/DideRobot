@@ -231,7 +231,7 @@ class Command(CommandTemplate):
 	@staticmethod
 	def retrieveWikipediaTitle(url):
 		articleTitle = url.rsplit('/', 1)[-1]
-		apiReturn = requests.get("https://en.wikipedia.org/w/api.php", params={'format': 'json', 'utf8': True, 'redirects': True, 'action': 'query', 'prop': 'extracts',
+		apiReturn = requests.get("https://en.wikipedia.org/w/api.php", params={'format': 'json', 'utf8': True, 'redirects': True, 'action': 'query', 'prop': 'extracts', 'titles': articleTitle,
 																			   'exchars': Constants.MAX_MESSAGE_LENGTH, 'exlimit': 1, 'explaintext': True, 'exsectionformat': 'plain'})
 		if apiReturn.status_code != 200:
 			return None
