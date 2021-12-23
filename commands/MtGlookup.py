@@ -1126,6 +1126,9 @@ class Command(CommandTemplate):
 						continue
 					#Cycle through all the paragraphs following the header
 					currentParagraph = defHeader.next_sibling
+					# Warnings are shown in a table after the header, ignore those
+					if currentParagraph.name == 'table':
+						currentParagraph = currentParagraph.next_sibling
 					paragraphText = u""
 					#If there's no next_sibling, 'currentParagraph' is set to None. Check for that
 					while currentParagraph and currentParagraph.name in ('p', 'ul', 'dl', 'ol'):
