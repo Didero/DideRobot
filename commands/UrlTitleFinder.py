@@ -8,7 +8,7 @@ import Constants
 import GlobalStore
 from util import DateTimeUtil
 from IrcMessage import IrcMessage
-from CommandException import CommandException
+from CustomExceptions import CommandException
 
 class Command(CommandTemplate):
 

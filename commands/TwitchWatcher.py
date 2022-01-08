@@ -7,7 +7,7 @@ import Constants
 from util import IrcFormattingUtil
 from util import StringUtil
 from CommandTemplate import CommandTemplate
-from CommandException import CommandException
+from CustomExceptions import CommandException
 
 class Command(CommandTemplate):
 	triggers = ['twitchwatcher', 'twitchwatch']

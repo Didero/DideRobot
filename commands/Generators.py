@@ -6,7 +6,7 @@ from util import FileUtil
 from util import IrcFormattingUtil
 from util import StringUtil
 import GlobalStore
-from CommandException import CommandException
+from CustomExceptions import CommandException
 
 
 fieldCommandPrefix = u"$"

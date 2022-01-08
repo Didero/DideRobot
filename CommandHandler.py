@@ -3,7 +3,7 @@ import importlib, json, logging, os
 import gevent
 
 import GlobalStore
-from CommandException import CommandException
+from CustomExceptions import CommandException
 from IrcMessage import IrcMessage
 
 

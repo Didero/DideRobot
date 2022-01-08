@@ -4,7 +4,7 @@ import re
 
 from CommandTemplate import CommandTemplate
 import GlobalStore
-from CommandException import CommandException, CommandInputException
+from CustomExceptions import CommandException, CommandInputException
 
 
 class Command(CommandTemplate):

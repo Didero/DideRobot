@@ -5,7 +5,7 @@ import requests
 import GlobalStore
 from util import DateTimeUtil, DictUtil
 from CommandTemplate import CommandTemplate
-from CommandException import CommandException, CommandInputException
+from CustomExceptions import CommandException, CommandInputException
 
 
 class Command(CommandTemplate):

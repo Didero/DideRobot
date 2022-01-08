@@ -3,7 +3,7 @@ import requests
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from util import IrcFormattingUtil
-from CommandException import CommandException
+from CustomExceptions import CommandException
 import Constants
 
 

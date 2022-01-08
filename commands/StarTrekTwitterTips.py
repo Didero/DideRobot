@@ -5,7 +5,7 @@ import GlobalStore
 from util import FileUtil
 from util import TwitterUtil
 from IrcMessage import IrcMessage
-from CommandException import CommandException, CommandInputException
+from CustomExceptions import CommandException, CommandInputException
 
 
 class Command(CommandTemplate):

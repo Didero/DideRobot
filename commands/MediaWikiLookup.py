@@ -4,7 +4,7 @@ import requests
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-from CommandException import CommandException, CommandInputException
+from CustomExceptions import CommandException, CommandInputException
 import Constants
 
 
