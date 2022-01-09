@@ -127,6 +127,6 @@ class Command(CommandTemplate):
 
 		#Add the search url
 		if includeUrl:
-			replystring += "{}http://www.wolframalpha.com/input/?i={}".format(Constants.GREY_SEPARATOR, urllib.quote_plus(query))
+			replystring += "{}https://wolframalpha.com/input/?i={}".format(Constants.GREY_SEPARATOR, urllib.quote_plus(query))
 			
 		return replystring
