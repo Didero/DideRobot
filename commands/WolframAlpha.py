@@ -9,7 +9,6 @@ import requests
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-from util import WebUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException
 
@@ -128,10 +127,6 @@ class Command(CommandTemplate):
 
 		#Add the search url
 		if includeUrl:
-			searchUrl = "http://www.wolframalpha.com/input/?i={}".format(urllib.quote_plus(query))
-			#If the message would get too long, shorten the result URL
-			if len(replystring) + len(searchUrl) > Constants.MAX_MESSAGE_LENGTH:
-				searchUrl = WebUtil.shortenUrl(searchUrl)[1]
-			replystring += "{}{}".format(Constants.GREY_SEPARATOR, searchUrl)
+			replystring += "{}http://www.wolframalpha.com/input/?i={}".format(Constants.GREY_SEPARATOR, urllib.quote_plus(query))
 			
 		return replystring
