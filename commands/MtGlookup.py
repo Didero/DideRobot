@@ -15,7 +15,7 @@ from util import FileUtil
 from util import StringUtil
 from util import WebUtil
 from IrcMessage import IrcMessage
-from CustomExceptions import CommandException, CommandInputException
+from CustomExceptions import CommandException, CommandInputException, WebRequestException
 
 
 class Command(CommandTemplate):
@@ -694,11 +694,12 @@ class Command(CommandTemplate):
 	def downloadCardDataset(self):
 		url = "https://mtgjson.com/api/v5/AllSetFiles.zip"
 		cardzipFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'AllSetFiles.zip')
-		success, exceptionOrFilepath = WebUtil.downloadFile(url, cardzipFilename)
-		if not success:
-			self.logError("[MTG] An error occurred while trying to download the card file: " + exceptionOrFilepath)
+		try:
+			filepath = WebUtil.downloadFile(url, cardzipFilename)
+		except WebRequestException as wre:
+			self.logError("[MTG] An error occurred while trying to download the card file: " + wre)
 			raise CommandException("Error while downloading the MtG card data")
-		return exceptionOrFilepath
+		return filepath
 
 	def getLatestVersionNumber(self):
 		versionRequest = None

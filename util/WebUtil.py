@@ -1,4 +1,8 @@
+import logging
+
 import requests
+
+from CustomExceptions import WebRequestException
 
 
 def downloadFile(url, targetFilename, timeout=30.0):
@@ -7,6 +11,8 @@ def downloadFile(url, targetFilename, timeout=30.0):
 		with open(targetFilename, 'wb') as f:
 			for chunk in r.iter_content(4096):
 				f.write(chunk)
-		return (True, targetFilename)
+		return targetFilename
 	except Exception as e:
-		return (False, e)
+		exceptionName = e.__class__.__name__
+		logging.getLogger('DideRobot').error("{} Exception while downloading '{}' to '{}': {}".format(exceptionName, url, targetFilename, e))
+		raise WebRequestException("Downloading the file failed, sorry ({}). Check the logs to see what exactly went wrong".format(exceptionName))
