@@ -1,11 +1,10 @@
-import json, os, time
+import datetime, json, os, time
 
 import requests
 
 import GlobalStore
 import Constants
-from util import IrcFormattingUtil
-from util import StringUtil
+from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException
 
@@ -343,9 +342,11 @@ class Command(CommandTemplate):
 		else:
 			#Streamer is live, return info on them
 			providedStreamerData = streamerData[streamerId]
-			streamerInfoOutput = u"{}: {} [{}]".format(displayName, StringUtil.removeNewlines(providedStreamerData['title']), providedStreamerData['game_name'], url)
+			liveDurationSeconds = (datetime.datetime.utcnow() - datetime.datetime.strptime(providedStreamerData['started_at'], "%Y-%m-%dT%H:%M:%SZ")).total_seconds()
+			streamerInfoOutput = u"{} is streaming {}: {} [{} viewers, for {}]".format(displayName, providedStreamerData['game_name'],
+				StringUtil.removeNewlines(providedStreamerData['title']), providedStreamerData['viewer_count'], DateTimeUtil.durationSecondsToText(liveDurationSeconds, 'm'))
 		if shouldIncludeUrl:
-			streamerInfoOutput += u' ({})'.format(url)
+			streamerInfoOutput += u' | {}'.format(url)
 		return streamerInfoOutput
 
 
