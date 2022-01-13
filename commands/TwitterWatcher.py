@@ -8,6 +8,7 @@ from util import DateTimeUtil
 from util import IrcFormattingUtil
 from util import TwitterUtil
 from IrcMessage import IrcMessage
+from CustomExceptions import WebRequestException
 
 
 class Command(CommandTemplate):
@@ -114,12 +115,13 @@ class Command(CommandTemplate):
 				replytext = "Ok, I won't keep you updated on whatever {} posts. Tweets. Messages? I don't know the proper verb".format(accountName)
 		elif parameter == 'latest':
 			#Download the latest tweet for the provided username
-			singleTweet = TwitterUtil.downloadTweet(accountNameLowered)
-			if not singleTweet[0]:
-				self.logError("[TwitterWatcher] Error occured while downloading single tweet user {}: {}".format(accountName, singleTweet[1]))
+			try:
+				singleTweet = TwitterUtil.downloadTweet(accountNameLowered)
+			except WebRequestException as wre:
+				self.logError("[TwitterWatcher] Error occured while downloading single tweet for user {}: {}".format(accountName, wre))
 				replytext = "Woops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe it's Twitter's fault, in which case all we can do is wait"
 			else:
-				replytext = self.formatNewTweetText(accountName, singleTweet[1], addTweetAge=True)
+				replytext = self.formatNewTweetText(accountName, singleTweet, addTweetAge=True)
 		elif parameter == 'setname':
 			#Allow users to set a display name
 			if not isUserBeingWatchedHere:
@@ -156,15 +158,14 @@ class Command(CommandTemplate):
 			if username not in self.watchData:
 				self.logWarning("[TwitterWatcher] Asked to check account '{}' for new tweets, but it is not in the watchlist".format(username))
 				continue
-			tweetsReply = TwitterUtil.downloadTweets(username, maxTweetCount=10, downloadNewerThanId=self.watchData[username].get('highestId', None), includeRetweets=False)
-			if not tweetsReply[0]:
-				self.logError("[TwitterWatcher] Couldn't retrieve tweets for '{}': {}".format(username, tweetsReply[1]))
+			try:
+				tweets = TwitterUtil.downloadTweets(username, maxTweetCount=10, downloadNewerThanId=self.watchData[username].get('highestId', None), includeRetweets=False)
+			except WebRequestException as wre:
+				self.logError("[TwitterWatcher] Couldn't retrieve tweets for '{}': {}".format(username, wre))
 				continue
 			#If there aren't any new tweets, move on
-			if len(tweetsReply[1]) == 0:
+			if len(tweets) == 0:
 				continue
-
-			tweets = tweetsReply[1]
 			#Always store the highest ID, so we don't encounter the same tweet twice
 			watchDataChanged = True
 			self.watchData[username]['highestId'] = tweets[0]['id']

@@ -3,6 +3,7 @@ import base64, json, logging
 import requests
 
 import GlobalStore
+from CustomExceptions import WebRequestException
 
 
 logger = logging.getLogger('DideRobot')
@@ -41,7 +42,7 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 		tokenUpdateSuccess = updateTwitterToken()
 		if not tokenUpdateSuccess:
 			logger.error("Unable to retrieve a new Twitter token!")
-			return (False, "Unable to retrieve Twitter authentication token!")
+			raise WebRequestException("Unable to retrieve Twitter authentication token!")
 
 	#Now download tweets!
 	headers = {'Authorization': "{} {}".format(GlobalStore.commandhandler.apikeys['twitter']['tokentype'], GlobalStore.commandhandler.apikeys['twitter']['token'])}
@@ -61,13 +62,13 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 			apireply = json.loads(req.text)
 		except requests.exceptions.Timeout:
 			logger.error("Twitter API reply took too long to arrive")
-			return (False, "Twitter took too long to respond", tweets)
+			raise WebRequestException("Twitter took too long to respond")
 		except ValueError:
 			logger.error(u"Didn't get parsable JSON return from Twitter API: {}".format(req.text.replace('\n', '|')))
-			return (False, "Unexpected data returned", tweets)
+			raise WebRequestException("Twitter API returned unexpected data")
 		except Exception as e:
 			logger.error("Tweet download threw an unexpected error of type '{}': {}".format(type(e), str(e)))
-			return (False, "Unknown error occurred", tweets)
+			raise WebRequestException("Unknown error occurred while retrieving Twitter API data")
 
 		if len(apireply) == 0:
 			#No more tweets to parse!
@@ -79,12 +80,12 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 			logger.error("[TwitterUtil] Twitter API reply:")
 			logger.error(apireply)
 			errorMessages = '; '.join(e['message'] for e in apireply['errors'])
-			return (False, "Error(s) occurred: {}".format(errorMessages), tweets)
+			logger.error("Twitter API reply contained errors: {}".format(errorMessages))
+			raise WebRequestException("The Twitter API reply contained errors")
 		#Sometimes the API does not return a list of tweets for some reason. Catch that
 		if not isinstance(apireply, list):
-			logger.error("[TwitterUtil] Unexpected reply from Twitter API. Expected tweet list, got {}:".format(type(apireply)))
-			logger.error(apireply)
-			return (False, "Unexpected API reply", tweets)
+			logger.error("[TwitterUtil] Unexpected reply from Twitter API. Expected tweet list, got {}: {}".format(type(apireply), apireply))
+			raise WebRequestException("The Twitter API reply contained unexpected data")
 		#Tweets are sorted reverse-chronologically, so we can get the highest ID from the first tweet
 		params['since_id'] = apireply[0]['id']
 		#Remove retweets if necessary (done manually to make the 'count' variable be accurate)
@@ -92,20 +93,20 @@ def downloadTweets(username, maxTweetCount=200, downloadNewerThanId=None, downlo
 			apireply = [t for t in apireply if 'retweeted_status' not in t]
 		#There are tweets, store those
 		tweets.extend(apireply)
-	return (True, tweets)
+	return tweets
 
 def downloadTweet(username, tweetId=None):
 	"""
 	Download a single tweet for the provided username
 	:param username: The username to retrieve the tweet of
 	:param tweetId: The tweetId to retrieve. If this is None or not provided, the latest tweet will be retrieved
-	:return: A success-tuple, with the first value a success boolean and the second either the error message or the downloaded tweet
+	:return: The downloaded tweet
+	:raise WebRequestException: Raised if something goes wrong with retrieving the tweet
 	"""
-	downloadedTweet = downloadTweets(username, maxTweetCount=1,
+	downloadedTweets = downloadTweets(username, maxTweetCount=1,
 									 downloadNewerThanId=tweetId-1 if tweetId else None,
 									 downloadOlderThanId=tweetId+1 if tweetId else None)
-	#If something went wrong, pass on the error
-	if not downloadedTweet[0]:
-		return downloadedTweet
-	#Otherwise, make the single-item tweet list just the tweet
-	return (True, downloadedTweet[1][0])
+	if downloadedTweets:
+		return downloadedTweets[0]
+	else:
+		raise WebRequestException("Tweet with ID '{}' was not found".format(tweetId))

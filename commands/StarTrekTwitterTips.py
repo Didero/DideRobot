@@ -5,7 +5,7 @@ import GlobalStore
 from util import FileUtil
 from util import TwitterUtil
 from IrcMessage import IrcMessage
-from CustomExceptions import CommandException, CommandInputException
+from CustomExceptions import CommandException, CommandInputException, WebRequestException
 
 
 class Command(CommandTemplate):
@@ -112,14 +112,14 @@ class Command(CommandTemplate):
 				storedInfo[username] = {'linecount': 0}
 			elif "highestIdDownloaded" in storedInfo[username]:
 				highestIdDownloaded = storedInfo[username]['highestIdDownloaded']
-			tweetResponse = TwitterUtil.downloadTweets(username, downloadNewerThanId=highestIdDownloaded)
-			if not tweetResponse[0]:
-				self.logError("[STTip] Something went wrong while downloading new tweets for '{}', skipping".format(username))
+			try:
+				tweets = TwitterUtil.downloadTweets(username, downloadNewerThanId=highestIdDownloaded)
+			except WebRequestException as we:
+				self.logError("[STTip] Something went wrong while downloading new tweets for '{}', skipping: {}".format(username, we))
 				continue
 			#If there aren't any tweets, stop here
-			if len(tweetResponse[1]) == 0:
+			if len(tweets) == 0:
 				continue
-			tweets = tweetResponse[1]
 			#Reverse tweets so they're from old to new. That way when we write them to file, the entire file will be old to new
 			# Not necessary but neat
 			tweets.reverse()
