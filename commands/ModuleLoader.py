@@ -1,6 +1,7 @@
 from CommandTemplate import CommandTemplate
 import GlobalStore
 from IrcMessage import IrcMessage
+from CustomExceptions import CommandException
 
 
 class Command(CommandTemplate):
@@ -34,17 +35,16 @@ class Command(CommandTemplate):
 		if not modulename:
 			reply = u"That is not a module I'm familiar with, sorry"
 		else:
-			if message.trigger == 'load':
-				result = GlobalStore.commandhandler.loadCommand(modulename)
-			elif message.trigger == 'unload':
-				result = GlobalStore.commandhandler.unloadCommand(modulename)
-			#Only 'reload' is left as a possibility
-			else:
-				result = GlobalStore.commandhandler.reloadCommand(modulename)
-
-			if not result[0]:
-				reply = u"There was an error {}ing module '{}': {}".format(message.trigger, modulename, result[1])
+			try:
+				if message.trigger == 'load':
+					GlobalStore.commandhandler.loadCommand(modulename)
+				elif message.trigger == 'unload':
+					GlobalStore.commandhandler.unloadCommand(modulename)
+				#Only 'reload' is left as a possibility
+				else:
+					GlobalStore.commandhandler.reloadCommand(modulename)
+			except CommandException as ce:
+				reply = u"There was an error {}ing module '{}': {}".format(message.trigger, modulename, ce.displayMessage)
 			else:
 				reply = u"Module '{}' successfully {}ed".format(modulename, message.trigger)
-
 		message.reply(reply, "say")

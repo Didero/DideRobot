@@ -143,43 +143,44 @@ class CommandHandler:
 	
 	def loadCommands(self, folder='commands'):
 		modulesToIgnore = ('__init__.py', 'CommandTemplate.py')
-		success = True
-		errors = []
+		commandsWithErrors = []
 		self.logger.info("Loading commands from subfolder '{}'".format(folder))
 		for commandFile in os.listdir(os.path.join(GlobalStore.scriptfolder, folder)):
 			if not commandFile.endswith(".py"):
 				continue
-			if commandFile in modulesToIgnore or commandFile[:-3] in modulesToIgnore:
+			commandName = commandFile[:-3]
+			if commandFile in modulesToIgnore or commandName in modulesToIgnore:
 				continue
-			loadResult = self.loadCommand(commandFile[:-3], folder)
-			if not loadResult[0]:
-				success = False
-				errors.append(loadResult[1])
-		return (success, errors)
+			try:
+				self.loadCommand(commandName, folder)
+			except CommandException:
+				commandsWithErrors.append(commandName)
+		return commandsWithErrors
 		
 	def loadCommand(self, name, folder='commands'):
 		self.logger.info("Loading command '{}.{}".format(folder, name))
 		commandFilename = os.path.join(GlobalStore.scriptfolder, folder, name + '.py')
 		if not os.path.exists(commandFilename):
 			self.logger.warning("File '{}' does not exist, aborting".format(commandFilename))
-			return (False, "File '{}' does not exist".format(name))
+			raise CommandException("File '{}' does not exist".format(name))
 		try:
 			loadedModule = importlib.import_module(folder + '.' + name)
 			#Since the module may already have been loaded in the past, make sure we have the latest version
 			reload(loadedModule)
 			command = loadedModule.Command()
 			self.commands[name] = command
-			return (True, "Successfully loaded file '{}'".format(name))
+			return command
 		except Exception as e:
-			self.logger.error("An error occurred while trying to load command '{}'".format(name), exc_info=True)
-			return (False, e)
+			exceptionName = e.__class__.__name__
+			self.logger.error("A {} error occurred while trying to load command '{}': {}".format(exceptionName, name, e), exc_info=True)
+			raise CommandException("{} exception occurred while loading command '{}'".format(exceptionName, name))
 
 	def unloadCommand(self, name, folder='commands'):
 		fullname = "{}.{}".format(folder, name)
 		self.logger.info("Unloading module '{}'".format(fullname))
 		if name not in self.commands:
 			self.logger.warning("Asked to unload module '{}', but it was not found in command list".format(fullname))
-			return (False, "Module '{}' not in command list".format(name))
+			raise CommandException("Module '{}' not in command list".format(name))
 		try:
 			#Inform the module it's being unloaded
 			self.commands[name].unload()
@@ -194,26 +195,25 @@ class CommandHandler:
 				self.logger.info("Removing {} registered command functions".format(len(functionsToRemove)))
 				for funcToRemove in functionsToRemove:
 					del self.commandFunctions[funcToRemove]
-			return (True, "Module '{}' successfully unloaded".format(name))
 		except Exception as e:
-			self.logger.error("An error occurred while trying to unload '{}'".format(name), exc_info=True)
-			return (False, e)
+			exceptionName = e.__class__.__name__
+			self.logger.error("A {}error occurred while trying to unload '{}': {}".format(exceptionName, name, e), exc_info=True)
+			raise CommandException("{} exception occurred while unloading command '{}'".format(exceptionName, name))
 
 	def unloadAllCommands(self):
 		self.logger.info("Unloading all commands")
+		commandsWithErrors = []
 		#Take the keys instead of iteritems() to prevent size change errors
 		for commandname in self.commands.keys():
-			self.unloadCommand(commandname)
+			try:
+				self.unloadCommand(commandname)
+			except CommandException:
+				commandsWithErrors.append(commandname)
+		return commandsWithErrors
 		
 	def reloadCommand(self, name, folder='commands'):
 		if name in self.commands:
-			result = self.unloadCommand(name, folder)
-			if not result[0]:
-				return (False, result[1])
-			result = self.loadCommand(name, folder)
-			if not result[0]:
-				return (False, result[1])
-			return (True, "Successfully reloaded command '{}'".format(name))
+			self.unloadCommand(name, folder)
+			self.loadCommand(name, folder)
 		else:
-			self.logger.warning("Told to reload '{}' but it's not in command list".format(name))
-			return (False, "Unknown command '{}'".format(name))
+			raise CommandException("Told to reload '{}' but it's not in command list".format(name))
