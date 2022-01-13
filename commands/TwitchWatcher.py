@@ -314,7 +314,7 @@ class Command(CommandTemplate):
 		:param streamername: The name of the streamer to get info on
 		:param serverChannelString: The server-channel pair where the request originated from. Needed to determine whether we need to use a nickname
 		:param shouldIncludeUrl: Whether the output should include a link to the Twitch channel at the end of the output
-		:return: A user-aimed message describing whether the action succeeded or not
+		:return: A user-aimed message giving info on the provided streamer
 		"""
 		# Check if we happen to have the streamer's ID on file, saves retrieving it
 		channelInfo = None
