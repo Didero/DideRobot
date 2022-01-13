@@ -54,3 +54,9 @@ class SettingException(BaseCustomException):
 	This custom exception gets thrown when something is wrong with a bot setting
 	"""
 	pass
+
+class WebRequestException(BaseCustomException):
+	"""
+	This custom exception gets thrown when a web request goes wrong, either through timeout, a missing API key, or something else
+	"""
+	pass
