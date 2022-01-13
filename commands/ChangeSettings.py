@@ -3,6 +3,7 @@ import os, re
 from CommandTemplate import CommandTemplate
 import GlobalStore
 from IrcMessage import IrcMessage
+from CustomExceptions import SettingException
 
 
 class Command(CommandTemplate):
@@ -55,14 +56,15 @@ class Command(CommandTemplate):
 				#Store the value in case we need to add it back in
 				value = settings[settingsKey]
 				del settings[settingsKey]
-				verifyResult, verifyMessage = self.verifyAndParseSettings(message.bot, settingsKey, value)
-				if verifyResult:
-					return message.reply(u"Successfully removed setting '{}'".format(settingsKey))
-				else:
-					#Inform the user something went wrong
-					self.logWarning(u"[changeSettings] Deleting key '{}' resulted in a failed verification: {}".format(settingsKey, verifyMessage))
+				try:
+					self.verifyAndParseSettings(message.bot, settingsKey, value)
+				except SettingException as se:
+					# Inform the user something went wrong
+					self.logWarning(u"[changeSettings] Deleting key '{}' resulted in a failed verification: {}".format(settingsKey, se.displayMessage))
 					return message.reply(u"Something went wrong with parsing the settings file after deletion. "
 										 u"The deleted key-value pair has been added back in. Please check the logs for the error that occurred")
+				else:
+					return message.reply(u"Successfully removed setting '{}'".format(settingsKey))
 
 			#All other commands require a third parameter, the new value
 			if message.messagePartsLength == 2:
@@ -88,12 +90,13 @@ class Command(CommandTemplate):
 						return message.reply(u"'{}' is not a valid number, while the '{}' setting requires a numerical value".format(newSettingValue, settingsKey))
 				oldValue = settings.get(settingsKey, None)
 				settings[settingsKey] = newSettingValue
-				verifyResult, verifyMessage = self.verifyAndParseSettings(message.bot, settingsKey, oldValue)
-				if verifyResult:
-					return message.reply(u"Successfully changed the value for '{}' to '{}'".format(settingsKey, settings[settingsKey]))
-				else:
-					self.logWarning(u"[changeSettings] Changing setting '{}' from '{}' to '{}' resulted in failed verification: {}".format(settingsKey, oldValue, newSettingValue, verifyMessage))
+				try:
+					self.verifyAndParseSettings(message.bot, settingsKey, oldValue)
+				except SettingException as se:
+					self.logWarning(u"[changeSettings] Changing setting '{}' from '{}' to '{}' resulted in failed verification: {}".format(settingsKey, oldValue, newSettingValue, se.displayMessage))
 					return message.reply(u"Something went wrong when parsing the change of the value for '{}' to '{}'. Please check the logs".format(settingsKey, settings[settingsKey]))
+				else:
+					return message.reply(u"Successfully changed the value for '{}' to '{}'".format(settingsKey, settings[settingsKey]))
 			elif param == 'add' or param == 'remove':
 				if settingsKey not in settings:
 					return message.reply(u"The setting '{}' does not exist. Check your spelling or use 'setlist' to create the list".format(settingsKey))
@@ -106,12 +109,13 @@ class Command(CommandTemplate):
 					if newSettingValue not in settings[settingsKey]:
 						return message.reply(u"The setting '{}' does not contain the value '{}', so I cannot remove it".format(settingsKey, newSettingValue))
 					settings[settingsKey].remove(newSettingValue)
-				verifyResult, verifyMessage = self.verifyAndParseSettings(message.bot, settingsKey, oldValue)
-				if verifyResult:
-					return message.reply(u"Successfully updated the '{}' list".format(settingsKey))
-				else:
-					self.logWarning(u"[changeSettings] Changing list setting '{}' from '{}' to '{}' resulted in failed verification: {}".format(settingsKey, oldValue, newSettingValue, verifyMessage))
+				try:
+					self.verifyAndParseSettings(message.bot, settingsKey, oldValue)
+				except SettingException as se:
+					self.logWarning(u"[changeSettings] Changing list setting '{}' from '{}' to '{}' resulted in failed verification: {}".format(settingsKey, oldValue, newSettingValue, se.displayMessage))
 					return message.reply(u"Something went wrong when parsing the new settings. Please check the log for errors")
+				else:
+					return message.reply(u"Successfully updated the '{}' list".format(settingsKey))
 
 		elif message.trigger == 'reloadsettings':
 			argument = None
@@ -156,15 +160,14 @@ class Command(CommandTemplate):
 		message.reply(replytext)
 
 	def verifyAndParseSettings(self, bot, changedKey=None, oldValue=None):
-		verifyResult, verifyMessage = bot.settings.verifySettings()
-		if verifyResult:
-			bot.settings.saveSettings()
-			bot.settings.parseSettings()
-			bot.parseSettings()
-			return (True, "Success")
-		else:
+		try:
+			bot.settings.verifySettings()
+		except SettingException as se:
 			if changedKey is not None:
 				bot.settings[changedKey] = oldValue
 				self.verifyAndParseSettings(bot, None, None)
-			return (False, verifyMessage)
-
+			raise se
+		else:
+			bot.settings.saveSettings()
+			bot.settings.parseSettings()
+			bot.parseSettings()

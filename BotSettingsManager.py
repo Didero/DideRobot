@@ -1,6 +1,7 @@
 import logging, json, os
 
 import GlobalStore
+from CustomExceptions import SettingException
 
 
 class BotSettingsManager(object):
@@ -23,9 +24,10 @@ class BotSettingsManager(object):
 		elif not self.loadSettings():
 			self._logger.critical("|SettingsManager {}| Error while loading the settings file".format(self.serverfolder))
 		else:
-			verifyResult, verifyMessage = self.verifySettings()
-			if not verifyResult:
-				self._logger.error("|{}| Error in settings file: {}".format(self.serverfolder, verifyMessage))
+			try:
+				self.verifySettings()
+			except SettingException as se:
+				self._logger.error("|{}| Error in settings file: {}".format(self.serverfolder, se.displayMessage))
 				#Clear the incomplete settings file
 				self.settings = {}
 			else:
@@ -55,13 +57,16 @@ class BotSettingsManager(object):
 			return True
 
 	def verifySettings(self):
-		#Make sure the required settings are in there
+		"""
+		Checks whether some required settings exist and are filled in
+		:return: None
+		:raise SettingException: Raised when a required setting is missing or isn't filled in
+		"""
 		for settingToEnsure in ("server", "port", "nickname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"):
 			if settingToEnsure not in self.settings:
-				return (False, "Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
+				raise SettingException("Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
 			elif isinstance(self.settings[settingToEnsure], (list, unicode)) and len(self.settings[settingToEnsure]) == 0:
-				return (False, "Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder))
-		return (True, "Settings verified")
+				raise SettingException("Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder))
 
 	def parseSettings(self):
 		#All the strings should be strings and not unicode, which makes it a lot easier to use later
