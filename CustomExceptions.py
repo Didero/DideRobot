@@ -48,3 +48,9 @@ class CommandInputException(CommandException):
 		:param displayMessage: The message to show to the user that called the command. This message should explain how the input should be correctly formatted
 		"""
 		super(CommandInputException, self).__init__(displayMessage, False)
+
+class SettingException(BaseCustomException):
+	"""
+	This custom exception gets thrown when something is wrong with a bot setting
+	"""
+	pass
