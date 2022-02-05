@@ -28,7 +28,7 @@ class Command(CommandTemplate):
 	callInThread = True  #If a call causes a card update, make sure that doesn't block the whole bot
 
 	areCardfilesInUse = False
-	dataFormatVersion = '4.5.0'
+	dataFormatVersion = '4.5.1'
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.getFormattedResultFromSearchString)
@@ -202,7 +202,7 @@ class Command(CommandTemplate):
 			searchDict['type'] = 'legendary.+creature.*' + searchDict.get('type', '')
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
-		searchTermsToCorrect = {'set': ('sets', 'setname'), 'colors': ('color', 'colour', 'colours'), 'type': ('types', 'supertypes', 'subtypes'), 'flavor': ('flavour', 'flavortext', 'flavourtext'), 'cmc': ('convertedmanacost', 'manacost')}
+		searchTermsToCorrect = {'set': ('sets', 'setname'), 'colors': ('color', 'colour', 'colours'), 'type': ('types', 'supertypes', 'subtypes'), 'flavor': ('flavour', 'flavortext', 'flavourtext'), 'cmc': ('convertedmanacost', 'manacost', 'manavalue')}
 		for correctTerm, listOfWrongterms in searchTermsToCorrect.iteritems():
 			for wrongTerm in listOfWrongterms:
 				if wrongTerm in searchDict:
@@ -780,9 +780,9 @@ class Command(CommandTemplate):
 		rarityPrefixesToRemove = {'double faced ': 13, 'foil ': 5, 'timeshifted ': 12}  #The numbers are the string length, saves a lot of 'len()' calls. Removing 'double faced' makes the result less accurate but it's far easier this way
 		#Lists of what to do with certain card keys
 		setSpecificCardKeys = ('artist', 'flavor', 'multiverseid', 'number', 'rarity', 'watermark')
-		cardKeysToKeep = ('colors', 'convertedManaCost', 'layout', 'loyalty', 'manaCost', 'name', 'names', 'othercards', 'power', 'text', 'toughness', 'type')
+		cardKeysToKeep = ('colors', 'layout', 'loyalty', 'manaCost', 'manaValue', 'name', 'names', 'othercards', 'power', 'text', 'toughness', 'type')
 		setSpecificCardKeysToRename = {'flavorText': 'flavor', 'multiverseId': 'multiverseid'}
-		cardKeysToRename = {'convertedManaCost': 'cmc', 'manaCost': 'manacost'}
+		cardKeysToRename = {'manaCost': 'manacost', 'manaValue': 'cmc'}
 		keysToFormatNicer = ('manacost', 'text')  #'flavor' also needs to be formatted nicer, but that's done separately since it's a set-specific key, in contrast with the others listed here
 		#Some number fields can be 'null' if they're 'X' on the card, so their value depends on some card text or mana spent. Change that to 'X' in our dataset
 		nullFieldsToX = ('loyalty',)
