@@ -36,12 +36,8 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 
-		#key in alias dict is either the server or a server-channel string
-		server = message.bot.serverfolder
-		serverChannelString = "{} {}".format(server, message.source)
-
 		if message.trigger in self.aliasNameList:
-			self.parseAndSendAlias(server, serverChannelString, message)
+			self.parseAndSendAlias(message)
 			return
 
 		if message.messagePartsLength == 0:
@@ -49,6 +45,8 @@ class Command(CommandTemplate):
 			return
 
 		parameter = message.messageParts[0].lower()
+		server = message.bot.serverfolder
+		serverChannelString = self.createServerChannelString(message.bot.serverfolder, message.source)
 
 		if parameter == "list":
 			aliasNames = []
@@ -154,9 +152,14 @@ class Command(CommandTemplate):
 		else:
 			message.reply("I don't know what to do with the parameter '{}'. Please (re)read the help text for info on how to use this module, or poke my owner(s) if you have questions".format(parameter))
 
-	def parseAndSendAlias(self, server, serverChannelString, message):
+	def parseAndSendAlias(self, message):
+		"""
+		:type message: IrcMessage
+		"""
 		# Alias called, create a new IrcMessage and send it to the CommandHandler
 		# First retrieve the actual alias
+		server = message.bot.serverfolder
+		serverChannelString = self.createServerChannelString(server, message.source)
 		if server in self.aliases and message.trigger in self.aliases[server]:
 			aliasText = self.aliases[server][message.trigger]
 		elif serverChannelString in self.aliases and message.trigger in self.aliases[serverChannelString]:
@@ -185,7 +188,7 @@ class Command(CommandTemplate):
 			# Escape any special grammar characters in the message, otherwise stuff like URLs get parsed wrong because of the /
 			lastMessage = GlobalStore.commandhandler.runCommandFunction('escapeGrammarString', lastMessage, lastMessage)
 			# Pass it along as a variable to the alias
-			variableDict = {u'lastMessage': lastMessage}
+			variableDict[u'lastMessage'] = lastMessage
 		#Always send along parameters
 		parameters = message.messageParts if message.messagePartsLength > 0 else None
 		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, message.trigger,
@@ -211,3 +214,6 @@ class Command(CommandTemplate):
 	def saveAliases(self):
 		with open(os.path.join(GlobalStore.scriptfolder, "data", "Aliases.json"), "w") as aliasFile:
 			aliasFile.write(json.dumps(self.aliases))
+
+	def createServerChannelString(self, server, channel):
+		return "{} {}".format(server, channel)
