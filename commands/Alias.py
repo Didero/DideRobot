@@ -177,7 +177,7 @@ class Command(CommandTemplate):
 		aliasDict[u'CP'] = message.bot.commandPrefix
 		variableDict = None
 		# Pass along the last message so the alias can use it, if needed
-		if u'%lastMessage' in aliasText:
+		if u'lastMessage' in aliasText:
 			lastMessage = GlobalStore.commandhandler.runCommandFunction('getLastMessage', '', server, message.source, '')
 			# Generator module expects all text to be unicode
 			if not isinstance(lastMessage, unicode):
