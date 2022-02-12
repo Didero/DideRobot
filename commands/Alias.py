@@ -172,7 +172,7 @@ class Command(CommandTemplate):
 		aliasDict[u'0'] = message.message if message.messagePartsLength > 0 else u""
 		#  Fill in enough fields for aliases that use numbered fields not to error out
 		for i in xrange(0, 11):
-			aliasDict[str(i+1)] = message.messageParts[i] if i < message.messagePartsLength else u""
+			aliasDict[unicode(i+1)] = message.messageParts[i] if i < message.messagePartsLength else u""
 		aliasDict[u'nick'] = message.userNickname
 		aliasDict[u'CP'] = message.bot.commandPrefix
 		variableDict = None
