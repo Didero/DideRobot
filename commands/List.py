@@ -134,14 +134,13 @@ class Command(CommandTemplate):
 				if isChannelList and message.isPrivateMessage:
 					raise CommandInputException("Creating a channel list doesn't work in private messages, either create a server list or create this list in a channel")
 
-				listname = self.normalizeListname(createParam)  #Is already .lower()'ed
+				listname = self.normalizeListname(createParam)
 				listDescription = ' '.join(createParams).decode('utf-8', errors='replace') if createParams else None
 
 				# Check if the database exists
 				if not self.doTablesExist(cursor):
 					cursor.execute(u"CREATE TABLE lists ("
-								   u"name TEXT NOT NULL, description TEXT, server TEXT NOT NULL, channel TEXT, creator TEXT, creation_date REAL, is_admin_only INTEGER,"
-								   u"PRIMARY KEY (name, server, channel))")
+								   u"id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT, server TEXT NOT NULL, channel TEXT, creator TEXT, creation_date REAL, is_admin_only INTEGER)")
 					cursor.execute(u"CREATE TABLE list_entries ("
 								   u"id INTEGER NOT NULL, list_id INTEGER NOT NULL, text TEXT NOT NULL, creator TEXT, creation_date REAL,"
 								   u"PRIMARY KEY (id, list_id))")
@@ -152,7 +151,8 @@ class Command(CommandTemplate):
 						raise CommandInputException(u"A list with the name '{}' already exists. That's easier for both of us, you just need to add your ideas to that list then!".format(listname))
 
 				# Create the list
-				cursor.execute(u"INSERT INTO lists VALUES (:listname, :description, :servername, :channelname, :creator, :creation_date, :isadmin)",
+				cursor.execute(u"INSERT INTO lists (name, description, server, channel, creator, creation_date, is_admin_only) "
+							   u"VALUES (:listname, :description, :servername, :channelname, :creator, :creation_date, :isadmin)",
 							   {'listname': listname, 'description': listDescription, 'servername': servername, 'channelname': channelname if isChannelList else None,
 								'creator': message.userNickname.decode('utf-8', errors='replace'), 'creation_date': time.time(), 'isadmin': isListAdminOnly if isListAdminOnly else None})
 				connection.commit()
@@ -175,7 +175,7 @@ class Command(CommandTemplate):
 				# Delete all the list entries
 				if entryCount > 0:
 					cursor.execute(u"DELETE FROM list_entries WHERE list_id=?", (listId,))
-				cursor.execute(u"DELETE FROM lists WHERE rowid=?", (listId,))
+				cursor.execute(u"DELETE FROM lists WHERE id=?", (listId,))
 				connection.commit()
 				return message.reply(u"Ok, the '{}' list and its {:,} entr{} are gone forever. I hope none of that was important!".format(listname, entryCount, u'y' if entryCount == 1 else u'ies'), "say")
 
@@ -261,13 +261,13 @@ class Command(CommandTemplate):
 				return message.reply(u"Here's all the entries for the '{}' list{}: {} (Link expires in 10 minutes)".format(listname, u" that match your query" if searchQuery else u"", pasteLink))
 
 			elif subcommand == 'info':
-				listResult = cursor.execute(u"SELECT * FROM lists WHERE rowid=?", (listId,)).fetchone()
+				listResult = cursor.execute(u"SELECT * FROM lists WHERE id=?", (listId,)).fetchone()
 				entryCount = cursor.execute(u"SELECT COUNT(*) FROM list_entries WHERE list_id=?", (listId,)).fetchone()[0]
-				replytext = u"{} list '{}' was created on {} by {}, and has {:,} entr{}".format(u'Channel' if listResult[3] else u'Server', listname, self.formatTimestamp(listResult[5]),
-																							   listResult[4], entryCount, u'y' if entryCount == 1 else u'ies')
-				if listResult[6]:
+				replytext = u"{} list '{}' was created on {} by {}, and has {:,} entr{}".format(u'Channel' if listResult[4] else u'Server', listname, self.formatTimestamp(listResult[6]),
+																							   listResult[5], entryCount, u'y' if entryCount == 1 else u'ies')
+				if listResult[7]:
 					replytext += u". It is admin-only"
-				description = listResult[1]
+				description = listResult[2]
 				if description:
 					replytext += u". Description: {}".format(description)
 				return message.reply(replytext)
@@ -282,7 +282,7 @@ class Command(CommandTemplate):
 					raise CommandInputException("But... those two names are the same, the list is already called that. I don't think that qualifies as 'renaming' then")
 				if self.getBasicListData(cursor, newListname, servername, channelname)[0] is not None:
 					raise CommandInputException(u"The list '{}' already exists, so I can't rename the '{}' list to that".format(newListname, listname))
-				cursor.execute(u"UPDATE lists SET name=? WHERE rowid=?", (newListname, listId))
+				cursor.execute(u"UPDATE lists SET name=? WHERE id=?", (newListname, listId))
 				connection.commit()
 				return message.reply(u"Successfully renamed the '{}' list to '{}'. Don't forget to tell people about the rename though, they might think it got deleted".format(listname, newListname))
 
@@ -294,7 +294,7 @@ class Command(CommandTemplate):
 					if message.messagePartsLength < 3:
 						raise CommandInputException("Please add a description to set. If you just want to remove the existing description, use the 'cleardescription' subcommand")
 					description = " ".join(message.messageParts[2:]).decode('utf-8', errors='replace')
-				cursor.execute(u"UPDATE lists SET description=? WHERE rowid=?", (description, listId))
+				cursor.execute(u"UPDATE lists SET description=? WHERE id=?", (description, listId))
 				connection.commit()
 				return message.reply(u"Successfully {} the description for the '{}' list".format(u'cleared' if subcommand == 'cleardescription' else u'updated', listname), "say")
 
@@ -309,7 +309,7 @@ class Command(CommandTemplate):
 				shouldBeAdminOnly = shouldBeAdminOnly == 'true'
 				if shouldBeAdminOnly is isListAdminOnly:
 					return message.reply(u"The '{}' list is already set to {}admin-only. Saves me updating this database!".format(listname, u'' if isListAdminOnly else u'non-'))
-				cursor.execute(u"UPDATE lists SET is_admin_only=? WHERE rowid=?", (shouldBeAdminOnly, listId))
+				cursor.execute(u"UPDATE lists SET is_admin_only=? WHERE id=?", (shouldBeAdminOnly, listId))
 				connection.commit()
 				return message.reply(u"Successfully made the '{}' list {}admin-only".format(listname, u'' if shouldBeAdminOnly else u'non-'))
 
@@ -337,12 +337,12 @@ class Command(CommandTemplate):
 		# First check if there's a channel list, so we don't accidentally return the serverlist if there's one with the same name
 		result = None
 		if channelname:
-			cursor.execute(u"SELECT rowid, is_admin_only FROM lists WHERE name=? AND server=? AND channel=?", (listname, servername, channelname))
+			cursor.execute(u"SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel=?", (listname, servername, channelname))
 			result = cursor.fetchone()
 		# If no channellist was found, or no channelname was provided, try to find a serverlist
 		if result is None and channelname:
 			# Check if there's a server list
-			result = cursor.execute(u"SELECT rowid, is_admin_only FROM lists WHERE name=? AND server=? AND channel IS NULL", (listname, servername)).fetchone()
+			result = cursor.execute(u"SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel IS NULL", (listname, servername)).fetchone()
 			if result is None:
 				return None, None
 		# SQLite doesn't support booleans, so 'true' is 1 and 'false' is 0. Turn it into a boolean so it's easier and more intuitive to use
