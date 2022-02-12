@@ -1,17 +1,15 @@
-import datetime, time
-import json
-import os
-
-import requests
+import datetime, os, time
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 import GlobalStore
+from util import WebUtil
+from CustomExceptions import WebRequestException
 
 
 class Command(CommandTemplate):
 	triggers = ['log']
-	helptext = u"Posts the log of the given day to Paste.ee. If you don't provide any parameters, it posts today's log." \
+	helptext = u"Posts the log of the given day. If you don't provide any parameters, it posts today's log." \
 			   u" You can also provide a day in 'yyyy-mm-dd' format, or for instance '-1' to get yesterday's log"
 	
 	def execute(self, message):
@@ -20,9 +18,7 @@ class Command(CommandTemplate):
 		"""
 
 		replytext = u""
-		if 'paste.ee' not in GlobalStore.commandhandler.apikeys:
-			replytext = u"The Paste.ee API key was not found. Please tell my owner so they can fix this"
-		elif message.isPrivateMessage:
+		if message.isPrivateMessage:
 			replytext = u"A log of a private conversation? That could lead to all kinds of privacy concerns..."
 		elif not message.bot.messageLogger.shouldKeepChannelLogs:
 			replytext = u"I'm sorry, I was told not to keep logs for this channel"
@@ -58,24 +54,16 @@ class Command(CommandTemplate):
 				if not os.path.exists(logfilename):
 					replytext = u"Sorry, no log for that day was found"
 				else:
-					pasteData = {"key": GlobalStore.commandhandler.apikeys["paste.ee"],
-								 "description": "Log for {} from {}".format(message.source, date.strftime("%Y-%m-%d")),
-								 "format": "json", "paste": u"", "expire": 600}  #Expire value is in supposedly in minutes, but apparently it's in seconds
-
-					#Add the actual log to the paste
+					logtext = u""
 					with open(logfilename, 'r') as logfile:
 						for line in logfile:
-							pasteData["paste"] += line.decode('utf-8')
-
-					#Send the collected data to Paste.ee
-					reply = requests.post("http://paste.ee/api", data=pasteData)
-					if reply.status_code != requests.codes.ok:
-						replytext = u"Something went wrong while trying to upload the log. (HTTP code {})".format(reply.status_code)
+							logtext += line.decode('utf-8')
+					try:
+						pasteLink = WebUtil.uploadText(logtext, "Log for {} from {}".format(message.source, date.strftime("%Y-%m-%d")), 600)
+					except WebRequestException as wre:
+						self.logError("[LogPoster] Uploading log failed: {}".format(wre))
+						replytext = u"Something went wrong with uploading the log, sorry. Either try again in a bit, or tell my owner(s) so they can try to fix it"
 					else:
-						replydata = json.loads(reply.text)
-						if replydata['status'] != 'success':
-							replytext = u"Something went wrong with uploading the log (Code {}: {})".format(replydata['errorcode'], replydata['error'])
-						else:
-							replytext = u"Log uploaded to Paste.ee: {} (Expires in {} minutes)".format(replydata['paste']['link'], pasteData['expire'] / 60)
+						replytext = u"Log uploaded to Paste.ee: {} (Expires in 10 minutes)".format(pasteLink)
 
-		message.bot.sendMessage(message.source, replytext, 'say')
+		message.reply(replytext, 'say')
