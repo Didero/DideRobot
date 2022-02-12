@@ -178,7 +178,8 @@ class Command(CommandTemplate):
 			aliasDict[unicode(i+1)] = message.messageParts[i] if i < message.messagePartsLength else u""
 		aliasDict[u'nick'] = message.userNickname
 		aliasDict[u'CP'] = message.bot.commandPrefix
-		variableDict = None
+		# The grammar module stores some info from the message the grammar file is called from, fill that in here too because some grammar commands use it
+		variableDict = {u'_sourceserver': server, u'_sourcechannel': message.source, u'_sourcenick': message.userNickname}
 		# Pass along the last message so the alias can use it, if needed
 		if u'lastMessage' in aliasText:
 			lastMessage = GlobalStore.commandhandler.runCommandFunction('getLastMessage', '', server, message.source, '')
