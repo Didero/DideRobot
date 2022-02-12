@@ -68,3 +68,9 @@ class IrcMessage(object):
 			#Reply with a notice to a user's notice (not a channel one!), and with a 'say' to anything else
 			messagetype = 'notice' if self.messageType == 'notice' and self.isPrivateMessage else 'say'
 		self.bot.sendMessage(self.source, replytext, messagetype)
+
+	def isSenderAdmin(self):
+		"""
+		:return: True if the person that sent this message is a bot admin, False otherwise
+		"""
+		return self.bot.isUserAdmin(self.user, self.userNickname, self.userAddress)
