@@ -143,7 +143,7 @@ class Command(CommandTemplate):
 								   u"id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT, server TEXT NOT NULL, channel TEXT, creator TEXT, creation_date REAL, is_admin_only INTEGER)")
 					cursor.execute(u"CREATE TABLE list_entries ("
 								   u"id INTEGER NOT NULL, list_id INTEGER NOT NULL, text TEXT NOT NULL, creator TEXT, creation_date REAL,"
-								   u"PRIMARY KEY (id, list_id))")
+								   u"PRIMARY KEY (id, list_id), FOREIGN KEY(list_id) REFERENCES lists(id))")
 				# If the database exists, check whether a list with the provided name already exists for the provided server
 				else:
 					if self.getBasicListData(cursor, listname, servername, channelname)[0] is not None:
