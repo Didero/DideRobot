@@ -1839,6 +1839,18 @@ class GrammarCommands(object):
 		return GrammarCommands.command_generate(argumentList, grammarParseState)
 
 	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_list(argumentList, grammarParseState):
+		"""
+		<$list|listname[|searchquery]>
+		Use the List module to get a random entry from the list specified by 'listname'. Optionally add a searchquery to limit the result to list entries that match the searchquery
+		"""
+		# The 'getRandomListEntry' method needs a servername, a channelname, a listname, and an optional searchquery. The first two are in the variableDict, the second two are the arguments to this command
+		moduleCommandArguments = ['getRandomListEntry', grammarParseState.variableDict[u'_sourceserver'], grammarParseState.variableDict[u'_sourcechannel']]
+		moduleCommandArguments.extend(argumentList)
+		return GrammarCommands.command_modulecommand(moduleCommandArguments, grammarParseState)
+
+	@staticmethod
 	@validateArguments(argumentCount=0)
 	def command_hide(argumentList, grammarParseState):
 		"""
