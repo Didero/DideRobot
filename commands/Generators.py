@@ -1856,7 +1856,7 @@ class GrammarCommands(object):
 		This command stops execution of the generator. The stop message will be displayed to the user.
 		This can be useful if for instance the grammar only accepts certain parameters and a wrong one is provided
 		"""
-		raise GrammarException(argumentList[0], shouldLogError=False)
+		raise GrammarException(argumentList[0] if argumentList[0] else u"Grammar file '{}' execution stopped with Stop command".format(grammarParseState.grammarDict.get('_name', u"[[unknown]]")), shouldLogError=False)
 
 
 class GrammarException(CommandException):
