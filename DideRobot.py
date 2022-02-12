@@ -518,6 +518,9 @@ class DideRobot(object):
 			self.lineSendingGreenlet = gevent.spawn(self.sendLineFromQueue)
 
 	def sendMessage(self, target, messageText, messageType='say'):
+		if not target or not messageText:
+			self.logger.warning("Asked to send an empty message or send a message to an empty target. Target: '{}', messageText: '{}'".format(target, messageText))
+			return
 		#Only say something if we're not muted, or if it's a private message or a notice
 		if not self.isMuted or target[0] not in Constants.CHANNEL_PREFIXES or messageType == 'notice':
 			#Make sure we're not trying to send Unicode
@@ -548,20 +551,20 @@ class DideRobot(object):
 			#Check if the line isn't too long to send
 			if len(line) > Constants.MAX_LINE_LENGTH:
 				if not extraLines:
-					extraLines = [line[Constants.MAX_LINE_LENGTH:]]
-				else:
-					extraLines.insert(0, line[Constants.MAX_LINE_LENGTH:])
-				line = line[:Constants.MAX_LINE_LENGTH]
+					extraLines = []
+				extraLines.insert(0, line[Constants.MAX_LINE_LENGTH + 1:])
+				line = line[:Constants.MAX_LINE_LENGTH + 1]
 			if target[0] not in Constants.CHANNEL_PREFIXES:
 				#If it's a PM, bypass the message queue
 				self.sendLineToServer(line)
 			else:
 				self.queueLineToSend(line)
 			self.messageLogger.log(logtext.format(user=self.nickname, message=messageText), target)
-			#Make sure any extra lines get sent too
+			#Make sure any non-empty extra lines get sent too
 			if extraLines:
 				for extraLine in extraLines:
-					self.sendMessage(target, extraLine, messageType)
+					if extraLine:
+						self.sendMessage(target, extraLine, messageType)
 
 
 	#USER LIST CHECKING FUNCTIONS
