@@ -546,7 +546,7 @@ class DideRobot(object):
 				extraLines = line.splitlines()
 				line = extraLines.pop(0)
 			#Check if the line isn't too long to send
-			if len(line) >= Constants.MAX_LINE_LENGTH:
+			if len(line) > Constants.MAX_LINE_LENGTH:
 				if not extraLines:
 					extraLines = [line[Constants.MAX_LINE_LENGTH:]]
 				else:
