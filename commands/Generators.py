@@ -116,12 +116,9 @@ class Command(CommandTemplate):
 			seedInput = None
 			parameters = message.messageParts[1:]
 
-		try:
-			#Add some variables from the IRC message
-			variableDict = {u'_sourceserver': message.bot.serverfolder, u'_sourcechannel': message.source, u'_sourcenick': message.userNickname}
-			message.reply(Command.executeGrammarByTrigger(trigger=message.messageParts[0].lower(), parameters=parameters, variableDict=variableDict, seedInput=seedInput))
-		except GrammarException as e:
-			raise CommandException(e.message, shouldLogError=e.shouldLogError)
+		#Add some variables from the IRC message
+		variableDict = {u'_sourceserver': message.bot.serverfolder, u'_sourcechannel': message.source, u'_sourcenick': message.userNickname}
+		message.reply(Command.executeGrammarByTrigger(trigger=message.messageParts[0].lower(), parameters=parameters, variableDict=variableDict, seedInput=seedInput))
 
 	@staticmethod
 	def getAvailableTriggers():
@@ -1862,13 +1859,9 @@ class GrammarCommands(object):
 		raise GrammarException(argumentList[0], shouldLogError=False)
 
 
-class GrammarException(Exception):
+class GrammarException(CommandException):
 	def __init__(self, message, shouldLogError=True):
-		self.message = message if message else u"Something went wrong with executing a grammar command"
-		self.shouldLogError = shouldLogError
-
-	def __str__(self):
-		return self.message
+		super(GrammarException, self).__init__(message, shouldLogError)
 
 
 def escapeString(stringToEscape):
