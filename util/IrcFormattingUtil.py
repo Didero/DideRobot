@@ -1,3 +1,5 @@
+import re
+
 #IRC decoration characters, these go before and after the text you want to decorate
 BOLD = '\x02'
 COLOUR = '\x03'
@@ -98,3 +100,17 @@ def makeTextColoured(text, textColour, backgroundColour=-1, clearAllDecorationsA
 			colourString += "0"
 		colourString += str(backgroundColour)
 	return decorateText(colourString + text, clearAllDecorationsAtEnd, COLOUR)
+
+def removeFormatting(text):
+	"""
+	Remove all IRC formatting from the provided text
+	:param text: The text to remove the IRC formatting from
+	:return: The provided text without any IRC formatting
+	"""
+	for formattingChar in (BOLD, CLEAR, ITALIC, UNDERLINE):
+		if formattingChar in text:
+			text = text.replace(formattingChar, '')
+	if COLOUR in text:
+		# The colour character is followed by color numbers
+		text = re.sub(COLOUR + "\d{1,2}(,\d{1,2})?", '', text)
+	return text
