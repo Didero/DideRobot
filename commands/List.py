@@ -176,6 +176,9 @@ class Command(CommandTemplate):
 				if entryCount > 0:
 					cursor.execute(u"DELETE FROM list_entries WHERE list_id=?", (listId,))
 				cursor.execute(u"DELETE FROM lists WHERE id=?", (listId,))
+				# Destroying a large list may leave the database fragmented, the sqlite 'vacuum' command solves that (it's kind of like defragging)
+				# This needs extra diskspace though, because it basically recreates the database file and then replaces the existing file with the new one
+				cursor.execute("VACUUM")
 				connection.commit()
 				return message.reply(u"Ok, the '{}' list and its {:,} entr{} are gone forever. I hope none of that was important!".format(listname, entryCount, u'y' if entryCount == 1 else u'ies'), "say")
 
