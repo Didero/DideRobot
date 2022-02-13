@@ -247,7 +247,7 @@ class Command(CommandTemplate):
 				if len(entries) == 0:
 					return message.reply(u"The '{}' list doesn't have any entries at all, so listing those is easy:  . Done!".format(listname), "say")
 				elif len(entries) == 1:
-					return message.reply(u"The '{}' list only has one entry: {}".format(listname, self.formatEntry(entries[0], True)))
+					return message.reply(u"The '{}' list only has one entry: {}".format(listname, self.formatEntry(entries[0], shouldAddEntryInfo)))
 				# Destructively iterate over the found entries so long lists don't use a lot of memory
 				formattedEntries = []
 				while entries:
