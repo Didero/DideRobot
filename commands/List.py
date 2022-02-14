@@ -28,8 +28,8 @@ class Command(CommandTemplate):
 		if subcommand == 'list':
 			helptext = "{commandPrefix}list list. Lists all available lists for this server and channel"
 		elif subcommand == 'create':
-			helptext = "{commandPrefix}list create (admin) (server/channel) [name] (description). 'admin' is optional and indicates only bot admins can add entries. " \
-					   "'server' means it's a server-wide list, 'channel' means the list is for this channel only; 'channel' is the default if this parameter is missing. " \
+			helptext = "{commandPrefix}list create ('admin') ('server'/'channel') [name] (description). 'admin' is optional and indicates only bot admins can add entries. " \
+					   "'server' means it's a server-wide list, 'channel' means the list is for this channel only; 'channel' is the default when this subcommand is called in a channel, 'server' when called in a private message. " \
 					   "'name' is the name of the list; it can't contain spaces. 'description' is optional and can be a description of the list, which will show up in an 'info' call"
 		else:
 			helptext = "{commandPrefix}list {subcommand} [name]"
@@ -47,7 +47,8 @@ class Command(CommandTemplate):
 			elif subcommand == 'getbyid':
 				helptext += " [id]. Get the entry specified by 'id' from the list specified by 'name'"
 			elif subcommand == 'search':
-				helptext += " [search query]. Searches the list specified by 'name' for entries matching 'search query'"
+				helptext += " [search query]. Searches the list specified by 'name' for entries matching 'search query'. '*' and '%' are multi-character wildcards, '?' and '_' are single-character wildcards. " \
+							"If no wildcards are added, a multi-character wildcard character will be added to the start and end of the provided query"
 			elif subcommand == 'getall':
 				helptext += " [(search query)]. Shows all entries of the list specified by 'name', or only the entries matching the optional search query if one is provided. Uploads the resuls and links them, so it's not spammy"
 			elif subcommand == 'info':
@@ -269,7 +270,7 @@ class Command(CommandTemplate):
 				replytext = u"{} list '{}' was created on {} by {}, and has {:,} entr{}".format(u'Channel' if listResult[4] else u'Server', listname, self.formatTimestamp(listResult[6]),
 																							   listResult[5], entryCount, u'y' if entryCount == 1 else u'ies')
 				if listResult[7]:
-					replytext += u". It is admin-only"
+					replytext += u". Only my admin(s) can add and remove entries from this list"
 				description = listResult[2]
 				if description:
 					replytext += u". Description: {}".format(description)
