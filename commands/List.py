@@ -64,7 +64,7 @@ class Command(CommandTemplate):
 			else:
 				helptext = "Unknown list subcommand '{subcommand}'. Maybe you made a typo? Use '{commandPrefix}help list' to see all the available subcommands"
 		# Some subcommands show more info when the 'listf' command is used instead of 'list'. Add that
-		if subcommand in ('get', 'random', 'getbyid', 'search'):
+		if subcommand in ('get', 'random', 'getbyid', 'search', 'info'):
 			helptext += ". Using '{commandPrefix}listf' instead of '{commandPrefix}list' shows extra info"
 		# Some commands can only be used by bot admins, add that
 		elif subcommand in ('create', 'destroy', 'rename', 'setdescription', 'cleardescription', 'setadmin'):
@@ -267,8 +267,10 @@ class Command(CommandTemplate):
 			elif subcommand == 'info':
 				listResult = cursor.execute(u"SELECT * FROM lists WHERE id=?", (listId,)).fetchone()
 				entryCount = cursor.execute(u"SELECT COUNT(*) FROM list_entries WHERE list_id=?", (listId,)).fetchone()[0]
-				replytext = u"{} list '{}' was created on {} by {}, and has {:,} entr{}".format(u'Channel' if listResult[4] else u'Server', listname, self.formatTimestamp(listResult[6]),
-																							   listResult[5], entryCount, u'y' if entryCount == 1 else u'ies')
+				replytext = u"{} list '{}' ".format(u'Channel' if listResult[4] else u'Server', listname)
+				if shouldAddEntryInfo:
+					replytext += u"was created on {} by {} and ".format(self.formatTimestamp(listResult[6]), listResult[5])
+				replytext += u"has {:,} entr{}".format(entryCount, u'y' if entryCount == 1 else u'ies')
 				if listResult[7]:
 					replytext += u". Only my admin(s) can add and remove entries from this list"
 				description = listResult[2]
