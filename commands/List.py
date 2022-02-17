@@ -63,12 +63,12 @@ class Command(CommandTemplate):
 				helptext += " [setAdminOnly]. Sets whether only admins can add and remove entries from the list specified by 'name'. Parameter should be \"true\" or \"false\""
 			else:
 				helptext = "Unknown list subcommand '{subcommand}'. Maybe you made a typo? Use '{commandPrefix}help list' to see all the available subcommands"
-			# Some subcommands show more info when the 'listf' command is used instead of 'list'. Add that
-			if subcommand in ('get', 'random', 'getbyid', 'search'):
-				helptext += ". Using '{commandPrefix}listf' instead of '{commandPrefix}list' shows extra info about the entry"
-			# Some commands can only be used by bot admins, add that
-			elif subcommand in ('create', 'destroy', 'rename', 'setdescription', 'cleardescription', 'setadmin'):
-				helptext += ". This subcommand is admin-only"
+		# Some subcommands show more info when the 'listf' command is used instead of 'list'. Add that
+		if subcommand in ('get', 'random', 'getbyid', 'search'):
+			helptext += ". Using '{commandPrefix}listf' instead of '{commandPrefix}list' shows extra info"
+		# Some commands can only be used by bot admins, add that
+		elif subcommand in ('create', 'destroy', 'rename', 'setdescription', 'cleardescription', 'setadmin'):
+			helptext += ". This subcommand is admin-only"
 		return helptext.format(commandPrefix=message.bot.commandPrefix, subcommand=subcommand)
 
 
