@@ -274,6 +274,8 @@ class Command(CommandTemplate):
 				description = listResult[2]
 				if description:
 					replytext += u". Description: {}".format(description)
+				else:
+					replytext += u". No list description has been set"
 				return message.reply(replytext)
 
 			elif subcommand == 'rename':
