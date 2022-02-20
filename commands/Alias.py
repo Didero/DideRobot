@@ -165,7 +165,7 @@ class Command(CommandTemplate):
 		elif serverChannelString in self.aliases and message.trigger in self.aliases[serverChannelString]:
 			aliasText = self.aliases[serverChannelString][message.trigger]
 		else:
-			self.logWarning("[Alias] Asked to parse alias in message '{}' but that alias doesn't exist".format(message.rawText))
+			# No alias found for the provided trigger on the message's server, abort
 			return
 
 		#Create a grammar dictionary out of the alias text
