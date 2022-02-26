@@ -415,7 +415,7 @@ class Command(CommandTemplate):
 			replytext = u"Sorry, the '{}' list doesn't have any entries that match your search query".format(listname)
 		elif matchCount == 1:
 			matchedEntry = cursor.execute(u"SELECT * FROM list_entries WHERE list_id=? AND text LIKE ?", (listId, searchquery)).fetchone()
-			replytext = u"One match found: {}".format(self.formatEntry(matchedEntry, shouldAddEntryInfo))
+			replytext = self.formatEntry(matchedEntry, shouldAddEntryInfo)
 		else:
 			replytext = self.getRandomEntry(cursor, listId=listId, searchquery=searchquery, shouldAddEntryInfo=shouldAddEntryInfo)
 			if shouldAddEntryInfo:
