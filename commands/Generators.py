@@ -1646,6 +1646,24 @@ class GrammarCommands(object):
 		return Command.numberToText(argumentList[0])
 
 	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_escape(argumentList, grammarParseState):
+		"""
+		<$escape|stringToEscape>
+		Escapes all the special grammar command characters in the provided string, so the resulting string doesn't get executed as a grammar command
+		"""
+		return escapeString(argumentList[0])
+
+	@staticmethod
+	@validateArguments(argumentCount=1)
+	def command_unescape(argumentList, grammarParseState):
+		"""
+		<$unescape|stringToUnscape>
+		Unescapes all the special grammar command characters in the provided string, so the resulting string can get executed as a grammar command
+		"""
+		return unescapeString(argumentList[0])
+
+	@staticmethod
 	@validateArguments(argumentCount=1, numericArgumentIndexes=0)
 	def command_endofformattingblock(argumentList, grammarParseState):
 		"""
