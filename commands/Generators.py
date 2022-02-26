@@ -1884,3 +1884,13 @@ def escapeString(stringToEscape):
 	:return: The provided string with the special characters escaped
 	"""
 	return re.sub(ur"([</|>])", ur"/\1", stringToEscape)
+
+def unescapeString(stringToUnescape):
+	"""
+	Unscape special grammar characters in the provided string
+	Special characters are <, |, and >, and the escape character is /
+	:param stringToUnescape: The string to unescape special grammar characters in
+	:return: The provided string with the special characters unescaped
+	"""
+	return re.sub(ur"/([</|>])", ur"\1", stringToUnescape)
+
