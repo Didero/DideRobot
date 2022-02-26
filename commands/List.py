@@ -386,7 +386,10 @@ class Command(CommandTemplate):
 		entryData = cursor.execute(u"SELECT * FROM list_entries WHERE list_id=:listId{0} LIMIT 1 OFFSET CAST((SELECT COUNT(*) FROM list_entries WHERE list_id=:listId{0}) * :randomFloat AS INT)".format(u" AND text LIKE :query" if searchquery else u''),
 						   {'listId': listId, 'randomFloat': random.random(), 'query': searchquery}).fetchone()
 		if not entryData:
-			return u"Huh, seems the '{}' list is empty. Weird that somebody made a list but then didn't add anything to it".format(listname)
+			if searchquery:
+				return u"The '{}' list doesn't have any entries that match your search query, sorry".format(listname)
+			else:
+				return u"Huh, seems the '{}' list is empty. Weird that somebody made a list but then didn't add anything to it".format(listname)
 		return self.formatEntry(entryData, shouldAddEntryInfo)
 
 	def getRandomListEntry(self, servername, channelname, listname, searchquery=None):
