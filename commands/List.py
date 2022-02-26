@@ -383,7 +383,7 @@ class Command(CommandTemplate):
 
 	def getRandomEntry(self, cursor, listname=None, listId=None, searchquery=None, shouldAddEntryInfo=False):
 		# Inner select is to get a count of entries, the random offset picks a random one of those, the outer select actually retrieves the entry
-		entryData = cursor.execute(u"SELECT * FROM list_entries WHERE list_id=:listId{0} LIMIT 1 OFFSET CAST((SELECT COUNT(*) FROM list_entries WHERE list_id=:listId{0}) * :randomFloat AS INT)".format(" AND text LIKE :query" if searchquery else ''),
+		entryData = cursor.execute(u"SELECT * FROM list_entries WHERE list_id=:listId{0} LIMIT 1 OFFSET CAST((SELECT COUNT(*) FROM list_entries WHERE list_id=:listId{0}) * :randomFloat AS INT)".format(u" AND text LIKE :query" if searchquery else u''),
 						   {'listId': listId, 'randomFloat': random.random(), 'query': searchquery}).fetchone()
 		if not entryData:
 			return u"Huh, seems the '{}' list is empty. Weird that somebody made a list but then didn't add anything to it".format(listname)
