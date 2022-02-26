@@ -1864,9 +1864,8 @@ class GrammarCommands(object):
 		Use the List module to get a random entry from the list specified by 'listname'. Optionally add a searchquery to limit the result to list entries that match the searchquery
 		"""
 		# The 'getRandomListEntry' method needs a servername, a channelname, a listname, and an optional searchquery. The first two are in the variableDict, the second two are the arguments to this command
-		moduleCommandArguments = ['getRandomListEntry', grammarParseState.variableDict[u'_sourceserver'], grammarParseState.variableDict[u'_sourcechannel']]
-		moduleCommandArguments.extend(argumentList)
-		return GrammarCommands.command_modulecommand(moduleCommandArguments, grammarParseState)
+		return GlobalStore.commandhandler.runCommandFunction('getRandomListEntry', u"", grammarParseState.variableDict[u'_sourceserver'], grammarParseState.variableDict[u'_sourcechannel'],
+															 argumentList[0], argumentList[1] if len(argumentList) > 1 else None)
 
 	@staticmethod
 	@validateArguments(argumentCount=0)
