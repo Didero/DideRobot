@@ -406,7 +406,7 @@ class Command(CommandTemplate):
 			listname = self.normalizeListname(listname)
 			listId = self.getBasicListData(cursor, listname, servername, channelname)[0]
 			if listId is None:
-				raise CommandInputException("No matching list found for listname '{}' on server '{}' and channel '{}'".format(listname, servername, channelname))
+				raise CommandInputException(u"No matching list found for listname '{}' on server '{}' and channel '{}'".format(listname, servername, channelname))
 			return self.getRandomEntry(connection.cursor(), listname, listId, self.normalizeSearchQuery(searchquery))
 
 	def searchForEntry(self, cursor, listname, listId, searchquery, shouldAddEntryInfo=False):
