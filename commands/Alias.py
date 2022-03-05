@@ -27,8 +27,6 @@ class Command(CommandTemplate):
 						self.aliasNameList.append(aliasName)
 
 	def shouldExecute(self, message):
-		#Check if we need to respond, ordered from cheapest to most expensive check
-		#  (the allowedMessageTypes list is usually short, most likely shorter than the triggers list)
 		return message.trigger and message.messageType in self.allowedMessageTypes and (message.trigger in self.triggers or message.trigger in self.aliasNameList)
 
 	def execute(self, message):
