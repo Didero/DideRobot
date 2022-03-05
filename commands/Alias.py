@@ -158,12 +158,14 @@ class Command(CommandTemplate):
 		# Alias called, create a new IrcMessage and send it to the CommandHandler
 		# First retrieve the actual alias
 		server = message.bot.serverfolder
-		serverChannelString = self.createServerChannelString(server, message.source)
+		aliasText = None
 		if server in self.aliases and message.trigger in self.aliases[server]:
 			aliasText = self.aliases[server][message.trigger]
-		elif serverChannelString in self.aliases and message.trigger in self.aliases[serverChannelString]:
-			aliasText = self.aliases[serverChannelString][message.trigger]
 		else:
+			serverChannelString = self.createServerChannelString(server, message.source)
+			if serverChannelString in self.aliases and message.trigger in self.aliases[serverChannelString]:
+				aliasText = self.aliases[serverChannelString][message.trigger]
+		if not aliasText:
 			# No alias found for the provided trigger on the message's server, abort
 			return
 
