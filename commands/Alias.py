@@ -144,6 +144,7 @@ class Command(CommandTemplate):
 				#If no other aliases are stored for this server/channel, remove the entire key
 				if len(self.aliases[aliasKey]) == 0:
 					del self.aliases[aliasKey]
+					self.aliasNameList.remove(aliasname)
 				self.saveAliases()
 				message.reply(u"Ok, successfully removed the alias '{}'".format(aliasname), "say")
 
