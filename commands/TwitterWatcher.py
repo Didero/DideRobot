@@ -189,7 +189,7 @@ class Command(CommandTemplate):
 			#To prevent spam, only mention the latest few tweets, in case of somebody posting a LOT in a short timespan
 			if len(tweets) > self.MAX_TWEETS_TO_MENTION:
 				tweetsSkipped = len(tweets) - self.MAX_TWEETS_TO_MENTION
-				tweets = tweets[:self.MAX_TWEETS_TO_MENTION]
+				tweets = tweets[-self.MAX_TWEETS_TO_MENTION:]
 			else:
 				tweetsSkipped = 0
 
