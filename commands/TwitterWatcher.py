@@ -19,7 +19,7 @@ class Command(CommandTemplate):
 	runInThread = True
 
 	watchData = {}  #keys are Twitter usernames, contains fields with highest ID and which channel(s) to report new tweets to, and a display name if specified
-	MAX_TWEETS_TO_MENTION = 2
+	MAX_TWEETS_TO_MENTION = 3
 
 	def onLoad(self):
 		#First retrieve which Twitter accounts we should follow, if that file exists
