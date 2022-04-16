@@ -286,7 +286,7 @@ class Command(CommandTemplate):
 					if attrib in setKeys:
 						for setname in carddata[1].keys():
 							#If this attribute doesn't fit the search criteria, remove this set
-							if not regexDict[attrib].search(carddata[1][setname][attrib]):
+							if attrib not in carddata[1] or not regexDict[attrib].search(carddata[1][setname][attrib]):
 								del carddata[1][setname]
 						#No matching sets left, skip this card
 						if len(carddata[1]) == 0:
