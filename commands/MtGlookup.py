@@ -499,7 +499,15 @@ class Command(CommandTemplate):
 			lineNumber, listOfSetNamesToMatch = matchingCards[matchingCardname]
 			matchingCardname, carddata = json.loads(FileUtil.getLineFromFile(os.path.join("data", "MTGcards.json"), lineNumber)).popitem()
 			#We need to pick a set to link to. Either pick one from the matches list, if it's there, otherwise pick a random one
-			setNameToMatch = random.choice(listOfSetNamesToMatch) if listOfSetNamesToMatch is not None else random.choice(carddata[1].keys())
+			setNamesToCheck = listOfSetNamesToMatch if listOfSetNamesToMatch else carddata[1].keys()
+			# Pick the first set that has both a multiverse id and a number, so we can show as many links as possible. If that's not possible, pick a random one
+			for setName in setNamesToCheck:
+				if 'multiverseid' in carddata[1][setName] and 'number' in carddata[1][setName]:
+					setNameToMatch = setName
+					break
+			else:
+				# No set has a number and multiverseid, pick a random set
+				setNameToMatch = random.choice(setNamesToCheck)
 			setSpecificCardData = carddata[1][setNameToMatch]
 			#Retrieve set info, since we need the setcode
 			with open(os.path.join(GlobalStore.scriptfolder, "data", "MTGsets.json"), 'r') as setfile:
