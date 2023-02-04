@@ -64,3 +64,18 @@ def forceToUnicode(varToForceToUnicode):
 	if not isinstance(varToForceToUnicode, basestring):
 		varToForceToUnicode = str(varToForceToUnicode)
 	return unicode(varToForceToUnicode, encoding='utf-8', errors='replace')
+
+def limitStringLength(stringToShorten, maxLength, suffixes=None, shortenIndicator='[...]'):
+	suffixesLength = 0
+	if suffixes:
+		for suffix in suffixes:
+			suffixesLength += len(suffix)
+	stringLength = len(stringToShorten)
+	if stringLength + suffixesLength <= maxLength:
+		shortenedString = stringToShorten
+	else:
+		shortenedString = stringToShorten[:maxLength - suffixesLength - len(shortenIndicator)] + shortenIndicator
+	if suffixes:
+		for suffix in suffixes:
+			shortenedString += suffix
+	return shortenedString
