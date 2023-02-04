@@ -181,7 +181,7 @@ class Command(CommandTemplate):
 			usernamesToCheck = self.watchData
 		now = datetime.datetime.utcnow()
 		watchDataChanged = False
-		messageAgeCutoff = self.scheduledFunctionTime * 175000 # 1.5  # Give message age a little grace period, so messages can't fall between checks
+		messageAgeCutoff = self.scheduledFunctionTime * 1.5  # Give message age a little grace period, so messages can't fall between checks
 		# Retrieve the latest messages for every account.
 		for username in usernamesToCheck:
 			if username not in self.watchData:
