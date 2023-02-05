@@ -58,7 +58,6 @@ class Command(CommandTemplate):
 		item = xml.find('item')
 		if item is None:  #Specific check otherwise Python prints a warning
 			message.reply("I'm sorry, I didn't find any games called '{}'. Did you make a typo? Or did you just invent a new game?!".format(message.message), "say")
-			print request.content
 			return
 
 		replytext = u"{} ({} players, {} min, {}): ".format(IrcFormattingUtil.makeTextBold(item.find('name').attrib['value']), self.getValueRangeDescription(item, 'minplayers', 'maxplayers'),
