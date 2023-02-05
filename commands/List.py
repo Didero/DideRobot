@@ -381,10 +381,10 @@ class Command(CommandTemplate):
 		outputListname = outputListname.lower()
 		return outputListname
 
-	def getRandomEntry(self, cursor, listname=None, listId=None, searchquery=None, shouldAddEntryInfo=False):
+	def getRandomEntry(self, cursor, listname=None, listId=None, searchquery=None, shouldAddEntryInfo=False, randomGenerator=None):
 		# Inner select is to get a count of entries, the random offset picks a random one of those, the outer select actually retrieves the entry
 		entryData = cursor.execute(u"SELECT * FROM list_entries WHERE list_id=:listId{0} LIMIT 1 OFFSET CAST((SELECT COUNT(*) FROM list_entries WHERE list_id=:listId{0}) * :randomFloat AS INT)".format(u" AND text LIKE :query" if searchquery else u''),
-						   {'listId': listId, 'randomFloat': random.random(), 'query': searchquery}).fetchone()
+						   {'listId': listId, 'randomFloat': randomGenerator.random() if randomGenerator else random.random(), 'query': searchquery}).fetchone()
 		if not entryData:
 			if searchquery:
 				return u"The '{}' list doesn't have any entries that match your search query, sorry".format(listname)
@@ -392,13 +392,14 @@ class Command(CommandTemplate):
 				return u"Huh, seems the '{}' list is empty. Weird that somebody made a list but then didn't add anything to it".format(listname)
 		return self.formatEntry(entryData, shouldAddEntryInfo)
 
-	def getRandomListEntry(self, servername, channelname, listname, searchquery=None):
+	def getRandomListEntry(self, servername, channelname, listname, searchquery=None, randomGenerator=None):
 		"""
 		Get a random entry from the provided list for the provided server and channel
 		:param servername: The name of the server to get the list for
 		:param channelname: The name of the channel to get the list for. Can be empty for a server-list, but even if it's set a server-list will be found if it exists
 		:param listname: The name of the list to get a randomentry from
 		:param searchquery: An optional search query, a random entry will be picked from the entries that match this query. If not provided, a random entry will be picked from all the list entries
+		:param randomGenerator: An optional random generator to use. Useful if you want to have seeded randomness. Should be a random.Random() instance
 		:return: The text of the randomly picked entry
 		"""
 		with sqlite3.connect(self.databasePath) as connection:
@@ -407,7 +408,7 @@ class Command(CommandTemplate):
 			listId = self.getBasicListData(cursor, listname, servername, channelname)[0]
 			if listId is None:
 				raise CommandInputException(u"No matching list found for listname '{}' on server '{}' and channel '{}'".format(listname, servername, channelname))
-			return self.getRandomEntry(connection.cursor(), listname, listId, self.normalizeSearchQuery(searchquery))
+			return self.getRandomEntry(connection.cursor(), listname, listId, self.normalizeSearchQuery(searchquery), randomGenerator)
 
 	def searchForEntry(self, cursor, listname, listId, searchquery, shouldAddEntryInfo=False):
 		matchCount = cursor.execute(u"SELECT COUNT(*) FROM list_entries WHERE list_id=? AND text LIKE ?", (listId, searchquery)).fetchone()[0]
