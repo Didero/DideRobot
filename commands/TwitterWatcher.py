@@ -46,8 +46,12 @@ class Command(CommandTemplate):
 		parameter = message.messageParts[0].lower()
 		serverChannelPair = [message.bot.serverfolder, message.source]  #List not tuple, because JSON can't save tuples and converts them to a list
 
-		#Start with 'list' because that doesn't need an account name
+		#Start with the commands that don't need a username parameter
+		if parameter == 'help':
+			message.reply(self.helptext, 'say')
+			return
 		if parameter == 'list':
+			#List all the accounts we're watching for this channel
 			watchlist = []
 			for username, usernameData in self.watchData.iteritems():
 				if serverChannelPair in usernameData['targets']:
