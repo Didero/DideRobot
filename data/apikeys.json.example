@@ -15,6 +15,12 @@
 		"app_key": "your app key here"
 	}
 	"paste.ee": "your key here",
+	"twitch": {
+		"access_token": "your access token will be generated here", 
+		"client_id": "your client ID here", 
+		"client_secret": "your client secret here", 
+		"expiration_time": "your access token's expiration time will be stored here"
+	},
 	"twitter": {
 		"key": "your key here",
 		"secret": "your secret here",
