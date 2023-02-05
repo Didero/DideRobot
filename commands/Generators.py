@@ -1865,7 +1865,7 @@ class GrammarCommands(object):
 		"""
 		# The 'getRandomListEntry' method needs a servername, a channelname, a listname, and an optional searchquery. The first two are in the variableDict, the second two are the arguments to this command
 		return GlobalStore.commandhandler.runCommandFunction('getRandomListEntry', u"", grammarParseState.variableDict[u'_sourceserver'], grammarParseState.variableDict[u'_sourcechannel'],
-															 argumentList[0], argumentList[1] if len(argumentList) > 1 else None)
+															 argumentList[0], argumentList[1] if len(argumentList) > 1 else None, grammarParseState.random)
 
 	@staticmethod
 	@validateArguments(argumentCount=0)
