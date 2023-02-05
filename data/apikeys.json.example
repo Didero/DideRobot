@@ -9,12 +9,12 @@
 		"username": "your username here"
 	},
 	"mashape": "your key here",
-	"paste.ee": "your key here",
 	"openweathermap": "your key here",
 	"oxforddictionaries": {
 		"app_id": "your app id here",
 		"app_key": "your app key here"
 	}
+	"paste.ee": "your key here",
 	"twitter": {
 		"key": "your key here",
 		"secret": "your secret here",
