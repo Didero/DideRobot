@@ -1,12 +1,13 @@
-import datetime, json, os
+import base64, datetime, json, os
 import HTMLParser
+
+import requests
 
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
 from util import DateTimeUtil
 from util import IrcFormattingUtil
-from util import TwitterUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import WebRequestException
 
@@ -120,12 +121,15 @@ class Command(CommandTemplate):
 		elif parameter == 'latest':
 			#Download the latest tweet for the provided username
 			try:
-				singleTweet = TwitterUtil.downloadTweet(accountNameLowered)
+				tweets = self.downloadTweets(accountNameLowered, 1)
 			except WebRequestException as wre:
 				self.logError("[TwitterWatcher] Error occured while downloading single tweet for user {}: {}".format(accountName, wre))
 				replytext = "Woops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe it's Twitter's fault, in which case all we can do is wait"
 			else:
-				replytext = self.formatNewTweetText(accountName, singleTweet, addTweetAge=True)
+				if not tweets:
+					replytext = "Sorry, I couldn't find any tweets by {}. Maybe they haven't tweeted yet, or maybe you made a typo?".format(accountName)
+				else:
+					replytext = self.formatNewTweetText(accountName, tweets[0], addTweetAge=True)
 		elif parameter == 'setname':
 			#Allow users to set a display name
 			if not isUserBeingWatchedHere:
@@ -150,10 +154,95 @@ class Command(CommandTemplate):
 
 		message.reply(replytext, 'say')
 
+	def updateTwitterToken(self):
+		apikeys = GlobalStore.commandhandler.apikeys
+		if 'twitter' not in apikeys or 'key' not in apikeys['twitter'] or 'secret' not in apikeys['twitter']:
+			self.logError("[TwitterWatcher] No Twitter API key and/or secret found!")
+			return False
+
+		credentials = base64.b64encode("{}:{}".format(apikeys['twitter']['key'], apikeys['twitter']['secret']))
+		headers = {"Authorization": "Basic {}".format(credentials), "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"}
+		data = "grant_type=client_credentials"
+
+		req = requests.post("https://api.twitter.com/oauth2/token", data=data, headers=headers)
+		reply = json.loads(req.text)
+		if 'access_token' not in reply:
+			self.logError("[TwitterWatcher] An error occurred while retrieving Twitter token: " + json.dumps(reply))
+			return False
+
+		if 'twitter' not in apikeys:
+			apikeys['twitter'] = {}
+		apikeys['twitter']['token'] = reply['access_token']
+		apikeys['twitter']['tokentype'] = reply['token_type']
+
+		GlobalStore.commandhandler.saveApiKeys()
+		return True
+
+	def downloadTweets(self, username, maxTweetCount=200, downloadNewerThanId=None, downloadOlderThanId=None, includeReplies=False, includeRetweets=False):
+		# First check if we can even connect to the Twitter API
+		if 'twitter' not in GlobalStore.commandhandler.apikeys or \
+				'token' not in GlobalStore.commandhandler.apikeys['twitter'] or \
+				'tokentype' not in GlobalStore.commandhandler.apikeys['twitter']:
+			self.logInfo("[TwitterWatcher] No twitter token found, retrieving a new one")
+			tokenUpdateSuccess = self.updateTwitterToken()
+			if not tokenUpdateSuccess:
+				self.logError("Unable to retrieve a new Twitter token!")
+				raise WebRequestException("Unable to retrieve Twitter authentication token!")
+
+		# Now download tweets!
+		headers = {'Authorization': "{} {}".format(GlobalStore.commandhandler.apikeys['twitter']['tokentype'], GlobalStore.commandhandler.apikeys['twitter']['token'])}
+		params = {'screen_name': username, 'count': min(200, maxTweetCount), 'trim_user': 'true', 'tweet_mode': 'extended',
+				  'exclude_replies': 'false' if includeReplies else 'true',
+				  'include_rts': True}  # Always get retweets, remove them later if necessary. Needed because 'count' always includes retweets, even if you don't want them
+		if downloadOlderThanId:
+			params['max_id'] = downloadOlderThanId
+
+		tweets = []
+		if downloadNewerThanId:
+			params['since_id'] = downloadNewerThanId
+		req = None
+		while len(tweets) < maxTweetCount:
+			params['count'] = maxTweetCount - len(tweets)  # Get as many tweets as we still need
+			try:
+				req = requests.get("https://api.twitter.com/1.1/statuses/user_timeline.json", headers=headers, params=params, timeout=20.0)
+				apireply = json.loads(req.text)
+			except requests.exceptions.Timeout:
+				self.logError("[TwitterWatcher] Twitter API reply took too long to arrive")
+				raise WebRequestException("Twitter took too long to respond")
+			except ValueError:
+				self.logError(u"[TwitterWatcher] Didn't get parsable JSON return from Twitter API: {}".format(req.text.replace('\n', '|') if req else "[no response retrieved]"))
+				raise WebRequestException("Twitter API returned unexpected data")
+			except Exception as e:
+				self.logError("[TwitterWatcher] Tweet download threw an unexpected error of type '{}': {}".format(type(e), str(e)))
+				raise WebRequestException("Unknown error occurred while retrieving Twitter API data")
+
+			if len(apireply) == 0:
+				# No more tweets to parse!
+				break
+			# Check for errors
+			if isinstance(apireply, dict) and 'errors' in apireply:
+				errorMessages = '; '.join(e['message'] for e in apireply['errors'])
+				self.logError("[TwitterWatcher] Error occurred while retrieving tweets for {}. Parameters: {}; apireply: {}; errors: {}".format(username, params, apireply, errorMessages))
+				raise WebRequestException("The Twitter API reply contained errors")
+			# Sometimes the API does not return a list of tweets for some reason. Catch that
+			if not isinstance(apireply, list):
+				self.logError("[TwitterWatcher] Unexpected reply from Twitter API. Expected tweet list, got {}: {}".format(type(apireply), apireply))
+				raise WebRequestException("The Twitter API reply contained unexpected data")
+			# Tweets are sorted reverse-chronologically, so we can get the highest ID from the first tweet
+			params['since_id'] = apireply[0]['id']
+			# Remove retweets if necessary (done manually to make the 'count' variable be accurate)
+			if not includeRetweets:
+				apireply = [t for t in apireply if 'retweeted_status' not in t]
+			# There are tweets, store those
+			tweets.extend(apireply)
+		return tweets
 
 	def checkForNewTweets(self, usernamesToCheck=None, reportNewTweets=True):
 		if not usernamesToCheck:
 			usernamesToCheck = self.watchData  #Don't use '.keys()' so we don't copy the username list
+		if not usernamesToCheck:
+			return
+
 		now = datetime.datetime.utcnow()
 		watchDataChanged = False
 		tweetAgeCutoff = self.scheduledFunctionTime * 1.1  #Give tweet age a little grace period, so tweets can't fall between checks
@@ -163,7 +252,7 @@ class Command(CommandTemplate):
 				self.logWarning("[TwitterWatcher] Asked to check account '{}' for new tweets, but it is not in the watchlist".format(username))
 				continue
 			try:
-				tweets = TwitterUtil.downloadTweets(username, maxTweetCount=10, downloadNewerThanId=self.watchData[username].get('highestId', None), includeRetweets=False)
+				tweets = self.downloadTweets(username, maxTweetCount=10, downloadNewerThanId=self.watchData[username].get('highestId', None), includeRetweets=False)
 			except WebRequestException as wre:
 				self.logError("[TwitterWatcher] Couldn't retrieve tweets for '{}': {}".format(username, wre))
 				continue
@@ -216,7 +305,6 @@ class Command(CommandTemplate):
 				#If we skipped a few tweets, make a mention of that too
 				if tweetsSkipped > 0:
 					targetbot.sendMessage(targetchannel, "(skipped {:,} of {}'s tweets)".format(tweetsSkipped, self.getDisplayName(username)))
-
 		if watchDataChanged:
 			self.saveWatchData()
 
