@@ -23,16 +23,20 @@ class Command(CommandTemplate):
 		# Go through all the Program.log files to look for errors
 		# Start with any Program.log.[date] files, and then Program.log itself, to keep things chronological
 		errors = []
+		numberOfFilesChecked = 0
 		for fn in os.listdir(GlobalStore.scriptfolder):
 			if fn.startswith('Program.log.'):
 				errors.extend(self.findErrorsInLogFile(os.path.join(GlobalStore.scriptfolder, fn)))
+				numberOfFilesChecked += 1
 		if os.path.isfile(os.path.join(GlobalStore.scriptfolder, 'Program.log')):
 			errors.extend(self.findErrorsInLogFile(os.path.join(GlobalStore.scriptfolder, 'Program.log')))
+			numberOfFilesChecked += 1
 
 		if not errors:
-			message.reply("Hurray, no errors were found. That's because I'm programmed incredibly wlel", 'say')  # The typo in 'wlel' is intentional, it's a joke
+			message.reply("Hurray, no errors were found in the {:,} logfiles I checked. That's because I'm programmed incredibly wlel"  # The typo in 'wlel' is intentional, it's a joke
+						  .format(numberOfFilesChecked), 'say')
 		else:
-			message.reply("Found {:,} error{}:".format(len(errors), '' if len(errors) == 1 else 's'))
+			message.reply("Found {:,} error{} in {:,} logfile{}:".format(len(errors), '' if len(errors) == 1 else 's', numberOfFilesChecked, '' if numberOfFilesChecked == 1 else 's'))
 			for error in errors:
 				message.reply(StringUtil.limitStringLength(error, Constants.MAX_MESSAGE_LENGTH), 'say')
 
