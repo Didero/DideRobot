@@ -3,87 +3,102 @@ import requests
 from CommandTemplate import CommandTemplate
 import GlobalStore
 import Constants
-from util import IrcFormattingUtil
+from CustomExceptions import CommandException, CommandInputException
 
 
 class Command(CommandTemplate):
 	triggers = ['define']
-	helptext = "Looks up the definition of the provided word or term in the Oxford Dictionary. Or tries to, anyway, because language is hard"
+	helptext = "Looks up the definition of the provided word or term. Or tries to, anyway, because language is hard. Add a word type ('noun', 'verb', ect) before your query to get only results of that type"
+
+	termTypeToAbbreviation = {u'adjective': u'adj', u'noun': u'n', u'verb': u'v'}
 
 	def execute(self, message):
 		"""
 		:type message: IrcMessage.IrcMessage
 		"""
-		appId = GlobalStore.commandhandler.apikeys.get('oxforddictionaries', {}).get('app_id', None)
-		appKey = GlobalStore.commandhandler.apikeys.get('oxforddictionaries', {}).get('app_key', None)
-		if not appId or not appKey:
-			return message.reply("Since I don't know a lot of words myself, I need access to the Oxford Dictionaries to help you out here, and I don't seem to have API keys required, sorry! "
-								 "Poke my owner(s), they can probably add them", "say")
+		if 'merriamwebster' not in GlobalStore.commandhandler.apikeys:
+			self.logError("[DictionaryLookup] Missing key for Merriam-Webster API")
+			raise CommandException("Since I don't know a lot of words myself, I need access to the Merriam-Webster Dictionaries, and I don't seem to have the API key required, sorry! "
+								 "Poke my owner(s), they can probably add them", False)
 
 		if message.messagePartsLength == 0:
-			return message.reply("Since I don't have a wordlist handy, I can't just pick a random word to define, so you'll have to enter something to look up. Thanks!", "say")
+			raise CommandInputException("Since I don't have a wordlist handy, I can't just pick a random word to define, so you'll have to enter something to look up. Thanks!")
+
+		termTypeToSearch = None
+		termToDefine = message.message
+		if message.messagePartsLength > 1:
+			# Check if the first parameter is a word type, if so only show definitions of that type
+			firstArg = message.messageParts[0].lower()
+			for termType, abbreviation in self.termTypeToAbbreviation.iteritems():
+				if firstArg == termType or firstArg == abbreviation:
+					termTypeToSearch = termType
+					termToDefine = ' '.join(message.messageParts[1:])
+					break
 
 		try:
-			apiresult = requests.get("https://od-api.oxforddictionaries.com:443/api/v1/entries/en/" + message.message, headers={"app_id": appId, "app_key": appKey},
-									 timeout=10.0)
+			apiresult = requests.get("https://dictionaryapi.com/api/v3/references/collegiate/json/" + termToDefine, params={'key': GlobalStore.commandhandler.apikeys['merriamwebster']}, timeout=15.0)
 		except requests.exceptions.Timeout:
-			return message.reply("Hmm, it took the Oxford site a bit too long to respond. They're probably busy trying to keep up with internet slang or something. Try again in a bit!", "say")
+			raise CommandException("Hmm, it took the dictionary site a bit too long to respond. They're probably busy trying to keep up with internet slang or something. Try again in a bit!")
+		if apiresult.status_code != 200:
+			raise CommandException("Seems like the dictionary site I use isn't feeling well, since they did not send a happy reply. Give them some time to recover, and try again in a bit")
+		# An invalid key or an unknown word both return status code 200. An error returns an error string, and an unknown word just returns an empty result
+		try:
+			apiData = apiresult.json()
+		except Exception as e:
+			self.logError("[DictionaryLookup] API returned invalid JSON, probably an error: {}".format(apiresult.text))
+			raise CommandException("The dictionary API returned an error, for some reason. Maybe try again later, or tell my owner(s)?")
+		if not apiData:
+			return message.reply("That term doesn't exist in the dictionary I use. Either they're behind on slang, or you invented a new word!")
+		if isinstance(apiData[0], (str, unicode)):
+			# If the API returned a list of strings, no direct result was found, but it returned suggestions
+			return message.reply(u"That exact term isn't in this dictionary, but maybe you meant: {}".format(', '.join(apiData)))
 
-		if apiresult.status_code == 404:
-			return message.reply("Apparently that's not a word Oxford Dictionaries knows about. So either it's one of those words only teenagers use, or it doesn't exist. Or you made a typo, which happens to the best of us",
-								 "say")
-		elif apiresult.status_code != 200:
-			return message.reply("Seems like Oxford Dictionary isn't feeling well, since they did not send a happy reply. Give them some time to recover, and try again in a bit", "say")
-		#There's always going to be at least one entry from here on, since otherwise we would've gotten a status code 404 reply
-
-		#The result is in a 'results' field. It can list multiple entries, but since they can be different word types, it could make the output confusing, so just use the first entry for now
-		data = apiresult.json()['results'][0]
-		#In case the found word is different from the entered word, retrieve it from the dataset
-		replytext = IrcFormattingUtil.makeTextBold(data['word'])
-		#Get the word type of the first entry, since that's what we're going to get the definition(s) from. Word type is 'Noun', 'Verb', etc
-		wordType = data['lexicalEntries'][0]['lexicalCategory'].lower()
-		if wordType != 'other':
-			replytext += " ({})".format(wordType)
-		replytext += ": "
-
-		#The actual definitions are inside the 'lexicalEntries' field, which is a list of dictionaries
-		# Each dictionary contains an 'entries' field, which is another list of dictionaries
-		# Each of those dicts has a 'senses' dictionary list, which contains a 'definitions' list
-		#'Eating' the entires list means the definitions will be added in reverse order, but we will be eating that list too, so it'll be reversed again
+		# The definitions are in a list, each entry being a dictionary
+		# Expanded definitions are hidden pretty deep inside a tree, but there's also a 'shortdef' key with a list of short definitions, which is good enough for us
+		loweredTermToDefine = termToDefine.lower()
 		definitions = []
-		while len(data['lexicalEntries']) > 0:
-			lexicalEntry = data['lexicalEntries'].pop()
-			entry = lexicalEntry['entries'].pop()
-			if 'senses' in entry:
-				while entry['senses']:
-					sense = entry['senses'].pop()
-					if 'definitions' in sense:
-						definitions.extend(sense['definitions'])
-					elif 'short_definitions' in sense:
-						definitions.extend(sense['short_definitions'])
-					#Not all words have a definition. Something like 'swum' has a 'crossReferenceMarkers' list that mentions which word it's related to
-					elif 'crossReferenceMarkers' in sense:
-						definitions.extend(sense['crossReferenceMarkers'])
-					else:
-						definitions.append("[definition not found]")
-			#Some words without definition reference the word they're derived from, list that so users can look that word up
-			elif 'derivativeOf' in lexicalEntry:
-				derivative = lexicalEntry['derivativeOf'][0]['text']
-				definitions.append("word is derived from '{}'".format(derivative))
+		relatedTerms = []
+		otherTermTypes = []
+		for definitionEntry in apiData:
+			# The API returns related terms too, skip those (For some reason this field can contain *'s, remove those first)
+			headword = definitionEntry['hwi']['hw'].replace('*', '')
+			if headword.lower() != loweredTermToDefine:
+				relatedTerms.append(headword)
+				continue
+			termType = definitionEntry['fl']
+			if termTypeToSearch and termTypeToSearch != termType:
+				otherTermTypes.append(termType)
+				continue
+			if termType in self.termTypeToAbbreviation:
+				termType = self.termTypeToAbbreviation[termType]
+			for shortDefinition in definitionEntry['shortdef']:
+				definitions.append(u"{} ({})".format(shortDefinition, termType))
 
 		if not definitions:
-			#Apparently we didn't find any good definitions for some reason
-			replytext += "No definitions found, for some reason, even though the word definitely exists. Language is difficult, even for a dictionary"
+			# Apparently we didn't find any good definitions for some reason
+			replytext = u"No exact definitions found, sorry"
+			if otherTermTypes:
+				replytext += ". I did find definitions for a{} {} though".format('n' if otherTermTypes[0][0] in 'aeiou' else '', " or ".join(otherTermTypes))
+			if relatedTerms:
+				replytext += u". Maybe you meant: {}?".format(", ".join(relatedTerms))
 		else:
-			#Keep adding definitions to the output text until we run out of message space
+			replytext = u""
+			# Keep adding definitions to the output text until we run out of message space
 			separatorLength = len(Constants.GREY_SEPARATOR)
-			while definitions and len(replytext) + separatorLength + len(definitions[0]) < Constants.MAX_MESSAGE_LENGTH:
-				replytext += definitions.pop() + Constants.GREY_SEPARATOR
-			#Remove the last trailing separator
-			replytext = replytext[:-separatorLength]
-			#Add how much defitions we skipped, if necessary
-			if len(definitions) > 0:
-				replytext += " ({:,} more)".format(len(definitions))
+			numberOfDefinitionsShown = 0
+			for definition in definitions:
+				if len(replytext) + separatorLength + len(definitions) < Constants.MAX_MESSAGE_LENGTH:
+					replytext += definition + Constants.GREY_SEPARATOR
+					numberOfDefinitionsShown += 1
+			# Remove the last trailing separator
+			if replytext.endswith(Constants.GREY_SEPARATOR):
+				replytext = replytext[:-separatorLength]
+			# Add how many definitions we skipped, if necessary
+			if numberOfDefinitionsShown == 0:
+				# There are definitions, but all of them are too long to show in one message. Show the first one anyway
+				replytext = definitions[0]
+			elif len(definitions) > numberOfDefinitionsShown:
+				replytext += u" ({:,} more)".format(len(definitions) - numberOfDefinitionsShown)
 
 		#Done! Show our result
 		message.reply(replytext, "say")
