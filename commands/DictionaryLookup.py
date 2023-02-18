@@ -1,3 +1,5 @@
+import unicodedata
+
 import requests
 
 from CommandTemplate import CommandTemplate
@@ -55,14 +57,15 @@ class Command(CommandTemplate):
 
 		# The definitions are in a list, each entry being a dictionary
 		# Expanded definitions are hidden pretty deep inside a tree, but there's also a 'shortdef' key with a list of short definitions, which is good enough for us
-		loweredTermToDefine = termToDefine.lower()
+		comparableTermToDefine = unicodedata.normalize('NFKD', unicode(termToDefine.lower(), encoding='utf-8', errors='replace'))
 		definitions = []
 		relatedTerms = []
 		otherTermTypes = []
 		for definitionEntry in apiData:
 			# The API returns related terms too, skip those (For some reason this field can contain *'s, remove those first)
 			headword = definitionEntry['hwi']['hw'].replace('*', '')
-			if headword.lower() != loweredTermToDefine:
+			comparableHeadword = unicodedata.normalize('NFKD', headword.lower())
+			if comparableHeadword != comparableTermToDefine and comparableTermToDefine not in definitionEntry['meta']['stems']:
 				relatedTerms.append(headword)
 				continue
 			termType = definitionEntry['fl']
@@ -72,7 +75,9 @@ class Command(CommandTemplate):
 			if termType in self.termTypeToAbbreviation:
 				termType = self.termTypeToAbbreviation[termType]
 			for shortDefinition in definitionEntry['shortdef']:
-				definitions.append(u"{} ({})".format(shortDefinition, termType))
+				definition = u"{}: ".format(headword) if comparableHeadword != comparableTermToDefine else u""
+				definition += u"{} ({})".format(shortDefinition, termType)
+				definitions.append(definition)
 
 		if not definitions:
 			# Apparently we didn't find any good definitions for some reason
