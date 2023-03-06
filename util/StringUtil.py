@@ -65,7 +65,7 @@ def forceToUnicode(varToForceToUnicode):
 		varToForceToUnicode = str(varToForceToUnicode)
 	return unicode(varToForceToUnicode, encoding='utf-8', errors='replace')
 
-def limitStringLength(stringToShorten, maxLength, suffixes=None, shortenIndicator='[...]'):
+def limitStringLength(stringToShorten, maxLength=Constants.MAX_MESSAGE_LENGTH, suffixes=None, shortenIndicator='[...]'):
 	suffixesLength = 0
 	if suffixes:
 		for suffix in suffixes:
