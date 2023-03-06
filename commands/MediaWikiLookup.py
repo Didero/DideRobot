@@ -70,9 +70,13 @@ class Command(CommandTemplate):
 
 		if 'query' not in apiData or 'pages' not in apiData['query'] or "-1" in apiData['query']['pages']:
 			raise CommandInputException("Seems like {} doesn't have any information on '{}'. Either you made a typo, or you know more about this than all the wiki editors combined!".format(wikiDisplayName, searchQuery))
+		if 'warnings' in apiData:
+			self.logWarning("[MediaWikiLookup] Warning(s) in api result: {}".format(apiData['warnings']))
 
 		# Get the article text, and clean it up a bit
 		articleData = apiData['query']['pages'].popitem()[1]
+		if not 'extract' in articleData:
+			raise CommandException("For some reason {}'s API didn't actually return any article text... Tell my owner(s), maybe they can do something about this?".format(wikiDisplayName))
 		articleText = articleData["extract"]
 		articleUrl = articleData["canonicalurl"]
 		# If we got more text than just from the first section, it's got newlines and a header indicator (multiple '='s in MediaWiki formatting). Only get the first section
