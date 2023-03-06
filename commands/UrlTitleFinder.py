@@ -11,12 +11,13 @@ from CustomExceptions import CommandException
 
 class Command(CommandTemplate):
 
-	triggers = ['http://', 'https://', 'www']
+	triggers = []
 	helptext = "Shows the title of the page somebody just posted a link to"
 	showInCommandList = False
 	callInThread = True  #We can't know how slow sites are, so prevent the bot from locking up on slow sites
 
 	#The maximum time a title look-up is allowed to take
+	urlPrefixes = ('http://', 'https://', 'www')
 	lookupTimeoutSeconds = 5.0
 
 	def shouldExecute(self, message):
@@ -24,8 +25,8 @@ class Command(CommandTemplate):
 			return False
 		if message.messageType != 'say':
 			return False
-		for trigger in self.triggers:
-			if trigger in message.message:
+		for urlPrefix in self.urlPrefixes:
+			if urlPrefix in message.message:
 				return True
 		return False
 
