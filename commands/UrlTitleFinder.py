@@ -102,9 +102,6 @@ class Command(CommandTemplate):
 				return None
 
 	@staticmethod
-		if 'google' not in GlobalStore.commandhandler.apikeys:
-			CommandTemplate.logError("[url] Google API key not found!")
-			return None
 	def retrieveYoutubeTitle(url):
 		#First we need to determine the video ID from something like this: http://www.youtube.com/watch?v=jmAKXADLcxY or http://youtu.be/jmAKXADLcxY
 		videoId = u""
