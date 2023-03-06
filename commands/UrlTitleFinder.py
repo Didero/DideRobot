@@ -171,29 +171,7 @@ class Command(CommandTemplate):
 		if not tweetMatches:
 			CommandTemplate.logWarning("[url] No twitter matches found in '{}'".format(url))
 			return None
-		apikeys = GlobalStore.commandhandler.apikeys
-		if 'twitter' not in apikeys or 'tokentype' not in apikeys['twitter'] or 'token' not in apikeys['twitter']:
-			CommandTemplate.logError("[url] Twitter API token info not found!")
-			return None
-		headers = {"Authorization": "{} {}".format(apikeys['twitter']['tokentype'], apikeys['twitter']['token'])}
-		if 'id' in tweetMatches.groupdict() and tweetMatches.group('id') is not None:
-			#Specific tweet
-			twitterUrl = "https://api.twitter.com/1.1/statuses/show.json?id={id}".format(id=tweetMatches.group('id'))
-			twitterDataPage = requests.get(twitterUrl, headers=headers, timeout=Command.lookupTimeoutSeconds)
-			twitterdata = json.loads(twitterDataPage.text.encode('utf-8'))
-
-			return u"@{username} ({name}): {text} [{timestamp}]".format(username=twitterdata['user']['screen_name'], name=twitterdata['user']['name'],
-													text=twitterdata['text'], timestamp=twitterdata['created_at'])
-		else:
-			#User page
-			twitterUrl = u"https://api.twitter.com/1.1/users/show.json?screen_name={name}".format(name=tweetMatches.group('name'))
-			twitterDataPage = requests.get(twitterUrl, headers=headers, timeout=Command.lookupTimeoutSeconds)
-			twitterdata = json.loads(twitterDataPage.text.encode('utf-8'))
-
-			title = u"{name} (@{screen_name}): {description} ({statuses_count:,} tweets posted, {followers_count:,} followers, following {friends_count:,})"
-			if 'verified' in twitterdata and twitterdata['verified'] is True:
-				title += u". Verified account"
-			return title.format(**twitterdata)
+		return GlobalStore.commandhandler.runCommandFunction('getTweetDescription', None, tweetMatches.group('name'), tweetMatches.group('id'))
 
 	@staticmethod
 	def retrieveWikipediaTitle(url):

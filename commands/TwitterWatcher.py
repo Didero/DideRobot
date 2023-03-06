@@ -23,6 +23,8 @@ class Command(CommandTemplate):
 	MAX_TWEETS_TO_MENTION = 3
 
 	def onLoad(self):
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'getTweetDescription', self.getTweetDescription)
+
 		#First retrieve which Twitter accounts we should follow, if that file exists
 		watchedFilepath = os.path.join(GlobalStore.scriptfolder, 'data', 'WatchedTwitterAccounts.json')
 		if os.path.exists(watchedFilepath):
@@ -335,6 +337,19 @@ class Command(CommandTemplate):
 				if len(formattedTweetText) - len(urldata['url']) + len(urldata['expanded_url']) < 325:
 					formattedTweetText = formattedTweetText.replace(urldata['url'], urldata['expanded_url'])
 		return formattedTweetText
+
+	def getTweetDescription(self, twitterUsername, tweetId):
+		"""
+		Get a display string describing the tweet from the provided ID
+		:param tweetId: The tweet ID to get a description of
+		:return: A display string for the tweet, or None if the tweet couldn't be retrieved
+		"""
+		if not isinstance(tweetId, int):
+			tweetId = int(tweetId, 10)
+		tweetList = self.downloadTweets(username=twitterUsername, downloadNewerThanId=tweetId-1, downloadOlderThanId=tweetId+1, maxTweetCount=1)
+		if not tweetList:
+			return None
+		return self.formatNewTweetText(twitterUsername, tweetList[0], addTweetAge=True)
 
 	@staticmethod
 	def getTweetAge(createdAt, presentTimeToUse=None):
