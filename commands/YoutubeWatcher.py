@@ -3,7 +3,7 @@ import copy, datetime, json, os, re
 import requests
 
 import GlobalStore
-from util import DateTimeUtil, DictUtil
+from util import DateTimeUtil, DictUtil, IrcFormattingUtil, StringUtil
 from CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException, CommandInputException
 
@@ -88,14 +88,17 @@ class Command(CommandTemplate):
 							newVideosPerServerChannelString[serverChannelString] = [newVideoDict]
 						else:
 							newVideosPerServerChannelString[serverChannelString].append(newVideoDict)
+		videoIdToDescription = {}
 		#Now we can report the newly found videos to each IRC channel
 		while newVideosPerServerChannelString:
 			serverChannelString, videoList = newVideosPerServerChannelString.popitem()
 			for videoDict in videoList:
+				videoId = videoDict['videoId']
 				server, channel = serverChannelString.rsplit(' ', 1)
 				if server in GlobalStore.bothandler.bots:
-					message = "{} uploaded '{}' {} ago: https://youtu.be/{}".format(self.watchedPlaylistsData[videoDict['playlistId']]['channelname'], videoDict['title'], self.getVideoAge(videoDict['publishedAt'], 's'), videoDict['videoId'])
-					GlobalStore.bothandler.bots[server].sendMessage(channel, message)
+					if videoId not in videoIdToDescription:
+						videoIdToDescription[videoId] = StringUtil.limitStringLength(u"{}: {}".format(IrcFormattingUtil.makeTextBold("New"), self.getVideoDisplayString(videoId, False)), suffixes=(" | ", "https://youtu.be/", videoId))
+					GlobalStore.bothandler.bots[server].sendMessage(channel, videoIdToDescription[videoId])
 		if shouldSaveWatchedData:
 			#New video info was stored, so save it to disk too
 			self.saveWatchedChannelsData()
@@ -355,3 +358,46 @@ class Command(CommandTemplate):
 					continue
 				matchingPlaylistIds.append(playlistId)
 		return matchingPlaylistIds
+
+	def getVideoDisplayString(self, videoId, includeViewCount=True):
+		"""
+		Gets a display string describing the video of the provided ID
+		:param videoId: The ID to get the display string of
+		:param includeViewCount: Whether the view count should be included in the result
+		:return: The display string describing the video, or None if something went wrong with retrieving the data
+		"""
+		if 'google' not in GlobalStore.commandhandler.apikeys:
+			self.logError("[YoutubeWatcher] Google API key not found!")
+			return None
+
+		googleJson = requests.get("https://www.googleapis.com/youtube/v3/videos", timeout=5, params={'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': GlobalStore.commandhandler.apikeys['google'],
+				  'fields': 'items/snippet(title,channelTitle,description),items/contentDetails/duration,items/statistics(viewCount)'}).json()
+
+		if not googleJson or 'error' in googleJson:
+			self.logError(u"[YoutubeWatcher] ERROR while retrieving info for video ID {}. {}: {}. [{}]".format(videoId, googleJson['error']['code'], googleJson['error']['message'], json.dumps(googleJson).replace('\n',' ')))
+			return None
+		if 'items' not in googleJson or len(googleJson['items']) != 1:
+			CommandTemplate.logError(u"[YoutubeWatcher] Unexpected reply from Google API: {}".format(json.dumps(googleJson).replace('\n', ' ')))
+			return None
+		videoData = googleJson['items'][0]
+		durationtimes = DateTimeUtil.parseIsoDate(videoData['contentDetails']['duration'])
+		durationstring = u""
+		if durationtimes['day'] > 0:
+			durationstring += u"{day} d, "
+		if durationtimes['hour'] > 0:
+			durationstring += u"{hour:02}:"
+		durationstring += u"{minute:02}:{second:02}"
+		durationstring = durationstring.format(**durationtimes)
+		#Check if there's a description
+		description = videoData['snippet']['description'].strip()
+		if not description:
+			description = u"<No description>"
+		else:
+			description = description.replace('\n', ' ')
+
+		resultString = u"{title} by {channel} [{duration}"
+		if includeViewCount:
+			resultString += u", {viewcount:,} views"
+		resultString += u"]: {description}"
+
+		return resultString.format(title=videoData['snippet']['title'].strip(), channel=videoData['snippet']['channelTitle'], duration=durationstring, viewcount=int(videoData['statistics']['viewCount']), description=description)
