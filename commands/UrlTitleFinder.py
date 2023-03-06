@@ -48,7 +48,7 @@ class Command(CommandTemplate):
 				if 'twitch.tv' in url:
 					title = self.retrieveTwitchTitle(url)
 				elif 'youtube.com' in url or 'youtu.be' in url:
-					title = self.retrieveYoutubetitle(url)
+					title = self.retrieveYoutubeTitle(url)
 				elif 'imgur.com' in url:
 					title = self.retrieveImgurTitle(url)
 				elif 'twitter.com' in url:
@@ -102,10 +102,10 @@ class Command(CommandTemplate):
 				return None
 
 	@staticmethod
-	def retrieveYoutubetitle(url):
 		if 'google' not in GlobalStore.commandhandler.apikeys:
 			CommandTemplate.logError("[url] Google API key not found!")
 			return None
+	def retrieveYoutubeTitle(url):
 		#First we need to determine the video ID from something like this: http://www.youtube.com/watch?v=jmAKXADLcxY or http://youtu.be/jmAKXADLcxY
 		videoId = u""
 		if url.count('youtu.be') > 0:
