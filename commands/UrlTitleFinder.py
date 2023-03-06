@@ -6,7 +6,6 @@ import requests
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-from util import DateTimeUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException
 
