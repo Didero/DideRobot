@@ -39,6 +39,8 @@ class Command(CommandTemplate):
 		return datetime.datetime.strptime(publishedAtDateTimeString.replace('.', ''), self.datetimeFormatString)
 
 	def onLoad(self):
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'getYoutubeVideoDescription', self.getVideoDisplayString)
+
 		if 'google' not in GlobalStore.commandhandler.apikeys:
 			self.logError("[YoutubeWatcher] Google API key not found! YoutubeWatcher module will not work")
 			#Disable the automatic scheduled function if we don't have an API key because that won't work

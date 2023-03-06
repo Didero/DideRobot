@@ -118,37 +118,7 @@ class Command(CommandTemplate):
 		if videoId == u"":
 			CommandTemplate.logError(u"[url] No Youtube videoId found in '{}'".format(url))
 			return None
-		googleUrl = "https://www.googleapis.com/youtube/v3/videos"
-		params = {'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': GlobalStore.commandhandler.apikeys['google'],
-				  'fields': 'items/snippet(title,description),items/contentDetails/duration,items/statistics(viewCount,likeCount,dislikeCount)'}
-		googleJson = json.loads(requests.get(googleUrl, params=params, timeout=Command.lookupTimeoutSeconds).text.encode('utf-8'))
-
-		if 'error' in googleJson:
-			CommandTemplate.logError(u"[url] ERROR with Google requests. {}: {}. [{}]".format(googleJson['error']['code'],
-																				   googleJson['error']['message'],
-																				   json.dumps(googleJson).replace('\n',' ')))
-			return None
-		if 'items' not in googleJson or len(googleJson['items']) != 1:
-			CommandTemplate.logError(u"[url] Unexpected reply from Google API: {}".format(json.dumps(googleJson).replace('\n', ' ')))
-			return None
-		videoData = googleJson['items'][0]
-		durationtimes = DateTimeUtil.parseIsoDate(videoData['contentDetails']['duration'])
-		durationstring = u""
-		if durationtimes['day'] > 0:
-			durationstring += u"{day} d, "
-		if durationtimes['hour'] > 0:
-			durationstring += u"{hour:02}:"
-		durationstring += u"{minute:02}:{second:02}"
-		durationstring = durationstring.format(**durationtimes)
-		#Check if there's a description
-		description = videoData['snippet']['description'].strip()
-		if description == u"":
-			description = u"<No description>"
-
-		return u"{title} [{duration}, {viewcount:,} views]: {description}".format(title=videoData['snippet']['title'].strip(),
-																				  duration=durationstring,
-																				  viewcount=int(videoData['statistics']['viewCount']),
-																				  description=description)
+		return GlobalStore.commandhandler.runCommandFunction('getYoutubeVideoDescription', None, videoId, True)
 
 	@staticmethod
 	def retrieveImgurTitle(url):
