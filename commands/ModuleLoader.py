@@ -5,8 +5,8 @@ from CustomExceptions import CommandException
 
 
 class Command(CommandTemplate):
-	triggers = ['load', 'unload', 'reload']
-	helptext = "(Re)loads a module from disk, updating it with any changes, or unloads one"
+	triggers = ['load', 'unload', 'reload', 'reloadall']
+	helptext = "(Re)loads a module from disk, updating it with any changes, or unloads one. 'reloadall' unloads all modules and then loads all of them again"
 	adminOnly = True
 	showInCommandList = False
 	stopAfterThisCommand = True
@@ -15,6 +15,18 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
+
+		# 'reloadall' handling is different from the other triggers, so handle that separately
+		if message.trigger == 'reloadall':
+			moduleCountBeforeUnload = len(GlobalStore.commandhandler.commands)
+			modulesWithUnloadErrors = GlobalStore.commandhandler.unloadAllCommands()
+			modulesWithLoadErrors = GlobalStore.commandhandler.loadCommands()
+			reply = "Unloaded {:,} commands, loaded {:,} commands".format(moduleCountBeforeUnload, len(GlobalStore.commandhandler.commands))
+			if modulesWithUnloadErrors:
+				reply += ". Modules with unload errors: {}".format(", ".format(modulesWithUnloadErrors))
+			if modulesWithLoadErrors:
+				reply += ". Modules with load errors: {}".format(", ".format(modulesWithLoadErrors))
+			return message.reply(reply, "say")
 
 		if message.messagePartsLength == 0:
 			message.reply(u"Please provide the name of a module to {}".format(message.trigger))
