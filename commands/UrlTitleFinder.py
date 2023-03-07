@@ -42,29 +42,21 @@ class Command(CommandTemplate):
 			while url.endswith(")") or url.endswith('/'):
 				url = url[:-1]
 
+			# Go through the methods alphabetically, and use the generic method last
 			title = None
-			try:
-				#There's some special cases for often used pages.
-				if 'twitch.tv' in url:
-					title = self.retrieveTwitchTitle(url)
-				elif 'youtube.com' in url or 'youtu.be' in url:
-					title = self.retrieveYoutubeTitle(url)
-				elif 'imgur.com' in url:
-					title = self.retrieveImgurTitle(url)
-				elif 'twitter.com' in url:
-					title = self.retrieveTwitterTitle(url)
-				elif re.match('https?://en(?:\.m)?\.wikipedia.org/wiki', url, re.IGNORECASE):
-					title = self.retrieveWikipediaTitle(url)
-				#If nothing has been found so far, just display whatever is between the <title> tags
-				if title is None:
-					title = self.retrieveGenericTitle(url)
-			except requests.exceptions.Timeout:
-				self.logError("[url] '{}' took too long to respond, ignoring".format(url))
-			except requests.exceptions.ConnectionError as error:
-				self.logError("[url] A connection error occurred while trying to retrieve '{}': {}".format(url, error))
+			for parseMethod in (self.retrieveImgurTitle, self.retrieveTwitchTitle, self.retrieveTwitterTitle, self.retrieveWikipediaTitle, self.retrieveGenericTitle):
+				try:
+					title = parseMethod(url)
+				except requests.exceptions.Timeout:
+					self.logError("[url] '{}' took too long to respond, ignoring".format(url))
+				except requests.exceptions.ConnectionError as error:
+					self.logError("[url] A connection error occurred while trying to retrieve '{}': {}".format(url, error))
+				else:
+					if title:
+						break
 
 			#Finally, display the result of all the hard work, if there was any
-			if title is not None:
+			if title:
 				replyText = Command.cleanUpRetrievedTitle(title)
 				message.reply(replyText, 'say')
 
@@ -94,19 +86,22 @@ class Command(CommandTemplate):
 	@staticmethod
 	def retrieveTwitchTitle(url):
 		channelmatches = re.search("https?://(?:www\.)?twitch\.tv/([^/]+)/?$", url)
-		if channelmatches:
-			channel = channelmatches.group(1)
-			#Make the TwitchWatcher module look up the streamer info
-			# If that doesn't work for some reason (TwitchWatcher not loaded, Twitch API being down), return None to fall back on the generic lookup
-			try:
-				return GlobalStore.commandhandler.runCommandFunction('getTwitchStreamInfo', None, channel)
-			except CommandException:
-				return None
+		if not channelmatches:
+			return None
+		channel = channelmatches.group(1)
+		#Make the TwitchWatcher module look up the streamer info
+		# If that doesn't work for some reason (TwitchWatcher not loaded, Twitch API being down), return None to fall back on the generic lookup
+		try:
+			return GlobalStore.commandhandler.runCommandFunction('getTwitchStreamInfo', None, channel)
+		except CommandException:
+			return None
 
 	@staticmethod
 	def retrieveYoutubeTitle(url):
+		if 'youtube.com' not in url and 'youtu.be' not in url:
+			return None
 		#First we need to determine the video ID from something like this: http://www.youtube.com/watch?v=jmAKXADLcxY or http://youtu.be/jmAKXADLcxY
-		videoId = u""
+		videoId = None
 		if url.count('youtu.be') > 0:
 			videoId = url[url.rfind('/')+1:]
 		else:
@@ -114,19 +109,17 @@ class Command(CommandTemplate):
 			if videoIdMatch:
 				videoId = videoIdMatch.group(1)
 
-		if videoId == u"":
-			CommandTemplate.logError(u"[url] No Youtube videoId found in '{}'".format(url))
+		if not videoId:
 			return None
 		return GlobalStore.commandhandler.runCommandFunction('getYoutubeVideoDescription', None, videoId, True)
 
 	@staticmethod
 	def retrieveImgurTitle(url):
-		if 'imgur' not in GlobalStore.commandhandler.apikeys or 'clientid' not in GlobalStore.commandhandler.apikeys['imgur']:
-			CommandTemplate.logError("[url] Imgur API key not found!")
-			return None
 		imageIdMatches = re.search('imgur\.com/([^.]+)', url, re.IGNORECASE)
 		if imageIdMatches is None:
-			CommandTemplate.logError("[url] No Imgur ID found in '{}'".format(url))
+			return None
+		if 'imgur' not in GlobalStore.commandhandler.apikeys or 'clientid' not in GlobalStore.commandhandler.apikeys['imgur']:
+			CommandTemplate.logError("[url] Imgur API key not found!")
 			return None
 		imageId = imageIdMatches.group(1)
 		isGallery = False
@@ -171,12 +164,13 @@ class Command(CommandTemplate):
 	def retrieveTwitterTitle(url):
 		tweetMatches = re.search('twitter.com/(?P<name>[^/]+)(?:/status/(?P<id>[^/]+).*)?', url)
 		if not tweetMatches:
-			CommandTemplate.logWarning("[url] No twitter matches found in '{}'".format(url))
 			return None
 		return GlobalStore.commandhandler.runCommandFunction('getTweetDescription', None, tweetMatches.group('name'), tweetMatches.group('id'))
 
 	@staticmethod
 	def retrieveWikipediaTitle(url):
+		if not re.match('https?://en(?:\.m)?\.wikipedia.org/wiki', url, re.IGNORECASE):
+			return None
 		articleTitle = url.rsplit('/', 1)[-1]
 		apiReturn = requests.get("https://en.wikipedia.org/w/api.php", params={'format': 'json', 'utf8': True, 'redirects': True, 'action': 'query', 'prop': 'extracts', 'titles': articleTitle,
 																			   'exchars': Constants.MAX_MESSAGE_LENGTH, 'exlimit': 1, 'explaintext': True, 'exsectionformat': 'plain'})
@@ -188,3 +182,4 @@ class Command(CommandTemplate):
 		articleText = apiData['query']['pages'].popitem()[1]['extract']
 		articleText = re.sub('[\n\t]+', ' ', articleText)
 		return articleText
+
