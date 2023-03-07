@@ -81,8 +81,10 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveGenericTitle(url):
+		# Remove any URL parameters, so we can check the proper URL extension (if any)
+		baseUrl = url.split('?', 1)[0] if '?' in url else url
 		for ext in ('.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf'):
-			if url.endswith(ext):
+			if baseUrl.endswith(ext):
 				return None
 		titlematch = re.search(r'<title ?.*?>(.+?)</title>', requests.get(url, timeout=Command.lookupTimeoutSeconds).text, re.DOTALL | re.IGNORECASE)
 		if titlematch:
