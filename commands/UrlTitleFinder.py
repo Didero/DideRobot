@@ -42,7 +42,7 @@ class Command(CommandTemplate):
 
 			# Go through the methods alphabetically, and use the generic method last
 			title = None
-			for parseMethod in (self.retrieveImgurTitle, self.retrieveTwitchTitle, self.retrieveTwitterTitle, self.retrieveWikipediaTitle, self.retrieveGenericTitle):
+			for parseMethod in (self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveTwitchTitle, self.retrieveTwitterTitle, self.retrieveWikipediaTitle, self.retrieveGenericTitle):
 				try:
 					title = parseMethod(url)
 				except requests.exceptions.Timeout:
@@ -181,3 +181,9 @@ class Command(CommandTemplate):
 		articleText = re.sub('[\n\t]+', ' ', articleText)
 		return articleText
 
+	@staticmethod
+	def retrieveMastodonTitle(url):
+		urlMatch = re.match('https://(?P<server>[^.]+\.[^/]+)/@(?P<user>[^/@]+)(?:@[^/]+)?/(?P<messageid>\d+)', url, re.IGNORECASE)
+		if not urlMatch:
+			return None
+		return GlobalStore.commandhandler.runCommandFunction('getMastodonMessageDescription', None, urlMatch.group('server'), urlMatch.group('user'), urlMatch.group('messageid'))

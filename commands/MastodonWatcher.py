@@ -24,6 +24,8 @@ class Command(CommandTemplate):
 	USERNAME_REGEX = re.compile("@?(?P<name>[^@]+)@(?P<server>.+)")
 
 	def onLoad(self):
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'getMastodonMessageDescription', self.getMessageDescription)
+
 		# Retrieve which accounts we should follow, if that file exists
 		if os.path.exists(self.watchDataFilePath):
 			with open(self.watchDataFilePath, 'r') as watchDataFile:
@@ -301,6 +303,23 @@ class Command(CommandTemplate):
 		# Make sure the message doesn't get too long
 		formattedMessageText = StringUtil.limitStringLength(formattedMessageText, Constants.MAX_MESSAGE_LENGTH, suffixes=[attachmentDescription, Constants.GREY_SEPARATOR, messageData['url'], messageAge])
 		return formattedMessageText
+
+	def getMessageDescription(self, server, username, messageId):
+		"""
+		Get a display string describing the Mastodon message from the provided server, user, and ID
+		:param server: The url to the Mastodon instance
+		:param username: The username of the person that posted the Mastodon message
+		:param messageId: The ID of the Mastodon message
+		:return: A display string for the Mastodon message, or None if it couldn't be retrieved
+		"""
+		if not server.startswith('http'):
+			server = "https://" + server
+		try:
+			response = requests.get("{}/api/v1/statuses/{}".format(server, messageId), timeout=10)
+		except Exception as e:
+			self.logError("[MastodonWatcher] Error while retrieving message id '{}' from Mastodon instance '{}': {}".format(messageId, server, e))
+			return None
+		return self.formatMessage(username, response.json(), addMessageAge=True)
 
 	@staticmethod
 	def getMessageAge(createdAtString, presentTimeToUse=None):
