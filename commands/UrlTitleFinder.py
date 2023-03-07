@@ -65,7 +65,7 @@ class Command(CommandTemplate):
 
 			#Finally, display the result of all the hard work, if there was any
 			if title is not None:
-				replyText = Command.cleanUpRetrievedTitle(u"Title: " + title)
+				replyText = Command.cleanUpRetrievedTitle(title)
 				message.reply(replyText, 'say')
 
 	@staticmethod
