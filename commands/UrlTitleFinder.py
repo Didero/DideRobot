@@ -42,7 +42,7 @@ class Command(CommandTemplate):
 
 			# Go through the methods alphabetically, and use the generic method last
 			title = None
-			for parseMethod in (self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveTwitchTitle, self.retrieveTwitterTitle, self.retrieveWikipediaTitle, self.retrieveGenericTitle):
+			for parseMethod in (self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveTwitchTitle, self.retrieveTwitterTitle, self.retrieveWikipediaTitle, self.retrieveYoutubeTitle, self.retrieveGenericTitle):
 				try:
 					title = parseMethod(url)
 				except requests.exceptions.Timeout:
