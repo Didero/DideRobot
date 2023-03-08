@@ -361,11 +361,12 @@ class Command(CommandTemplate):
 				matchingPlaylistIds.append(playlistId)
 		return matchingPlaylistIds
 
-	def getVideoDisplayString(self, videoId, includeViewCount=True):
+	def getVideoDisplayString(self, videoId, includeViewCount=True, includeUploadDate=True):
 		"""
 		Gets a display string describing the video of the provided ID
 		:param videoId: The ID to get the display string of
 		:param includeViewCount: Whether the view count should be included in the result
+		:param includeUploadDate: If True, the date when the video was uploaded will be included in the output
 		:return: The display string describing the video, or None if something went wrong with retrieving the data
 		"""
 		if 'google' not in GlobalStore.commandhandler.apikeys:
@@ -373,7 +374,7 @@ class Command(CommandTemplate):
 			return None
 
 		googleJson = requests.get("https://www.googleapis.com/youtube/v3/videos", timeout=5, params={'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': GlobalStore.commandhandler.apikeys['google'],
-				  'fields': 'items/snippet(title,channelTitle,description),items/contentDetails/duration,items/statistics(viewCount)'}).json()
+				  'fields': 'items/snippet(title,channelTitle,description,publishedAt),items/contentDetails/duration,items/statistics(viewCount)'}).json()
 
 		if not googleJson or 'error' in googleJson:
 			self.logError(u"[YoutubeWatcher] ERROR while retrieving info for video ID {}. {}: {}. [{}]".format(videoId, googleJson['error']['code'], googleJson['error']['message'], json.dumps(googleJson).replace('\n',' ')))
@@ -397,9 +398,11 @@ class Command(CommandTemplate):
 		else:
 			description = description.replace('\n', ' ')
 
-		resultString = u"{title} by {channel} [{duration}"
+		resultString = u"{title} by {channel} [{duration}".format(title=videoData['snippet']['title'].strip(), channel=videoData['snippet']['channelTitle'], duration=durationstring)
 		if includeViewCount:
-			resultString += u", {viewcount:,} views"
-		resultString += u"]: {description}"
+			resultString += u", {:,} views".format(int(videoData['statistics']['viewCount']))
+		if includeUploadDate:
+			resultString += u", {}".format(videoData['snippet']['publishedAt'].split('T', 1)[0])
+		resultString += u"]: {}".format(description)
 
-		return resultString.format(title=videoData['snippet']['title'].strip(), channel=videoData['snippet']['channelTitle'], duration=durationstring, viewcount=int(videoData['statistics']['viewCount']), description=description)
+		return resultString
