@@ -66,6 +66,14 @@ def forceToUnicode(varToForceToUnicode):
 	return unicode(varToForceToUnicode, encoding='utf-8', errors='replace')
 
 def limitStringLength(stringToShorten, maxLength=Constants.MAX_MESSAGE_LENGTH, suffixes=None, shortenIndicator='[...]'):
+	"""
+	Shorten the provided string to the provided maximum length, optionally with the provided suffixes appended unshortened
+	:param stringToShorten: The string to shorten if it plus the length of the suffixes is longer than the provided maximum length
+	:param maxLength: The maximum length the returned string is allowed to be
+	:param suffixes: Optional suffixes to add after the shortened string. These suffixes will be appended in order, as-is, and their length will be taken into account when shortening the string to shorten
+	:param shortenIndicator: If the string has to be shortened, this indicator will be added to the end of the shortened string to show it's been shortened
+	:return: The provided string optionally appended with the suffixes, with the stringToShorten shortened so that the whole result isn't longer than the maxLength
+	"""
 	suffixesLength = 0
 	suffix = None
 	if suffixes:
