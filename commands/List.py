@@ -408,7 +408,7 @@ class Command(CommandTemplate):
 			listId = self.getBasicListData(cursor, listname, servername, channelname)[0]
 			if listId is None:
 				raise CommandInputException(u"No matching list found for listname '{}' on server '{}' and channel '{}'".format(listname, servername, channelname))
-			return self.getRandomEntry(connection.cursor(), listname, listId, self.normalizeSearchQuery(searchquery), randomGenerator)
+			return self.getRandomEntry(connection.cursor(), listname, listId, self.normalizeSearchQuery(searchquery), randomGenerator=randomGenerator)
 
 	def searchForEntry(self, cursor, listname, listId, searchquery, shouldAddEntryInfo=False):
 		matchCount = cursor.execute(u"SELECT COUNT(*) FROM list_entries WHERE list_id=? AND text LIKE ?", (listId, searchquery)).fetchone()[0]
