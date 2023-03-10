@@ -67,15 +67,14 @@ def forceToUnicode(varToForceToUnicode):
 
 def limitStringLength(stringToShorten, maxLength=Constants.MAX_MESSAGE_LENGTH, suffixes=None, shortenIndicator='[...]'):
 	suffixesLength = 0
+	suffix = None
 	if suffixes:
-		for suffix in suffixes:
-			suffixesLength += len(suffix)
-	stringLength = len(stringToShorten)
-	if stringLength + suffixesLength <= maxLength:
+		suffix = "".join(suffixes)
+		suffixesLength = len(suffix)
+	if len(stringToShorten) + suffixesLength <= maxLength:
 		shortenedString = stringToShorten
 	else:
 		shortenedString = stringToShorten[:maxLength - suffixesLength - len(shortenIndicator)] + shortenIndicator
-	if suffixes:
-		for suffix in suffixes:
-			shortenedString += suffix
+	if suffix:
+		shortenedString += suffix
 	return shortenedString
