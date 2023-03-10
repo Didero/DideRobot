@@ -69,7 +69,10 @@ def limitStringLength(stringToShorten, maxLength=Constants.MAX_MESSAGE_LENGTH, s
 	suffixesLength = 0
 	suffix = None
 	if suffixes:
-		suffix = "".join(suffixes)
+		if isinstance(suffixes, basestring):
+			suffix = suffixes
+		else:
+			suffix = "".join(suffixes)
 		suffixesLength = len(suffix)
 	if len(stringToShorten) + suffixesLength <= maxLength:
 		shortenedString = stringToShorten
