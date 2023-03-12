@@ -334,7 +334,7 @@ class Command(CommandTemplate):
 		#Expand URLs (if it'd fit)
 		if 'urls' in tweetData['entities']:
 			for urldata in tweetData['entities']['urls']:
-				if len(formattedTweetText) - len(urldata['url']) + len(urldata['expanded_url']) < 325:
+				if len(formattedTweetText) - len(urldata['url']) + len(urldata['expanded_url']) <= Constants.MAX_MESSAGE_LENGTH:
 					formattedTweetText = formattedTweetText.replace(urldata['url'], urldata['expanded_url'])
 		return formattedTweetText
 
