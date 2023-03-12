@@ -339,6 +339,7 @@ class Command(CommandTemplate):
 	def getTweetDescription(self, twitterUsername, tweetId):
 		"""
 		Get a display string describing the tweet from the provided ID
+		:param twitterUsername: The username of the person that made the tweet
 		:param tweetId: The tweet ID to get a description of
 		:return: A display string for the tweet, or None if the tweet couldn't be retrieved
 		"""
