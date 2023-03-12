@@ -308,7 +308,7 @@ class Command(CommandTemplate):
 		if watchDataChanged:
 			self.saveWatchData()
 
-	def formatNewTweetText(self, username, tweetData, tweetAge=None, addTweetAge=False):
+	def formatNewTweetText(self, username, tweetData, addTweetAge=False):
 		if addTweetAge:
 			if not tweetAge:
 				tweetAge = self.getTweetAge(tweetData['created_at'])
