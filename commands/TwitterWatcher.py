@@ -314,7 +314,7 @@ class Command(CommandTemplate):
 		if addTweetAge:
 			if not tweetAge:
 				tweetAge = self.getTweetAge(tweetData['created_at'])
-			tweetAge = DateTimeUtil.durationSecondsToText(tweetAge.total_seconds())
+			tweetAge = DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision='m')
 			tweetAge = ' ({} ago)'.format(tweetAge)
 		else:
 			tweetAge = ''
