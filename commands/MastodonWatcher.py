@@ -301,7 +301,7 @@ class Command(CommandTemplate):
 		if len(messageData['media_attachments']) > 0:
 			attachmentDescription = u" (has {})".format(messageData['media_attachments'][0]['type'])
 		# Make sure the message doesn't get too long
-		formattedMessageText = StringUtil.limitStringLength(formattedMessageText, Constants.MAX_MESSAGE_LENGTH, suffixes=[attachmentDescription, Constants.GREY_SEPARATOR, messageData['url'], messageAge])
+		formattedMessageText = StringUtil.limitStringLength(formattedMessageText, suffixes=[attachmentDescription, messageAge, ' | ', messageData['url']])
 		return formattedMessageText
 
 	def getMessageDescription(self, server, username, messageId):
