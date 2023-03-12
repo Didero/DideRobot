@@ -20,6 +20,7 @@ class Command(CommandTemplate):
 
 	watchData = {}  #keys are Twitter usernames, contains fields with highest ID and which channel(s) to report new tweets to, and a display name if specified
 	MAX_TWEETS_TO_MENTION = 3
+	SECONDS_AGE_FOR_FULL_DATE = 604800  # After 7 days, don't list a tweet as '6 days, 7 hours ago', but as the full date
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'getTweetDescription', self.getTweetDescription)
@@ -270,7 +271,7 @@ class Command(CommandTemplate):
 			#Go through the tweets to check if they're not too old to report
 			firstOldTweetIndex = -1
 			for index, tweet in enumerate(tweets):
-				if self.getTweetAge(tweet['created_at'], now).total_seconds() > tweetAgeCutoff:
+				if (now - self.getTweetPostTime(tweet['created_at'])).total_seconds() > tweetAgeCutoff:
 					firstOldTweetIndex = index
 					break
 			#If all tweets are old, stop here
@@ -309,13 +310,15 @@ class Command(CommandTemplate):
 			self.saveWatchData()
 
 	def formatNewTweetText(self, username, tweetData, addTweetAge=False):
+		tweetAge = ''
 		if addTweetAge:
-			if not tweetAge:
-				tweetAge = self.getTweetAge(tweetData['created_at'])
-			tweetAge = DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision='m')
-			tweetAge = ' ({} ago)'.format(tweetAge)
-		else:
-			tweetAge = ''
+			postDateTime = self.getTweetPostTime(tweetData['created_at'])
+			tweetAge = datetime.datetime.utcnow() - postDateTime
+			# For older tweets, list the post date, otherwise list how old it is
+			if tweetAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
+				tweetAge = ' ({})'.format(postDateTime.strftime('%Y-%m-%d'))
+			else:
+				tweetAge = ' ({} ago)'.format(DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision='m'))
 		tweetUrl = "https://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
 		#Remove newlines
 		formattedTweetText = re.sub('\s*\n+\s*', ' | ', tweetData['full_text'])
@@ -351,10 +354,8 @@ class Command(CommandTemplate):
 		return self.formatNewTweetText(twitterUsername, tweetList[0], addTweetAge=True)
 
 	@staticmethod
-	def getTweetAge(createdAt, presentTimeToUse=None):
-		if not presentTimeToUse:
-			presentTimeToUse = datetime.datetime.utcnow()
-		return presentTimeToUse - datetime.datetime.strptime(createdAt, "%a %b %d %H:%M:%S +0000 %Y")
+	def getTweetPostTime(createdAt):
+		return datetime.datetime.strptime(createdAt, "%a %b %d %H:%M:%S +0000 %Y")
 
 	def getDisplayName(self, username, alternativeName=None):
 		if username not in self.watchData:
