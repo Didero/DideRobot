@@ -6,8 +6,7 @@ import requests
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-from util import DateTimeUtil
-from util import IrcFormattingUtil
+from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import WebRequestException
 
@@ -328,9 +327,9 @@ class Command(CommandTemplate):
 			for mediaItem in tweetData['entities']['media']:
 				formattedTweetText = formattedTweetText.replace(mediaItem['url'], u'')
 				formattedTweetText += u"(has {})".format(mediaItem['type'])
-		#Add in all the text around the tweet now, so we get a better sense of message length
-		formattedTweetText = u"{name}: {text}{age}{sep}{url}".format(name=IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), text=formattedTweetText,
-																	 age=tweetAge, sep=Constants.GREY_SEPARATOR, url=tweetUrl)
+		# Finalize the return text, limited to message length
+		formattedTweetText = u"{}: {}".format(IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), formattedTweetText)
+		formattedTweetText = StringUtil.limitStringLength(formattedTweetText, suffixes=(tweetAge, ' | ', tweetUrl))
 		#Expand URLs (if it'd fit)
 		if 'urls' in tweetData['entities']:
 			for urldata in tweetData['entities']['urls']:
