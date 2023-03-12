@@ -301,8 +301,7 @@ class Command(CommandTemplate):
 				targetchannel = target[1].encode('utf-8')  #Make sure it's not a unicode object
 				#Now go tell that channel all about the tweets
 				for tweet in tweets:
-					tweetAge = self.getTweetAge(tweet['created_at'], now)
-					targetbot.sendMessage(targetchannel, self.formatNewTweetText(username, tweet, tweetAge), 'say')
+					targetbot.sendMessage(targetchannel, self.formatNewTweetText(username, tweet), 'say')
 				#If we skipped a few tweets, make a mention of that too
 				if tweetsSkipped > 0:
 					targetbot.sendMessage(targetchannel, "(skipped {:,} of {}'s tweets)".format(tweetsSkipped, self.getDisplayName(username)))
