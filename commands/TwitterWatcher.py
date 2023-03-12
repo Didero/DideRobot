@@ -1,4 +1,4 @@
-import base64, datetime, json, os
+import base64, datetime, json, os, re
 import HTMLParser
 
 import requests
@@ -320,7 +320,7 @@ class Command(CommandTemplate):
 			tweetAge = ''
 		tweetUrl = "https://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
 		#Remove newlines
-		formattedTweetText = tweetData['full_text'].replace('\n\n', '\n').replace('\n', Constants.GREY_SEPARATOR)
+		formattedTweetText = re.sub('\s*\n+\s*', ' | ', tweetData['full_text'])
 		#Fix special characters (convert '&amp;' to '&' for instance)
 		formattedTweetText = HTMLParser.HTMLParser().unescape(formattedTweetText)
 		#Remove the link to the photo at the end, but mention that there is one
