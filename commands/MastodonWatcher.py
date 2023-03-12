@@ -22,6 +22,7 @@ class Command(CommandTemplate):
 	watchData = {}  # keys are usernames, contains fields with highest ID of last message retrieved, which channel(s) to report new messages to, and a display name if specified
 	MAX_MESSAGES_TO_MENTION = 3
 	USERNAME_REGEX = re.compile("@?(?P<name>[^@]+)@(?P<server>.+)")
+	SECONDS_AGE_FOR_FULL_DATE = 604800  # After 7 days, don't list a tweet as '6 days, 7 hours ago', but as the full date
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'getMastodonMessageDescription', self.getMessageDescription)
@@ -199,7 +200,7 @@ class Command(CommandTemplate):
 			# Go through the messages to check if they're not too old to report
 			firstOldMessageIndex = -1
 			for index, message in enumerate(messageList):
-				if self.getMessageAge(message['created_at'], now).total_seconds() > messageAgeCutoff:
+				if (now - self.getMessagePostTime(message['created_at'])).total_seconds() > messageAgeCutoff:
 					firstOldMessageIndex = index
 					break
 			# If all message are old, stop here
@@ -279,12 +280,13 @@ class Command(CommandTemplate):
 	def formatMessage(self, username, messageData, addMessageAge=False):
 		messageAge = ''
 		if addMessageAge:
-			messageAge = self.getMessageAge(messageData['created_at'])
-			messageAge = DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision='m')
-			if messageAge:
-				messageAge = u" ({} ago)".format(messageAge)
+			postDateTime = self.getMessagePostTime(messageData['created_at'])
+			messageAge = datetime.datetime.utcnow() - postDateTime
+			# For older tweets, list the post date, otherwise list how old it is
+			if messageAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
+				messageAge = ' ({})'.format(postDateTime.strftime('%Y-%m-%d'))
 			else:
-				messageAge = u" (just now)"
+				messageAge = ' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision='m'))
 		# Mastodon messages are HTML, so remove all the tags and resolve all the special characters ('&amp;' to '&' for instance)
 		parsedMessage = BeautifulSoup(messageData['content'], 'html.parser')
 		# Mastodon organises newlines into <p> paragraphs, so iterate over those and get the text from them
@@ -322,10 +324,8 @@ class Command(CommandTemplate):
 		return self.formatMessage(username, response.json(), addMessageAge=True)
 
 	@staticmethod
-	def getMessageAge(createdAtString, presentTimeToUse=None):
-		if not presentTimeToUse:
-			presentTimeToUse = datetime.datetime.utcnow()
-		return presentTimeToUse - datetime.datetime.strptime(createdAtString, "%Y-%m-%dT%H:%M:%S.%fZ")
+	def getMessagePostTime(createdAtString):
+		return datetime.datetime.strptime(createdAtString, "%Y-%m-%dT%H:%M:%S.%fZ")
 
 	def getDisplayName(self, username, alternativeName=None):
 		if username not in self.watchData:
