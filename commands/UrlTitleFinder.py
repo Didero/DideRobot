@@ -42,7 +42,8 @@ class Command(CommandTemplate):
 
 			# Go through the methods alphabetically, and use the generic method last
 			title = None
-			for parseMethod in (self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveTwitchTitle, self.retrieveTwitterTitle, self.retrieveWikipediaTitle, self.retrieveYoutubeTitle, self.retrieveGenericTitle):
+			for parseMethod in (self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveSteamTitle, self.retrieveTwitchTitle, self.retrieveTwitterTitle,
+								self.retrieveWikipediaTitle, self.retrieveYoutubeTitle, self.retrieveGenericTitle):
 				try:
 					title = parseMethod(url)
 				except requests.exceptions.Timeout:
@@ -187,3 +188,10 @@ class Command(CommandTemplate):
 		if not urlMatch:
 			return None
 		return GlobalStore.commandhandler.runCommandFunction('getMastodonMessageDescription', None, urlMatch.group('server'), urlMatch.group('user'), urlMatch.group('messageid'))
+
+	@staticmethod
+	def retrieveSteamTitle(url):
+		urlMatch = re.match('https://store.steampowered.com/app/(?P<appid>\d+)(?:/.*)?', url, re.IGNORECASE)
+		if not urlMatch:
+			return None
+		return GlobalStore.commandhandler.runCommandFunction('getSteamAppDescriptionById', None, urlMatch.group('appid'), False)

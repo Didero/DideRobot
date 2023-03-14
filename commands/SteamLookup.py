@@ -1,5 +1,6 @@
 import requests
 
+import GlobalStore
 from CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException, CommandInputException
 from IrcMessage import IrcMessage
@@ -12,6 +13,9 @@ class Command(CommandTemplate):
 
 	MAX_GENRES = 3
 	COUNTRY_PRICES_TO_RETRIEVE = ('US', 'NL', 'UK', 'AU')
+
+	def onLoad(self):
+		GlobalStore.commandhandler.addCommandFunction(__file__, 'getSteamAppDescriptionById', self.getDescriptionFromAppId)
 
 	def execute(self, message):
 		"""
