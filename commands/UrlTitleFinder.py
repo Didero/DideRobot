@@ -132,7 +132,7 @@ class Command(CommandTemplate):
 		imgurUrl = "https://api.imgur.com/3/{type}/{id}".format(type=imageType, id=imageId)
 		imgurDataPage = requests.get(imgurUrl, headers=headers, timeout=Command.lookupTimeoutSeconds)
 		try:
-			imgdata = json.loads(imgurDataPage.text.encode('utf-8'))
+			imgdata = imgurDataPage.json()
 		except ValueError as e:
 			CommandTemplate.logError("[url] Imgur API didn't return JSON for type {} image id {}".format(imageType, imageId))
 			return None
