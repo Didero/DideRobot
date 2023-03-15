@@ -90,8 +90,7 @@ class Command(CommandTemplate):
 			replytext = self.listFollowedStreamer(serverChannelString)
 		elif parameter == "add" or parameter == "follow":
 			if message.messagePartsLength < 2:
-				# At the risk of ruining the joke, the '26 hours' is a reference to Star Trek DS9, not a mistake
-				replytext = "Watch which streamer? I'm on Twitch 26 hours a day so you're going to have to be more specific"
+				replytext = "Watch which streamer? There's at least 26 streamers on Twitch so you're going to have to be more specific"
 			else:
 				shouldAutoReport = message.messagePartsLength > 2 and message.messageParts[2].lower() == 'autoreport'
 				replytext = self.startFollowingStreamer(serverChannelString, streamername, shouldAutoReport)
