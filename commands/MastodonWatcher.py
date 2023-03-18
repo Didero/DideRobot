@@ -288,7 +288,7 @@ class Command(CommandTemplate):
 			else:
 				messageAge = ' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision='m'))
 		# Mastodon messages are HTML, so remove all the tags and resolve all the special characters ('&amp;' to '&' for instance)
-		parsedMessage = BeautifulSoup(messageData['content'], 'html.parser')
+		parsedMessage = BeautifulSoup(messageData['content'].replace(u'<br />', Constants.GREY_SEPARATOR), 'html.parser')
 		# Mastodon organises newlines into <p> paragraphs, so iterate over those and get the text from them
 		messageTextParts = []
 		for paragraph in parsedMessage.find_all('p'):
