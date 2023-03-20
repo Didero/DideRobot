@@ -77,7 +77,10 @@ class Command(CommandTemplate):
 		for ext in ('.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf'):
 			if baseUrl.endswith(ext):
 				return None
-		titlematch = re.search(r'<title ?.*?>(.+?)</title>', requests.get(url, timeout=Command.lookupTimeoutSeconds).text, re.DOTALL | re.IGNORECASE)
+		retrievedPage = requests.get(url, timeout=Command.lookupTimeoutSeconds)
+		if retrievedPage.status_code != 200:
+			return None
+		titlematch = re.search(r'<title ?.*?>(.+?)</title>', retrievedPage.text, re.DOTALL | re.IGNORECASE)
 		if titlematch:
 			return titlematch.group(1)  #No need to do clean-up, that's handled in the main 'execute' function
 		return None
