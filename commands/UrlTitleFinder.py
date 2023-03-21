@@ -38,7 +38,7 @@ class Command(CommandTemplate):
 		if not urlmatch:
 			self.logWarning("[url] Module triggered, but no url found in message '{}'".format(message.message))
 		else:
-			url = urlmatch.group().rstrip(")/")
+			url = urlmatch.group()
 
 			# Go through the methods alphabetically, and use the generic method last
 			title = None
