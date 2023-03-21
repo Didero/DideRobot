@@ -88,9 +88,9 @@ class Command(CommandTemplate):
 		if retrievedPage.status_code != 200:
 			return None
 		titlematch = re.search(r'<title ?.*?>(.+?)</title>', retrievedPage.text, re.DOTALL | re.IGNORECASE)
-		if titlematch:
-			return titlematch.group(1)  #No need to do clean-up, that's handled in the main 'execute' function
-		return None
+		if not titlematch:
+			return None
+		return titlematch.group(1)  # No need to do clean-up, that's handled in the main 'execute' function
 
 	@staticmethod
 	def retrieveTwitchTitle(url):
