@@ -8,6 +8,7 @@ import Constants
 import GlobalStore
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException
+from util import IrcFormattingUtil
 
 class Command(CommandTemplate):
 
