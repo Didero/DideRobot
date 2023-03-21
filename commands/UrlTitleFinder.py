@@ -150,24 +150,18 @@ class Command(CommandTemplate):
 			CommandTemplate.logError("[url] Error while retrieving ImgUr image data: {}".format(imgurDataPage.text.encode('utf-8')))
 			return None
 		imgdata = imgdata['data']
-		if imgdata['title'] is None:
-			imgdata['title'] = u"No Title"
-		title = u"{imgdata[title]} ("
+		titleParts = [imgdata['title'] if imgdata['title'] else u"No Title"]
 		if isGallery:
-			title += u"{imgdata[images_count]} images"
+			titleParts.append(u"{:,} image{}".format(imgdata['images_count'], u's' if imgdata['images_count'] > 1 else u''))
 		else:
-			imgFilesize = imgdata['size'] / 1024.0
-			#Split into two lines because we're only formatting imgFilesize here, and otherwise it errors out on imgdata
-			title += u"{imgdata[width]:,}x{imgdata[height]:,}"
-			title += u"  {imgFilesize:,.0f} kb".format(imgFilesize=imgFilesize)
-		title += u"  {imgdata[views]:,} views"
-		title += u")"
-
+			titleParts.append(u"{:,} x {:,}".format(imgdata['width'], imgdata['height']))
+			titleParts.append(u"{:,.0f} kb".format(imgdata['size'] / 1024.0))
+		titleParts.append(u"{:,} views".format(imgdata['views']))
 		if 'animated' in imgdata and imgdata['animated'] is True:
-			title += u" (Animated)"
+			titleParts.append(u"Animated")
 		if 'nsfw' in imgdata and imgdata['nsfw'] is True:
-			title += u" (NSFW!)"
-		return title.format(imgdata=imgdata)
+			titleParts.append(IrcFormattingUtil.makeTextBold(IrcFormattingUtil.makeTextColoured(u'NSFW', IrcFormattingUtil.Colours.RED)))
+		return Constants.GREY_SEPARATOR.join(titleParts)
 
 	@staticmethod
 	def retrieveTwitterTitle(url):
