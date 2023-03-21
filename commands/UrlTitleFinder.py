@@ -74,7 +74,7 @@ class Command(CommandTemplate):
 	def retrieveGenericTitle(url):
 		# Remove any URL parameters, so we can check the proper URL extension (if any)
 		baseUrl = url.split('?', 1)[0] if '?' in url else url
-		for ext in ('.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf'):
+		for ext in ('.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf', '.gifv', '.mp4', '.webm', '.webp', '.exe', '.deb'):
 			if baseUrl.endswith(ext):
 				return None
 		retrievedPage = requests.get(url, timeout=Command.lookupTimeoutSeconds)
