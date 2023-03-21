@@ -100,7 +100,7 @@ class Command(CommandTemplate):
 				server, channel = serverChannelString.rsplit(' ', 1)
 				if server in GlobalStore.bothandler.bots:
 					if videoId not in videoIdToDescription:
-						videoIdToDescription[videoId] = StringUtil.limitStringLength(u"{}: {}".format(IrcFormattingUtil.makeTextBold("New"), self.getVideoDisplayString(videoId, False)), suffixes=(" | ", "https://youtu.be/", videoId))
+						videoIdToDescription[videoId] = self.getVideoDisplayString(videoId, False, False, True)
 					GlobalStore.bothandler.bots[server].sendMessage(channel, videoIdToDescription[videoId])
 		if shouldSaveWatchedData:
 			#New video info was stored, so save it to disk too
