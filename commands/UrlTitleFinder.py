@@ -113,7 +113,7 @@ class Command(CommandTemplate):
 
 		if not videoId:
 			return None
-		return GlobalStore.commandhandler.runCommandFunction('getYoutubeVideoDescription', None, videoId, True)
+		return GlobalStore.commandhandler.runCommandFunction('getYoutubeVideoDescription', None, videoId, True, True, False)
 
 	@staticmethod
 	def retrieveImgurTitle(url):

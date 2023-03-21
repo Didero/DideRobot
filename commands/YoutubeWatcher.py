@@ -2,6 +2,7 @@ import copy, datetime, json, os, re
 
 import requests
 
+import Constants
 import GlobalStore
 from util import DateTimeUtil, DictUtil, IrcFormattingUtil, StringUtil
 from CommandTemplate import CommandTemplate
@@ -361,12 +362,13 @@ class Command(CommandTemplate):
 				matchingPlaylistIds.append(playlistId)
 		return matchingPlaylistIds
 
-	def getVideoDisplayString(self, videoId, includeViewCount=True, includeUploadDate=True):
+	def getVideoDisplayString(self, videoId, includeViewCount=True, includeUploadDate=True, includeUrl=True):
 		"""
 		Gets a display string describing the video of the provided ID
 		:param videoId: The ID to get the display string of
 		:param includeViewCount: Whether the view count should be included in the result
 		:param includeUploadDate: If True, the date when the video was uploaded will be included in the output
+		:param includeUrl: If True, the URL to the video will be added to the end of the output
 		:return: The display string describing the video, or None if something went wrong with retrieving the data
 		"""
 		if 'google' not in GlobalStore.commandhandler.apikeys:
@@ -398,11 +400,16 @@ class Command(CommandTemplate):
 		else:
 			description = description.replace('\n', ' ')
 
-		resultString = u"{title} by {channel} [{duration}".format(title=videoData['snippet']['title'].strip(), channel=videoData['snippet']['channelTitle'], duration=durationstring)
+		snippetData = videoData['snippet']
+		resultStringParts = [u"{title} {by} {channel}".format(title=snippetData['title'].strip(), by=IrcFormattingUtil.makeTextColoured(u'by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']),
+							 durationstring]
 		if includeViewCount:
-			resultString += u", {:,} views".format(int(videoData['statistics']['viewCount']))
+			resultStringParts.append(u"{:,} views".format(int(videoData['statistics']['viewCount'])))
 		if includeUploadDate:
-			resultString += u", {}".format(videoData['snippet']['publishedAt'].split('T', 1)[0])
-		resultString += u"]: {}".format(description)
+			resultStringParts.append(snippetData['publishedAt'].split('T', 1)[0])
+		resultStringParts.append(description)
 
-		return resultString
+		suffixes = None
+		if includeUrl:
+			suffixes = (Constants.GREY_SEPARATOR, "https://youtu.be/", videoId)
+		return StringUtil.limitStringLength(Constants.GREY_SEPARATOR.join(resultStringParts), suffixes=suffixes)
