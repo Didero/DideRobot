@@ -77,6 +77,13 @@ class Command(CommandTemplate):
 		for ext in ('.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf', '.gifv', '.mp4', '.webm', '.webp', '.exe', '.deb'):
 			if baseUrl.endswith(ext):
 				return None
+		# Only parse text documents, and not images or videos or the like. Retrieve the url header to check the content type
+		headersResponse = requests.head(url, allow_redirects=True, timeout=Command.lookupTimeoutSeconds)
+		if headersResponse.status_code != 200:
+			return None
+		if 'Content-Type' in headersResponse.headers and not headersResponse.headers['Content-Type'].startswith('text'):
+			return None
+		# The URL (most likely) refers to a HTML page, retrieve it and get the title from it
 		retrievedPage = requests.get(url, timeout=Command.lookupTimeoutSeconds)
 		if retrievedPage.status_code != 200:
 			return None
