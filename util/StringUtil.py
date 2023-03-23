@@ -61,6 +61,8 @@ def forceToUnicode(varToForceToUnicode):
 		return varToForceToUnicode
 	if isinstance(varToForceToUnicode, dict):
 		return dictToString(varToForceToUnicode)
+	if isinstance(varToForceToUnicode, int):
+		return u'{}'.format(varToForceToUnicode)
 	if not isinstance(varToForceToUnicode, basestring):
 		varToForceToUnicode = str(varToForceToUnicode)
 	return unicode(varToForceToUnicode, encoding='utf-8', errors='replace')
