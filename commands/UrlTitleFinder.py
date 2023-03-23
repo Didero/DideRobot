@@ -111,16 +111,13 @@ class Command(CommandTemplate):
 		if 'youtube.com' not in url and 'youtu.be' not in url:
 			return None
 		#First we need to determine the video ID from something like this: http://www.youtube.com/watch?v=jmAKXADLcxY or http://youtu.be/jmAKXADLcxY
-		videoId = None
 		if url.count('youtu.be') > 0:
-			videoId = url[url.rfind('/')+1:]
+			videoIdMatch = re.search('youtu\.be/([^?/#]+)', url)
 		else:
 			videoIdMatch = re.search('.+v=([^&#]+)', url)
-			if videoIdMatch:
-				videoId = videoIdMatch.group(1)
-
-		if not videoId:
+		if not videoIdMatch:
 			return None
+		videoId = videoIdMatch.group(1)
 		return GlobalStore.commandhandler.runCommandFunction('getYoutubeVideoDescription', None, videoId, True, True, False)
 
 	@staticmethod
