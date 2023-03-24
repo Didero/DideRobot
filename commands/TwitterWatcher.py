@@ -309,7 +309,7 @@ class Command(CommandTemplate):
 		if watchDataChanged:
 			self.saveWatchData()
 
-	def formatNewTweetText(self, username, tweetData, addTweetAge=False):
+	def formatNewTweetText(self, username, tweetData, addTweetAge=False, addTweetUrl=True):
 		tweetAge = ''
 		if addTweetAge:
 			postDateTime = self.getTweetPostTime(tweetData['created_at'])
@@ -331,7 +331,10 @@ class Command(CommandTemplate):
 				formattedTweetText += u"(has {})".format(mediaItem['type'])
 		# Finalize the return text, limited to message length
 		formattedTweetText = u"{}: {}".format(IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), formattedTweetText)
-		formattedTweetText = StringUtil.limitStringLength(formattedTweetText, suffixes=(tweetAge, ' | ', tweetUrl))
+		suffixes = [tweetAge]
+		if addTweetUrl:
+			suffixes.extend([' | ', tweetUrl])
+		formattedTweetText = StringUtil.limitStringLength(formattedTweetText, suffixes=suffixes)
 		#Expand URLs (if it'd fit)
 		if 'urls' in tweetData['entities']:
 			for urldata in tweetData['entities']['urls']:
@@ -339,11 +342,12 @@ class Command(CommandTemplate):
 					formattedTweetText = formattedTweetText.replace(urldata['url'], urldata['expanded_url'])
 		return formattedTweetText
 
-	def getTweetDescription(self, twitterUsername, tweetId):
+	def getTweetDescription(self, twitterUsername, tweetId, addTweetUrl=True):
 		"""
 		Get a display string describing the tweet from the provided ID
 		:param twitterUsername: The username of the person that made the tweet
 		:param tweetId: The tweet ID to get a description of
+		:param addTweetUrl: If True (the default), the URL to the tweet will be added to the end of the display string
 		:return: A display string for the tweet, or None if the tweet couldn't be retrieved
 		"""
 		if not isinstance(tweetId, int):
@@ -351,7 +355,7 @@ class Command(CommandTemplate):
 		tweetList = self.downloadTweets(username=twitterUsername, downloadNewerThanId=tweetId-1, downloadOlderThanId=tweetId+1, maxTweetCount=1)
 		if not tweetList:
 			return None
-		return self.formatNewTweetText(twitterUsername, tweetList[0], addTweetAge=True)
+		return self.formatNewTweetText(twitterUsername, tweetList[0], addTweetAge=True, addTweetUrl=addTweetUrl)
 
 	@staticmethod
 	def getTweetPostTime(createdAt):
