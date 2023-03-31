@@ -277,16 +277,7 @@ class Command(CommandTemplate):
 			return None
 		return responseData['id']
 
-	def formatMessage(self, username, messageData, addMessageAge=False):
-		messageAge = ''
-		if addMessageAge:
-			postDateTime = self.getMessagePostTime(messageData['created_at'])
-			messageAge = datetime.datetime.utcnow() - postDateTime
-			# For older tweets, list the post date, otherwise list how old it is
-			if messageAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
-				messageAge = ' ({})'.format(postDateTime.strftime('%Y-%m-%d'))
-			else:
-				messageAge = ' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision='m'))
+	def formatMessage(self, username, messageData, addMessageAge=False, addUrl=True):
 		# Mastodon messages are HTML, so remove all the tags and resolve all the special characters ('&amp;' to '&' for instance)
 		parsedMessage = BeautifulSoup(messageData['content'].replace(u'<br />', Constants.GREY_SEPARATOR), 'html.parser')
 		# Mastodon organises newlines into <p> paragraphs, so iterate over those and get the text from them
@@ -298,20 +289,33 @@ class Command(CommandTemplate):
 		formattedMessageText = Constants.GREY_SEPARATOR.join(messageTextParts)
 		# Add the username
 		formattedMessageText = u"{}: {}".format(StringUtil.forceToUnicode(IrcFormattingUtil.makeTextBold(self.getDisplayName(username))), formattedMessageText)
+		suffixes = []
 		# If there's an attached image or video, mention that
-		attachmentDescription = ''
 		if len(messageData['media_attachments']) > 0:
-			attachmentDescription = u" (has {})".format(messageData['media_attachments'][0]['type'])
+			suffixes.append(u" (has {})".format(messageData['media_attachments'][0]['type']))
+		# Add the message age, if requested
+		if addMessageAge:
+			postDateTime = self.getMessagePostTime(messageData['created_at'])
+			messageAge = datetime.datetime.utcnow() - postDateTime
+			# For older tweets, list the post date, otherwise list how old it is
+			if messageAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
+				suffixes.append(u' ({})'.format(postDateTime.strftime('%Y-%m-%d')))
+			else:
+				suffixes.append(u' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision='m')))
+		# Only add the URL if requested
+		if addUrl:
+			suffixes.append(u' | {}'.format(messageData['url']))
 		# Make sure the message doesn't get too long
-		formattedMessageText = StringUtil.limitStringLength(formattedMessageText, suffixes=[attachmentDescription, messageAge, ' | ', messageData['url']])
+		formattedMessageText = StringUtil.limitStringLength(formattedMessageText, suffixes=suffixes)
 		return formattedMessageText
 
-	def getMessageDescription(self, server, username, messageId):
+	def getMessageDescription(self, server, username, messageId, addUrl=True):
 		"""
 		Get a display string describing the Mastodon message from the provided server, user, and ID
 		:param server: The url to the Mastodon instance
 		:param username: The username of the person that posted the Mastodon message
 		:param messageId: The ID of the Mastodon message
+		:param addUrl: If True (the default), the URL to the Mastodon message will be appended to the end of the display string
 		:return: A display string for the Mastodon message, or None if it couldn't be retrieved
 		"""
 		if not server.startswith('http'):
@@ -321,7 +325,7 @@ class Command(CommandTemplate):
 		except Exception as e:
 			self.logError("[MastodonWatcher] Error while retrieving message id '{}' from Mastodon instance '{}': {}".format(messageId, server, e))
 			return None
-		return self.formatMessage(username, response.json(), addMessageAge=True)
+		return self.formatMessage(username, response.json(), addMessageAge=True, addUrl=addUrl)
 
 	@staticmethod
 	def getMessagePostTime(createdAtString):
