@@ -426,16 +426,15 @@ class Command(CommandTemplate):
 		#Keep adding parts to the output until an entire block wouldn't fit on one line, then start a new message
 		replytext = u''
 		messageLength = startingLength
-		MAX_MESSAGE_LENGTH = 325
 
 		while len(cardInfoList) > 0:
 			cardInfoPart = cardInfoList.pop(0)
 			partLength = len(cardInfoPart)
-			if messageLength + partLength < MAX_MESSAGE_LENGTH:
+			if messageLength + partLength < Constants.MAX_MESSAGE_LENGTH:
 				replytext += cardInfoPart
 				messageLength += partLength
 				#Separator!
-				if messageLength + separatorLength > MAX_MESSAGE_LENGTH:
+				if messageLength + separatorLength > Constants.MAX_MESSAGE_LENGTH:
 					#If the separator wouldn't fit anymore, start a new message
 					replytext += '\n'
 					messageLength = 0
@@ -454,7 +453,7 @@ class Command(CommandTemplate):
 					#Also copy colour code
 					prefix = cardInfoPart[:3]
 				#Get the spot in the text where the cut-off would be (How much of the part text fits in the open space)
-				splitIndex = MAX_MESSAGE_LENGTH - messageLength
+				splitIndex = Constants.MAX_MESSAGE_LENGTH - messageLength
 				#Then get the last space before that index, so we don't split mid-word (if possible)
 				if u' ' in cardInfoPart[:splitIndex]:
 					splitIndex = cardInfoPart.rindex(u' ', 0, splitIndex)
