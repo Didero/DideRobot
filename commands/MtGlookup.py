@@ -446,10 +446,10 @@ class Command(CommandTemplate):
 				#  If the message started with a special character (bold for name, grey for flavour), copy those
 				prefix = u''
 				#bold
-				if cardInfoPart.startswith(u'\x02'):
-					prefix = u'\x02'
+				if cardInfoPart.startswith(IrcFormattingUtil.BOLD):
+					prefix = IrcFormattingUtil.BOLD
 				#color
-				elif cardInfoPart.startswith(u'\x03'):
+				elif cardInfoPart.startswith(IrcFormattingUtil.COLOUR):
 					#Also copy colour code
 					prefix = cardInfoPart[:3]
 				#Get the spot in the text where the cut-off would be (How much of the part text fits in the open space)
