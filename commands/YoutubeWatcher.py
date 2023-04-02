@@ -28,6 +28,7 @@ class Command(CommandTemplate):
 	#  https://www.youtube.com/playlist?list=PLV_qemO0oatisNFQMcP3hl4P7XvP3pqem
 	#  https://www.youtube.com/watch?v=ufvjjMp1rUg&list=PLV_qemO0oatisNFQMcP3hl4P7XvP3pqem
 	playlistUrlMatcher = re.compile(r"^https?://(?:www\.)?youtube.com/.+[?&]list=(?P<playlistid>[^&]+)(?:&.+)*$")
+	newVideoPrefix = IrcFormattingUtil.makeTextBold(u'New: ')
 
 	def parseVideoPublishDateTime(self, publishedAtDateTimeString):
 		"""
@@ -100,7 +101,7 @@ class Command(CommandTemplate):
 				server, channel = serverChannelString.rsplit(' ', 1)
 				if server in GlobalStore.bothandler.bots:
 					if videoId not in videoIdToDescription:
-						videoIdToDescription[videoId] = self.getVideoDisplayString(videoId, False, False, True)
+						videoIdToDescription[videoId] = self.getVideoDisplayString(videoId, includeViewCount=False, includeUploadDate=False, includeUrl=True, prefix=self.newVideoPrefix)
 					GlobalStore.bothandler.bots[server].sendMessage(channel, videoIdToDescription[videoId])
 		if shouldSaveWatchedData:
 			#New video info was stored, so save it to disk too
@@ -362,13 +363,14 @@ class Command(CommandTemplate):
 				matchingPlaylistIds.append(playlistId)
 		return matchingPlaylistIds
 
-	def getVideoDisplayString(self, videoId, includeViewCount=True, includeUploadDate=True, includeUrl=True):
+	def getVideoDisplayString(self, videoId, includeViewCount=True, includeUploadDate=True, includeUrl=True, prefix=None):
 		"""
 		Gets a display string describing the video of the provided ID
 		:param videoId: The ID to get the display string of
 		:param includeViewCount: Whether the view count should be included in the result
 		:param includeUploadDate: If True, the date when the video was uploaded will be included in the output
 		:param includeUrl: If True, the URL to the video will be added to the end of the output
+		:param prefix: An optional string to add in front of the output. This is needed to properly cut off descriptions that are too long
 		:return: The display string describing the video, or None if something went wrong with retrieving the data
 		"""
 		if 'google' not in GlobalStore.commandhandler.apikeys:
@@ -401,8 +403,9 @@ class Command(CommandTemplate):
 			description = description.replace('\n', ' ')
 
 		snippetData = videoData['snippet']
-		resultStringParts = [u"{title} {by} {channel}".format(title=snippetData['title'].strip(), by=IrcFormattingUtil.makeTextColoured(u'by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']),
-							 durationstring]
+		resultStringParts = [prefix] if prefix else []
+		resultStringParts.append(u"{title} {by} {channel}".format(title=snippetData['title'].strip(), by=IrcFormattingUtil.makeTextColoured(u'by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']))
+		resultStringParts.append(durationstring)
 		if includeViewCount:
 			resultStringParts.append(u"{:,} views".format(int(videoData['statistics']['viewCount'])))
 		if includeUploadDate:
