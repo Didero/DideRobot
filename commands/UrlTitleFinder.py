@@ -79,13 +79,17 @@ class Command(CommandTemplate):
 			if baseUrl.endswith(ext):
 				return None
 		# Only parse text documents, and not images or videos or the like. Retrieve the url header to check the content type
-		headersResponse = requests.head(url, allow_redirects=True, timeout=Command.lookupTimeoutSeconds)
-		if headersResponse.status_code != 200:
+		try:
+			headersResponse = requests.head(url, allow_redirects=True, timeout=Command.lookupTimeoutSeconds)
+			if headersResponse.status_code != 200:
+				return None
+			if 'Content-Type' in headersResponse.headers and not headersResponse.headers['Content-Type'].startswith('text'):
+				return None
+			# The URL (most likely) refers to a HTML page, retrieve it and get the title from it (don't catch timeout since that's handled in the main 'execute' method)
+			retrievedPage = requests.get(url, timeout=Command.lookupTimeoutSeconds)
+		except requests.exceptions.TooManyRedirects as e:
+			Command.logError("[UrlTitleFinder] Too many redirects for url '{}': {}".format(url, e))
 			return None
-		if 'Content-Type' in headersResponse.headers and not headersResponse.headers['Content-Type'].startswith('text'):
-			return None
-		# The URL (most likely) refers to a HTML page, retrieve it and get the title from it
-		retrievedPage = requests.get(url, timeout=Command.lookupTimeoutSeconds)
 		if retrievedPage.status_code != 200:
 			return None
 		titlematch = re.search(r'<title ?.*?>(.+?)</title>', retrievedPage.text, re.DOTALL | re.IGNORECASE)
