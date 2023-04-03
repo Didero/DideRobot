@@ -24,7 +24,6 @@ class Command(CommandTemplate):
 	def shouldExecute(self, message):
 		if message.isPrivateMessage:
 			return False
-		if message.messageType != 'say':
 		if message.messageType != 'say' and message.messageType != 'action':
 			return False
 		for urlPrefix in self.urlPrefixes:
