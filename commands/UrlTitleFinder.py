@@ -25,6 +25,7 @@ class Command(CommandTemplate):
 		if message.isPrivateMessage:
 			return False
 		if message.messageType != 'say':
+		if message.messageType != 'say' and message.messageType != 'action':
 			return False
 		for urlPrefix in self.urlPrefixes:
 			if urlPrefix in message.message:
