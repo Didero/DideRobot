@@ -18,7 +18,6 @@ class Command(CommandTemplate):
 	callInThread = True  #We can't know how slow sites are, so prevent the bot from locking up on slow sites
 
 	#The maximum time a title look-up is allowed to take
-	urlPrefixes = ('http://', 'https://')
 	lookupTimeoutSeconds = 5.0
 
 	def shouldExecute(self, message):
@@ -26,10 +25,7 @@ class Command(CommandTemplate):
 			return False
 		if message.messageType != 'say' and message.messageType != 'action':
 			return False
-		for urlPrefix in self.urlPrefixes:
-			if urlPrefix in message.message:
-				return True
-		return False
+		return 'https://' in message.message or 'http://' in message.message
 
 	def execute(self, message):
 		"""
