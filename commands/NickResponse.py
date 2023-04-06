@@ -1,6 +1,7 @@
 from CommandTemplate import CommandTemplate
 
 from IrcMessage import IrcMessage
+import MessageTypes
 
 
 class Command(CommandTemplate):
@@ -8,7 +9,7 @@ class Command(CommandTemplate):
 	helptext = "SAY MY NAME- I mean, if you just say my name, I'll give you some basic info about myself"
 
 	def shouldExecute(self, message):
-		if message.messageType != 'say':
+		if message.messageType != MessageTypes.SAY:
 			return False
 		botnick = message.bot.nickname.lower()
 		text = message.rawText.lower()

@@ -2,6 +2,7 @@ import logging
 
 import gevent
 
+import MessageTypes
 
 class CommandTemplate(object):
 	"""
@@ -11,7 +12,7 @@ class CommandTemplate(object):
 	#Each command has certain settings. These are the default values, but you can override them in your command
 	triggers = []  #A list of trigger words that the command should react to. These should all be lowercase, since the CommandHandler makes triggers in incoming messages lowercase too, to speed up checking
 	helptext = "This help text has not yet been filled in. Oops"  #This text will get shown when users call '!help [trigger]', and should explain how the command works. Use '{commandPrefix}' in the help text to have the current command prefix filled in
-	allowedMessageTypes = ['say']  #The message type(s) this command should react to. Options are 'say' (normal message), 'do' (a '/me' action message), and 'notice' (a notice either to the bot, the channel, or the server. Don't 'message.reply' to channel or server notices unless you want to spam everybody)
+	allowedMessageTypes = [MessageTypes.SAY]  #The message type(s) this command should react to. See the 'MessageTypeEnum' class for the available message types
 
 	adminOnly = False  #If this is set to True, only users in the admin list for this server can call this command
 	callInThread = False  #If you think your command will be slow, set this to True to make it run in a separate 'thread', meaning the bot won't be blocked while the command is running

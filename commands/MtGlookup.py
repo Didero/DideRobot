@@ -10,6 +10,7 @@ import gevent
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
+import MessageTypes
 from util import IrcFormattingUtil
 from util import FileUtil
 from util import StringUtil
@@ -105,7 +106,7 @@ class Command(CommandTemplate):
 				counter = 1
 				while len(textRemainder) > 0:
 					gevent.spawn_later(secondsBetweenMessages * counter, message.bot.sendMessage, message.userNickname,
-									   u"({}) {}".format(counter + 1, textRemainder[:Constants.MAX_MESSAGE_LENGTH]), 'notice')
+									   u"({}) {}".format(counter + 1, textRemainder[:Constants.MAX_MESSAGE_LENGTH]), MessageTypes.NOTICE)
 					textRemainder = textRemainder[Constants.MAX_MESSAGE_LENGTH:]
 					counter += 1
 			#Present the result!

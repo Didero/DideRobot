@@ -1,6 +1,7 @@
 import time
 
 import Constants
+import MessageTypes
 
 
 class IrcMessage(object):
@@ -8,7 +9,7 @@ class IrcMessage(object):
 
 	def __init__(self, messageType, bot, user=None, source=None, rawText=""):
 		self.createdAt = time.time()
-		#MessageType is what kind of message it is. A 'say', 'action' or 'quit', for instance
+		#MessageType is what kind of message it is. A 'say', 'action' or 'quit', for instance. See the MessagesTypes class for all the message types
 		self.messageType = messageType
 
 		self.bot = bot
@@ -65,8 +66,8 @@ class IrcMessage(object):
 
 	def reply(self, replytext, messagetype=None):
 		if not messagetype:
-			#Reply with a notice to a user's notice (not a channel one!), and with a 'say' to anything else
-			messagetype = 'notice' if self.messageType == 'notice' and self.isPrivateMessage else 'say'
+			#Reply with a notice to a user's notice (not a channel one, that spams everybody!), and with a normal message to anything else
+			messagetype = MessageTypes.NOTICE if self.isPrivateMessage and self.messageType == MessageTypes.NOTICE else MessageTypes.SAY
 		self.bot.sendMessage(self.source, replytext, messagetype)
 
 	def isSenderAdmin(self):

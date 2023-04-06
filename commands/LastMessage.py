@@ -1,6 +1,6 @@
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-import GlobalStore
+import GlobalStore, MessageTypes
 
 
 class Command(CommandTemplate):
@@ -36,7 +36,7 @@ class Command(CommandTemplate):
 		server = message.bot.serverfolder
 		isBotEvent = message.userNickname == message.bot.nickname
 		# If it's a normal message, store it as the last message for this channel
-		if not isBotEvent and message.messageType == 'say':
+		if not isBotEvent and message.messageType == MessageTypes.SAY:
 			self._storeMessage(server, message.source, message.message)
 		elif isBotEvent:
 			if message.messageType == 'part':

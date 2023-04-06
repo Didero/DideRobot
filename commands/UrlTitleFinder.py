@@ -6,6 +6,7 @@ import requests
 from CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
+import MessageTypes
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException
 from util import IrcFormattingUtil
@@ -23,7 +24,7 @@ class Command(CommandTemplate):
 	def shouldExecute(self, message):
 		if message.isPrivateMessage:
 			return False
-		if message.messageType != 'say' and message.messageType != 'action':
+		if message.messageType != MessageTypes.SAY and message.messageType != MessageTypes.ACTION:
 			return False
 		return 'https://' in message.message or 'http://' in message.message
 

@@ -9,6 +9,7 @@ import GlobalStore
 from BotSettingsManager import BotSettingsManager
 from IrcMessage import IrcMessage
 from MessageLogger import MessageLogger
+import MessageTypes
 
 
 class DideRobot(object):
@@ -173,7 +174,7 @@ class DideRobot(object):
 						messageSource = messageSource[1:]
 					messageType = lineParts[1]
 					#Convert numerical replies to human-readable ones, if applicable. Otherwise make it uppercase, since that's the standard
-					messageType = Constants.IRC_NUMERIC_TO_NAME.get(messageType, messageType.upper())
+					messageType = MessageTypes.IRC_NUMERIC_TO_TYPE.get(messageType, messageType.upper())
 					#The IRC protocol uses ':' to denote the start of a multi-word string. Join those here too, for easier parsing later
 					messageParts = lineParts[2:]
 					for messagePartIndex, messagePart in enumerate(messageParts):
@@ -387,27 +388,27 @@ class DideRobot(object):
 
 	#CTCP FUNCTIONS
 	def ctcp_ACTION(self, user, messageSource, messageText):
-		self.handleMessage(user, messageSource, messageText, 'action')
+		self.handleMessage(user, messageSource, messageText, MessageTypes.ACTION)
 
 	def ctcp_PING(self, user, messageSource, messageText):
 		self.messageLogger.log("Received PING request from '{}'".format(user), messageSource)
 		usernick = user.split('!', 1)[0]
-		self.sendMessage(usernick, "PING " + messageText if messageText else str(time.time()), 'notice')
+		self.sendMessage(usernick, "PING " + messageText if messageText else str(time.time()), MessageTypes.NOTICE)
 
 	def ctcp_SOURCE(self, user, messageSource, messageText):
 		self.messageLogger.log("Received SOURCE request from '{}'".format(user), messageSource)
 		usernick = user.split('!', 1)[0]
-		self.sendMessage(usernick, "Thanks for the interest! You can read through my innards at https://github.com/Didero/DideRobot", 'notice')
+		self.sendMessage(usernick, "Thanks for the interest! You can read through my innards at https://github.com/Didero/DideRobot", MessageTypes.NOTICE)
 
 	def ctcp_TIME(self, user, messageSource, messageText):
 		self.messageLogger.log("Received TIME request from '{}'".format(user), messageSource)
 		usernick = user.split('!', 1)[0]
-		self.sendMessage(usernick, time.strftime("%a %d-%m-%Y %H:%M:%S %Z"), 'notice')
+		self.sendMessage(usernick, time.strftime("%a %d-%m-%Y %H:%M:%S %Z"), MessageTypes.NOTICE)
 
 	def ctcp_VERSION(self, user, messageSource, messageText):
 		self.messageLogger.log("Received VERSION request from '{}'".format(user), messageSource)
 		usernick = user.split('!', 1)[0]
-		self.sendMessage(usernick, "I don't have a set version, since I'm updated pretty frequently. I appreciate the interest though!", 'notice')
+		self.sendMessage(usernick, "I don't have a set version, since I'm updated pretty frequently. I appreciate the interest though!", MessageTypes.NOTICE)
 
 
 	#HUMAN COMMUNICATION FUNCTIONS
@@ -439,23 +440,23 @@ class DideRobot(object):
 				self.ctcp_unknown_message_type(ctcpType, user, messageSource, messageText)
 		#Normal message
 		else:
-			self.handleMessage(user, messageSource, messageParts[1], "say")
+			self.handleMessage(user, messageSource, messageParts[1], MessageTypes.SAY)
 
 	def irc_NOTICE(self, user, messageParts):
-		self.handleMessage(user, messageParts[0], messageParts[1], 'notice')
+		self.handleMessage(user, messageParts[0], messageParts[1], MessageTypes.NOTICE)
 
-	def handleMessage(self, user, channel, messageText, messageType="say"):
+	def handleMessage(self, user, channel, messageText, messageType=MessageTypes.SAY):
 		"""Called when the bot receives a message, which can be either in a channel or in a private message, as text or an action."""
 		usernick = user.split("!", 1)[0]
 		logsource = channel
 		if channel == self.nickname or channel == '*':  #If a server wants to send a message to you before it knows your nick, it uses *
 			logsource = usernick
 		logtext = "({source}) "
-		if messageType == 'say':
+		if messageType == MessageTypes.SAY:
 			logtext = "{user}: {message}"
-		elif messageType == 'action':
+		elif messageType == MessageTypes.ACTION:
 			logtext = "*{user} {message}"
-		elif messageType == 'notice':
+		elif messageType == MessageTypes.ACTION:
 			logtext = "[notice] {user}: {message}"
 
 		self.messageLogger.log(logtext.format(user=usernick, message=messageText), logsource)
@@ -517,12 +518,12 @@ class DideRobot(object):
 		if not self.lineSendingGreenlet:
 			self.lineSendingGreenlet = gevent.spawn(self.sendLineFromQueue)
 
-	def sendMessage(self, target, messageText, messageType='say'):
+	def sendMessage(self, target, messageText, messageType=MessageTypes.SAY):
 		if not target or not messageText:
 			self.logger.warning("Asked to send an empty message or send a message to an empty target. Target: '{}', messageText: '{}'".format(target, messageText))
 			return
 		#Only say something if we're not muted, or if it's a private message or a notice
-		if not self.isMuted or target[0] not in Constants.CHANNEL_PREFIXES or messageType == 'notice':
+		if not self.isMuted or target[0] not in Constants.CHANNEL_PREFIXES or messageType == MessageTypes.NOTICE:
 			#Make sure we're not trying to send Unicode
 			if isinstance(messageText, unicode):
 				try:
@@ -534,11 +535,11 @@ class DideRobot(object):
 				target = target.encode('utf-8')
 			logtext = ""
 			messageCommand = "PRIVMSG"
-			if messageType == 'action':
+			if messageType == MessageTypes.ACTION:
 				#An action is just a special type of Say
 				logtext += "*"
 				messageText = self.formatCtcpMessage("ACTION", messageText)
-			elif messageType == 'notice':
+			elif messageType == MessageTypes.NOTICE:
 				logtext += "[notice] "
 				messageCommand = "NOTICE"
 			logtext += "{user}: {message}"

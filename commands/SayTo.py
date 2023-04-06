@@ -1,6 +1,7 @@
 import Constants
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
+import MessageTypes
 
 
 class Command(CommandTemplate):
@@ -25,7 +26,7 @@ class Command(CommandTemplate):
 		command = message.messageParts[0].lower()
 		messageText = ""
 		messageTarget = message.source
-		messageType = 'say'
+		messageType = MessageTypes.SAY
 		#Check if it's to set the default channel instead of to actually say something
 		if command == 'setdefault':
 			if message.messagePartsLength == 1:
@@ -54,16 +55,16 @@ class Command(CommandTemplate):
 		else:
 			#Set the target properly
 			if message.trigger.startswith('do'):
-				messageType = 'action'
+				messageType = MessageTypes.ACTION
 			elif message.trigger.startswith('notice'):
-				messageType = 'notice'
+				messageType = MessageTypes.NOTICE
 
 			#'def' and non-'def' commands have to be treated a little differently
 			if message.trigger.endswith('def'):
 				#Should send to default, but no default set. Warn about that
 				if message.bot.serverfolder not in self.defaultTargets:
 					messageText = "There's no default set, so I don't know where to send the message. Use 'say setdefault [default]' to set a default"
-					messageType = 'say'
+					messageType = MessageTypes.SAY
 				#There is a default set, so send the whole message there
 				else:
 					messageText = message.message
@@ -71,7 +72,7 @@ class Command(CommandTemplate):
 			#Don't use the default, so we need both a target and a message
 			elif message.messagePartsLength == 1:
 				messageText = "Tell '{}' what? I'm not gonna make anything up, add some text to send".format(message.messageParts[0])
-				messageType = 'say'
+				messageType = MessageTypes.SAY
 			#Everything seems fine, go ahead
 			else:
 				messageTarget = message.messageParts[0]
@@ -81,6 +82,6 @@ class Command(CommandTemplate):
 			if messageTarget[0] in Constants.CHANNEL_PREFIXES and messageTarget not in message.bot.channelsUserList:
 				messageText = "I'm not in channel '{}', so I can't say anything there. Sorry".format(messageTarget)
 				messageTarget = message.source
-				messageType = 'say'
+				messageType = MessageTypes.SAY
 
 		message.bot.sendMessage(messageTarget, messageText, messageType)
