@@ -111,7 +111,7 @@ class Command(CommandTemplate):
 	def retrieveYoutubeTitle(url):
 		if 'youtube.com' not in url and 'youtu.be' not in url:
 			return None
-		#First we need to determine the video ID from something like this: http://www.youtube.com/watch?v=jmAKXADLcxY or http://youtu.be/jmAKXADLcxY
+		#First we need to determine the video ID from something like this: 'http://www.youtube.com/watch?v=[videoID]' or 'http://youtu.be/[videoID]'
 		if url.count('youtu.be') > 0:
 			videoIdMatch = re.search('youtu\.be/([^?/#]+)', url)
 		else:
