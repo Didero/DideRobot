@@ -52,9 +52,9 @@ def joinWithSeparator(listOfStrings, separator=None):
 	return separator.join(listOfStrings)
 
 def removeNewlines(string):
-	if '\n' not in string:
+	if '\n' not in string and '\r' not in string:
 		return string
-	return re.sub(r"( ?\n+ ?)+", " ", string)
+	return re.sub(r" *[\r\n]+ *", " ", string)
 
 def forceToUnicode(varToForceToUnicode):
 	if isinstance(varToForceToUnicode, unicode):
