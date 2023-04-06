@@ -60,7 +60,7 @@ class Command(CommandTemplate):
 	@staticmethod
 	def cleanUpRetrievedTitle(retrievedTitle):
 		cleanedUpTitle = retrievedTitle.strip()
-		cleanedUpTitle = re.sub(' *\n *', ' ', cleanedUpTitle)
+		cleanedUpTitle = StringUtil.removeNewlines(cleanedUpTitle)
 		# Convert weird characters like &#39 back into normal ones like '
 		cleanedUpTitle = HTMLParser.HTMLParser().unescape(cleanedUpTitle)
 		# Make sure titles aren't too long
