@@ -54,7 +54,7 @@ class Command(CommandTemplate):
 			#Finally, display the result of all the hard work, if there was any
 			if title:
 				replyText = Command.cleanUpRetrievedTitle(title)
-				message.reply(replyText, 'say')
+				message.reply(replyText)
 
 	@staticmethod
 	def cleanUpRetrievedTitle(retrievedTitle):

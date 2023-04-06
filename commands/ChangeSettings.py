@@ -134,7 +134,7 @@ class Command(CommandTemplate):
 			elif argument == "old" or argument == "previous":
 				settingsFilepath = os.path.join(GlobalStore.scriptfolder, "serverSettings", message.bot.serverfolder, "settings.json")
 				if not os.path.exists(settingsFilepath + ".old"):
-					return message.reply("I don't have a backup settings file, sorry", "say")
+					return message.reply("I don't have a backup settings file, sorry")
 				os.rename(settingsFilepath, settingsFilepath + ".new")
 				os.rename(settingsFilepath + ".old", settingsFilepath)
 				if message.bot.reloadSettings():

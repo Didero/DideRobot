@@ -25,7 +25,7 @@ class Command(CommandTemplate):
 			wikiApiUrl = "https://en.wikipedia.org/w/api.php"
 			searchQuery = message.message
 		elif message.messagePartsLength == 0:
-			return message.reply("Please tell me which Fandom wiki you want me to use, there's a LOT of them. Turns out humans write a lot of stories!", "say")
+			return message.reply("Please tell me which Fandom wiki you want me to use, there's a LOT of them. Turns out humans write a lot of stories!")
 		else:
 			wikiDisplayName = "the {} Fandom wiki".format(message.messageParts[0])
 			wikiApiUrl = "https://{}.fandom.com/api.php".format(message.messageParts[0])
@@ -34,7 +34,7 @@ class Command(CommandTemplate):
 		shouldPickRandomPage = message.trigger.endswith('random')
 		#Searches need a search term
 		if not shouldPickRandomPage and not searchQuery:
-			return message.reply("What do you want me to search for? Or if you don't know what you want, use the '{}random' command and be surprised!".format(message.trigger), "say")
+			return message.reply("What do you want me to search for? Or if you don't know what you want, use the '{}random' command and be surprised!".format(message.trigger))
 
 		# We want 1200 characters because that's the maximum allowed, and because we don't know how much we have to chop off because they're preceding images
 		# We also want the sectionformat to be 'wiki' so we can see where the intro paragraph ends (We can't use 'exintro' for this because images can come first so we'd only get their caption)

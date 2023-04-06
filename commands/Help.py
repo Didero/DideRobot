@@ -46,4 +46,4 @@ class Command(CommandTemplate):
 				commandslist = ", ".join(sorted(shortTriggerlist.keys()))
 			replytext += "Commands loaded: {}. Type '{}help [commandname]' for info on how to use that command".format(commandslist, message.bot.commandPrefix)
 		
-		message.bot.sendMessage(message.source, replytext, 'say')
+		message.bot.sendMessage(message.source, replytext)

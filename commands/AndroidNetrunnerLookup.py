@@ -30,7 +30,7 @@ class Command(CommandTemplate):
 		"""
 		#Immediately check if there's any parameters, to prevent useless work
 		if message.messagePartsLength == 0:
-			message.reply("Please provide a term to search for. See '{}help {}' for an explanation how to use this command".format(message.bot.commandPrefix, message.trigger), "say")
+			message.reply("Please provide a term to search for. See '{}help {}' for an explanation how to use this command".format(message.bot.commandPrefix, message.trigger))
 			return
 
 		searchType = message.messageParts[0].lower()
@@ -49,7 +49,7 @@ class Command(CommandTemplate):
 				replytext = self.updateCardFile()
 				#Since we're checking now, set the automatic check to start counting from now on
 				self.resetScheduledFunctionGreenlet()
-			message.reply(replytext, "say")
+			message.reply(replytext)
 			return
 
 		#Check if the data file even exists

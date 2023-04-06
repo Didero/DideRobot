@@ -85,7 +85,7 @@ class Command(CommandTemplate):
 				targetnick = u"them" if len(targetnicks) > 1 else message.messageParts[0]
 				replytext = u"Ok, I'll tell {} that when they show a sign of life".format(targetnick)
 
-			message.reply(replytext, "say")
+			message.reply(replytext)
 
 
 	@staticmethod

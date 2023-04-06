@@ -106,4 +106,4 @@ class Command(CommandTemplate):
 				replytext += u" ({:,} more)".format(len(definitions) - numberOfDefinitionsShown)
 
 		#Done! Show our result
-		message.reply(replytext, "say")
+		message.reply(replytext)

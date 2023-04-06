@@ -77,12 +77,12 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 		if message.messagePartsLength == 0:
-			return message.reply(self.getHelp(message), "say")
+			return message.reply(self.getHelp(message))
 
 		subcommand = message.messageParts[0].lower()
 
 		if subcommand == 'help':
-			return message.reply(self.getHelp(message), "say")
+			return message.reply(self.getHelp(message))
 
 		shouldAddEntryInfo = (message.trigger == 'listf')
 		with sqlite3.connect(self.databasePath) as connection:
@@ -91,11 +91,11 @@ class Command(CommandTemplate):
 			channelname = message.source.decode('utf-8', errors='replace')
 			if subcommand == 'list':
 				if not self.doTablesExist(cursor):
-					return message.reply("Seems like there's no lists at all. Seems a bit boring, to be honest", "say")
+					return message.reply("Seems like there's no lists at all. Seems a bit boring, to be honest")
 				# List all available lists
 				result = cursor.execute(u"SELECT name, channel FROM lists WHERE server=? AND (channel=? OR channel IS NULL)", (servername, channelname)).fetchall()
 				if not result:
-					return message.reply("I couldn't find any lists. You should think up a good idea for one!", "say")
+					return message.reply("I couldn't find any lists. You should think up a good idea for one!")
 				channelListNames = []
 				serverListNames = []
 				for resultEntry in result:
@@ -110,7 +110,7 @@ class Command(CommandTemplate):
 					replytext += u" Server lists: {}".format(", ".join(sorted(serverListNames)))
 				if channelListNames:
 					replytext += u" Channel lists: {}".format(", ".join(sorted(channelListNames)))
-				return message.reply(replytext.lstrip(), "say")
+				return message.reply(replytext.lstrip())
 
 			elif subcommand == 'create':
 				if not message.isSenderAdmin():
@@ -157,13 +157,13 @@ class Command(CommandTemplate):
 							   {'listname': listname, 'description': listDescription, 'servername': servername, 'channelname': channelname if isChannelList else None,
 								'creator': message.userNickname.decode('utf-8', errors='replace'), 'creation_date': time.time(), 'isadmin': isListAdminOnly if isListAdminOnly else None})
 				connection.commit()
-				return message.reply(u"Successfully created the '{}' list. Now add some entries to it with the 'add' subcommand. Enjoy!".format(listname), "say")
+				return message.reply(u"Successfully created the '{}' list. Now add some entries to it with the 'add' subcommand. Enjoy!".format(listname))
 
 			# All subsequent subcommands need a list, so check if a listname was provided, and check if that list exists
 			if message.messagePartsLength < 2:
 				raise CommandInputException("Please provide a list name, or use the 'list' subcommand to see all the available lists")
 			if not self.doTablesExist(cursor):
-				return message.reply("Hmm, I don't seem to have any lists stored yet, so I can't execute that subcommand. Sorry!", "say")
+				return message.reply("Hmm, I don't seem to have any lists stored yet, so I can't execute that subcommand. Sorry!")
 			listname = self.normalizeListname(message.messageParts[1])
 			listId, isListAdminOnly = self.getBasicListData(cursor, listname, servername, channelname)
 			if not listId:
@@ -181,7 +181,7 @@ class Command(CommandTemplate):
 				# This needs extra diskspace though, because it basically recreates the database file and then replaces the existing file with the new one
 				cursor.execute("VACUUM")
 				connection.commit()
-				return message.reply(u"Ok, the '{}' list and its {:,} entr{} are gone forever. I hope none of that was important!".format(listname, entryCount, u'y' if entryCount == 1 else u'ies'), "say")
+				return message.reply(u"Ok, the '{}' list and its {:,} entr{} are gone forever. I hope none of that was important!".format(listname, entryCount, u'y' if entryCount == 1 else u'ies'))
 
 			elif subcommand == 'get':
 				# 'get' can accept no arguments (works same as 'random'), a numeric entry id argument (works same as 'getbyid'), or a text searchquery argument (works the same as 'search')
@@ -198,10 +198,10 @@ class Command(CommandTemplate):
 					else:
 						# Get entry by ID
 						replytext = self.formatEntry(self.getEntryById(cursor, listname, listId, entryId), shouldAddEntryInfo)
-				return message.reply(replytext, "say")
+				return message.reply(replytext)
 
 			elif subcommand == 'random':
-				return message.reply(self.getRandomEntry(cursor, listname, listId, shouldAddEntryInfo=shouldAddEntryInfo), "say")
+				return message.reply(self.getRandomEntry(cursor, listname, listId, shouldAddEntryInfo=shouldAddEntryInfo))
 
 			elif subcommand == 'add':
 				if message.messagePartsLength < 3:
@@ -214,7 +214,7 @@ class Command(CommandTemplate):
 				cursor.execute(u"INSERT INTO list_entries VALUES (:id, :listId, :text, :creator, :creationDate)",
 							   {'id': entryId, 'listId': listId, 'text': entryText, 'creator': message.userNickname.decode('utf-8', errors='replace'), 'creationDate': time.time()})
 				connection.commit()
-				return message.reply(u"Added your entry to the '{}' list under entry id {}".format(listname, entryId), "say")
+				return message.reply(u"Added your entry to the '{}' list under entry id {}".format(listname, entryId))
 
 			# 'getbyid' and 'remove' need to do a lot of the same checks, so combine them
 			elif subcommand in ('getbyid', 'remove'):
@@ -239,7 +239,7 @@ class Command(CommandTemplate):
 				if message.messagePartsLength < 3:
 					raise CommandInputException("Please enter a search query too. Or if you want a random entry, use the 'random' subcommand")
 				searchquery = self.normalizeSearchQuery(" ".join(message.messageParts[2:]))
-				return message.reply(self.searchForEntry(cursor, listname, listId, searchquery, shouldAddEntryInfo), "say")
+				return message.reply(self.searchForEntry(cursor, listname, listId, searchquery, shouldAddEntryInfo))
 
 			elif subcommand == 'getall':
 				searchQuery = None if message.messagePartsLength < 3 else self.normalizeSearchQuery(" ".join(message.messageParts[2:]))
@@ -249,7 +249,7 @@ class Command(CommandTemplate):
 				entries = cursor.execute(sqlQuery, {'listId': listId, 'searchQuery': searchQuery}).fetchall()
 				# Don't bother uploading if the list is empty or short
 				if len(entries) == 0:
-					return message.reply(u"The '{}' list doesn't have any entries at all, so listing those is easy:  . Done!".format(listname), "say")
+					return message.reply(u"The '{}' list doesn't have any entries at all, so listing those is easy:  . Done!".format(listname))
 				elif len(entries) == 1:
 					return message.reply(u"The '{}' list only has one entry: {}".format(listname, self.formatEntry(entries[0], shouldAddEntryInfo)))
 				# Destructively iterate over the found entries so long lists don't use a lot of memory
@@ -261,7 +261,7 @@ class Command(CommandTemplate):
 					pasteLink = WebUtil.uploadText(u"\n".join(formattedEntries), u"Entries for the '{}' list".format(listname), 600)
 				except WebRequestException as wre:
 					self.logError(u"[List] An error occurred while trying to upload '{}' list entries (Search query is '{}': {}".format(listname, searchQuery, wre))
-					return message.reply(u"Uh oh, something went wrong with uploading the '{}' list entries. Try again in a bit, and if it keeps happening, please tell my owner(s)".format(listname), "say")
+					return message.reply(u"Uh oh, something went wrong with uploading the '{}' list entries. Try again in a bit, and if it keeps happening, please tell my owner(s)".format(listname))
 				return message.reply(u"Here's all the entries for the '{}' list{}: {} (Link expires in 10 minutes)".format(listname, u" that match your query" if searchQuery else u"", pasteLink))
 
 			elif subcommand == 'info':
@@ -304,7 +304,7 @@ class Command(CommandTemplate):
 					description = " ".join(message.messageParts[2:]).decode('utf-8', errors='replace')
 				cursor.execute(u"UPDATE lists SET description=? WHERE id=?", (description, listId))
 				connection.commit()
-				return message.reply(u"Successfully {} the description for the '{}' list".format(u'cleared' if subcommand == 'cleardescription' else u'updated', listname), "say")
+				return message.reply(u"Successfully {} the description for the '{}' list".format(u'cleared' if subcommand == 'cleardescription' else u'updated', listname))
 
 			elif subcommand == 'setadmin':
 				if not message.isSenderAdmin():
@@ -322,7 +322,7 @@ class Command(CommandTemplate):
 				return message.reply(u"Successfully made the '{}' list {}admin-only".format(listname, u'' if shouldBeAdminOnly else u'non-'))
 
 			else:
-				return message.reply("I don't know what to do with the subcommand '{}', sorry. Maybe (re)read the list help text?".format(subcommand), "say")
+				return message.reply("I don't know what to do with the subcommand '{}', sorry. Maybe (re)read the list help text?".format(subcommand))
 
 	def doTablesExist(self, cursor):
 		"""

@@ -36,7 +36,7 @@ class Command(CommandTemplate):
 			if u'price' in matchingApp:
 				pricesByCountry['US'] = u'${:.2f}'.format(matchingApp[u'price'][u'final'] / 100)
 			appId = StringUtil.forceToUnicode(matchingApp['id'])
-			return message.reply(self.getDescriptionFromAppId(appId, True, pricesByCountry), "say")
+			return message.reply(self.getDescriptionFromAppId(appId, True, pricesByCountry))
 		except requests.exceptions.Timeout:
 			raise CommandException("Seems Steam is having some issues, they didn't return the data as quickly as normal. You should try again in a little while", False)
 

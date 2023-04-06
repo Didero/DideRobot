@@ -66,4 +66,4 @@ class Command(CommandTemplate):
 					else:
 						replytext = u"Log uploaded to Paste.ee: {} (Expires in 10 minutes)".format(pasteLink)
 
-		message.reply(replytext, 'say')
+		message.reply(replytext)

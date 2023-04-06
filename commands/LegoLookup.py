@@ -92,7 +92,7 @@ class Command(CommandTemplate):
 			matchesLeft = apiData[u'matches'] - 1
 			replytextParts.append(u"{:,} more match{}: https://brickset.com/search?query={}".format(matchesLeft, u'' if matchesLeft == 1 else u'es', message.message.replace(' ', '+')))
 		replytext = u" | ".join(replytextParts).format(**setData)
-		return message.reply(replytext, "say")
+		return message.reply(replytext)
 
 	def formatDateString(self, dateString):
 		return dateString.split(u'T', 1)[0]

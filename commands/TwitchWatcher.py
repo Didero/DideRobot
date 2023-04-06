@@ -70,16 +70,16 @@ class Command(CommandTemplate):
 		#Making this work in PMs requires either a different storage method than "server channel",
 		# or a better lookup method than 'if channel in bot.channelUserList'
 		if message.isPrivateMessage:
-			message.reply("I'm sorry, this module doesn't work in private messages (yet?). Poke my owner if you want it added!", "say")
+			message.reply("I'm sorry, this module doesn't work in private messages (yet?). Poke my owner if you want it added!")
 			return
 
 		if message.messagePartsLength == 0:
-			message.reply("Please add a parameter. Use 'list' to see which streamers I'm watching, or 'add' to add one of your own", "say")
+			message.reply("Please add a parameter. Use 'list' to see which streamers I'm watching, or 'add' to add one of your own")
 			return
 
 		parameter = message.messageParts[0].lower()
 		if (parameter == "add" or parameter == "live") and 'twitch' not in GlobalStore.commandhandler.apikeys:
-			message.reply("Oh, I'm sorry, I seem to have lost my access key to Twitch. Inform my owner(s), they can probably find it for me!", "say")
+			message.reply("Oh, I'm sorry, I seem to have lost my access key to Twitch. Inform my owner(s), they can probably find it for me!")
 			return
 
 		#All options need this for lookup
@@ -122,7 +122,7 @@ class Command(CommandTemplate):
 		else:
 			replytext = "I don't know what to do with the parameter '{}', sorry. Try (re)reading the help text, or check for typos?".format(parameter)
 		#Show the result of whatever command was called
-		message.reply(replytext, "say")
+		message.reply(replytext)
 
 	def listFollowedStreamer(self, serverChannelString):
 		"""
@@ -424,7 +424,7 @@ class Command(CommandTemplate):
 						reportStrings.append(StringUtil.removeNewlines(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url)))
 				#Now make the bot say it
 				GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
-																StringUtil.joinWithSeparator(reportStrings), "say")
+																StringUtil.joinWithSeparator(reportStrings))
 
 
 

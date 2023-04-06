@@ -104,7 +104,7 @@ class CommandHandler:
 
 			if command.shouldExecute(message):
 				if command.adminOnly and not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-					message.reply("Sorry, this command is admin-only", "say")
+					message.reply("Sorry, this command is admin-only")
 				else:
 					if command.callInThread:
 						gevent.spawn(self.executeCommand, commandname, message)
@@ -129,7 +129,7 @@ class CommandHandler:
 					displayMessage = e.displayMessage
 
 			# Show the user the (custom or generic) error message, and log the error to the program log
-			message.reply(displayMessage, "say")
+			message.reply(displayMessage)
 			if shouldLogError:
 				self.logger.error("{} exception thrown while handling command '{}' and message '{}': {}".format(type(e).__name__, commandname, message.rawText, str(e)), exc_info=shouldLogStacktrace)
 

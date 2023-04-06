@@ -48,7 +48,7 @@ class Command(CommandTemplate):
 		"""
 		#Immediately check if there's any parameters, to prevent useless work
 		if message.messagePartsLength == 0:
-			return message.reply(self.getHelp(message), "say")
+			return message.reply(self.getHelp(message))
 
 		#If the card set is currently being updated, we probably shouldn't try loading it
 		if self.areCardfilesInUse:
@@ -57,7 +57,7 @@ class Command(CommandTemplate):
 
 		#Check if we have all the files we need
 		if not self.doNeededFilesExist():
-			message.reply("Whoops, I don't seem to have all the files I need. I'll update now, try again in like 25 seconds. Sorry!", "say")
+			message.reply("Whoops, I don't seem to have all the files I need. I'll update now, try again in like 25 seconds. Sorry!")
 			self.resetScheduledFunctionGreenlet()
 			self.updateCardFile(True)
 			return
@@ -109,7 +109,7 @@ class Command(CommandTemplate):
 					textRemainder = textRemainder[Constants.MAX_MESSAGE_LENGTH:]
 					counter += 1
 			#Present the result!
-			return message.reply(definitionText, "say")
+			return message.reply(definitionText)
 
 		elif searchType == 'booster' or message.trigger == 'mtgb':
 			if (searchType == 'booster' and message.messagePartsLength == 1) or (message.trigger == 'mtgb' and message.messagePartsLength == 0):
@@ -142,7 +142,7 @@ class Command(CommandTemplate):
 				else:
 					#Normal search, format it
 					replytext = self.formatSearchResult(matchingCards, message.trigger.endswith('f'), shouldPickRandomCard, numberOfCardsToList, searchDict.get('name', None), True)
-			message.reply(replytext, "say")
+			message.reply(replytext)
 
 	def getFormattedResultFromSearchString(self, searchType, searchString, extendedInfo=False, resultListLength=10):
 		if self.areCardfilesInUse:

@@ -25,4 +25,4 @@ class Command(CommandTemplate):
 		else:
 			replytext = u"Just supply a single server name for me to join, I don't know what to do with spaces"
 
-		message.reply(replytext, "say")
+		message.reply(replytext)

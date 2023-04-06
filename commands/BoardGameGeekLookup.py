@@ -20,7 +20,7 @@ class Command(CommandTemplate):
 		"""
 
 		if message.messagePartsLength == 0:
-			message.reply("There's far too many boardgames to just pick a random one! Please provide a search query", "say")
+			message.reply("There's far too many boardgames to just pick a random one! Please provide a search query")
 			return
 
 		#Since the API's search is a bit crap and doesn't sort properly, scrape the web search page
@@ -30,14 +30,14 @@ class Command(CommandTemplate):
 			message.reply("Either your search query was too extensive for BoardGameGeek, or they're distracted by a boardgame. Either way, they took too long to respond, sorry")
 			return
 		if request.status_code != 200:
-			message.reply("Something seems to have gone wrong. At BoardGameGeek, I mean, because I never make mistaks. Try again in a little while", "say")
+			message.reply("Something seems to have gone wrong. At BoardGameGeek, I mean, because I never make mistaks. Try again in a little while")
 			return
 		page = BeautifulSoup(request.content, "html.parser")
 
 		#Get the first result row
 		row = page.find(class_="collection_objectname")
 		if row is None:
-			message.reply("BoardGameGeek doesn't think a game called '{}' exists. Maybe you made a typo?".format(message.message), "say")
+			message.reply("BoardGameGeek doesn't think a game called '{}' exists. Maybe you made a typo?".format(message.message))
 			return
 		#Then get the link to the board game page from that, to get the game ID from the URL
 		# Format of the url is '/boardgame/[ID]/[NAME]
@@ -52,12 +52,12 @@ class Command(CommandTemplate):
 		try:
 			xml = ElementTree.fromstring(request.content)
 		except ElementTree.ParseError:
-			message.reply("I don't know how to read the data returned by BoardGameGeek, which is weird because I'm coded very well. Try again in a little while, see if it works then?", "say")
+			message.reply("I don't know how to read the data returned by BoardGameGeek, which is weird because I'm coded very well. Try again in a little while, see if it works then?")
 			return
 
 		item = xml.find('item')
 		if item is None:  #Specific check otherwise Python prints a warning
-			message.reply("I'm sorry, I didn't find any games called '{}'. Did you make a typo? Or did you just invent a new game?!".format(message.message), "say")
+			message.reply("I'm sorry, I didn't find any games called '{}'. Did you make a typo? Or did you just invent a new game?!".format(message.message))
 			return
 
 		replytext = u"{} ({} players, {} min, {}): ".format(IrcFormattingUtil.makeTextBold(item.find('name').attrib['value']), self.getValueRangeDescription(item, 'minplayers', 'maxplayers'),

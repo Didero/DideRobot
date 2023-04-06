@@ -50,4 +50,4 @@ class Command(CommandTemplate):
 		#Set the last mentioned hash to the newest one
 		self.lastCommitHash = outputLines[0].split(" ", 1)[0]
 
-		message.reply(replytext, "say")
+		message.reply(replytext)

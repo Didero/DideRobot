@@ -40,7 +40,7 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 		if message.messagePartsLength == 0:
-			message.reply(self.helptext, 'say')
+			message.reply(self.helptext)
 			return
 
 		parameter = message.messageParts[0].lower()
@@ -48,7 +48,7 @@ class Command(CommandTemplate):
 
 		#Start with the commands that don't need a username parameter
 		if parameter == 'help':
-			message.reply(self.helptext, 'say')
+			message.reply(self.helptext)
 			return
 		if parameter == 'list':
 			#List all the users we're watching for this channel
@@ -64,7 +64,7 @@ class Command(CommandTemplate):
 			else:
 				watchlist.sort()
 				replytext = "I watch {:,} Mastodon users: {}".format(watchlistLength, "; ".join(watchlist))
-			message.reply(replytext, 'say')
+			message.reply(replytext)
 			return
 		# 'update' forces an update check, but it's only available to admins. Also doesn't need a username
 		if parameter == 'update':
@@ -76,7 +76,7 @@ class Command(CommandTemplate):
 				self.resetScheduledFunctionGreenlet()
 				self.reportNewMessages()
 				replytext = "Finished forced update check"
-			message.reply(replytext, 'say')
+			message.reply(replytext)
 			return
 
 		# All the other parameters need an account name, so check for that now
@@ -177,7 +177,7 @@ class Command(CommandTemplate):
 		else:
 			replytext = "I don't know what to do with the parameter '{}', sorry. Try (re)reading the help text?".format(parameter)
 
-		message.reply(replytext, 'say')
+		message.reply(replytext)
 
 	def reportNewMessages(self, usernamesToCheck=None):
 		if not usernamesToCheck:
@@ -230,7 +230,7 @@ class Command(CommandTemplate):
 				targetchannel = target[1].encode('utf-8')  # Make sure it's not a unicode object
 				# Now go tell that channel all about the new messages
 				for messageData in messageList:
-					targetbot.sendMessage(targetchannel, self.formatMessage(username, messageData), 'say')
+					targetbot.sendMessage(targetchannel, self.formatMessage(username, messageData))
 				# If we skipped a few message, make a mention of that too
 				if numberOfMessagesSkipped > 0:
 					targetbot.sendMessage(targetchannel, "(skipped at least {:,} of {}'s messages)".format(numberOfMessagesSkipped, self.getDisplayName(username)))

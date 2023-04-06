@@ -26,7 +26,7 @@ class Command(CommandTemplate):
 				reply += ". Modules with unload errors: {}".format(", ".format(modulesWithUnloadErrors))
 			if modulesWithLoadErrors:
 				reply += ". Modules with load errors: {}".format(", ".format(modulesWithLoadErrors))
-			return message.reply(reply, "say")
+			return message.reply(reply)
 
 		if message.messagePartsLength == 0:
 			message.reply(u"Please provide the name of one or more modules to {}".format(message.trigger))
@@ -68,4 +68,4 @@ class Command(CommandTemplate):
 			reply += "Successfully {}ed {}. ".format(message.trigger, ", ".join(modulesWithoutErrors))
 		if modulesWithErrors:
 			reply += "Something went wrong when {}ing {}".format(message.trigger, ", ".join(modulesWithErrors))
-		message.reply(reply, "say")
+		message.reply(reply)

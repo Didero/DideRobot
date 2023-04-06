@@ -26,9 +26,9 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 		if message.messagePartsLength == 0:
-			message.reply("No query provided. I'm not just gonna make stuff up to send to Wolfram Alpha, I've got an API call limit! Add your query after the command.", "say")
+			message.reply("No query provided. I'm not just gonna make stuff up to send to Wolfram Alpha, I've got an API call limit! Add your query after the command.")
 		else:
-			message.reply(self.searchWolfram(message.message), "say")
+			message.reply(self.searchWolfram(message.message))
 
 	def fetchWolframData(self, query, podsToFetch=5):
 		#First check if there is an API key

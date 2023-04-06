@@ -43,7 +43,7 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 		if message.messagePartsLength == 0:
-			message.reply(self.helptext, 'say')
+			message.reply(self.helptext)
 			return
 
 		parameter = message.messageParts[0].lower()
@@ -51,7 +51,7 @@ class Command(CommandTemplate):
 
 		#Start with the commands that don't need a username parameter
 		if parameter == 'help':
-			message.reply(self.helptext, 'say')
+			message.reply(self.helptext)
 			return
 		if parameter == 'list':
 			#List all the accounts we're watching for this channel
@@ -67,7 +67,7 @@ class Command(CommandTemplate):
 			else:
 				watchlist.sort()
 				replytext = "I watch {:,} Twitter users for this channel: {}".format(watchlistLength, "; ".join(watchlist))
-			message.reply(replytext, 'say')
+			message.reply(replytext)
 			return
 		#'update' forces an update check, but it's only available to admins. Also doesn't need a username
 		if parameter == 'update':
@@ -79,12 +79,12 @@ class Command(CommandTemplate):
 				self.checkForNewTweets()
 				self.resetScheduledFunctionGreenlet()
 				replytext = "Finished forced TwitterWatcher update check"
-			message.reply(replytext, 'say')
+			message.reply(replytext)
 			return
 
 		#All the other parameters need an account name, so check for that now
 		if message.messagePartsLength == 1:
-			message.reply("Please add a Twitter account name too, so I know where to look", 'say')
+			message.reply("Please add a Twitter account name too, so I know where to look")
 			return
 
 		accountName = message.messageParts[1]
@@ -154,7 +154,7 @@ class Command(CommandTemplate):
 		else:
 			replytext = "I don't know what to do with the parameter '{}', sorry. Try rereading the help text?".format(parameter)
 
-		message.reply(replytext, 'say')
+		message.reply(replytext)
 
 	def updateTwitterToken(self):
 		apikeys = GlobalStore.commandhandler.apikeys
@@ -302,7 +302,7 @@ class Command(CommandTemplate):
 				targetchannel = target[1].encode('utf-8')  #Make sure it's not a unicode object
 				#Now go tell that channel all about the tweets
 				for tweet in tweets:
-					targetbot.sendMessage(targetchannel, self.formatNewTweetText(username, tweet), 'say')
+					targetbot.sendMessage(targetchannel, self.formatNewTweetText(username, tweet))
 				#If we skipped a few tweets, make a mention of that too
 				if tweetsSkipped > 0:
 					targetbot.sendMessage(targetchannel, "(skipped {:,} of {}'s tweets)".format(tweetsSkipped, self.getDisplayName(username)))

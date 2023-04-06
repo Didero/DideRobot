@@ -36,11 +36,11 @@ class Command(CommandTemplate):
 
 		if not matchingLines:
 			message.reply("Hurray, no {}s were found in the {:,} logfiles I checked. That's because I'm programmed incredibly wlel"  # The typo in 'wlel' is intentional, it's a joke
-						  .format(logLevel, numberOfFilesChecked), 'say')
+						  .format(logLevel, numberOfFilesChecked))
 		else:
 			message.reply("Found {:,} {}{} in {:,} logfile{}:".format(len(matchingLines), logLevel, '' if len(matchingLines) == 1 else 's', numberOfFilesChecked, '' if numberOfFilesChecked == 1 else 's'))
 			for line in matchingLines:
-				message.reply(StringUtil.limitStringLength(line, Constants.MAX_MESSAGE_LENGTH), 'say')
+				message.reply(StringUtil.limitStringLength(line, Constants.MAX_MESSAGE_LENGTH))
 
 	def findLogLevelLinesInLogfile(self, logFilePath, logLevelString):
 		matchingLines = []

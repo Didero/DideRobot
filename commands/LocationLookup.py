@@ -20,7 +20,7 @@ class Command(CommandTemplate):
 
 		#First check for the presence of the API key
 		if 'locatorhq' not in GlobalStore.commandhandler.apikeys or 'key' not in GlobalStore.commandhandler.apikeys['locatorhq'] or 'username' not in GlobalStore.commandhandler.apikeys['locatorhq']:
-			message.reply(u"I'm sorry, my owner hasn't filled in the required API key for this module. Please poke them to add it", "say")
+			message.reply(u"I'm sorry, my owner hasn't filled in the required API key for this module. Please poke them to add it")
 			return
 
 		replytext = u""
@@ -110,4 +110,4 @@ class Command(CommandTemplate):
 						else:
 							replytext = u"{username} appears to be from {country}".format(username=username, country=data['countryName'])
 
-		message.reply(replytext, "say")
+		message.reply(replytext)

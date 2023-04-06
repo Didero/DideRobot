@@ -35,8 +35,8 @@ class Command(CommandTemplate):
 					if message.messagePartsLength >= 2:
 						timerMsg += u": {}".format(u" ".join(message.messageParts[1:]))
 
-					gevent.spawn_later(waittime, message.bot.sendMessage, message.source, timerMsg, "say")
+					gevent.spawn_later(waittime, message.bot.sendMessage, message.source, timerMsg)
 
 					replytext = u"{}: Your timer will fire in {} seconds".format(message.userNickname, waittime)
 
-		message.reply(replytext, "say")
+		message.reply(replytext)

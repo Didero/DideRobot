@@ -27,4 +27,4 @@ class Command(CommandTemplate):
 				replytext = "All right, I'll go to '{}'. See you there!".format(channel)
 				message.bot.joinChannel(channel)
 
-		message.reply(replytext, "say")
+		message.reply(replytext)

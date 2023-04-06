@@ -25,7 +25,7 @@ class Command(CommandTemplate):
 
 			#You don't see quit messages in PMs, inform the user anyway
 			if message.isPrivateMessage:
-				message.reply("Quitting! Reason: " + quitmessage, "say")
+				message.reply("Quitting! Reason: " + quitmessage)
 
 			GlobalStore.bothandler.stopBot(message.bot.serverfolder, quitmessage)
 
@@ -37,5 +37,5 @@ class Command(CommandTemplate):
 
 			if message.isPrivateMessage:
 				#If we've been told to shut down in a PM, inform the user that we're complying
-				message.reply("Shutting down! Reason: " + quitmessage, "say")
+				message.reply("Shutting down! Reason: " + quitmessage)
 			GlobalStore.bothandler.shutdown(quitmessage)

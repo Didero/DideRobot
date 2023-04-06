@@ -116,13 +116,13 @@ class Command(CommandTemplate):
 			return message.reply("This module doesn't work in private messages, only in channels. Sorry!")
 		#If no parameters were passed, show the help text
 		if message.messagePartsLength == 0:
-			return message.reply(self.getHelp(message), 'say')
+			return message.reply(self.getHelp(message))
 
 		subcommand = message.messageParts[0].lower()
 		serverChannelString = "{} {}".format(message.bot.serverfolder, message.source)
 
 		if subcommand == 'list':
-			return message.reply(self.getWatchList(serverChannelString), 'say')
+			return message.reply(self.getWatchList(serverChannelString))
 
 		replytext = ""
 		#Commands from here down need a channel name, check if one is provided
@@ -160,7 +160,7 @@ class Command(CommandTemplate):
 					replytext = "Ok, I'll check for new videos right now"
 		if not replytext:
 			replytext = "I don't know the subcommand '{}'. {}".format(subcommand, self.getHelp(message))
-		return message.reply(replytext, 'say')
+		return message.reply(replytext)
 
 	def getWatchList(self, serverChannelString):
 		watchedChannelNames = []

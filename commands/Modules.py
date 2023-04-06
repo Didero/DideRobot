@@ -30,4 +30,4 @@ class Command(CommandTemplate):
 
 			replytext += "Modules loaded: {}".format(", ".join(modules)) 
 			
-		message.reply(replytext, "say")
+		message.reply(replytext)

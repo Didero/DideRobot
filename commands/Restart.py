@@ -30,19 +30,19 @@ class Command(CommandTemplate):
 				#Restart other bot
 				serverfolder = message.message
 			else:
-				message.reply("I'm not familiar with that server, sorry", "say")
+				message.reply("I'm not familiar with that server, sorry")
 				return
 
 			if message.isPrivateMessage:
 				#Private message, let the other person know the command was received
-				message.reply("All right, restarting, I'll be back in a bit if everything goes well", "say")
+				message.reply("All right, restarting, I'll be back in a bit if everything goes well")
 
 			#Restart the bot
 			GlobalStore.bothandler.stopBot(serverfolder, "Restarting...")
 			GlobalStore.bothandler.startBot(serverfolder)
 		elif message.trigger == 'restartfull':
 			if message.isPrivateMessage:
-				message.reply("Fully restarting bot, hopefully I'll be back in a couple of seconds", "say")
+				message.reply("Fully restarting bot, hopefully I'll be back in a couple of seconds")
 			#Idea from PyMoronBot (as usual)
 			self.logInfo("[Restart] Setting '{}' as the commandline arguments".format(*sys.argv))
 			# Replace the running process, in a separate Greenlet so this process won't quit until it's called
