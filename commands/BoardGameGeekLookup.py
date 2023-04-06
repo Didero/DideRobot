@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-from util import IrcFormattingUtil
+from util import IrcFormattingUtil, StringUtil
 import Constants
 
 
@@ -62,21 +62,16 @@ class Command(CommandTemplate):
 
 		replytext = u"{} ({} players, {} min, {}): ".format(IrcFormattingUtil.makeTextBold(item.find('name').attrib['value']), self.getValueRangeDescription(item, 'minplayers', 'maxplayers'),
 															self.getValueRangeDescription(item, 'minplaytime', 'maxplaytime'), item.find('yearpublished').attrib['value'])
-		url = u"{}http://boardgamegeek.com/boardgame/{}".format(Constants.GREY_SEPARATOR, gameId)
 		#Fit in as much of the description as we can
-		lengthLeft = Constants.MAX_MESSAGE_LENGTH - len(replytext) - len(url)
 		description = HTMLParser.HTMLParser().unescape(item.find('description').text)
 		#Some descriptions start with a disclaimer that it's from the publisher, remove that to save space
 		if description.startswith(u"Game description from the publisher") or description.startswith(u"From the manufacturer's website"):
 			description = description.split('\n', 1)[1].lstrip()
 		#Remove newlines
 		description = description.replace('\n', ' ')
-		#Slice it so it fits in the available space, cut at the last word separator
-		description = description[:lengthLeft]
-		description = description[:description.rfind(' ')] + u'[...]'
 		#Show the result
-		replytext += description + url
-		message.reply(replytext, "say")
+		replytext = StringUtil.limitStringLength(replytext + description, suffixes=(Constants.GREY_SEPARATOR, u"https://boardgamegeek.com/boardgame/", gameId))
+		message.reply(replytext)
 
 	@staticmethod
 	def getValueRangeDescription(item, lowerBoundFieldname, higherBoundFieldname):
