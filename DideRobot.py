@@ -456,7 +456,7 @@ class DideRobot(object):
 			logtext = "{user}: {message}"
 		elif messageType == MessageTypes.ACTION:
 			logtext = "*{user} {message}"
-		elif messageType == MessageTypes.ACTION:
+		elif messageType == MessageTypes.NOTICE:
 			logtext = "[notice] {user}: {message}"
 
 		self.messageLogger.log(logtext.format(user=usernick, message=messageText), logsource)
