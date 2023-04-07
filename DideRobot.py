@@ -233,7 +233,6 @@ class DideRobot(object):
 		# The nickname we want is apparently in use. Just append an underscore and try again
 		newNicknameAttempt = parameters[1] + "_"
 		self.logger.info("|{}| Requested nickname '{}' in use, retrying with nickname '{}'".format(self.serverfolder, parameters[1], newNicknameAttempt))
-		self.nickname = newNicknameAttempt
 		self.sendLineToServer("NICK " + newNicknameAttempt)
 
 	#Create a list of user addresses per channel
