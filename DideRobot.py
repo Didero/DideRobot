@@ -201,7 +201,7 @@ class DideRobot(object):
 		# Get the nickname we got assigned from the message
 		self.nickname = parameters[0]
 		if self.nickname != self.settings['nickname']:
-			self.logger.info("|{} Nickname not available. Wanted '{}', got '{}'".format(self.serverfolder, self.settings['nickname'], self.nickname))
+			self.logger.info("|{}| Nickname not available. Wanted '{}', got '{}'".format(self.serverfolder, self.settings['nickname'], self.nickname))
 		# Inform all the modules that we connected
 		message = IrcMessage("RPL_WELCOME", self, None, source, " ".join(parameters))
 		GlobalStore.commandhandler.handleMessage(message)
