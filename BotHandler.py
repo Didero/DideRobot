@@ -46,9 +46,9 @@ class BotHandler:
 	def unregisterBot(self, serverfolder):
 		if serverfolder not in self.bots:
 			self.logger.warning("Asked to unregister non-registered bot '{}'".format(serverfolder))
-			return
-		del self.bots[serverfolder]
-		self.logger.info("Successfully unregistered bot '{}'".format(serverfolder))
+		else:
+			del self.bots[serverfolder]
+			self.logger.info("Successfully unregistered bot '{}'".format(serverfolder))
 		#If there's no more bots running, there's no need to hang about
 		if len(self.bots) == 0:
 			self.logger.info("Out of bots, shutting down!")
