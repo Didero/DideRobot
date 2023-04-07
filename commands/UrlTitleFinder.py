@@ -9,7 +9,7 @@ import GlobalStore
 import MessageTypes
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException
-from util import IrcFormattingUtil
+from util import IrcFormattingUtil, StringUtil
 
 class Command(CommandTemplate):
 
