@@ -53,7 +53,7 @@ class MessageLogger(object):
 
 		#Remove invalid characters from the source name (like '|')
 		oldSource = source
-		source, replacementCount = re.subn(r"[^a-zA-Z0-9_]", "_", source)
+		source, replacementCount = re.subn(r"[^a-zA-Z0-9_#]", "_", source)
 		if replacementCount > 0:
 			self.logger.debug("[MessageLogger] Replaced source '{}' with '{}' to prevent illegal-character error (changecount: {})".format(oldSource, source, replacementCount))
 
