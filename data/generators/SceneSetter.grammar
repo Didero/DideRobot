@@ -1,0 +1,53 @@
+{
+"_name": "Scene Setter",
+"_description": "This generator describes a scene, hopefully starting off your imagination",
+"_triggers": ["scene"],
+"start": "<$randomnumber|2|3|&storeandhide:sectioncount><$choosemultiple|%sectioncount|. |<lighting>|<sound>|<view>|<weather>>. <memory_effect>.",
+"lighting": {"85": "<lighting_visible>", "100": "<lighting_obscured>"},
+"lighting_visible": "The <cellestial_body> <lighting_mood> the <landmark>",
+"cellestial_body": ["sun", "moon"],
+"lighting_mood": {"80": "<lighting_intensity> <lighting_type_verb>", "100": "shone a spotlight on"},
+"lighting_intensity": ["barely", "brightly", "eerily"],
+"lighting_type_verb": ["lit", "illuminated"],
+"landmark": ["horizon", "mountain<$choose|s|>", "distant city<$choose| below|>", "vast ocean<$choose| below|>", "forest"],
+"lighting_obscured": "<lighting_obscured_cause> <lighting_obscured_verb> the <landmark>",
+"lighting_obscured_cause": ["Clouds", "Darkness", "Fog"],
+"lighting_obscured_verb": ["blocked", "cloaked", "covered up", "hid", "obscured", "shrouded"],
+"sound": [
+	"Silence surrounded us",
+	"The distant sounds of <sound_source> were easy to ignore",
+	"The only sounds came from <sound_source>",
+	"Fragments of sound from <sound_source> drifted past"
+],
+"sound_source": ["suburbia below", "birds overhead", "a faraway party"],
+"view": "We <view_verb> the <landmark><view_time_optional>",
+"view_verb": [
+	"were mesmerized by",
+	"couldn't take our eyes off",
+	"were enthralled by"
+],
+"view_time_optional": {"40": "", "100": " <view_time>"},
+"view_time": [
+	"for what felt like a moment and eternity at once",
+	"for the rest of the day", "for hours and hours",
+	"for ages",
+	"and it changed us forever"
+],
+"weather": [
+	"It was <weather_adjective> but we didn't mind at all",
+	"Even the <weather_noun> couldn't <$choose|distract us|tear us away>",
+	"The lovely weather only added to the moment",
+	"A thick fog shielded us from half the world"
+],
+"weather_adjective": ["freezing", "scorching hot", "drizzling", "stormy"],
+"weather_noun": ["bitter cold", "burning heat", "incessant drizzle", "gusts of wind"],
+"memory_effect": {
+	"10": "I'll carry that <scene_noun> with me always",
+	"20": "What a special <scene_noun>",
+	"100": "<recollection_verb> that <scene_noun> always <memory_feeling>"
+},
+"scene_noun": ["day", "scene", "moment", "time"],
+"recollection": {"80": "<recollection_verb>", "100": "Closing my eyes and <recollection_verb|&tolowercase>"},
+"recollection_verb": ["Remembering", "Reliving", "Thinking back to"],
+"memory_feeling": ["gives me strength", "makes me feel cozy", "cheers me up", "turns me nostalgic", "warms my heart", "empowers me", "puts a smile on my face"]
+}
