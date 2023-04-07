@@ -403,9 +403,9 @@ class Command(CommandTemplate):
 			description = description.replace('\n', ' ')
 
 		snippetData = videoData['snippet']
-		resultStringParts = [prefix] if prefix else []
-		resultStringParts.append(u"{title} {by} {channel}".format(title=snippetData['title'].strip(), by=IrcFormattingUtil.makeTextColoured(u'by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']))
-		resultStringParts.append(durationstring)
+		resultStringParts = [u"{prefix}{title} {by} {channel}".format(prefix=prefix if prefix else '', title=snippetData['title'].strip(),
+																	  by=IrcFormattingUtil.makeTextColoured(u'by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']),
+							 durationstring]
 		if includeViewCount:
 			resultStringParts.append(u"{:,} views".format(int(videoData['statistics']['viewCount'])))
 		if includeUploadDate:
