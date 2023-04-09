@@ -573,18 +573,19 @@ class Command(CommandTemplate):
 			definition = json.loads(FileUtil.getLineFromFile(definitionsFilename, linenumber)).values()[0]
 			replytext = u"{}: {}".format(IrcFormattingUtil.makeTextBold(term), definition)
 			#Limit the message length
-			if maxMessageLength and len(replytext) > maxMessageLength:
-				splitIndex = replytext[:maxMessageLength].rfind(' ')
-				replytext = replytext[:splitIndex] + u' [...]'
+			if maxMessageLength:
+				replytext = StringUtil.limitStringLength(replytext, maxLength=maxMessageLength)
 		#Multiple matching definitions found
 		else:
 			if searchterm in possibleDefinitions:
 				#Multiple matches, but one of them is the literal search term. Return that, and how many other matches we found
 				definition = json.loads(FileUtil.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm])).values()[0]
 				replytext = u"{}: {}".format(IrcFormattingUtil.makeTextBold(searchterm), definition)
-				if maxMessageLength and len(replytext) > maxMessageLength - 18:  #-18 to account for the ' XX more matches' text later
-					replytext = replytext[:maxMessageLength-24] + ' [...]'  #18 + len(' [...]')
-				replytext += u" ({:,} more matches)".format(possibleDefinitionsCount-1)
+				moreMatchesSuffix = u" ({:,} more matches)".format(possibleDefinitionsCount-1)
+				if maxMessageLength:
+					replytext = StringUtil.limitStringLength(replytext, maxLength=maxMessageLength, suffixes=moreMatchesSuffix)
+				else:
+					replytext += moreMatchesSuffix
 			else:
 				replytext = u"Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
 				if possibleDefinitionsCount < 10:
@@ -805,7 +806,8 @@ class Command(CommandTemplate):
 			if '{' in text:
 				text = text.replace('}{', ' ').replace('{', '').replace('}', '')
 			#Replace newlines with spaces. If the sentence ends in a letter, add a period
-			text = re.sub(r'(?<=\w)\n', '. ', text).replace('\n', ' ')
+			text = re.sub(r'(?<=\w)\n+', '. ', text)
+			text = StringUtil.removeNewlines(text)
 			#Prevent double spaces
 			text = re.sub(r' {2,}', ' ', text).strip()
 			return text

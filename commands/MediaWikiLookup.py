@@ -6,6 +6,7 @@ from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
 import Constants
+from util import StringUtil
 
 
 class Command(CommandTemplate):
@@ -86,11 +87,5 @@ class Command(CommandTemplate):
 		if u'\t' in articleText:
 			articleText = articleText.rsplit(u'\t', 1)[1].strip()
 		# Replace any remaining newlines with spaces
-		if u'\n' in articleText:
-			articleText = re.sub('\s*\n+\s*', ' ', articleText)
-		# Limit the article text length to a single IRC message
-		maxArticleTextLength = Constants.MAX_MESSAGE_LENGTH - len(Constants.GREY_SEPARATOR) - len(articleUrl)
-		if len(articleText) > maxArticleTextLength:
-			articleText = articleText[:maxArticleTextLength - 5] + u"[...]"
-
-		message.reply(articleText + Constants.GREY_SEPARATOR + articleUrl)
+		articleText = StringUtil.removeNewlines(articleText)
+		message.reply(StringUtil.limitStringLength(articleText, suffixes=(Constants.GREY_SEPARATOR, articleUrl)))

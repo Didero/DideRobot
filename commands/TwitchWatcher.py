@@ -326,17 +326,11 @@ class Command(CommandTemplate):
 
 		# Get stream info
 		streamerData = self.retrieveStreamDataForIds([streamerId], True)
-		url = "https://twitch.tv/" + streamername
 		if len(streamerData) == 0:
 			#Streamer is offline, return general channel info
 			if channelInfo is None:
 				channelInfo = self.retrieveChannelInfo(streamername)
 			description = StringUtil.removeNewlines(channelInfo['description'])
-			maxDescriptionLength = Constants.MAX_MESSAGE_LENGTH - len(displayName) - 12 #12 is the number of other characters in the output string
-			if shouldIncludeUrl:
-				maxDescriptionLength -= len(url) + 3 # Url addition adds the url length plus the brackets and a space, so 3 extra characters
-			if len(description) > maxDescriptionLength:
-				description = description[:maxDescriptionLength - 5] + u'[...]' #-5 to leave room for the brackets and dots
 			streamerInfoOutput = u"{} (offline): {}".format(displayName, description)
 		else:
 			#Streamer is live, return info on them
@@ -344,9 +338,10 @@ class Command(CommandTemplate):
 			liveDurationSeconds = (datetime.datetime.utcnow() - datetime.datetime.strptime(providedStreamerData['started_at'], "%Y-%m-%dT%H:%M:%SZ")).total_seconds()
 			streamerInfoOutput = u"{} is streaming {}: {} [{} viewers, for {}]".format(displayName, providedStreamerData['game_name'],
 				StringUtil.removeNewlines(providedStreamerData['title']), providedStreamerData['viewer_count'], DateTimeUtil.durationSecondsToText(liveDurationSeconds, 'm'))
+		suffixes = None
 		if shouldIncludeUrl:
-			streamerInfoOutput += u' | {}'.format(url)
-		return streamerInfoOutput
+			suffixes = (u' | https://twitch.tv/', streamername)
+		return StringUtil.limitStringLength(streamerInfoOutput, suffixes=suffixes)
 
 
 	def executeScheduledFunction(self):

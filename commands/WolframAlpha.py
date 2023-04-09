@@ -11,6 +11,7 @@ import Constants
 import GlobalStore
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException
+from util import StringUtil
 
 
 class Command(CommandTemplate):
@@ -83,7 +84,7 @@ class Command(CommandTemplate):
 				suggestions = []
 				for didyoumean in didyoumeans:
 					if didyoumean.attrib['level'] != 'low':
-						suggestion = didyoumean.text.replace('\n', '').strip()
+						suggestion = StringUtil.removeNewlines(didyoumean.text, '')
 						if len(suggestion) > 0:
 							suggestions.append(suggestion.encode('utf-8'))
 				if len(suggestions) > 0:
@@ -100,7 +101,7 @@ class Command(CommandTemplate):
 					if text is None or text.startswith('\n'):
 						continue
 					if cleanUpText:
-						text = text.replace('\n', Constants.GREY_SEPARATOR).strip()
+						text = StringUtil.removeNewlines(text, Constants.GREY_SEPARATOR).strip()
 					#If there's no text in this pod (for instance if it's just an image)
 					if len(text) == 0:
 						continue
@@ -116,17 +117,8 @@ class Command(CommandTemplate):
 		if cleanUpText:
 			replystring = re.sub(' {2,}', ' ', replystring)
 
-		#Make sure we don't spam the channel, keep message length limited
-		#  Shortened URL will be about 25 characters, keep that in mind
-		messageLengthLimit = Constants.MAX_MESSAGE_LENGTH
+		suffixes = None
 		if includeUrl:
-			messageLengthLimit -= 30
-
-		if len(replystring) > messageLengthLimit:
-			replystring = replystring[:messageLengthLimit] + '[...]'
-
-		#Add the search url
-		if includeUrl:
-			replystring += "{}https://wolframalpha.com/input/?i={}".format(Constants.GREY_SEPARATOR, urllib.quote_plus(query))
-			
+			suffixes = (Constants.GREY_SEPARATOR, "https://wolframalpha.com/input/?i=", urllib.quote_plus(query))
+		replystring = StringUtil.limitStringLength(replystring, suffixes=suffixes)
 		return replystring
