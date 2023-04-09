@@ -52,6 +52,12 @@ def joinWithSeparator(listOfStrings, separator=None):
 	return separator.join(listOfStrings)
 
 def removeNewlines(string, replacementString=" "):
+	"""
+	Returns the provided string with newline characters removed
+	:param string: The string to remove the newlines from
+	:param replacementString: What to replace newlines with, a single space by default. Repeated newlines will only be replaced by a single replacementString ("\n\n\n" will be replaced by a single replacementString)
+	:return: The provided string except with all newlines replaced with the replacementString (a single space by default)
+	"""
 	if '\n' not in string and '\r' not in string:
 		return string
 	return re.sub(r" *[\r\n]+ *", replacementString, string.rstrip('\r\n'))
