@@ -51,10 +51,10 @@ def joinWithSeparator(listOfStrings, separator=None):
 		separator = Constants.GREY_SEPARATOR
 	return separator.join(listOfStrings)
 
-def removeNewlines(string):
+def removeNewlines(string, replacementString=" "):
 	if '\n' not in string and '\r' not in string:
 		return string
-	return re.sub(r" *[\r\n]+ *", " ", string)
+	return re.sub(r" *[\r\n]+ *", replacementString, string.rstrip('\r\n'))
 
 def forceToUnicode(varToForceToUnicode):
 	if isinstance(varToForceToUnicode, unicode):
