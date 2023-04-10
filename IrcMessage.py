@@ -45,10 +45,11 @@ class IrcMessage(object):
 				#Get the part from the end of the command prefix to the first space (the 'help' part of '!help say')
 				self.trigger = self.rawText[bot.commandPrefixLength:].split(" ", 1)[0].lower()
 				self.message = self.rawText[bot.commandPrefixLength + len(self.trigger):].lstrip()
-			#Check if the text starts with the nick of the bot, 'DideRobot: help'
-			elif bot.nickname and self.rawText.startswith(bot.nickname + ": ") and len(self.rawText) > len(bot.nickname) + 2:
-				self.trigger = self.rawText.split(" ", 2)[1].strip().lower()
-				self.message = self.rawText[len(bot.nickname) + len(self.trigger) + 3:].lstrip()  #+3 because of the colon and space
+			# Check if the text starts with the nick of the bot, then a space, and then something that could be a command trigger, for instance 'DideRobot help' or 'DideRobot generate random'
+			elif bot.nickname and self.rawText.startswith(bot.nickname) and self.rawText[len(bot.nickname)] == " ":
+				messageParts = self.rawText.split(" ", 2)
+				self.trigger = messageParts[1].lower()
+				self.message = messageParts[2] if len(messageParts) > 2 else ""
 			#In private messages we should respond too if there's no command character, because there's no other reason to PM a bot
 			elif self.isPrivateMessage:
 				self.trigger = self.rawText.split(" ", 1)[0].lower()
