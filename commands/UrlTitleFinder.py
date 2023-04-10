@@ -45,7 +45,7 @@ class Command(CommandTemplate):
 				try:
 					title = parseMethod(url)
 				except requests.exceptions.Timeout:
-					self.logError("[url] '{}' took too long to respond, ignoring".format(url))
+					self.logWarning("[url] '{}' took too long to respond, ignoring".format(url))
 				except requests.exceptions.ConnectionError as error:
 					self.logError("[url] A connection error occurred while trying to retrieve '{}': {}".format(url, error))
 				else:
