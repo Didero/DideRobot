@@ -48,14 +48,9 @@ class Command(CommandTemplate):
 					self.logWarning("[url] '{}' took too long to respond, ignoring".format(url))
 				except requests.exceptions.ConnectionError as error:
 					self.logError("[url] A connection error occurred while trying to retrieve '{}': {}".format(url, error))
-				else:
-					if title:
-						break
-
-			#Finally, display the result of all the hard work, if there was any
-			if title:
-				replyText = Command.cleanUpRetrievedTitle(title)
-				message.reply(replyText)
+				# Found a title, so we're done
+				if title:
+					return message.reply(Command.cleanUpRetrievedTitle(title))
 
 	@staticmethod
 	def cleanUpRetrievedTitle(retrievedTitle):
