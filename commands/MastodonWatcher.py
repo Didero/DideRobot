@@ -300,6 +300,8 @@ class Command(CommandTemplate):
 			# For older tweets, list the post date, otherwise list how old it is
 			if messageAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
 				suffixes.append(u' ({})'.format(postDateTime.strftime('%Y-%m-%d')))
+			elif messageAge.total_seconds() <= 60:
+				suffixes.append(u' (posted just now)')
 			else:
 				suffixes.append(u' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision='m')))
 		# Only add the URL if requested
