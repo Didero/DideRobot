@@ -36,11 +36,11 @@ def durationSecondsToText(durationInSeconds, precision='s'):
 
 	durationTextParts = []
 	if days > 0:
-		durationTextParts.append(u"{:,.0f} day{}, ".format(days, u's' if days > 1 else u''))
+		durationTextParts.append("{:,.0f} day{}, ".format(days, 's' if days > 1 else ''))
 	if hours > 0:
-		durationTextParts.append(u"{:,.0f} hour{}".format(hours, u's' if hours > 1 else u''))
+		durationTextParts.append("{:,.0f} hour{}".format(hours, 's' if hours > 1 else ''))
 	if minutes > 0 and precision in ('s', 'm'):
-		durationTextParts.append(u"{:,.0f} minute{}".format(minutes, u's' if minutes > 1 else u''))
+		durationTextParts.append("{:,.0f} minute{}".format(minutes, 's' if minutes > 1 else ''))
 	if seconds > 0 and precision == 's':
-		durationTextParts.append(u"{:,.0f} second{}".format(seconds, u's' if seconds > 1 else u''))
-	return u", ".join(durationTextParts)
+		durationTextParts.append("{:,.0f} second{}".format(seconds, 's' if seconds > 1 else ''))
+	return ", ".join(durationTextParts)
