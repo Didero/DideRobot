@@ -17,7 +17,6 @@ def parseIsoDate(isoString, formatstring=""):
 		for group, value in result.groupdict().iteritems():
 			if value is not None:
 				durations[group] = int(float(value))
-	# print durations
 
 	if formatstring != "":
 		return formatstring.format(**durations)
