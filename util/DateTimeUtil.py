@@ -27,7 +27,7 @@ def durationSecondsToText(durationInSeconds, precision='s'):
 	"""
 	Convert a duration in seconds to a human-readable description, for instance 140 seconds into "2 minutes, 20 seconds"
 	:param durationInSeconds: The number of seconds to convert to human-readable text
-	:param precision: The lowest precision level to include. Should be 'm' to include minutes or 's' to include minutes and seconds
+	:param precision: The lowest precision level to include. Should be 'm' to include minutes or 's' to include minutes and seconds, anything else will exclude minutes and seconds
 	:return: The provided duration as human-readable text, to the provided level of precision, and with the provided number of parts
 	"""
 	minutes, seconds = divmod(durationInSeconds, 60)
