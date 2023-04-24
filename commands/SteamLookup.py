@@ -1,6 +1,6 @@
 import requests
 
-import GlobalStore
+import Constants, GlobalStore
 from CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException, CommandInputException
 from IrcMessage import IrcMessage
@@ -108,8 +108,8 @@ class Command(CommandTemplate):
 
 		replySuffixes = None
 		if includeUrl:
-			replySuffixes = (u" | ", u"https://store.steampowered.com/app/", appId)
-		return StringUtil.limitStringLength(u" | ".join(replyParts), suffixes=replySuffixes)
+			replySuffixes = (Constants.GREY_SEPARATOR, u"https://store.steampowered.com/app/", appId)
+		return StringUtil.limitStringLength(Constants.GREY_SEPARATOR.join(replyParts), suffixes=replySuffixes)
 
 	def getPriceForCountry(self, appId, countryCode):
 		try:
