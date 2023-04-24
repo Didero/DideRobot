@@ -68,7 +68,7 @@ class Command(CommandTemplate):
 		if description.startswith(u"Game description from the publisher") or description.startswith(u"From the manufacturer's website"):
 			description = description.split('\n', 1)[1].lstrip()
 		#Remove newlines
-		description = description.replace('\n', ' ')
+		description = StringUtil.removeNewlines(description)
 		#Show the result
 		replytext = StringUtil.limitStringLength(replytext + description, suffixes=(Constants.GREY_SEPARATOR, u"https://boardgamegeek.com/boardgame/", gameId))
 		message.reply(replytext)
