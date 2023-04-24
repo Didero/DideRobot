@@ -66,7 +66,7 @@ class Command(CommandTemplate):
 	def retrieveGenericTitle(url):
 		# Remove any URL parameters, so we can check the proper URL extension (if any)
 		baseUrl = url.split('?', 1)[0] if '?' in url else url
-		for ext in ('.jpg', '.jpeg', '.gif', '.png', '.bmp', '.avi', '.wav', '.mp3', '.ogg', '.zip', '.rar', '.7z', '.pdf', '.swf', '.gifv', '.mp4', '.webm', '.webp', '.exe', '.deb'):
+		for ext in ('.7z', '.avi', '.bmp', '.deb', '.exe', '.gif', '.gifv', '.jpeg', '.jpg', '.mp3', '.mp4', '.ogg', '.pdf', '.png', '.rar', '.swf', '.wav', '.webm', '.webp', '.zip'):
 			if baseUrl.endswith(ext):
 				return None
 		# Only parse text documents, and not images or videos or the like. Retrieve the url header to check the content type
