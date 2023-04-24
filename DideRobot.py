@@ -96,7 +96,7 @@ class DideRobot(object):
 				realname = self.settings.get('realname', self.settings['nickname'])
 				self.sendLineToServer("USER {} 4 * :{}".format(self.settings['nickname'], realname))  #The '4' means we want WALLOPS messages but not invisibility
 				if self.settings.get('nicknamepassword', None):  #Use 'get' instead of 'in' so we also check for empty strings
-					self.sendMessage("nickserv", "identify {}".format(self.settings['nicknamepassword']), )
+					self.sendMessage("nickserv", "identify {}".format(self.settings['nicknamepassword']))
 
 				#Start listening for replies
 				self.handleConnection()
