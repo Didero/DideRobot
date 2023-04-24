@@ -40,7 +40,7 @@ class Command(CommandTemplate):
 		else:
 			message.reply("Found {:,} {}{} in {:,} logfile{}:".format(len(matchingLines), logLevel, '' if len(matchingLines) == 1 else 's', numberOfFilesChecked, '' if numberOfFilesChecked == 1 else 's'))
 			for line in matchingLines:
-				message.reply(StringUtil.limitStringLength(line, Constants.MAX_MESSAGE_LENGTH))
+				message.replyWithLengthLimit(line)
 
 	def findLogLevelLinesInLogfile(self, logFilePath, logLevelString):
 		matchingLines = []

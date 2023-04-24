@@ -2,6 +2,7 @@ import time
 
 import Constants
 import MessageTypes
+from StringWithSuffix import StringWithSuffix
 
 
 class IrcMessage(object):
@@ -65,11 +66,38 @@ class IrcMessage(object):
 				self.messageParts = []
 				self.messagePartsLength = 0
 
+	def _determineReplyMessageType(self):
+		# Reply with a notice to a user's notice (not a channel one, that spams everybody!), and with a normal message to anything else
+		return MessageTypes.NOTICE if self.isPrivateMessage and self.messageType == MessageTypes.NOTICE else MessageTypes.SAY
+
 	def reply(self, replytext, messagetype=None):
+		"""
+		Reply to this message with the provided replytext
+		:param replytext: The text to send to the source of this message, be it a user or a channel
+		:param messagetype: The type of the message to respond with. Leave empty to reply to a private notice with a notice and to everything else with a normal text message
+		:return: None
+		"""
 		if not messagetype:
-			#Reply with a notice to a user's notice (not a channel one, that spams everybody!), and with a normal message to anything else
-			messagetype = MessageTypes.NOTICE if self.isPrivateMessage and self.messageType == MessageTypes.NOTICE else MessageTypes.SAY
+			messagetype = self._determineReplyMessageType()
 		self.bot.sendMessage(self.source, replytext, messagetype)
+
+	def replyWithLengthLimit(self, reply, messagetype=None):
+		"""
+		Reply to this message with the provided string with optional suffix, with the main text shortened to the maximum message length that fits in a message to this source
+		:param reply: The string or stringWithSuffix object that contains the text to reply with
+		:type reply: basestring or StringWithSuffix
+		:param messagetype: The type of the message to respond with. Leave empty to reply to a private notice with a notice and to everything else with a normal text message
+		:return: None
+		"""
+		if not messagetype:
+			messagetype = self._determineReplyMessageType()
+		if isinstance(reply, StringWithSuffix):
+			mainReply = reply.mainString
+			suffix = reply.suffix
+		else:
+			mainReply = reply
+			suffix = None
+		self.bot.sendLengthLimitedMessage(self.source, mainReply, suffix, messagetype)
 
 	def isSenderAdmin(self):
 		"""

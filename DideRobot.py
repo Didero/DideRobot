@@ -10,6 +10,8 @@ from BotSettingsManager import BotSettingsManager
 from IrcMessage import IrcMessage
 from MessageLogger import MessageLogger
 import MessageTypes
+from util import StringUtil
+from StringWithSuffix import StringWithSuffix
 
 
 class DideRobot(object):
@@ -566,6 +568,32 @@ class DideRobot(object):
 					if extraLine:
 						self.sendMessage(target, extraLine, messageType)
 
+	def sendLengthLimitedMessage(self, target, messageTextToShorten, suffix=None, messageType=MessageTypes.SAY):
+		"""
+		Send a message to the provided target, limited to the maximum length allowed for a message to that target
+		:param target: The user or channel to send the message to
+		:param messageTextToShorten: The main message text that will be shortened if it exceeds the maximum message length, taking the suffix into account
+		:param suffix: An optional string to add to the end of the messageTextToShorten. This suffix will not be shortened, and its length will be taken into account when shortening the messageText
+		:type suffix: basestring
+		:param messageType: The type of the message to send, or a normal text message if not provided
+		"""
+		maxMessageLength = Constants.MAX_LINE_LENGTH - self.calculateMessagePrefixLength(target, messageType)
+		shortenedMessageText = StringUtil.limitStringLength(messageTextToShorten, maxMessageLength, suffixes=suffix)
+		self.sendMessage(target, shortenedMessageText, messageType)
+
+	def calculateMessagePrefixLength(self, target, messageType):
+		# Format of a server-side message (to send our message to everybody in a channel) is ':[nick,32]![username,12]@[hostmask,64] PRIVMSG [target,64] :[messagetext]'
+		# Assume the maximum length for realname and hostname since we don't know if those are set properly or changed server-side
+		prefixLength = len(target) + len(messageType) + 83  # +12 (realname), +64 (hostname), +7 (colons, spaces, etc), = 83
+		if self.nickname:
+			prefixLength += len(self.nickname)
+		else:
+			prefixLength += 32  # No nick set (yet), assume max length
+		# Action messages are normal text messages plus an extra CTCP part
+		if messageType == MessageTypes.ACTION:
+			# +1 because 'PRIVMSG' is one character longer than 'ACTION', +6 for the length of 'ACTION' since it gets added a second time, +2 for the CTCP delimiters, +1 for an extra space = +10
+			prefixLength += 10
+		return prefixLength
 
 	#USER LIST CHECKING FUNCTIONS
 	def isUserAdmin(self, user, userNick=None, userAddress=None):

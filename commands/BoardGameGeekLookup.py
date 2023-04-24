@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 
 from CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
+from StringWithSuffix import StringWithSuffix
 from util import IrcFormattingUtil, StringUtil
 import Constants
 
@@ -70,8 +71,7 @@ class Command(CommandTemplate):
 		#Remove newlines
 		description = StringUtil.removeNewlines(description)
 		#Show the result
-		replytext = StringUtil.limitStringLength(replytext + description, suffixes=(Constants.GREY_SEPARATOR, u"https://boardgamegeek.com/boardgame/", gameId))
-		message.reply(replytext)
+		message.replyWithLengthLimit(StringWithSuffix(replytext + description, (Constants.GREY_SEPARATOR, u"https://boardgamegeek.com/boardgame/", gameId)))
 
 	@staticmethod
 	def getValueRangeDescription(item, lowerBoundFieldname, higherBoundFieldname):

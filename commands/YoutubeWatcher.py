@@ -7,6 +7,7 @@ import GlobalStore
 from util import DateTimeUtil, DictUtil, IrcFormattingUtil, StringUtil
 from CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException, CommandInputException
+from StringWithSuffix import StringWithSuffix
 
 
 class Command(CommandTemplate):
@@ -102,7 +103,7 @@ class Command(CommandTemplate):
 				if server in GlobalStore.bothandler.bots:
 					if videoId not in videoIdToDescription:
 						videoIdToDescription[videoId] = self.getVideoDisplayString(videoId, includeViewCount=False, includeUploadDate=False, includeUrl=True, prefix=self.newVideoPrefix)
-					GlobalStore.bothandler.bots[server].sendMessage(channel, videoIdToDescription[videoId])
+					GlobalStore.bothandler.bots[server].sendLengthLimitedMessage(channel, videoIdToDescription[videoId].mainString, videoIdToDescription[videoId].suffix)
 		if shouldSaveWatchedData:
 			#New video info was stored, so save it to disk too
 			self.saveWatchedChannelsData()
@@ -415,4 +416,4 @@ class Command(CommandTemplate):
 		suffixes = None
 		if includeUrl:
 			suffixes = (Constants.GREY_SEPARATOR, "https://youtu.be/", videoId)
-		return StringUtil.limitStringLength(Constants.GREY_SEPARATOR.join(resultStringParts), suffixes=suffixes)
+		return StringWithSuffix(Constants.GREY_SEPARATOR.join(resultStringParts), suffixes)

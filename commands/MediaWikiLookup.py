@@ -7,6 +7,7 @@ from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
 import Constants
 from util import StringUtil
+from StringWithSuffix import StringWithSuffix
 
 
 class Command(CommandTemplate):
@@ -88,4 +89,4 @@ class Command(CommandTemplate):
 			articleText = articleText.rsplit(u'\t', 1)[1].strip()
 		# Replace any remaining newlines with spaces
 		articleText = StringUtil.removeNewlines(articleText)
-		message.reply(StringUtil.limitStringLength(articleText, suffixes=(Constants.GREY_SEPARATOR, articleUrl)))
+		message.replyWithLengthLimit(articleText, (Constants.GREY_SEPARATOR, articleUrl))

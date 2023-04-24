@@ -48,19 +48,9 @@ class Command(CommandTemplate):
 					self.logWarning("[url] '{}' took too long to respond, ignoring".format(url))
 				except requests.exceptions.ConnectionError as error:
 					self.logError("[url] A connection error occurred while trying to retrieve '{}': {}".format(url, error))
-				# Found a title, so we're done
+				# Found a title, so we're done. It could be either a string or a StringWithSuffix, but the reply method can handle both
 				if title:
-					return message.reply(Command.cleanUpRetrievedTitle(title))
-
-	@staticmethod
-	def cleanUpRetrievedTitle(retrievedTitle):
-		cleanedUpTitle = retrievedTitle.strip()
-		cleanedUpTitle = StringUtil.removeNewlines(cleanedUpTitle)
-		# Convert weird characters like &#39 back into normal ones like '
-		cleanedUpTitle = HTMLParser.HTMLParser().unescape(cleanedUpTitle)
-		# Make sure titles aren't too long
-		cleanedUpTitle = StringUtil.limitStringLength(cleanedUpTitle)
-		return cleanedUpTitle
+					return message.replyWithLengthLimit(title)
 
 	@staticmethod
 	def retrieveGenericTitle(url):
@@ -86,7 +76,10 @@ class Command(CommandTemplate):
 		titlematch = re.search(r'<title ?.*?>(.+?)</title>', retrievedPage.text, re.DOTALL | re.IGNORECASE)
 		if not titlematch:
 			return None
-		return titlematch.group(1)  # No need to do clean-up, that's handled in the main 'execute' function
+		title = StringUtil.removeNewlines(titlematch.group(1).strip())
+		# Convert weird characters like &#39 back into normal ones like '
+		title = HTMLParser.HTMLParser().unescape(title)
+		return title
 
 	@staticmethod
 	def retrieveTwitchTitle(url):

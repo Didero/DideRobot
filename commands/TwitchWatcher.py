@@ -3,10 +3,10 @@ import datetime, json, os, time
 import requests
 
 import GlobalStore
-import Constants
 from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException
+from StringWithSuffix import StringWithSuffix
 
 class Command(CommandTemplate):
 	triggers = ['twitchwatcher', 'twitchwatch']
@@ -87,42 +87,42 @@ class Command(CommandTemplate):
 		streamername = None if message.messagePartsLength < 2 else message.messageParts[1]
 
 		if parameter == "list":
-			replytext = self.listFollowedStreamer(serverChannelString)
+			reply = self.listFollowedStreamer(serverChannelString)
 		elif parameter == "add" or parameter == "follow":
 			if message.messagePartsLength < 2:
-				replytext = "Watch which streamer? There's at least 26 streamers on Twitch so you're going to have to be more specific"
+				reply = "Watch which streamer? There's at least 26 streamers on Twitch so you're going to have to be more specific"
 			else:
 				shouldAutoReport = message.messagePartsLength > 2 and message.messageParts[2].lower() == 'autoreport'
-				replytext = self.startFollowingStreamer(serverChannelString, streamername, shouldAutoReport)
+				reply = self.startFollowingStreamer(serverChannelString, streamername, shouldAutoReport)
 		elif parameter == "remove":
 			if message.messagePartsLength < 2:
-				replytext = "I'm not going to remove all the streamers I watch! Please be more specific"
+				reply = "I'm not going to remove all the streamers I watch! Please be more specific"
 			else:
-				replytext = self.stopFollowingStreamer(serverChannelString, streamername)
+				reply = self.stopFollowingStreamer(serverChannelString, streamername)
 		elif parameter == "toggle" or parameter == "autoreport":
 			#Toggle auto-reporting
 			if message.messagePartsLength < 2:
-				replytext = "I can't toggle autoreporting for everybody, that'd get confusing! Please provide a streamer name too"
+				reply = "I can't toggle autoreporting for everybody, that'd get confusing! Please provide a streamer name too"
 			else:
-				replytext = self.toggleStreamerAutoreport(serverChannelString, streamername)
+				reply = self.toggleStreamerAutoreport(serverChannelString, streamername)
 		elif parameter == "setnick":
 			if message.messagePartsLength < 3:
-				replytext = "I'm not going to make up a nick! Please add a nickname too"
+				reply = "I'm not going to make up a nick! Please add a nickname too"
 			else:
-				replytext = self.setStreamerNickname(serverChannelString, streamername, message.messageParts[2])
+				reply = self.setStreamerNickname(serverChannelString, streamername, message.messageParts[2])
 		elif parameter == "removenick":
 			if message.messagePartsLength < 2:
-				replytext = "I'm not going to delete everybody's nickname! Add the name of the streamer whose nick you want removed"
+				reply = "I'm not going to delete everybody's nickname! Add the name of the streamer whose nick you want removed"
 			else:
-				replytext = self.removeStreamerNickname(serverChannelString, streamername)
+				reply = self.removeStreamerNickname(serverChannelString, streamername)
 		elif parameter == "live":
-			replytext = self.getCurrentlyLiveStreamers(serverChannelString)
+			reply = self.getCurrentlyLiveStreamers(serverChannelString)
 		elif parameter == "lookup":
-			replytext = self.getStreamerInfo(streamername, serverChannelString)
+			reply = self.getStreamerInfo(streamername, serverChannelString)
 		else:
-			replytext = "I don't know what to do with the parameter '{}', sorry. Try (re)reading the help text, or check for typos?".format(parameter)
+			reply = "I don't know what to do with the parameter '{}', sorry. Try (re)reading the help text, or check for typos?".format(parameter)
 		#Show the result of whatever command was called
-		message.reply(replytext)
+		message.replyWithLengthLimit(reply)
 
 	def listFollowedStreamer(self, serverChannelString):
 		"""
@@ -341,8 +341,7 @@ class Command(CommandTemplate):
 		suffixes = None
 		if shouldIncludeUrl:
 			suffixes = (u' | https://twitch.tv/', streamername)
-		return StringUtil.limitStringLength(streamerInfoOutput, suffixes=suffixes)
-
+		return StringWithSuffix(streamerInfoOutput, suffixes)
 
 	def executeScheduledFunction(self):
 		#Go through all our stored streamers, and see if we need to report online status somewhere

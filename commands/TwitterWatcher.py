@@ -4,11 +4,11 @@ import HTMLParser
 import requests
 
 from CommandTemplate import CommandTemplate
-import Constants
 import GlobalStore
 from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import WebRequestException
+from StringWithSuffix import StringWithSuffix
 
 
 class Command(CommandTemplate):
@@ -61,25 +61,25 @@ class Command(CommandTemplate):
 					watchlist.append(self.getDisplayName(username))
 			watchlistLength = len(watchlist)
 			if watchlistLength == 0:
-				replytext = "I'm not watching any Twitter users for this channel"
+				reply = "I'm not watching any Twitter users for this channel"
 			elif watchlistLength == 1:
-				replytext = "I just watch {} for the people here".format(watchlist[0])
+				reply = "I just watch {} for the people here".format(watchlist[0])
 			else:
 				watchlist.sort()
-				replytext = "I watch {:,} Twitter users for this channel: {}".format(watchlistLength, "; ".join(watchlist))
-			message.reply(replytext)
+				reply = "I watch {:,} Twitter users for this channel: {}".format(watchlistLength, "; ".join(watchlist))
+			message.reply(reply)
 			return
 		#'update' forces an update check, but it's only available to admins. Also doesn't need a username
 		if parameter == 'update':
 			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-				replytext = "Only my admin(s) can force an update, sorry!"
+				reply = "Only my admin(s) can force an update, sorry!"
 			elif self.scheduledFunctionIsExecuting:
-				replytext = "I was updating already! Lucky you, now it'll be done quicker"
+				reply = "I was updating already! Lucky you, now it'll be done quicker"
 			else:
 				self.checkForNewTweets()
 				self.resetScheduledFunctionGreenlet()
-				replytext = "Finished forced TwitterWatcher update check"
-			message.reply(replytext)
+				reply = "Finished forced TwitterWatcher update check"
+			message.reply(reply)
 			return
 
 		#All the other parameters need an account name, so check for that now
@@ -93,7 +93,7 @@ class Command(CommandTemplate):
 
 		if parameter == 'add':
 			if isUserBeingWatchedHere:
-				replytext = "I'm already keeping a close eye on {}. On their tweets, I mean".format(self.getDisplayName(accountNameLowered, accountName))
+				reply = "I'm already keeping a close eye on {}. On their tweets, I mean".format(self.getDisplayName(accountNameLowered, accountName))
 			else:
 				#New account
 				if accountNameLowered not in self.watchData:
@@ -109,52 +109,52 @@ class Command(CommandTemplate):
 				#Save the whole thing
 				self.saveWatchData()
 				self.checkForNewTweets([accountNameLowered], False)
-				replytext = "Ok, I'll keep you informed about any new tweets {}... makes? Tweets? What's the verb here?".format(self.getDisplayName(accountNameLowered))
+				reply = "Ok, I'll keep you informed about any new tweets {}... makes? Tweets? What's the verb here?".format(self.getDisplayName(accountNameLowered))
 		elif parameter == 'remove':
 			if not isUserBeingWatchedHere:
-				replytext = "I already wasn't watching {}! Not even secretly".format(accountName)
+				reply = "I already wasn't watching {}! Not even secretly".format(accountName)
 			else:
 				self.watchData[accountNameLowered]['targets'].remove(serverChannelPair)
 				#If this channel was the only place we were reporting this user's tweets to, remove it all together
 				if len(self.watchData[accountNameLowered]['targets']) == 0:
 					del self.watchData[accountNameLowered]
 				self.saveWatchData()
-				replytext = "Ok, I won't keep you updated on whatever {} posts. Tweets. Messages? I don't know the proper verb".format(accountName)
+				reply = "Ok, I won't keep you updated on whatever {} posts. Tweets. Messages? I don't know the proper verb".format(accountName)
 		elif parameter == 'latest':
 			#Download the latest tweet for the provided username
 			try:
 				tweets = self.downloadTweets(accountNameLowered, 1)
 			except WebRequestException as wre:
 				self.logError("[TwitterWatcher] Error occured while downloading single tweet for user {}: {}".format(accountName, wre))
-				replytext = "Woops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe it's Twitter's fault, in which case all we can do is wait"
+				reply = "Woops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe it's Twitter's fault, in which case all we can do is wait"
 			else:
 				if not tweets:
-					replytext = "Sorry, I couldn't find any tweets by {}. Maybe they haven't tweeted yet, or maybe you made a typo?".format(accountName)
+					reply = "Sorry, I couldn't find any tweets by {}. Maybe they haven't tweeted yet, or maybe you made a typo?".format(accountName)
 				else:
-					replytext = self.formatNewTweetText(accountName, tweets[0], addTweetAge=True)
+					reply = self.formatNewTweetText(accountName, tweets[0], addTweetAge=True)
 		elif parameter == 'setname':
 			#Allow users to set a display name
 			if not isUserBeingWatchedHere:
-				replytext = "I'm not watching {}, so I can't change the display name. Add them with the 'add' parameter first".format(accountName)
+				reply = "I'm not watching {}, so I can't change the display name. Add them with the 'add' parameter first".format(accountName)
 			elif message.messagePartsLength < 2:
-				replytext = "Please add a display name for '{}' too. You don't want me thinking up nicknames for people".format(accountName)
+				reply = "Please add a display name for '{}' too. You don't want me thinking up nicknames for people".format(accountName)
 			else:
 				self.watchData[accountNameLowered]['displayname'] = " ".join(message.messageParts[2:])
 				self.saveWatchData()
-				replytext = "Ok, I will call {} '{}' from now on".format(accountName, self.watchData[accountNameLowered]['displayname'])
+				reply = "Ok, I will call {} '{}' from now on".format(accountName, self.watchData[accountNameLowered]['displayname'])
 		elif parameter == 'removename':
 			if not isUserBeingWatchedHere:
-				replytext = "I wasn't calling them anything anyway, since I'm not following {}".format(accountName)
+				reply = "I wasn't calling them anything anyway, since I'm not following {}".format(accountName)
 			elif 'displayname' not in self.watchData[accountNameLowered]:
-				replytext = "I didn't have a nickname listed for {} anyway, so I guess I did what you asked?".format(accountNameLowered)
+				reply = "I didn't have a nickname listed for {} anyway, so I guess I did what you asked?".format(accountNameLowered)
 			else:
 				del self.watchData[accountNameLowered]['displayname']
 				self.saveWatchData()
-				replytext = "Ok, I will just call them by their account name, {}".format(accountName)
+				reply = "Ok, I will just call them by their account name, {}".format(accountName)
 		else:
-			replytext = "I don't know what to do with the parameter '{}', sorry. Try rereading the help text?".format(parameter)
+			reply = "I don't know what to do with the parameter '{}', sorry. Try rereading the help text?".format(parameter)
 
-		message.reply(replytext)
+		message.replyWithLengthLimit(reply)
 
 	def updateTwitterToken(self):
 		apikeys = GlobalStore.commandhandler.apikeys
@@ -302,7 +302,8 @@ class Command(CommandTemplate):
 				targetchannel = target[1].encode('utf-8')  #Make sure it's not a unicode object
 				#Now go tell that channel all about the tweets
 				for tweet in tweets:
-					targetbot.sendMessage(targetchannel, self.formatNewTweetText(username, tweet))
+					formattedTweet = self.formatNewTweetText(username, tweet)
+					targetbot.sendLengthLimitedMessage(target, formattedTweet.mainString, suffix=formattedTweet.suffix)
 				#If we skipped a few tweets, make a mention of that too
 				if tweetsSkipped > 0:
 					targetbot.sendMessage(targetchannel, "(skipped {:,} of {}'s tweets)".format(tweetsSkipped, self.getDisplayName(username)))
@@ -334,13 +335,7 @@ class Command(CommandTemplate):
 		suffixes = [tweetAge]
 		if addTweetUrl:
 			suffixes.extend([' | ', tweetUrl])
-		formattedTweetText = StringUtil.limitStringLength(formattedTweetText, suffixes=suffixes)
-		#Expand URLs (if it'd fit)
-		if 'urls' in tweetData['entities']:
-			for urldata in tweetData['entities']['urls']:
-				if len(formattedTweetText) - len(urldata['url']) + len(urldata['expanded_url']) <= Constants.MAX_MESSAGE_LENGTH:
-					formattedTweetText = formattedTweetText.replace(urldata['url'], urldata['expanded_url'])
-		return formattedTweetText
+		return StringWithSuffix(formattedTweetText, suffixes)
 
 	def getTweetDescription(self, twitterUsername, tweetId, addTweetUrl=True):
 		"""
@@ -348,7 +343,7 @@ class Command(CommandTemplate):
 		:param twitterUsername: The username of the person that made the tweet
 		:param tweetId: The tweet ID to get a description of
 		:param addTweetUrl: If True (the default), the URL to the tweet will be added to the end of the display string
-		:return: A display string for the tweet, or None if the tweet couldn't be retrieved
+		:return: A StringWithSuffix describing the tweet, or None if the tweet couldn't be retrieved
 		"""
 		if not isinstance(tweetId, int):
 			tweetId = int(tweetId, 10)

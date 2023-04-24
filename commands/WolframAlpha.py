@@ -12,6 +12,7 @@ import GlobalStore
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException
 from util import StringUtil
+from StringWithSuffix import StringWithSuffix
 
 
 class Command(CommandTemplate):
@@ -29,7 +30,7 @@ class Command(CommandTemplate):
 		if message.messagePartsLength == 0:
 			message.reply("No query provided. I'm not just gonna make stuff up to send to Wolfram Alpha, I've got an API call limit! Add your query after the command.")
 		else:
-			message.reply(self.searchWolfram(message.message))
+			message.replyWithLengthLimit(self.searchWolfram(message.message))
 
 	def fetchWolframData(self, query, podsToFetch=5):
 		#First check if there is an API key
@@ -120,5 +121,4 @@ class Command(CommandTemplate):
 		suffixes = None
 		if includeUrl:
 			suffixes = (Constants.GREY_SEPARATOR, "https://wolframalpha.com/input/?i=", urllib.quote_plus(query))
-		replystring = StringUtil.limitStringLength(replystring, suffixes=suffixes)
-		return replystring
+		return StringWithSuffix(replystring, suffixes)

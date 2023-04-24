@@ -9,6 +9,7 @@ import GlobalStore
 from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
+from StringWithSuffix import StringWithSuffix
 
 
 class Command(CommandTemplate):
@@ -58,25 +59,25 @@ class Command(CommandTemplate):
 					watchlist.append(username)
 			watchlistLength = len(watchlist)
 			if watchlistLength == 0:
-				replytext = "I'm not watching any Mastodon users for this channel. You could make me watch somebody with the 'add' subcommand, if you want"
+				reply = "I'm not watching any Mastodon users for this channel. You could make me watch somebody with the 'add' subcommand, if you want"
 			elif watchlistLength == 1:
-				replytext = "I only watch for the messages of {} at the moment".format(watchlist[0])
+				reply = "I only watch for the messages of {} at the moment".format(watchlist[0])
 			else:
 				watchlist.sort()
-				replytext = "I watch {:,} Mastodon users: {}".format(watchlistLength, "; ".join(watchlist))
-			message.reply(replytext)
+				reply = "I watch {:,} Mastodon users: {}".format(watchlistLength, "; ".join(watchlist))
+			message.reply(reply)
 			return
 		# 'update' forces an update check, but it's only available to admins. Also doesn't need a username
 		if parameter == 'update':
 			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-				replytext = "Only my admin(s) can force an update, sorry!"
+				reply = "Only my admin(s) can force an update, sorry!"
 			elif self.scheduledFunctionIsExecuting:
-				replytext = "I was updating already! Lucky you, now it'll be done quicker"
+				reply = "I was updating already! Lucky you, now it'll be done quicker"
 			else:
 				self.resetScheduledFunctionGreenlet()
 				self.reportNewMessages()
-				replytext = "Finished forced update check"
-			message.reply(replytext)
+				reply = "Finished forced update check"
+			message.reply(reply)
 			return
 
 		# All the other parameters need an account name, so check for that now
@@ -98,7 +99,7 @@ class Command(CommandTemplate):
 
 		if parameter == 'add':
 			if isUserBeingWatchedHere:
-				replytext = "I'm already keeping a close eye on {}. On their messages, I mean".format(providedName)
+				reply = "I'm already keeping a close eye on {}. On their messages, I mean".format(providedName)
 			else:
 				if storedUsername in self.watchData:
 					# Existing account, all we need to do is add this channel to the target list
@@ -121,17 +122,17 @@ class Command(CommandTemplate):
 					self.watchData[storedUsername]['displayname'] = " ".join(message.messageParts[2:])
 				# Save the whole thing
 				self.saveWatchData()
-				replytext = "Ok, I'll keep you informed about any new messages {}... posts? Toots? What's the verb here?".format(self.getDisplayName(storedUsername))
+				reply = "Ok, I'll keep you informed about any new messages {}... posts? Toots? What's the verb here?".format(self.getDisplayName(storedUsername))
 		elif parameter == 'remove':
 			if not isUserBeingWatchedHere:
-				replytext = "I already wasn't watching {}! That was easy".format(providedName)
+				reply = "I already wasn't watching {}! That was easy".format(providedName)
 			else:
 				self.watchData[storedUsername]['targets'].remove(serverChannelPair)
 				# If this channel was the only place we were reporting this user's messages to, remove it all together
 				if len(self.watchData[storedUsername]['targets']) == 0:
 					del self.watchData[storedUsername]
 				self.saveWatchData()
-				replytext = "Ok, I won't keep you updated on whatever {} posts. Toots. Messages? I don't know the correct verb".format(providedName)
+				reply = "Ok, I won't keep you updated on whatever {} posts. Toots. Messages? I don't know the correct verb".format(providedName)
 		elif parameter == 'latest' or parameter == 'last':
 			# Download the latest message for the provided username
 			if isUserBeingWatchedHere:
@@ -149,35 +150,35 @@ class Command(CommandTemplate):
 			try:
 				latestMessages = self.retrieveMessagesForUser(providedName, userId, server, 1)
 			except Exception as e:
-				replytext = "Whoops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe the Mastodon instance is having issues, in which case all we can do is wait"
+				reply = "Whoops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe the Mastodon instance is having issues, in which case all we can do is wait"
 			else:
 				if not latestMessages:
-					replytext = "Seems like that {} hasn't posted anything yet".format(providedName)
+					reply = "Seems like that {} hasn't posted anything yet".format(providedName)
 				else:
-					replytext = self.formatMessage(providedName, latestMessages[0], addMessageAge=True)
+					reply = self.formatMessage(providedName, latestMessages[0], addMessageAge=True)
 		elif parameter == 'setname':
 			# Allow users to set a display name
 			if not isUserBeingWatchedHere:
-				replytext = "I'm not watching {}, so I can't change the display name. Add them with the 'add' parameter first".format(providedName)
+				reply = "I'm not watching {}, so I can't change the display name. Add them with the 'add' parameter first".format(providedName)
 			elif message.messagePartsLength < 2:
-				replytext = "Please add a display name for '{}' too. You don't want me thinking up nicknames for people".format(providedName)
+				reply = "Please add a display name for '{}' too. You don't want me thinking up nicknames for people".format(providedName)
 			else:
 				self.watchData[storedUsername]['displayname'] = " ".join(message.messageParts[2:])
 				self.saveWatchData()
-				replytext = "Ok, I will call {} '{}' from now on".format(providedName, self.watchData[storedUsername]['displayname'])
+				reply = "Ok, I will call {} '{}' from now on".format(providedName, self.watchData[storedUsername]['displayname'])
 		elif parameter == 'removename':
 			if not isUserBeingWatchedHere:
-				replytext = "I wasn't calling {} anything special anyway, since I'm not watching them".format(providedName)
+				reply = "I wasn't calling {} anything special anyway, since I'm not watching them".format(providedName)
 			elif 'displayname' not in self.watchData[storedUsername]:
-				replytext = "I didn't have a display name listed for {} anyway, so I guess I did what you asked?".format(providedName)
+				reply = "I didn't have a display name listed for {} anyway, so I guess I did what you asked?".format(providedName)
 			else:
 				del self.watchData[storedUsername]['displayname']
 				self.saveWatchData()
-				replytext = "Ok, I will just call {} by their account name from now on".format(storedUsername)
+				reply = "Ok, I will just call {} by their account name from now on".format(storedUsername)
 		else:
-			replytext = "I don't know what to do with the parameter '{}', sorry. Try (re)reading the help text?".format(parameter)
+			reply = "I don't know what to do with the parameter '{}', sorry. Try (re)reading the help text?".format(parameter)
 
-		message.reply(replytext)
+		message.replyWithLengthLimit(reply)
 
 	def reportNewMessages(self, usernamesToCheck=None):
 		if not usernamesToCheck:
@@ -230,7 +231,8 @@ class Command(CommandTemplate):
 				targetchannel = target[1].encode('utf-8')  # Make sure it's not a unicode object
 				# Now go tell that channel all about the new messages
 				for messageData in messageList:
-					targetbot.sendMessage(targetchannel, self.formatMessage(username, messageData))
+					formattedMessage  = self.formatMessage(username, messageData)
+					targetbot.sendLengthLimitedMessage(targetchannel, formattedMessage.mainString, formattedMessage.suffix)
 				# If we skipped a few message, make a mention of that too
 				if numberOfMessagesSkipped > 0:
 					targetbot.sendMessage(targetchannel, "(skipped at least {:,} of {}'s messages)".format(numberOfMessagesSkipped, self.getDisplayName(username)))
@@ -307,18 +309,16 @@ class Command(CommandTemplate):
 		# Only add the URL if requested
 		if addUrl:
 			suffixes.append(u' | {}'.format(messageData['url']))
-		# Make sure the message doesn't get too long
-		formattedMessageText = StringUtil.limitStringLength(formattedMessageText, suffixes=suffixes)
-		return formattedMessageText
+		return StringWithSuffix(formattedMessageText, suffixes)
 
 	def getMessageDescription(self, server, username, messageId, addUrl=True):
 		"""
-		Get a display string describing the Mastodon message from the provided server, user, and ID
+		Get a StringWithSuffix describing the Mastodon message from the provided server, user, and ID
 		:param server: The url to the Mastodon instance
 		:param username: The username of the person that posted the Mastodon message
 		:param messageId: The ID of the Mastodon message
 		:param addUrl: If True (the default), the URL to the Mastodon message will be appended to the end of the display string
-		:return: A display string for the Mastodon message, or None if it couldn't be retrieved
+		:return: A StringWithSuffix for the Mastodon message, or None if it couldn't be retrieved
 		"""
 		if not server.startswith('http'):
 			server = "https://" + server
