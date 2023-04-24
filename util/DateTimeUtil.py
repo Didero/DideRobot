@@ -57,7 +57,8 @@ def durationSecondsToText(durationInSeconds, precision='s', numberOfParts=2):
 			# There's another time part entry coming, so make sure rounding the value results in flooring it
 			timePartValue = timePartValue - 0.5
 		timePartValue = round(timePartValue)
-		durationTextParts.append("{:,.0f} {}{}".format(timePartValue, timePartName, 's' if timePartValue > 1 else ''))
+		if timePartValue >= 1:
+			durationTextParts.append("{:,.0f} {}{}".format(timePartValue, timePartName, 's' if timePartValue > 1 else ''))
 		if numberOfPartsLeft == 1:
 			break
 		else:
