@@ -533,14 +533,14 @@ class DideRobot(object):
 			if isinstance(target, unicode):
 				target = target.encode('utf-8')
 			logtext = ""
-			messageCommand = "PRIVMSG"
+			messageCommand = MessageTypes.SAY
 			if messageType == MessageTypes.ACTION:
 				#An action is just a special type of Say
 				logtext += "*"
-				messageText = self.formatCtcpMessage("ACTION", messageText)
+				messageText = self.formatCtcpMessage(MessageTypes.ACTION, messageText)
 			elif messageType == MessageTypes.NOTICE:
 				logtext += "[notice] "
-				messageCommand = "NOTICE"
+				messageCommand = MessageTypes.NOTICE
 			logtext += "{user}: {message}"
 			line = "{} {} :{}".format(messageCommand, target, messageText)
 			extraLines = None

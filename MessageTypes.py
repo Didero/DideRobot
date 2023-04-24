@@ -1,9 +1,9 @@
 ## All the supported message types ##
 
 # Basic user message types
-SAY = 'say'  # The most common message type, a user typed something in a channel or in a private message
-ACTION = 'action'  # A user typing a '/me' message
-NOTICE = 'notice'  # A special notice-type message sent by a user, a channel, or the server. Don't use 'message.reply' with these in the latter two cases, since that spams the entire channel/server
+SAY = 'PRIVMSG'  # The most common message type, a user typed something in a channel or in a private message
+ACTION = 'ACTION'  # A user typing a '/me' message
+NOTICE = 'NOTICE'  # A special notice-type message sent by a user, a channel, or the server. Don't use 'message.reply' with these in the latter two cases, since that spams the entire channel/server
 
 # Server messages
 RPL_CREATED = 'RPL_CREATED'
