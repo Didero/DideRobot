@@ -110,9 +110,9 @@ class Command(CommandTemplate):
 			videoIdMatch = re.search('youtu\.be/([^?/#]+)', url)
 		else:
 			videoIdMatch = re.search('.+v=([^&#]+)', url)
-			if not videoIdMatch and 'live' in url:
-				# Live videos have a different format: https://www.youtube.com/live/[videoID]
-				videoIdMatch = re.search('live/([^?/#]+)', url)
+			if not videoIdMatch:
+				# Live videos and Shorts have a different format: https://www.youtube.com/[type]/[videoID]
+				videoIdMatch = re.search('(?:live|shorts)/([^?/#]+)', url)
 		if not videoIdMatch:
 			return None
 		videoId = videoIdMatch.group(1)
