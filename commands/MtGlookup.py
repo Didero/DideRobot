@@ -17,6 +17,7 @@ from util import StringUtil
 from util import WebUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException, WebRequestException
+from StringWithSuffix import StringWithSuffix
 
 
 class Command(CommandTemplate):
@@ -88,29 +89,7 @@ class Command(CommandTemplate):
 
 		#We can also search for definitions
 		elif searchType == 'define':
-			#Get only the first part of the definition if the 'full info' trigger wasn't used, otherwise get the whole definition, which can be really long
-			definitionText = self.getDefinition(" ".join(message.messageParts[1:]), None if message.trigger == 'mtgf' else Constants.MAX_MESSAGE_LENGTH)
-			#Now split the definition up into message-sized chunks and send each of them, if necessary
-			# This is not needed in a private message, since huge blocks of text are less of a problem there
-			if not message.isPrivateMessage and message.trigger == 'mtgf' and len(definitionText) > Constants.MAX_MESSAGE_LENGTH:
-				#Cut it up at a word boundary
-				splitIndex = definitionText[:Constants.MAX_MESSAGE_LENGTH].rfind(' ')
-				textRemainder = definitionText[splitIndex + 1:]
-				definitionText = definitionText[:splitIndex]
-				#Since we'll be sending the rest of the definition in notices, add an indication that it's not the whole message
-				definitionText += u' [...]'
-				#Don't send messages too quickly
-				secondsBetweenMessages = message.bot.secondsBetweenLineSends
-				if not secondsBetweenMessages:
-					secondsBetweenMessages = 0.2
-				counter = 1
-				while len(textRemainder) > 0:
-					gevent.spawn_later(secondsBetweenMessages * counter, message.bot.sendMessage, message.userNickname,
-									   u"({}) {}".format(counter + 1, textRemainder[:Constants.MAX_MESSAGE_LENGTH]), MessageTypes.NOTICE)
-					textRemainder = textRemainder[Constants.MAX_MESSAGE_LENGTH:]
-					counter += 1
-			#Present the result!
-			return message.reply(definitionText)
+			return message.replyWithLengthLimit(self.getDefinition(" ".join(message.messageParts[1:])))
 
 		elif searchType == 'booster' or message.trigger == 'mtgb':
 			if (searchType == 'booster' and message.messagePartsLength == 1) or (message.trigger == 'mtgb' and message.messagePartsLength == 0):
@@ -526,19 +505,13 @@ class Command(CommandTemplate):
 			return u"{}: {}".format(displayCardname, linkString)
 
 	@staticmethod
-	def getDefinition(searchterm, maxMessageLength=None):
+	def getDefinition(searchterm):
 		"""
 		Searches for the definition of the provided MtG-related term. Supports regular expressions as the search term
 		:param searchterm The term to find the definition of. Can be a partial match or a regular expression
-		:param maxMessageLength The maximum length of the returned definition. If set to None or to zero or smaller, the full definition will be returned
 		:return The matching term followed by the definition of that term
 		"""
 		definitionsFilename = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGdefinitions.json')
-
-		#Make sure maxMessageLength is a valid value
-		if maxMessageLength and maxMessageLength <= 0:
-			maxMessageLength = None
-
 		possibleDefinitions = {}  #Keys are the matching terms found, values are the line they're found at for easy lookup
 
 		if searchterm == 'random':
@@ -564,6 +537,8 @@ class Command(CommandTemplate):
 						if re.search(searchRegex, definition):
 							possibleDefinitions[term] = linecount
 
+		replytext = None
+		suffix = None
 		possibleDefinitionsCount = len(possibleDefinitions)
 		if possibleDefinitionsCount == 0:
 			replytext = u"Sorry, I don't have any info on that term. If you think it's important, poke my owner(s), maybe they'll add it!"
@@ -572,25 +547,18 @@ class Command(CommandTemplate):
 			term, linenumber = possibleDefinitions.popitem()
 			definition = json.loads(FileUtil.getLineFromFile(definitionsFilename, linenumber)).values()[0]
 			replytext = u"{}: {}".format(IrcFormattingUtil.makeTextBold(term), definition)
-			#Limit the message length
-			if maxMessageLength:
-				replytext = StringUtil.limitStringLength(replytext, maxLength=maxMessageLength)
 		#Multiple matching definitions found
 		else:
 			if searchterm in possibleDefinitions:
 				#Multiple matches, but one of them is the literal search term. Return that, and how many other matches we found
 				definition = json.loads(FileUtil.getLineFromFile(definitionsFilename, possibleDefinitions[searchterm])).values()[0]
 				replytext = u"{}: {}".format(IrcFormattingUtil.makeTextBold(searchterm), definition)
-				moreMatchesSuffix = u" ({:,} more matches)".format(possibleDefinitionsCount-1)
-				if maxMessageLength:
-					replytext = StringUtil.limitStringLength(replytext, maxLength=maxMessageLength, suffixes=moreMatchesSuffix)
-				else:
-					replytext += moreMatchesSuffix
+				suffix = u" ({:,} more matches)".format(possibleDefinitionsCount-1)
 			else:
 				replytext = u"Your search returned {:,} results, please be more specific".format(possibleDefinitionsCount)
 				if possibleDefinitionsCount < 10:
 					replytext += u": {}".format(u"; ".join(sorted(possibleDefinitions.keys())))
-		return replytext
+		return StringWithSuffix(replytext, suffix)
 
 
 	@staticmethod
