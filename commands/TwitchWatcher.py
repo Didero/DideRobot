@@ -10,7 +10,7 @@ from StringWithSuffix import StringWithSuffix
 
 class Command(CommandTemplate):
 	triggers = ['twitchwatcher', 'twitchwatch']
-	helptext = "Follows Twitch streamers. '<add/remove> [streamername]' to add/remove (add 'autoreport' for automatic live mention). " \
+	helptext = "Follows Twitch streamers. '<add/remove> [streamername]' to add/remove (add 'silent' to disable automatic live mention). " \
 			   "'<list/live>' to see all or live followed streamers. '<toggle/autoreport> [streamername]' to toggle autoreporting. " \
 			   "'<setnick> [streamername] [nick]' to set a nickname for a streamer, '<removenick> [streamername]' to remove it. " \
 			   "'<lookup> [streamername] shows info on the provided streamer."
@@ -92,7 +92,7 @@ class Command(CommandTemplate):
 			if message.messagePartsLength < 2:
 				reply = "Watch which streamer? There's at least 26 streamers on Twitch so you're going to have to be more specific"
 			else:
-				shouldAutoReport = message.messagePartsLength > 2 and message.messageParts[2].lower() == 'autoreport'
+				shouldAutoReport = message.messagePartsLength <= 2 or message.messageParts[2].lower() != 'silent'
 				reply = self.startFollowingStreamer(serverChannelString, streamername, shouldAutoReport)
 		elif parameter == "remove":
 			if message.messagePartsLength < 2:
