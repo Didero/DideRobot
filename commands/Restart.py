@@ -18,17 +18,18 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 		quitmessage = u"Don't worry, I'll be right back!"
-		if message.messagePartsLength > 0:
-			quitmessage = message.message
 
 		if message.trigger == 'restart':
-
 			if message.messagePartsLength == 0:
 				#restart this bot
 				serverfolder = message.bot.serverfolder
+				if message.messagePartsLength > 0:
+					quitmessage = message.message
 			elif message.message in GlobalStore.bothandler.bots:
 				#Restart other bot
 				serverfolder = message.message
+				if message.messagePartsLength > 1:
+					quitmessage = " ".join(message.messageParts[1:])
 			else:
 				message.reply("I'm not familiar with that server, sorry")
 				return
@@ -38,8 +39,9 @@ class Command(CommandTemplate):
 				message.reply("All right, restarting, I'll be back in a bit if everything goes well")
 
 			#Restart the bot
-			GlobalStore.bothandler.stopBot(serverfolder, "Restarting...")
+			GlobalStore.bothandler.stopBot(serverfolder, quitmessage)
 			GlobalStore.bothandler.startBot(serverfolder)
+		
 		elif message.trigger == 'restartfull':
 			if message.isPrivateMessage:
 				message.reply("Fully restarting bot, hopefully I'll be back in a couple of seconds")
