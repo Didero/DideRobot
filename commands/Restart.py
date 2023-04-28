@@ -50,7 +50,9 @@ class Command(CommandTemplate):
 			self.logInfo("[Restart] Setting '{}' as the commandline arguments".format(*sys.argv))
 			# Replace the running process, in a separate Greenlet so this process won't quit until it's called
 			gevent.spawn(self.startNewbotProcess)
-			#First shut down all bots to make sure the logs are saved properly
+			# Shut down all bots to make sure the logs are saved properly
+			if message.messagePartsLength > 0:
+				quitmessage = message.message
 			GlobalStore.bothandler.shutdown(quitmessage)
 
 	def startNewbotProcess(self):
