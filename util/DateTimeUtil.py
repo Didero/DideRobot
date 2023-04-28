@@ -4,6 +4,11 @@ from collections import OrderedDict
 from CustomExceptions import CommandException
 
 
+SECONDS = 'seconds'
+MINUTES = 'minutes'
+HOURS = 'hours'
+DAYS = 'days'
+
 
 def parseIsoDuration(isoString, formatstring=""):
 	"""Turn an ISO 8601 formatted duration string like P1DT45M3S into something readable like "1 day, 45 minutes, 3 seconds"""
@@ -24,20 +29,20 @@ def parseIsoDuration(isoString, formatstring=""):
 	else:
 		return durations
 
-def durationSecondsToText(durationInSeconds, precision='s', numberOfParts=2):
+def durationSecondsToText(durationInSeconds, precision=SECONDS, numberOfParts=2):
 	"""
 	Convert a duration in seconds to a human-readable description, for instance 140 seconds into "2 minutes, 20 seconds"
 	:param durationInSeconds: The number of seconds to convert to human-readable text
-	:param precision: The lowest precision level to include. Should be 'm' to include minutes or 's' to include minutes and seconds, anything else will exclude minutes and seconds
-	:param numberOfParts: The number of parts to include, or set to 0 to include all available ones. So for 3 hours, 20 minutes, and 14 seconds, even if the precision is 's', if numberOfParts is 2, the result will be "3 hours, 20 minutes"
+	:param precision: The lowest precision level to include. Should be the MINUTES constant to include minutes or the SECONDS constant to include minutes and seconds, anything else will exclude minutes and seconds
+	:param numberOfParts: The number of parts to include, or set to 0 to include all available ones. So for 3 hours, 20 minutes, and 14 seconds, even if the precision is SECONDS, if numberOfParts is 2, the result will be "3 hours, 20 minutes"
 	:return: The provided duration as human-readable text, to the provided level of precision, and with the provided number of parts
 	"""
 	timeParts = OrderedDict()
 	timeParts['day'] = (durationInSeconds / 86400.0)
 	timeParts['hour'] = (durationInSeconds / 3600.0) % 24
-	if precision in ('m', 's'):
+	if precision in (MINUTES, SECONDS):
 		timeParts['minute'] = (durationInSeconds / 60.0) % 60
-		if precision == 's':
+		if precision == SECONDS:
 			timeParts['second'] = durationInSeconds % 60
 
 	# Remove any part that is (or will be rounded to) zero
@@ -69,8 +74,8 @@ def durationSecondsToText(durationInSeconds, precision='s', numberOfParts=2):
 		return ", ".join(durationTextParts)
 	else:
 		# If duration is too short to list anything, return 0 for the lowest asked precision level
-		if precision == 's':
+		if precision == SECONDS:
 			return "0 seconds"
-		elif precision == 'm':
+		elif precision == MINUTES:
 			return "0 minutes"
 		return "0 hours"

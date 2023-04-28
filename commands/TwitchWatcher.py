@@ -337,7 +337,7 @@ class Command(CommandTemplate):
 			providedStreamerData = streamerData[streamerId]
 			liveDurationSeconds = (datetime.datetime.utcnow() - datetime.datetime.strptime(providedStreamerData['started_at'], "%Y-%m-%dT%H:%M:%SZ")).total_seconds()
 			streamerInfoOutput = u"{} is streaming {}: {} [{} viewers, for {}]".format(displayName, providedStreamerData['game_name'],
-				StringUtil.removeNewlines(providedStreamerData['title']), providedStreamerData['viewer_count'], DateTimeUtil.durationSecondsToText(liveDurationSeconds, 'm'))
+				StringUtil.removeNewlines(providedStreamerData['title']), providedStreamerData['viewer_count'], DateTimeUtil.durationSecondsToText(liveDurationSeconds, DateTimeUtil.MINUTES))
 		suffixes = None
 		if shouldIncludeUrl:
 			suffixes = (u' | https://twitch.tv/', streamername)

@@ -305,7 +305,7 @@ class Command(CommandTemplate):
 			elif messageAge.total_seconds() <= 60:
 				suffixes.append(u' (posted just now)')
 			else:
-				suffixes.append(u' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision='m')))
+				suffixes.append(u' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision=DateTimeUtil.MINUTES)))
 		# Only add the URL if requested
 		if addUrl:
 			suffixes.append(u' | {}'.format(messageData['url']))

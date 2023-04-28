@@ -319,7 +319,7 @@ class Command(CommandTemplate):
 			if tweetAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
 				tweetAge = ' ({})'.format(postDateTime.strftime('%Y-%m-%d'))
 			else:
-				tweetAge = ' ({} ago)'.format(DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision='m'))
+				tweetAge = ' ({} ago)'.format(DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision=DateTimeUtil.MINUTES))
 		tweetUrl = "https://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
 		#Remove newlines
 		formattedTweetText = StringUtil.removeNewlines(tweetData['full_text'], ' | ')

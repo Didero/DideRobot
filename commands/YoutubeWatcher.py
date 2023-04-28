@@ -340,7 +340,7 @@ class Command(CommandTemplate):
 			videoDictList.append(snippet)
 		return videoDictList
 
-	def getVideoAge(self, videoPublishDatetime, precision='m'):
+	def getVideoAge(self, videoPublishDatetime, precision=DateTimeUtil.MINUTES):
 		return DateTimeUtil.durationSecondsToText((datetime.datetime.now() - videoPublishDatetime).total_seconds(), precision)
 
 	def getPlaylistIdsFromNameSearch(self, channelOrPlaylistNameToSearchFor, serverChannelStringToMatch=None):
