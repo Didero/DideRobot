@@ -32,25 +32,25 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		urlmatch = re.search(r"(https?://\S+)", message.message)
-		if not urlmatch:
+		urlmatches = re.findall(r"(https?://\S+)", message.message)
+		if not urlmatches:
 			self.logWarning("[url] Module triggered, but no url found in message '{}'".format(message.message))
 		else:
-			url = urlmatch.group()
-
-			# Go through the methods alphabetically, and use the generic method last
-			title = None
-			for parseMethod in (self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveSteamTitle, self.retrieveTwitchTitle, self.retrieveTwitterTitle,
-								self.retrieveWikipediaTitle, self.retrieveYoutubeTitle, self.retrieveGenericTitle):
-				try:
-					title = parseMethod(url)
-				except requests.exceptions.Timeout:
-					self.logWarning("[url] '{}' took too long to respond, ignoring".format(url))
-				except requests.exceptions.ConnectionError as error:
-					self.logError("[url] A connection error occurred while trying to retrieve '{}': {}".format(url, error))
-				# Found a title, so we're done. It could be either a string or a StringWithSuffix, but the reply method can handle both
-				if title:
-					return message.replyWithLengthLimit(title)
+			for url in urlmatches:
+				# Go through the methods alphabetically, and use the generic method last
+				title = None
+				for parseMethod in (self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveSteamTitle, self.retrieveTwitchTitle, self.retrieveTwitterTitle,
+									self.retrieveWikipediaTitle, self.retrieveYoutubeTitle, self.retrieveGenericTitle):
+					try:
+						title = parseMethod(url)
+					except requests.exceptions.Timeout:
+						self.logWarning("[url] '{}' took too long to respond, ignoring".format(url))
+					except requests.exceptions.ConnectionError as error:
+						self.logError("[url] A connection error occurred while trying to retrieve '{}': {}".format(url, error))
+					# Found a title, so we're done. It could be either a string or a StringWithSuffix, but the reply method can handle both
+					if title:
+						message.replyWithLengthLimit(title)
+						break
 
 	@staticmethod
 	def retrieveGenericTitle(url):
