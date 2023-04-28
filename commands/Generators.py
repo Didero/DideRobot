@@ -230,7 +230,7 @@ class Command(CommandTemplate):
 		numberPeriods = []
 		while number > 0:
 			numberPeriods.append(number % 1000)
-			number /= 1000
+			number //= 1000
 
 		#Since the number was parsed from right to left, we need to reverse it, since in text numbers are written left to right ( twelve thousand fifty, not fifty twelve thousand)
 		numberPeriods.reverse()
@@ -246,7 +246,7 @@ class Command(CommandTemplate):
 
 			#If the number period is larger than 100, we need to mention the first number separately (204,000 is 'two hundred and four thousand')
 			if periodValue >= 100:
-				numberTextParts.append(baseNumberNames[periodValue / 100])
+				numberTextParts.append(baseNumberNames[periodValue // 100])
 				numberTextParts.append('hundred')
 				periodValue %= 100
 
@@ -256,7 +256,7 @@ class Command(CommandTemplate):
 				numberTextParts.append(baseNumberNames[periodValue])
 			#Otherwise we need to split it up a bit more
 			else:
-				tensValue = periodValue / 10
+				tensValue = periodValue // 10
 				if tensValue > 0:
 					numberTextParts.append(tensNames[tensValue - 2])  # -2 because lists are zero-indexed, and the list starts at twenty, not ten
 				#Make sure it doesn't turn 20 into 'twenty zero'
