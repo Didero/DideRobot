@@ -388,7 +388,7 @@ class Command(CommandTemplate):
 			CommandTemplate.logError(u"[YoutubeWatcher] Unexpected reply from Google API: {}".format(json.dumps(googleJson).replace('\n', ' ')))
 			return None
 		videoData = googleJson['items'][0]
-		durationtimes = DateTimeUtil.parseIsoDate(videoData['contentDetails']['duration'])
+		durationtimes = DateTimeUtil.parseIsoDuration(videoData['contentDetails']['duration'])
 		durationstring = u""
 		if durationtimes['day'] > 0:
 			durationstring += u"{day} d, "

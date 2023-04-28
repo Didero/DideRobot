@@ -5,7 +5,7 @@ from collections import OrderedDict
 logger = logging.getLogger('DideRobot')
 
 
-def parseIsoDate(isoString, formatstring=""):
+def parseIsoDuration(isoString, formatstring=""):
 	"""Turn an ISO 8601 formatted duration string like P1DT45M3S into something readable like "1 day, 45 minutes, 3 seconds"""
 
 	durations = {"year": 0, "month": 0, "week": 0, "day": 0, "hour": 0, "minute": 0, "second": 0}
