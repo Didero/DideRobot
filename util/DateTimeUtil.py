@@ -1,8 +1,8 @@
-import logging, re
+import re
 from collections import OrderedDict
 
+from CustomExceptions import CommandException
 
-logger = logging.getLogger('DideRobot')
 
 
 def parseIsoDuration(isoString, formatstring=""):
@@ -13,7 +13,7 @@ def parseIsoDuration(isoString, formatstring=""):
 	regex = 'P(?:(?P<year>\d+)Y)?(?:(?P<month>\d+)M)?(?:(?P<week>\d+)W)?(?:(?P<day>\d+)D)?T?(?:(?P<hour>\d+)H)?(?:(?P<minute>\d+)M)?(?:(?P<second>\d+)S)?'
 	result = re.search(regex, isoString)
 	if result is None:
-		logger.warning("No date results found")
+		raise CommandException("No date results found in '{}'".format(isoString))
 	else:
 		for group, value in result.groupdict().iteritems():
 			if value is not None:
