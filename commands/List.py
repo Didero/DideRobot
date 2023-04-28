@@ -11,13 +11,22 @@ class Command(CommandTemplate):
 	triggers = ['list', 'listf']
 	helptext = "Create and add to lists. Format: {commandPrefix}list[f] [subcommand] (listname) (parameters). " \
 			   "'{commandPrefix}listf' adds more info to a returned entry than '{commandPrefix}list'. " \
-			   "Subcommands: list, create, destroy, add, remove, get, random, getbyid, search, getall, info, rename, setdescription, cleardescription, setadmin. " \
+			   "Subcommands: list, create, destroy, add, remove, get, random, getbyid, search, getall, info, rename, edit, setdescription, cleardescription, setadmin. " \
 			   "Use '{commandPrefix}help list [subcommand]' to get details on how to use that subcommand"
 
 	databasePath = os.path.join(GlobalStore.scriptfolder, "data", "Lists.db")
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'getRandomListEntry', self.getRandomListEntry)
+		# The 'edited_by' and 'edited_date' columns were added later, so we can't be sure the current database has those. Make sure they exist
+		if os.path.isfile(self.databasePath):
+			with sqlite3.connect(self.databasePath) as connection:
+				cursor = connection.cursor()
+				if self.doTablesExist(cursor) and not cursor.execute(u"SELECT COUNT(*) FROM pragma_table_info('list_entries') WHERE name='edited_by'").fetchone()[0]:
+					self.logInfo("[List] Updating old database, adding 'edited_by' and 'edited_date' columns")
+					cursor.execute(u"ALTER TABLE list_entries ADD COLUMN edited_by TEXT")
+					cursor.execute(u"ALTER TABLE list_entries ADD COLUMN edited_date REAL")
+					connection.commit()
 
 	def getHelp(self, message):
 		if message.messagePartsLength <= 1:
@@ -55,6 +64,8 @@ class Command(CommandTemplate):
 				helptext += ". Shows info about the list specified by 'name'"
 			elif subcommand == 'rename':
 				helptext += " [newListname]. Changes the name of the list specified by 'name' to 'newListname', if that list doesn't exist already"
+			elif subcommand == 'edit':
+				helptext += " [id] [newEntryText]. Edits the entry specified by 'id' in the list specified by 'name'. The text of that entry will be replaced with the provided 'newEntryText'. The {commandPrefix}listf output for that entry will show that it has been edited"
 			elif subcommand == 'setdescription':
 				helptext += " [description]. Sets the description for the list specified by 'name'. This description can be seen by doing '{CP}list info [name]'"
 			elif subcommand == 'cleardescription':
@@ -143,7 +154,7 @@ class Command(CommandTemplate):
 					cursor.execute(u"CREATE TABLE lists ("
 								   u"id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT, server TEXT NOT NULL, channel TEXT, creator TEXT, creation_date REAL, is_admin_only INTEGER)")
 					cursor.execute(u"CREATE TABLE list_entries ("
-								   u"id INTEGER NOT NULL, list_id INTEGER NOT NULL, text TEXT NOT NULL, creator TEXT, creation_date REAL,"
+								   u"id INTEGER NOT NULL, list_id INTEGER NOT NULL, text TEXT NOT NULL, creator TEXT, creation_date REAL, edited_by TEXT, edited_date REAL,"
 								   u"PRIMARY KEY (id, list_id), FOREIGN KEY(list_id) REFERENCES lists(id))")
 				# If the database exists, check whether a list with the provided name already exists for the provided server
 				else:
@@ -294,6 +305,24 @@ class Command(CommandTemplate):
 				connection.commit()
 				return message.reply(u"Successfully renamed the '{}' list to '{}'. Don't forget to tell people about the rename though, they might think it got deleted".format(listname, newListname))
 
+			elif subcommand == 'edit':
+				if isListAdminOnly and not message.isSenderAdmin():
+					raise CommandInputException("Sorry, only my admins can edit entries in this list")
+				if message.messagePartsLength < 3:
+					raise CommandInputException("Please add the id of the entry to edit and the new text for that entry. Nobody wants me to replace a random entry with gibberish")
+				if message.messagePartsLength < 4:
+					raise CommandInputException("Please add the new text for the provided entry, because neither of us want me to change it to something random")
+				try:
+					entryId = int(message.messageParts[2], 10)
+				except ValueError:
+					raise CommandInputException("I can't parse '{}' as a number, and it should be an entry ID".format(message.messageParts[1]))
+				oldEntry = self.getEntryById(cursor, listname, listId, entryId)
+				newEntryText = " ".join(message.messageParts[3:]).decode('utf-8', errors='replace')
+				editingUser = message.userNickname.decode('utf-8', errors='replace')
+				cursor.execute("UPDATE list_entries SET text = ?, edited_by = ?, edited_date = ? WHERE list_id=? AND id=?", (newEntryText, editingUser, time.time(), listId, entryId))
+				connection.commit()
+				return message.reply(u"Successfully updated entry {} in list {} from '{}' to '{}'".format(entryId, listname, self.formatEntry(oldEntry, False), newEntryText))
+
 			elif subcommand == 'setdescription' or subcommand == 'cleardescription':
 				if not message.isSenderAdmin():
 					raise CommandInputException("Sorry, only my admins are allowed to change a list's description")
@@ -433,7 +462,11 @@ class Command(CommandTemplate):
 
 	def formatEntry(self, entryData, shouldAddEntryInfo=False):
 		if shouldAddEntryInfo:
-			return u"Entry {:,}: {} (by {} on {})".format(entryData[0], entryData[2], entryData[3], self.formatTimestamp(entryData[4]))
+			formattedEntry = u"Entry {:,}: {} (by {} on {}".format(entryData[0], entryData[2], entryData[3], self.formatTimestamp(entryData[4]))
+			if entryData[5] and entryData[6]:
+				formattedEntry += u", edited by {} on {}".format(entryData[5], self.formatTimestamp(entryData[6]))
+			formattedEntry += u")"
+			return formattedEntry
 		else:
 			return entryData[2]
 
