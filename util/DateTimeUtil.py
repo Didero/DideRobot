@@ -13,7 +13,7 @@ def parseIsoDuration(isoString, formatstring=""):
 	regex = 'P(?:(?P<year>\d+)Y)?(?:(?P<month>\d+)M)?(?:(?P<week>\d+)W)?(?:(?P<day>\d+)D)?T?(?:(?P<hour>\d+)H)?(?:(?P<minute>\d+)M)?(?:(?P<second>\d+)S)?'
 	result = re.search(regex, isoString)
 	if result is None:
-		raise CommandException("No date results found in '{}'".format(isoString))
+		raise CommandException("No ISO-8601 duration string found in '{}'".format(isoString))
 	else:
 		for group, value in result.groupdict().iteritems():
 			if value is not None:
