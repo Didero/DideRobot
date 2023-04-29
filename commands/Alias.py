@@ -112,7 +112,7 @@ class Command(CommandTemplate):
 								 "or it doesn't exist yet in which case you should ask an admin to create it".format(aliasname))
 
 		if parameter == "show":
-			return message.reply(u"{}: {}".format(aliasname, alias))
+			return message.reply(u"{}: {}".format(aliasname, alias.command))
 
 		elif parameter == "remove":
 			#Restrict alias removal to bot admins as well
