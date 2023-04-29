@@ -222,7 +222,7 @@ class Command(CommandTemplate):
 				maxIdResult = cursor.execute(u"SELECT max(id) FROM list_entries WHERE list_id=?", (listId,)).fetchone()
 				entryId = maxIdResult[0] + 1 if maxIdResult[0] else 1
 				entryText = " ".join(message.messageParts[2:]).decode('utf-8', errors='replace')
-				cursor.execute(u"INSERT INTO list_entries VALUES (:id, :listId, :text, :creator, :creationDate)",
+				cursor.execute(u"INSERT INTO list_entries VALUES (:id, :listId, :text, :creator, :creationDate, NULL, NULL)",
 							   {'id': entryId, 'listId': listId, 'text': entryText, 'creator': message.userNickname.decode('utf-8', errors='replace'), 'creationDate': time.time()})
 				connection.commit()
 				return message.reply(u"Added your entry to the '{}' list under entry id {}".format(listname, entryId))
