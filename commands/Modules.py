@@ -1,4 +1,4 @@
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 from IrcMessage import IrcMessage
 
@@ -11,8 +11,8 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		replytext = u""
-		modulename = u""
+		replytext = ""
+		modulename = ""
 		if message.messagePartsLength > 0:
 			modulename = message.messageParts[0]
 		

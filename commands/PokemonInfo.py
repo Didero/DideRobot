@@ -2,7 +2,7 @@
 
 import re
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 from CustomExceptions import CommandException, CommandInputException
 
@@ -24,7 +24,7 @@ class Command(CommandTemplate):
 		dataKeysToKeep = ['name', 'Pokédex number', 'type', 'generation', 'species', 'evolves from', 'evolves into', 'natural abilities',
 						  'hit points', 'attack', 'defense', 'special attack', 'special defense', 'speed']
 		tableAsDict = self.turnWolframTableIntoDict(wolframReply)
-		for key, value in tableAsDict.iteritems():
+		for key, value in tableAsDict.items():
 			if key in dataKeysToKeep:
 				value = re.sub(' *\| *', ', ', value)  #'type' for instance is displayed as 'fire  |  flying' sometimes. Clean that up
 				pokemondata[key] = value

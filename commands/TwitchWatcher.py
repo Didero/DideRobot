@@ -4,7 +4,7 @@ import requests
 
 import GlobalStore
 from util import DateTimeUtil, IrcFormattingUtil, StringUtil
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException
 from StringWithSuffix import StringWithSuffix
 
@@ -42,7 +42,7 @@ class Command(CommandTemplate):
 		#Load stored data on followed streams and the like
 		datafilepath = os.path.join(GlobalStore.scriptfolder, 'data', 'TwitchWatcherData.json')
 		if os.path.isfile(datafilepath):
-			with open(datafilepath, 'r') as datafile:
+			with open(datafilepath, 'r', encoding='utf-8') as datafile:
 				self.watchedStreamersData = json.load(datafile)
 			self.lastLiveCheckTime = self.watchedStreamersData.pop('_lastUpdateTime', None)
 
@@ -51,7 +51,7 @@ class Command(CommandTemplate):
 		self.saveWatchedStreamerData()
 
 	def saveWatchedStreamerData(self):
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'TwitchWatcherData.json'), 'w') as datafile:
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'TwitchWatcherData.json'), 'w', encoding='utf-8') as datafile:
 			datafile.write(json.dumps(self.watchedStreamersData))
 
 	def doesStreamerHaveNickname(self, streamername, serverChannelString):
@@ -131,22 +131,22 @@ class Command(CommandTemplate):
 		:return: A list of the streamers followed for the provided channel
 		"""
 		followedStreamers = []
-		for streamername, streamerdata in self.watchedStreamersData.iteritems():
+		for streamername, streamerdata in self.watchedStreamersData.items():
 			# Get the streamer's nickname, if any
 			if self.doesStreamerHaveNickname(streamername, serverChannelString):
-				streamername = u"{}({})".format(streamerdata['nicknames'][serverChannelString], streamername)
+				streamername = "{}({})".format(streamerdata['nicknames'][serverChannelString], streamername)
 			# Check to see if this streamer is followed in the channel the command came from
 			if serverChannelString in streamerdata['followChannels']:
 				followedStreamers.append(streamername)
 			elif serverChannelString in streamerdata['reportChannels']:
-				followedStreamers.append(streamername + u"[a]")
+				followedStreamers.append(streamername + "[a]")
 		if len(followedStreamers) == 0:
-			return u"I'm not watching anybody for this channel. You can add streamers for me to watch with the 'add' parameter"
+			return "I'm not watching anybody for this channel. You can add streamers for me to watch with the 'add' parameter"
 		elif len(followedStreamers) == 1:
-			return u"I'm only following a single stream for this channel, namely {}".format(followedStreamers[0])
+			return "I'm only following a single stream for this channel, namely {}".format(followedStreamers[0])
 		else:
 			followedStreamers.sort()
-			return u"I'm watching {:,} streamers: {}".format(len(followedStreamers), u", ".join(followedStreamers))
+			return "I'm watching {:,} streamers: {}".format(len(followedStreamers), ", ".join(followedStreamers))
 
 	def startFollowingStreamer(self, serverChannelString, streamername, shouldAutoReport=False):
 		"""
@@ -163,7 +163,7 @@ class Command(CommandTemplate):
 		streamerdata = self.watchedStreamersData.get(streamername, None)
 		# Check if they're already being followed
 		if streamerdata and (serverChannelString in streamerdata['followChannels'] or serverChannelString in streamerdata['reportChannels']):
-			return u"I'm already following {}. Seems you're not the only who likes them!".format(streamername)
+			return "I'm already following {}. Seems you're not the only who likes them!".format(streamername)
 
 		# If we don't have data on this streamer yet, retrieve it
 		if not streamerdata:
@@ -178,9 +178,9 @@ class Command(CommandTemplate):
 		channelType = 'reportChannels' if shouldAutoReport else 'followChannels'
 		streamerdata[channelType].append(serverChannelString)
 		self.saveWatchedStreamerData()
-		replytext = u"All right, I'll keep an eye on {}".format(streamername)
+		replytext = "All right, I'll keep an eye on {}".format(streamername)
 		if shouldAutoReport:
-			replytext += u", and I'll shout in here when they go live"
+			replytext += ", and I'll shout in here when they go live"
 		return replytext
 
 	def stopFollowingStreamer(self, serverChannelString, streamername):
@@ -193,7 +193,7 @@ class Command(CommandTemplate):
 		streamername = streamername.lower()
 		streamerdata = self.watchedStreamersData.get(streamername, None)
 		if not streamerdata:
-			return u"I don't even know who {} is. So task completed, I guess?".format(streamername)
+			return "I don't even know who {} is. So task completed, I guess?".format(streamername)
 		# Determine if the streamer is followed or autoreported
 		channelType = None
 		if serverChannelString in streamerdata['followChannels']:
@@ -201,14 +201,14 @@ class Command(CommandTemplate):
 		elif serverChannelString in streamerdata['reportChannels']:
 			channelType = 'reportChannels'
 		if not channelType:
-			return u"I'm already not watching {}. You're welcome!".format(streamername)
+			return "I'm already not watching {}. You're welcome!".format(streamername)
 		# The streamer is being followed. Remove them from the channel type list they were in
 		streamerdata[channelType].remove(serverChannelString)
 		# If there's no channel watching this streamer anymore, remove it entirely
 		if len(streamerdata['followChannels']) == 0 and len(streamerdata['reportChannels']) == 0:
 			del self.watchedStreamersData[streamername]
 		self.saveWatchedStreamerData()
-		return u"Ok, I'll stop watching {} then".format(streamername)
+		return "Ok, I'll stop watching {} then".format(streamername)
 
 	def toggleStreamerAutoreport(self, serverChannelString, streamername):
 		"""
@@ -220,16 +220,16 @@ class Command(CommandTemplate):
 		streamername = streamername.lower()
 		streamerdata = self.watchedStreamersData.get(streamername, None)
 		if not streamerdata or (serverChannelString not in streamerdata['followChannels'] and serverChannelString not in streamerdata['reportChannels']):
-			return u"I'm not following {}, so I can't toggle autoreporting for them either. Maybe you made a typo, or you forgot to add them with 'add'?"
+			return "I'm not following {}, so I can't toggle autoreporting for them either. Maybe you made a typo, or you forgot to add them with 'add'?"
 		else:
 			if serverChannelString in streamerdata['followChannels']:
 				streamerdata['followChannels'].remove(serverChannelString)
 				streamerdata['reportChannels'].append(serverChannelString)
-				replytext = u"All right, I'll shout in here when {} goes live. You'll never miss a stream of them again!".format(streamername)
+				replytext = "All right, I'll shout in here when {} goes live. You'll never miss a stream of them again!".format(streamername)
 			else:
 				streamerdata['reportChannels'].remove(serverChannelString)
 				streamerdata['followChannels'].append(serverChannelString)
-				replytext = u"Ok, I'll stop mentioning every time {} goes live. But don't blame me if you miss a stream of them!".format(streamername)
+				replytext = "Ok, I'll stop mentioning every time {} goes live. But don't blame me if you miss a stream of them!".format(streamername)
 			self.saveWatchedStreamerData()
 			return replytext
 
@@ -244,12 +244,12 @@ class Command(CommandTemplate):
 		streamername = streamername.lower()
 		streamerdata = self.watchedStreamersData.get(streamername, None)
 		if not streamerdata or (serverChannelString not in streamerdata['followChannels'] and serverChannelString not in streamerdata['reportChannels']):
-			return u"I don't even follow {}, so setting a nickname is slightly premature. Please introduce me to them first with the 'add' parameter".format(streamername)
+			return "I don't even follow {}, so setting a nickname is slightly premature. Please introduce me to them first with the 'add' parameter".format(streamername)
 		if 'nicknames' not in streamerdata:
 			streamerdata['nicknames'] = {}
 		streamerdata['nicknames'][serverChannelString] = nickname
 		self.saveWatchedStreamerData()
-		return u"All right, I'll call {} '{}' from now on".format(streamername, nickname)
+		return "All right, I'll call {} '{}' from now on".format(streamername, nickname)
 
 	def removeStreamerNickname(self, serverChannelString, streamername):
 		"""
@@ -262,20 +262,20 @@ class Command(CommandTemplate):
 		streamerdata = self.watchedStreamersData.get(streamername, None)
 		# Maybe they entered the nickname instead of the streamer name. Check if we can find it
 		if not streamerdata:
-			for streamername, streamerdata in self.watchedStreamersData.iteritems():
+			for streamername, streamerdata in self.watchedStreamersData.items():
 				if self.doesStreamerHaveNickname(streamername, serverChannelString) and streamername == streamerdata['nicknames'][serverChannelString].lower():
 					# Found a match. If we break now, streamername and streamerdata will be set correctly
 					break
 			else:
-				return u"I'm sorry, I don't know who {} is. Maybe you made a typo, or you forgot to add the streamer with the 'add' parameter?".format(streamername)
+				return "I'm sorry, I don't know who {} is. Maybe you made a typo, or you forgot to add the streamer with the 'add' parameter?".format(streamername)
 		if not self.doesStreamerHaveNickname(streamername, serverChannelString):
-			return u"I don't have a nickname stored for {}, so mission accomplished, I guess?".format(streamername)
+			return "I don't have a nickname stored for {}, so mission accomplished, I guess?".format(streamername)
 		nickname = streamerdata['nicknames'][serverChannelString]
 		del streamerdata['nicknames'][serverChannelString]
 		if len(streamerdata['nicknames']) == 0:
 			del streamerdata['nicknames']
 		self.saveWatchedStreamerData()
-		return u"Ok, I removed the nickname '{}', I'll call them by their Twitch username '{}' from now on".format(nickname, streamername)
+		return "Ok, I removed the nickname '{}', I'll call them by their Twitch username '{}' from now on".format(nickname, streamername)
 
 	def getCurrentlyLiveStreamers(self, serverChannelString):
 		"""
@@ -285,7 +285,7 @@ class Command(CommandTemplate):
 		:return: A user-aimed message describing whether the action succeeded or not
 		"""
 		streamerIdsToCheck = {}
-		for streamername, streamerdata in self.watchedStreamersData.iteritems():
+		for streamername, streamerdata in self.watchedStreamersData.items():
 			if serverChannelString in streamerdata['followChannels'] or serverChannelString in streamerdata['reportChannels']:
 				streamerIdsToCheck[streamerdata['clientId']] = streamername
 		streamerDataById = self.retrieveStreamDataForIds(streamerIdsToCheck)
@@ -294,16 +294,16 @@ class Command(CommandTemplate):
 		#One or more streamers are live, show info on each of them
 		reportStrings = []
 		shouldUseShortReportString = len(streamerDataById) >= 4  # Use shorter report strings if there's 4 or more people live
-		for streamerId, streamerdata in streamerDataById.iteritems():
+		for streamerId, streamerdata in streamerDataById.items():
 			streamername = streamerIdsToCheck[streamerId]
 			displayname = streamername
 			if self.doesStreamerHaveNickname(streamername, serverChannelString):
 				displayname = self.watchedStreamersData[streamername]['nicknames'][serverChannelString]
-			url = u"https://twitch.tv/{}".format(streamername)
+			url = "https://twitch.tv/{}".format(streamername)
 			if shouldUseShortReportString:
-				reportStrings.append(u"{} ({})".format(displayname, url))
+				reportStrings.append("{} ({})".format(displayname, url))
 			else:
-				reportStrings.append(StringUtil.removeNewlines(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url)))
+				reportStrings.append(StringUtil.removeNewlines("{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url)))
 		return StringUtil.joinWithSeparator(reportStrings)
 
 	def getStreamerInfo(self, streamername, serverChannelString=None, shouldIncludeUrl=True):
@@ -331,23 +331,23 @@ class Command(CommandTemplate):
 			if channelInfo is None:
 				channelInfo = self.retrieveChannelInfo(streamername)
 			description = StringUtil.removeNewlines(channelInfo['description'])
-			streamerInfoOutput = u"{} (offline): {}".format(displayName, description)
+			streamerInfoOutput = "{} (offline): {}".format(displayName, description)
 		else:
 			#Streamer is live, return info on them
 			providedStreamerData = streamerData[streamerId]
 			liveDurationSeconds = (datetime.datetime.utcnow() - datetime.datetime.strptime(providedStreamerData['started_at'], "%Y-%m-%dT%H:%M:%SZ")).total_seconds()
-			streamerInfoOutput = u"{} is streaming {}: {} [{} viewers, for {}]".format(displayName, providedStreamerData['game_name'],
+			streamerInfoOutput = "{} is streaming {}: {} [{} viewers, for {}]".format(displayName, providedStreamerData['game_name'],
 				StringUtil.removeNewlines(providedStreamerData['title']), providedStreamerData['viewer_count'], DateTimeUtil.durationSecondsToText(liveDurationSeconds, DateTimeUtil.MINUTES))
 		suffixes = None
 		if shouldIncludeUrl:
-			suffixes = (u' | https://twitch.tv/', streamername)
+			suffixes = (' | https://twitch.tv/', streamername)
 		return StringWithSuffix(streamerInfoOutput, suffixes)
 
 	def executeScheduledFunction(self):
 		#Go through all our stored streamers, and see if we need to report online status somewhere
 		#  If we do, check if they're actually online
 		streamerIdsToCheck = {}  #Store as a clientId-to-streamername dict to facilitate reverse lookup in self.streamerdata later
-		for streamername, data in self.watchedStreamersData.iteritems():
+		for streamername, data in self.watchedStreamersData.items():
 			if len(data['reportChannels']) > 0:
 				#Ok, store that we need to check whether this stream is online or not
 				# Because doing the check one time for all streamers at once is far more efficient
@@ -360,7 +360,7 @@ class Command(CommandTemplate):
 		# Update the last checked time regardless of whether data retrieval succeeds
 		# So even if something goes wrong, we do get results when the connection works again
 		self.lastLiveCheckTime = time.time()
-		liveStreamDataById = self.retrieveStreamDataForIds(streamerIdsToCheck.keys())
+		liveStreamDataById = self.retrieveStreamDataForIds(list(streamerIdsToCheck.keys()))
 
 		#If the last time we checked for updates was (far) longer ago than the time between update checks, we've probably been offline for a while
 		# Any data we retrieve could be old, so don't report it, but just log who's streaming and who isn't
@@ -377,7 +377,7 @@ class Command(CommandTemplate):
 		channelMessages = {}  #key is string with server-channel, separated by a space. Value is a list of tuples with data on streams that are live
 
 		#Go through all the required IDs and check if the API returned info info on that stream. If so, store that data for display later
-		for streamerId, streamername in streamerIdsToCheck.iteritems():
+		for streamerId, streamername in streamerIdsToCheck.items():
 			#Check if the requested ID exists in the API reply. If it didn't, the stream is offline
 			if streamerId not in liveStreamDataById:
 				self.watchedStreamersData[streamername]['hasBeenReportedLive'] = False
@@ -398,7 +398,7 @@ class Command(CommandTemplate):
 
 		if shouldReport:
 			#And now report each online stream to each channel that wants it
-			for serverChannelString, streamdatalist in channelMessages.iteritems():
+			for serverChannelString, streamdatalist in channelMessages.items():
 				server, channel = serverChannelString.rsplit(" ", 1)
 				#First check if we're even in the server and channel we need to report to
 				if server not in GlobalStore.bothandler.bots or channel not in GlobalStore.bothandler.bots[server].channelsUserList:
@@ -412,12 +412,12 @@ class Command(CommandTemplate):
 					url = "https://twitch.tv/" + streamdata['streamername']
 					#A lot of live streamers to report, keep it short. Just the streamer name and the URL
 					if useShortReportString:
-						reportStrings.append(u"{} ({})".format(displayname, url))
+						reportStrings.append("{} ({})".format(displayname, url))
 					# Only a few streamers live, we can be a bit more verbose
 					else:
-						reportStrings.append(StringUtil.removeNewlines(u"{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url)))
+						reportStrings.append(StringUtil.removeNewlines("{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url)))
 				#Now make the bot say it
-				GlobalStore.bothandler.bots[server].sendMessage(channel.encode("utf8"), u"Streamer{} went live: ".format(u's' if len(reportStrings) > 1 else u'') +
+				GlobalStore.bothandler.bots[server].sendMessage(channel, "Streamer{} went live: ".format('s' if len(reportStrings) > 1 else '') +
 																StringUtil.joinWithSeparator(reportStrings))
 
 
@@ -426,13 +426,13 @@ class Command(CommandTemplate):
 		try:
 			r = requests.get("https://api.twitch.tv/helix/users", headers=self.getAuthenticationHeader(), params={"login": streamername}, timeout=10.0)
 		except requests.exceptions.Timeout:
-			raise CommandException(u"Apparently Twitch is distracted by its own streams, because it's too slow to respond. Try again in a bit?")
+			raise CommandException("Apparently Twitch is distracted by its own streams, because it's too slow to respond. Try again in a bit?")
 		twitchData = r.json()
 		if 'error' in twitchData:
-			self.logError(u"[TwitchWatch] Something went wrong when trying to find the clientID of user '{}'. {}".format(streamername, twitchData['message'] if 'message' in twitchData else u"No error message provided"))
-			raise CommandException(u"Sorry, something went wrong when trying to look up info on that user. Please try again in a bit, maybe it'll go better then")
+			self.logError("[TwitchWatch] Something went wrong when trying to find the clientID of user '{}'. {}".format(streamername, twitchData['message'] if 'message' in twitchData else "No error message provided"))
+			raise CommandException("Sorry, something went wrong when trying to look up info on that user. Please try again in a bit, maybe it'll go better then")
 		if 'data' not in twitchData or len(twitchData['data']) == 0:
-			raise CommandException(u"That... doesn't match anybody on file. Twitch's file, I mean. Maybe you misspelled the streamer's name?", shouldLogError=False)
+			raise CommandException("That... doesn't match anybody on file. Twitch's file, I mean. Maybe you misspelled the streamer's name?", shouldLogError=False)
 		# No errors, got the streamer data. Return it
 		return twitchData['data'][0]
 
@@ -449,12 +449,12 @@ class Command(CommandTemplate):
 			userIdString = "user_id=" + "&user_id=".join(idList)
 			r = requests.get("https://api.twitch.tv/helix/streams/?first=100&" + userIdString, headers=self.getAuthenticationHeader(), timeout=10.0)
 		except requests.exceptions.Timeout:
-			raise CommandException(u"Twitch took too long to respond")
+			raise CommandException("Twitch took too long to respond")
 		apireply = r.json()
 		if "error" in apireply:
-			errormessage = apireply["message"] if "message" in apireply else u"No error message provided"
-			self.logError(u"[TwitchWatch] Twitch API returned an error while retrieving stream data by ID: " + errormessage)
-			raise CommandException(u"Twitch is having some trouble finding the stream info I requested, it seems. Try again later", shouldLogError=False)
+			errormessage = apireply["message"] if "message" in apireply else "No error message provided"
+			self.logError("[TwitchWatch] Twitch API returned an error while retrieving stream data by ID: " + errormessage)
+			raise CommandException("Twitch is having some trouble finding the stream info I requested, it seems. Try again later", shouldLogError=False)
 
 		if 'data' not in apireply or len(apireply['data']) == 0:
 			#No live streams
@@ -472,7 +472,7 @@ class Command(CommandTemplate):
 		#Add game names to each streamer's stream data, if requested
 		if shouldRetrieveGameNames:
 			gameIdToName = self.retrieveGameNamesForIds(gameIds)
-			for streamerId, streamdata in streamerIdToData.iteritems():
+			for streamerId, streamdata in streamerIdToData.items():
 				streamdata['game_name'] = gameIdToName.get(streamdata['game_id'], "[Unknown]")
 
 		return streamerIdToData
@@ -488,13 +488,13 @@ class Command(CommandTemplate):
 			idString = "?id=" + "&id=".join(idList)
 			r = requests.get("https://api.twitch.tv/helix/games/" + idString, headers=self.getAuthenticationHeader(), timeout=10.0)
 		except requests.exceptions.Timeout:
-			raise CommandException(u"Twitch took too long to respond")
+			raise CommandException("Twitch took too long to respond")
 
 		apireply = r.json()
 		if "error" in apireply:
-			errormessage = apireply["message"] if "message" in apireply else u"No error message provided"
-			self.logError(u"[TwitchWatch] Twitch API return an error while retrieving game names by ID: " + errormessage)
-			raise CommandException(u"Twitch seems to have trouble converting game IDs to names, it seems. Better luck next time, hopefully")
+			errormessage = apireply["message"] if "message" in apireply else "No error message provided"
+			self.logError("[TwitchWatch] Twitch API return an error while retrieving game names by ID: " + errormessage)
+			raise CommandException("Twitch seems to have trouble converting game IDs to names, it seems. Better luck next time, hopefully")
 
 		gameIdToName = {}
 		for gamedata in apireply['data']:

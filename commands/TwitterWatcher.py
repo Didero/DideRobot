@@ -1,9 +1,8 @@
-import base64, datetime, json, os, re
-import HTMLParser
+import base64, datetime, html, json, os
 
 import requests
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from IrcMessage import IrcMessage
@@ -28,7 +27,7 @@ class Command(CommandTemplate):
 		#First retrieve which Twitter accounts we should follow, if that file exists
 		watchedFilepath = os.path.join(GlobalStore.scriptfolder, 'data', 'WatchedTwitterAccounts.json')
 		if os.path.exists(watchedFilepath):
-			with open(watchedFilepath, 'r') as watchedFile:
+			with open(watchedFilepath, 'r', encoding='utf-8') as watchedFile:
 				self.watchData = json.load(watchedFile)
 		#If we can't identify to Twitter, stop right here
 		if 'twitter' not in GlobalStore.commandhandler.apikeys:
@@ -56,7 +55,7 @@ class Command(CommandTemplate):
 		if parameter == 'list':
 			#List all the accounts we're watching for this channel
 			watchlist = []
-			for username, usernameData in self.watchData.iteritems():
+			for username, usernameData in self.watchData.items():
 				if serverChannelPair in usernameData['targets']:
 					watchlist.append(self.getDisplayName(username))
 			watchlistLength = len(watchlist)
@@ -212,7 +211,7 @@ class Command(CommandTemplate):
 				self.logError("[TwitterWatcher] Twitter API reply took too long to arrive")
 				raise WebRequestException("Twitter took too long to respond")
 			except ValueError:
-				self.logError(u"[TwitterWatcher] Didn't get parsable JSON return from Twitter API: {}".format(req.text.replace('\n', '|') if req else "[no response retrieved]"))
+				self.logError("[TwitterWatcher] Didn't get parsable JSON return from Twitter API: {}".format(req.text.replace('\n', '|') if req else "[no response retrieved]"))
 				raise WebRequestException("Twitter API returned unexpected data")
 			except Exception as e:
 				self.logError("[TwitterWatcher] Tweet download threw an unexpected error of type '{}': {}".format(type(e), str(e)))
@@ -241,7 +240,7 @@ class Command(CommandTemplate):
 
 	def checkForNewTweets(self, usernamesToCheck=None, reportNewTweets=True):
 		if not usernamesToCheck:
-			usernamesToCheck = self.watchData  #Don't use '.keys()' so we don't copy the username list
+			usernamesToCheck = self.watchData  #Don't copy the username list
 		if not usernamesToCheck:
 			return
 
@@ -299,7 +298,7 @@ class Command(CommandTemplate):
 				targetbot = GlobalStore.bothandler.bots[target[0]]
 				if target[1] not in targetbot.channelsUserList:
 					continue
-				targetchannel = target[1].encode('utf-8')  #Make sure it's not a unicode object
+				targetchannel = target[1]
 				#Now go tell that channel all about the tweets
 				for tweet in tweets:
 					formattedTweet = self.formatNewTweetText(username, tweet)
@@ -324,14 +323,14 @@ class Command(CommandTemplate):
 		#Remove newlines
 		formattedTweetText = StringUtil.removeNewlines(tweetData['full_text'], ' | ')
 		#Fix special characters (convert '&amp;' to '&' for instance)
-		formattedTweetText = HTMLParser.HTMLParser().unescape(formattedTweetText)
+		formattedTweetText = html.unescape(formattedTweetText)
 		#Remove the link to the photo at the end, but mention that there is one
 		if 'media' in tweetData['entities']:
 			for mediaItem in tweetData['entities']['media']:
-				formattedTweetText = formattedTweetText.replace(mediaItem['url'], u'')
-				formattedTweetText += u"(has {})".format(mediaItem['type'])
+				formattedTweetText = formattedTweetText.replace(mediaItem['url'], '')
+				formattedTweetText += "(has {})".format(mediaItem['type'])
 		# Finalize the return text, limited to message length
-		formattedTweetText = u"{}: {}".format(IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), formattedTweetText)
+		formattedTweetText = "{}: {}".format(IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), formattedTweetText)
 		suffixes = [tweetAge]
 		if addTweetUrl:
 			suffixes.extend([' | ', tweetUrl])
@@ -363,5 +362,5 @@ class Command(CommandTemplate):
 
 	def saveWatchData(self):
 		watchDataFilePath = os.path.join(GlobalStore.scriptfolder, 'data', 'WatchedTwitterAccounts.json')
-		with open(watchDataFilePath, 'w') as watchDataFile:
+		with open(watchDataFilePath, 'w', encoding='utf-8') as watchDataFile:
 			watchDataFile.write(json.dumps(self.watchData))

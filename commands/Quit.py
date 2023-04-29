@@ -1,4 +1,4 @@
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 from IrcMessage import IrcMessage
 

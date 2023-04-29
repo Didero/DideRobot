@@ -3,7 +3,7 @@ import json, re
 
 import requests
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
 import GlobalStore
@@ -47,52 +47,52 @@ class Command(CommandTemplate):
 		except requests.exceptions.Timeout:
 			raise CommandException("My connection to Brickset.com timed out. Try again in a while")
 		except ValueError as ve:
-			self.logError(u"Brickset API result could not be parsed as JSON, API reply: {}".format(apiResult.text if apiResult else u"[[apiResult not set]]"))
+			self.logError("Brickset API result could not be parsed as JSON, API reply: {}".format(apiResult.text if apiResult else "[[apiResult not set]]"))
 			raise CommandException("Hmm, the Brickset API returned unexpected data, that's weird. Sorry, maybe try again in a while, and/or tell my owner(s)?")
-		if apiData[u'status'] != u'success':
-			self.logError(u"Non-success result returned from Brickset API: {}".format(apiData))
+		if apiData['status'] != 'success':
+			self.logError("Non-success result returned from Brickset API: {}".format(apiData))
 			raise CommandException("Something went wrong with retrieving the data... Maybe try again in a bit, or tell my owner(s)")
-		if apiData[u'matches'] == 0:
+		if apiData['matches'] == 0:
 			raise CommandInputException("No matching Lego sets were found. Maybe you made a typo?")
 
-		setData = apiData[u'sets'][0]
+		setData = apiData['sets'][0]
 		availableFrom = None
 		availableUntil = None
 		prices = []
-		for countryCode, currencySymbol in ((u'US', u'$'), (u'UK', u'£'), (u'DE', u'€')):
-			countryData = setData[u'LEGOCom'].get(countryCode, None)
+		for countryCode, currencySymbol in (('US', '$'), ('UK', '£'), ('DE', '€')):
+			countryData = setData['LEGOCom'].get(countryCode, None)
 			if countryData:
-				availableFromInCountry = countryData.get(u'dateFirstAvailable', None)
+				availableFromInCountry = countryData.get('dateFirstAvailable', None)
 				if availableFromInCountry and (availableFrom is None or availableFromInCountry < availableFrom):
 					availableFrom = availableFromInCountry
-			availableUntilInCountry = countryData.get(u'dateLastAvailable', None)
+			availableUntilInCountry = countryData.get('dateLastAvailable', None)
 			if availableUntilInCountry and (availableUntil is None or availableUntilInCountry > availableUntil):
 				availableUntil = availableUntilInCountry
-			if u'retailPrice' in countryData:
-				prices.append(u"{}{:,}".format(currencySymbol, countryData[u'retailPrice']))
-		replytextParts = [u"{name}", u"{number}-{numberVariant}"]
-		if u'subtheme' in setData:
-			replytextParts.append(u"{theme} ({subtheme})")
+			if 'retailPrice' in countryData:
+				prices.append("{}{:,}".format(currencySymbol, countryData['retailPrice']))
+		replytextParts = ["{name}", "{number}-{numberVariant}"]
+		if 'subtheme' in setData:
+			replytextParts.append("{theme} ({subtheme})")
 		else:
-			replytextParts.append(u"{theme}")
-		replytextParts.append(u"{pieces:,} pieces")
+			replytextParts.append("{theme}")
+		replytextParts.append("{pieces:,} pieces")
 		if prices:
-			replytextParts.append(u" ".join(prices))
+			replytextParts.append(" ".join(prices))
 		if availableFrom or availableUntil:
-			availableText = u""
+			availableText = ""
 			if availableFrom:
-				availableText += u"from {}".format(self.formatDateString(availableFrom))
+				availableText += "from {}".format(self.formatDateString(availableFrom))
 			if availableUntil:
-				availableText += u" until {}".format(self.formatDateString(availableUntil))
+				availableText += " until {}".format(self.formatDateString(availableUntil))
 			replytextParts.append(availableText.lstrip())
-		elif u'year' in setData:
-			replytextParts.append(u"{year}")
-		replytextParts.append(u"{bricksetURL}")
-		if apiData[u'matches'] > 1:
-			matchesLeft = apiData[u'matches'] - 1
-			replytextParts.append(u"{:,} more match{}: https://brickset.com/search?query={}".format(matchesLeft, u'' if matchesLeft == 1 else u'es', message.message.replace(' ', '+')))
-		replytext = u" | ".join(replytextParts).format(**setData)
+		elif 'year' in setData:
+			replytextParts.append("{year}")
+		replytextParts.append("{bricksetURL}")
+		if apiData['matches'] > 1:
+			matchesLeft = apiData['matches'] - 1
+			replytextParts.append("{:,} more match{}: https://brickset.com/search?query={}".format(matchesLeft, '' if matchesLeft == 1 else 'es', message.message.replace(' ', '+')))
+		replytext = " | ".join(replytextParts).format(**setData)
 		return message.reply(replytext)
 
 	def formatDateString(self, dateString):
-		return dateString.split(u'T', 1)[0]
+		return dateString.split('T', 1)[0]

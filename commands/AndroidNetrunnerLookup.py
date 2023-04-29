@@ -1,10 +1,9 @@
-import json, os, random, re, time
-import HTMLParser
+import html, json, os, random, re, time
 
 import gevent
 import requests
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 from util import StringUtil
 from IrcMessage import IrcMessage
@@ -83,7 +82,7 @@ class Command(CommandTemplate):
 
 		#Correct some values, to make searching easier (so a search for 'set' or 'sets' both work)
 		searchTermsToCorrect = {'setname': ['set', 'sets'], 'flavor': ['flavour'], 'title': ['name']}
-		for correctTerm, listOfWrongterms in searchTermsToCorrect.iteritems():
+		for correctTerm, listOfWrongterms in searchTermsToCorrect.items():
 			for wrongTerm in listOfWrongterms:
 				if wrongTerm in searchDict:
 					if correctTerm not in searchDict:
@@ -93,15 +92,11 @@ class Command(CommandTemplate):
 		#Turn the search strings into actual regexes
 		regexDict = {}
 		errors = []
-		for attrib, query in searchDict.iteritems():
+		for attrib, query in searchDict.items():
 			try:
-				#Since the query is a string, and the card data is unicode, convert the query to unicode before turning it into a regex
-				regex = re.compile(unicode(query, encoding='utf8'), re.IGNORECASE)
+				regex = re.compile(query, re.IGNORECASE)
 			except (re.error, SyntaxError) as e:
 				self.logError("[Netrunner] Regex error when trying to parse '{}': {}".format(query, e))
-				errors.append(attrib)
-			except UnicodeDecodeError as e:
-				self.logError("[Netrunner] Unicode error in key '{}': {}".format(attrib, e))
 				errors.append(attrib)
 			else:
 				regexDict[attrib] = regex
@@ -119,10 +114,10 @@ class Command(CommandTemplate):
 			return
 
 		#All entered data is valid, look through the stored cards
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCards.json'), 'r') as jsonfile:
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCards.json'), 'r', encoding='utf-8') as jsonfile:
 			cardstore = json.load(jsonfile)
 
-		for index in xrange(0, len(cardstore)):
+		for index in range(0, len(cardstore)):
 			carddata = cardstore.pop(0)
 
 			#Then check if the rest of the attributes match
@@ -167,7 +162,7 @@ class Command(CommandTemplate):
 				cardstore = random.sample(cardstore, maxCardsToList)
 			cardnameText = ""
 			for card in cardstore:
-				cardnameText += card['title'].encode('utf-8') + "; "
+				cardnameText += card['title'] + "; "
 			cardnameText = cardnameText[:-2]
 
 			if nameMatchedCardFound:
@@ -187,42 +182,42 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def getFormattedCardInfo(card, addExtendedInfo=False):
-		cardInfoList = [u'\x02' + card['title'] + u'\x0f']  #Make title bold
+		cardInfoList = ['\x02' + card['title'] + '\x0f']  #Make title bold
 		if 'type' in card:
 			cardInfoList.append(card['type'])
 			if 'subtype' in card:
-				cardInfoList[-1] += u": " + card['subtype']
+				cardInfoList[-1] += ": " + card['subtype']
 		if 'cost' in card:
-			cardInfoList.append(u"Costs " + card['cost'])
+			cardInfoList.append("Costs " + card['cost'])
 		if 'advancementcost' in card:
-			cardInfoList.append(card['advancementcost'] + u" Advance Cost")
+			cardInfoList.append(card['advancementcost'] + " Advance Cost")
 		if 'minimumdecksize' in card:
-			cardInfoList.append(u"Min Deck Size: " + card['minimumdecksize'])
+			cardInfoList.append("Min Deck Size: " + card['minimumdecksize'])
 		if 'influencelimit' in card:
-			cardInfoList.append(u"Influence Limit: " + card['influencelimit'])
+			cardInfoList.append("Influence Limit: " + card['influencelimit'])
 		if 'baselink' in card:
-			cardInfoList.append(u"Link Strength: " + card['baselink'])
+			cardInfoList.append("Link Strength: " + card['baselink'])
 		if 'agendapoints' in card:
-			cardInfoList.append(u"Agenda Points: " + card['agendapoints'])
+			cardInfoList.append("Agenda Points: " + card['agendapoints'])
 		if 'trash' in card:
-			cardInfoList.append(u"Trash: " + card['trash'])
+			cardInfoList.append("Trash: " + card['trash'])
 		if 'influence' in card:
-			cardInfoList.append(u"Influence: " + card['influence'])
+			cardInfoList.append("Influence: " + card['influence'])
 		if 'text' in card:
 			cardInfoList.append(card['text'])
 		if 'faction' in card:
-			cardInfoList.append(u"Faction: " + card['faction'])
+			cardInfoList.append("Faction: " + card['faction'])
 		if addExtendedInfo:
 			if 'flavor' in card:
-				cardInfoList.append(u"\x0314" + card['flavor'] + u"\x0f")  #Color flavor text gray
+				cardInfoList.append("\x0314" + card['flavor'] + "\x0f")  #Color flavor text gray
 			if 'setname' in card:
-				cardInfoList.append(u"in set " + card['setname'])
+				cardInfoList.append("in set " + card['setname'])
 
 		#FILL THAT SHIT IN (encoded properly)
-		separator = u' \x0314|\x0f '  #'\x03' is the 'color' control char, 14 is grey, and '\x0f' is the 'reset' character ending any decoration
+		separator = ' \x0314|\x0f '  #'\x03' is the 'color' control char, 14 is grey, and '\x0f' is the 'reset' character ending any decoration
 		separatorLength = len(separator)
 		#Keep adding parts to the output until an entire block wouldn't fit on one line, then start a new message
-		replytext = u''
+		replytext = ''
 		messageLength = 0
 		MAX_MESSAGE_LENGTH = 325
 
@@ -243,30 +238,30 @@ class Command(CommandTemplate):
 			else:
 				#If we would exceed max message length, cut off at the highest space and continue in a new message
 				#  If the message started with a special character (bold for name, grey for flavour), copy those
-				prefix = u''
+				prefix = ''
 				#bold
-				if cardInfoPart.startswith(u'\x02'):
-					prefix = u'\x02'
+				if cardInfoPart.startswith('\x02'):
+					prefix = '\x02'
 				#color
-				elif cardInfoPart.startswith(u'\x03'):
+				elif cardInfoPart.startswith('\x03'):
 					#Also copy colour code
 					prefix = cardInfoPart[:3]
 				#Get the spot in the text where the cut-off would be (How much of the part text fits in the open space)
 				splitIndex = MAX_MESSAGE_LENGTH - messageLength
 				#Then get the last space before that index, so we don't split mid-word (if possible)
-				if u' ' in cardInfoPart[:splitIndex]:
-					splitIndex = cardInfoPart.rindex(u' ', 0, splitIndex)
+				if ' ' in cardInfoPart[:splitIndex]:
+					splitIndex = cardInfoPart.rindex(' ', 0, splitIndex)
 				#If we can't find a space, add a dash to indicate the word continues in the new message
 				elif splitIndex > 0:
-					cardInfoPart = cardInfoPart[:splitIndex-1] + u'-' + cardInfoPart[splitIndex-1:]
+					cardInfoPart = cardInfoPart[:splitIndex-1] + '-' + cardInfoPart[splitIndex-1:]
 				#Add the second section back to the list, so it can be properly added, even if it would still be too long
 				cardInfoList.insert(0, prefix + cardInfoPart[splitIndex:])
 				#Then add the first part to the message
-				replytext += cardInfoPart[:splitIndex] + u'\n'
+				replytext += cardInfoPart[:splitIndex] + '\n'
 				messageLength = 0
 
-		#Remove the separator at the end, and make sure it's a string and not unicode
-		replytext = replytext.rstrip(separator).rstrip().encode('utf-8')
+		#Remove the separator at the end
+		replytext = replytext.rstrip(separator).rstrip()
 		return replytext
 
 	def shouldUpdate(self):
@@ -275,7 +270,7 @@ class Command(CommandTemplate):
 		if not os.path.exists(versionfilename):
 			return True
 		else:
-			with open(versionfilename) as versionfile:
+			with open(versionfilename, encoding='utf-8') as versionfile:
 				versiondata = json.load(versionfile)
 			if time.time() - versiondata['lastUpdateTime'] < self.scheduledFunctionTime - 5.0:
 				return False
@@ -313,7 +308,6 @@ class Command(CommandTemplate):
 		keysToRename = {'factioncost': 'influence'}
 		keysToReformat = ('flavor', 'text')
 		keysToCheckForLength = ('flavor', 'subtype')
-		htmlparser = HTMLParser.HTMLParser()  #Needed because for some reason there's HTML entities in the text ('&ndash' etc)
 		cardcount = 0
 		for card in carddata:
 			for keyToRemove in keysToRemove:
@@ -322,9 +316,9 @@ class Command(CommandTemplate):
 
 			for keyToMakeString in keysToMakeStrings:
 				if keyToMakeString in card:
-					card[keyToMakeString] = unicode(card[keyToMakeString])
+					card[keyToMakeString] = str(card[keyToMakeString])
 
-			for keyToRename, newname in keysToRename.iteritems():
+			for keyToRename, newname in keysToRename.items():
 				if keyToRename in card:
 					card[newname] = card[keyToRename]
 					del card[keyToRename]
@@ -336,7 +330,7 @@ class Command(CommandTemplate):
 					#Also remove newlines
 					card[field] = card[field].replace('\r\n', ' ').replace('\n', ' ')
 					#Fix stray HTML entities
-					card[field] = htmlparser.unescape(card[field])
+					card[field] = html.unescape(card[field])
 
 			for field in keysToCheckForLength:
 				if field in card:
@@ -351,11 +345,11 @@ class Command(CommandTemplate):
 				cardcount = 0
 
 		#Save the carddata to file
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCards.json'), 'w') as cardfile:
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCards.json'), 'w', encoding='utf-8') as cardfile:
 			cardfile.write(json.dumps(carddata))  #Faster than 'json.dump()' for some reason
 
 		#Store latest update time for future checks
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCardsVersion.json'), 'w') as versionfile:
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'NetrunnerCardsVersion.json'), 'w', encoding='utf-8') as versionfile:
 			versionfile.write(json.dumps({'lastUpdateTime': time.time()}))
 
 		#Done! Free the file read, log the update, and report our success

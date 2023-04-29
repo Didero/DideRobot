@@ -11,7 +11,6 @@ from IrcMessage import IrcMessage
 from MessageLogger import MessageLogger
 import MessageTypes
 from util import StringUtil
-from StringWithSuffix import StringWithSuffix
 
 
 class DideRobot(object):
@@ -147,7 +146,7 @@ class DideRobot(object):
 
 	def handleConnection(self):
 		#Keep reading for possible incoming messages
-		incomingData = ""
+		incomingData = b""
 		# Set the timeout to 10 minutes, so if our computer loses connection to the server/internet, we notice
 		self.ircSocket.settimeout(600)
 		while self.shouldStayConnected:
@@ -157,18 +156,18 @@ class DideRobot(object):
 				self.logger.warning("|{}| Our connection to the server timed out".format(self.serverfolder))
 				return
 			# A closed connection just makes recv return an empty string. Check for that
-			if incomingData == "":
+			if incomingData == b"":
 				self.logger.info("|{}| Server closed the connection".format(self.serverfolder))
 				return
 			# Handle all completely sent messages (delimited by \r\n), leave any unfinished messages for the next loop
-			while '\r\n' in incomingData:
-				line, incomingData = incomingData.split('\r\n', 1)
+			while b'\r\n' in incomingData:
+				line, incomingData = incomingData.split(b'\r\n', 1)
 				# First deal with the simplest type of message, PING. Just reply PONG
-				if line.startswith("PING"):
-					self.sendLineToServer(line.replace("PING", "PONG", 1), False)
+				if line.startswith(b"PING"):
+					self.sendLineToServer(line.replace(b"PING", b"PONG", 1), False)
 				else:
 					# Let's find out what kind of message this is!
-					lineParts = line.split(" ")
+					lineParts = line.decode('utf-8').split(" ")
 					# A line consists at least of 'source messageType [target] content'
 					messageSource = lineParts[0]
 					# It usually starts with a colon, remove that
@@ -311,7 +310,7 @@ class DideRobot(object):
 		# log for every channel the user was in that they quit
 		message = IrcMessage('quit', self, prefix, None, params[0])
 		logMessage = "QUIT: {nick} ({address}): '{quitmessage}' ".format(nick=message.userNickname, address=prefix, quitmessage=params[0])
-		for channel, userlist in self.channelsUserList.iteritems():
+		for channel, userlist in self.channelsUserList.items():
 			if prefix in userlist:
 				self.messageLogger.log(logMessage, channel)
 				userlist.remove(prefix)
@@ -344,7 +343,7 @@ class DideRobot(object):
 			self.nickname = newnick
 			self.logger.info("|{}| Our nick got changed from '{}' to '{}'".format(self.serverfolder, oldnick, self.nickname))
 		# Log the change in every channel where it's relevant
-		for channel, userlist in self.channelsUserList.iteritems():
+		for channel, userlist in self.channelsUserList.items():
 			if prefix in userlist:
 				# Update the userlists for all channels this user is in
 				userlist.append(newaddress)
@@ -474,7 +473,9 @@ class DideRobot(object):
 		if shouldLogMessage:
 			self.logger.debug("|{}| > {}".format(self.serverfolder, lineToSend))
 		try:
-			self.ircSocket.send(lineToSend + "\r\n")
+			if isinstance(lineToSend, str):
+				lineToSend = lineToSend.encode('utf-8')
+			self.ircSocket.send(lineToSend + b"\r\n")
 		except gevent.socket.error as socketError:
 			self.logger.error("|{}| Socket error occurred when sending line '{}': {}".format(self.serverfolder, lineToSend, socketError))
 			#If the socket is giving errors, we should close the socket and make the bot reconnect
@@ -525,15 +526,6 @@ class DideRobot(object):
 			return
 		#Only say something if we're not muted, or if it's a private message or a notice
 		if not self.isMuted or target[0] not in Constants.CHANNEL_PREFIXES or messageType == MessageTypes.NOTICE:
-			#Make sure we're not trying to send Unicode
-			if isinstance(messageText, unicode):
-				try:
-					messageText = messageText.encode(encoding='utf-8', errors='replace')
-				except (UnicodeDecodeError, UnicodeEncodeError):
-					self.logger.warning("|{}| [sendMessage] Error encoding message to string (is now type '{}'): '{}'".format(self.serverfolder, type(messageText), messageText))
-			#It can't handle unicode message targets either
-			if isinstance(target, unicode):
-				target = target.encode('utf-8')
 			logtext = ""
 			messageCommand = MessageTypes.SAY
 			if messageType == MessageTypes.ACTION:
@@ -574,7 +566,7 @@ class DideRobot(object):
 		:param target: The user or channel to send the message to
 		:param messageTextToShorten: The main message text that will be shortened if it exceeds the maximum message length, taking the suffix into account
 		:param suffix: An optional string to add to the end of the messageTextToShorten. This suffix will not be shortened, and its length will be taken into account when shortening the messageText
-		:type suffix: basestring
+		:type suffix: str
 		:param messageType: The type of the message to send, or a normal text message if not provided
 		"""
 		maxMessageLength = Constants.MAX_LINE_LENGTH - self.calculateMessagePrefixLength(target, messageType)

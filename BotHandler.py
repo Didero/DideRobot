@@ -39,7 +39,6 @@ class BotHandler:
 		if serverfolder not in self.bots:
 			self.logger.warning("Asked to stop unknown bot '{}'!".format(serverfolder))
 			return False
-		quitmessage = quitmessage.encode('utf-8')
 		self.bots[serverfolder].quit(quitmessage)
 		return True
 
@@ -57,6 +56,5 @@ class BotHandler:
 
 	def shutdown(self, quitmessage='Shutting down...'):
 		#Give all bots the same quit message
-		quitmessage = quitmessage.encode('utf-8')
 		for serverfolder in self.bots.keys():
 			self.stopBot(serverfolder, quitmessage)

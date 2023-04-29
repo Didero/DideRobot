@@ -27,7 +27,7 @@ if __name__ == '__main__':
 	loggingFormatter = logging.Formatter('%(asctime)s (%(levelname)s) %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
 
 	#Log everything to a file. New file each day, keep 2 days
-	loggingFileHandler = logging.handlers.TimedRotatingFileHandler(os.path.join(GlobalStore.scriptfolder, 'Program.log'), when='midnight', backupCount=2, delay=True, utc=True)
+	loggingFileHandler = logging.handlers.TimedRotatingFileHandler(os.path.join(GlobalStore.scriptfolder, 'Program.log'), when='midnight', backupCount=2, delay=True, utc=True, encoding='utf-8')
 	loggingFileHandler.setLevel(logging.DEBUG)
 	loggingFileHandler.setFormatter(loggingFormatter)
 	logger.addHandler(loggingFileHandler)

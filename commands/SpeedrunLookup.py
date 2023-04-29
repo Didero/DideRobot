@@ -1,6 +1,6 @@
 import requests
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from util import IrcFormattingUtil
 from CustomExceptions import CommandException

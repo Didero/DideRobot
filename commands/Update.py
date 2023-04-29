@@ -1,6 +1,6 @@
 import subprocess
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from util import StringUtil
 
@@ -16,7 +16,7 @@ class Command(CommandTemplate):
 	def onLoad(self):
 		#Set the stored hash to the latest local one
 		output = subprocess.check_output(['git', 'show', '--format=oneline', '--no-patch'])
-		self.lastCommitHash = output.split(" ", 1)[0]
+		self.lastCommitHash = output.split(b" ", 1)[0]
 	
 	def execute(self, message):
 		"""
@@ -30,14 +30,14 @@ class Command(CommandTemplate):
 		commitMessages = []
 		linecount = 0
 		for line in outputLines:
-			lineparts = line.split(" ", 1)
+			lineparts = line.split(b" ", 1)
 			#If we've reached a commit we've already mentioned, stop the whole thing
 			if lineparts[0] == self.lastCommitHash:
 				break
 			linecount += 1
 			#Only show the last few commit messages, but keep counting lines regardless
 			if len(commitMessages) < self.MAX_UPDATES_TO_DISPLAY :
-				commitMessages.append(lineparts[1])
+				commitMessages.append(lineparts[1].decode('utf-8'))
 		if linecount == 0:
 			replytext = u"No updates found, seems I'm up-to-date. I feel so hip!"
 		elif linecount == 1:
@@ -48,6 +48,6 @@ class Command(CommandTemplate):
 			if linecount > self.MAX_UPDATES_TO_DISPLAY:
 				replytext += u"; {:,} older ones".format(linecount - self.MAX_UPDATES_TO_DISPLAY)
 		#Set the last mentioned hash to the newest one
-		self.lastCommitHash = outputLines[0].split(" ", 1)[0]
+		self.lastCommitHash = outputLines[0].split(b" ", 1)[0]
 
 		message.reply(replytext)

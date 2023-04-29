@@ -1,6 +1,6 @@
 import time
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from util import DateTimeUtil
 
@@ -14,4 +14,4 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 		uptime = round(time.time() - message.bot.connectedAt)
-		message.reply(u"I have been running for {}".format(DateTimeUtil.durationSecondsToText(uptime, numberOfParts=0)))
+		message.reply("I have been running for {}".format(DateTimeUtil.durationSecondsToText(uptime, numberOfParts=0)))

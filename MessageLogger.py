@@ -49,7 +49,7 @@ class MessageLogger(object):
 			self.currentDay = datetime.datetime.now().day
 
 		timestamp = now.strftime("%H:%M:%S")
-		print "[MessageLogger] |{0}| {1} [{2}] {3}".format(self.bot.serverfolder, source, timestamp, msg)
+		print("[MessageLogger] |{0}| {1} [{2}] {3}".format(self.bot.serverfolder, source, timestamp, msg))
 
 		#Remove invalid characters from the source name (like '|')
 		oldSource = source
@@ -61,7 +61,7 @@ class MessageLogger(object):
 		if source not in self.logfiles:
 			logfilename = "{}-{}.log".format(source, now.strftime("%Y-%m-%d"))
 			try:
-				self.logfiles[source] = open(os.path.join(self.logfolder, logfilename), 'a')
+				self.logfiles[source] = open(os.path.join(self.logfolder, logfilename), 'a', encoding='utf-8')
 			except IOError as e:
 				self.logger.error("[MessageLogger] Error while trying to open logfile '{}': {} [error number {}]".format(logfilename, e.strerror, e.errno))
 				return
@@ -78,7 +78,7 @@ class MessageLogger(object):
 			
 	def closelogs(self):
 		self.logger.info("[MessageLogger] |{}| Closing ALL logs".format(self.bot.serverfolder))
-		for source, logfile in self.logfiles.iteritems():
+		for source, logfile in self.logfiles.items():
 			logfile.close()
 		self.logfiles = {}
 		return True

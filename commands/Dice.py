@@ -1,6 +1,6 @@
 import random
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 
 
@@ -12,7 +12,7 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		replytext = u""
+		replytext = ""
 		rollcount = 1
 		sides = -1
 		total = 0.0
@@ -22,7 +22,7 @@ class Command(CommandTemplate):
 		displaySidesLimit = 999999999  #1 billion -1, if there's more than this many sides, don't list all the rolls
 
 		if message.messagePartsLength == 0:
-			replytext = u"You want the classic six-sided die, I assume? Rolling... And it lands on a... {}!".format(random.randint(1, 6))
+			replytext = "You want the classic six-sided die, I assume? Rolling... And it lands on a... {}!".format(random.randint(1, 6))
 		else:
 			#No '1d12' or anything, just numbers
 			if 'd' not in message.messageParts[0].lower():
@@ -31,12 +31,12 @@ class Command(CommandTemplate):
 					sides = int(message.messageParts[0])
 				except ValueError:
 					sides = 6
-					replytext += u"(I don't think '{}' is a valid number of sides, I'll just use {} sides) ".format(message.messageParts[0], sides)
+					replytext += "(I don't think '{}' is a valid number of sides, I'll just use {} sides) ".format(message.messageParts[0], sides)
 				if message.messagePartsLength > 1:
 					try:
 						rollcount = int(message.messageParts[1])
 					except ValueError:
-						replytext += u"(I don't know how to roll '{}' times, so I'm just gonna roll once) ".format(message.messageParts[1])
+						replytext += "(I don't know how to roll '{}' times, so I'm just gonna roll once) ".format(message.messageParts[1])
 						rollcount = 1
 
 			else:
@@ -46,36 +46,36 @@ class Command(CommandTemplate):
 				#Verify that the number of sides was entered correctly
 				if len(diceroll) == 1 or len(diceroll[1]) == 0:
 					sides = 20
-					replytext += u"(I think you forgot to add the number of sides, I'll just assume you want {}) ".format(sides)
+					replytext += "(I think you forgot to add the number of sides, I'll just assume you want {}) ".format(sides)
 				else:
 					try:
 						sides = int(diceroll[1])
 					except ValueError:
 						sides = 20
-						replytext += u"(I don't know what to do with '{}', I'll just use {}-sided dice) ".format(diceroll[1], sides)
+						replytext += "(I don't know what to do with '{}', I'll just use {}-sided dice) ".format(diceroll[1], sides)
 
 				#Do the same check for the number of dice rolls
 				if len(diceroll) == 0 or len(diceroll[0]) == 0:
-					replytext += u"(Did you forget the number of rolls? I'll just roll once then) "
+					replytext += "(Did you forget the number of rolls? I'll just roll once then) "
 					rollcount = 1
 				else:
 					try:
 						rollcount = int(diceroll[0])
 					except ValueError:
 						rollcount = 1
-						replytext += u"(I don't know how many rolls '{}' is, so I'll just roll once) ".format(diceroll[0])
+						replytext += "(I don't know how many rolls '{}' is, so I'll just roll once) ".format(diceroll[0])
 
 			#Preventing negative numbers
 			if rollcount <= 0:
-				replytext += u"(I can't roll {} times, so I'm gonna assume you want a single roll) ".format(rollcount)
+				replytext += "(I can't roll {} times, so I'm gonna assume you want a single roll) ".format(rollcount)
 				rollcount = 1
 			if sides <= 0:
-				replytext += u"(A die with {} sides is a bit weird, I'll just use this one with 6 sides) ".format(sides)
+				replytext += "(A die with {} sides is a bit weird, I'll just use this one with 6 sides) ".format(sides)
 				sides = 6
 			elif sides == 1:
-				replytext += u"(A single side? But that... Fine, I'll just roll with it) "
+				replytext += "(A single side? But that... Fine, I'll just roll with it) "
 			elif sides == 2:
-				replytext += u"(I'd suggest flipping a coin, but this'll work too) "
+				replytext += "(I'd suggest flipping a coin, but this'll work too) "
 
 			#Only keep the actual rolls if there's not too many
 			keepRollValues = (rollcount <= displayRollsLimit and sides <= displaySidesLimit)
@@ -83,7 +83,7 @@ class Command(CommandTemplate):
 			rollValues = []
 			#On to the actual rolling!
 			if rollcount <= rollLimit:
-				for roll in xrange(rollcount):
+				for roll in range(rollcount):
 					rollValue = random.randint(1, sides)
 					if keepRollValues:
 						rollValues.append("{:,}".format(rollValue))  #Use format to get thousands-separators
@@ -99,19 +99,19 @@ class Command(CommandTemplate):
 			
 			average = float(total) / float(rollcount)
 			if rollcount == 1:
-				replytext += u"A single {:,}-sided die roll, I can do that. Rolling, rolling... and it lands on... {:,}!".format(sides, total)
+				replytext += "A single {:,}-sided die roll, I can do that. Rolling, rolling... and it lands on... {:,}!".format(sides, total)
 			elif rollcount <= displayRollsLimit:
 				if sides <= displaySidesLimit:
-					replytext += u"{:,} rolls with {:,}-sided dice: {} = {:,}, average of {:,}".format(rollcount, sides, u" + ".join(rollValues), total, average)
+					replytext += "{:,} rolls with {:,}-sided dice: {} = {:,}, average of {:,}".format(rollcount, sides, " + ".join(rollValues), total, average)
 				else:
-					replytext += u"{:,} rolls with {:,}-sided dice. That's a lot of sides, I hope you don't mind that I don't show them all. " \
-								 u"Your total is... (oof, clumsy large dice)... {:,}, with an average of {:,}".format(rollcount, sides, total, average)
+					replytext += "{:,} rolls with {:,}-sided dice. That's a lot of sides, I hope you don't mind that I don't show them all. " \
+								 "Your total is... (oof, clumsy large dice)... {:,}, with an average of {:,}".format(rollcount, sides, total, average)
 			elif rollcount <= rollLimit:
-				replytext += u"{} rolls with {:,}-sided dice. That's a quite a few rolls, but luckily I'm pretty fast. Your total is... hang on... {:,}, " \
-							 u"with an average roll of {:,}".format(rollcount, sides, total, average)
+				replytext += "{} rolls with {:,}-sided dice. That's a quite a few rolls, but luckily I'm pretty fast. Your total is... hang on... {:,}, " \
+							 "with an average roll of {:,}".format(rollcount, sides, total, average)
 			else:
-				replytext += u"{:,} is a LOT of rolls, even I would spend ages on that. I'll just give you the expected value, that'll be close enough. " \
-							 u"And that is... {:,}!".format(rollcount, total)
+				replytext += "{:,} is a LOT of rolls, even I would spend ages on that. I'll just give you the expected value, that'll be close enough. " \
+							 "And that is... {:,}!".format(rollcount, total)
 
 		message.reply(replytext)
 

@@ -1,10 +1,10 @@
-import HTMLParser
+import html
 import xml.etree.ElementTree as ElementTree
 
 import requests
 from bs4 import BeautifulSoup
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from StringWithSuffix import StringWithSuffix
 from util import IrcFormattingUtil, StringUtil
@@ -61,17 +61,17 @@ class Command(CommandTemplate):
 			message.reply("I'm sorry, I didn't find any games called '{}'. Did you make a typo? Or did you just invent a new game?!".format(message.message))
 			return
 
-		replytext = u"{} ({} players, {} min, {}): ".format(IrcFormattingUtil.makeTextBold(item.find('name').attrib['value']), self.getValueRangeDescription(item, 'minplayers', 'maxplayers'),
+		replytext = "{} ({} players, {} min, {}): ".format(IrcFormattingUtil.makeTextBold(item.find('name').attrib['value']), self.getValueRangeDescription(item, 'minplayers', 'maxplayers'),
 															self.getValueRangeDescription(item, 'minplaytime', 'maxplaytime'), item.find('yearpublished').attrib['value'])
 		#Fit in as much of the description as we can
-		description = HTMLParser.HTMLParser().unescape(item.find('description').text)
+		description = html.unescape(item.find('description').text)
 		#Some descriptions start with a disclaimer that it's from the publisher, remove that to save space
-		if description.startswith(u"Game description from the publisher") or description.startswith(u"From the manufacturer's website"):
+		if description.startswith("Game description from the publisher") or description.startswith("From the manufacturer's website"):
 			description = description.split('\n', 1)[1].lstrip()
 		#Remove newlines
 		description = StringUtil.removeNewlines(description)
 		#Show the result
-		message.replyWithLengthLimit(StringWithSuffix(replytext + description, (Constants.GREY_SEPARATOR, u"https://boardgamegeek.com/boardgame/", gameId)))
+		message.replyWithLengthLimit(StringWithSuffix(replytext + description, (Constants.GREY_SEPARATOR, "https://boardgamegeek.com/boardgame/", gameId)))
 
 	@staticmethod
 	def getValueRangeDescription(item, lowerBoundFieldname, higherBoundFieldname):

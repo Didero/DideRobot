@@ -1,4 +1,4 @@
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
@@ -29,7 +29,7 @@ class Command(CommandTemplate):
 			return message.reply(reply)
 
 		if message.messagePartsLength == 0:
-			message.reply(u"Please provide the name of one or more modules to {}".format(message.trigger))
+			message.reply("Please provide the name of one or more modules to {}".format(message.trigger))
 			return
 
 		#Check if the module names are valid, but only if we're not trying to load a module since of course an unloaded module isn't stored yet
@@ -40,12 +40,12 @@ class Command(CommandTemplate):
 			for messagePart in message.messageParts:
 				triggerToLookFor = messagePart.lower()
 				#Maybe the parameter provided isn't a module name, but a trigger word. Try to find the module it belongs to
-				for commandname, command in GlobalStore.commandhandler.commands.iteritems():
+				for commandname, command in GlobalStore.commandhandler.commands.items():
 					if messagePart == commandname or messagePart in command.triggers or triggerToLookFor in command.triggers:
 						modulenames.append(commandname)
 						break
 				else:
-					raise CommandInputException(u"'{} is not a module I'm familiar with, sorry. Maybe you made a typo?".format(messagePart))
+					raise CommandInputException("'{} is not a module I'm familiar with, sorry. Maybe you made a typo?".format(messagePart))
 
 		modulesWithoutErrors = []
 		modulesWithErrors = []

@@ -1,6 +1,6 @@
 import datetime, os, random, sqlite3, time, unicodedata
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 import GlobalStore
 from CustomExceptions import CommandInputException, WebRequestException
@@ -22,10 +22,10 @@ class Command(CommandTemplate):
 		if os.path.isfile(self.databasePath):
 			with sqlite3.connect(self.databasePath) as connection:
 				cursor = connection.cursor()
-				if self.doTablesExist(cursor) and not cursor.execute(u"SELECT COUNT(*) FROM pragma_table_info('list_entries') WHERE name='edited_by'").fetchone()[0]:
+				if self.doTablesExist(cursor) and not cursor.execute("SELECT COUNT(*) FROM pragma_table_info('list_entries') WHERE name='edited_by'").fetchone()[0]:
 					self.logInfo("[List] Updating old database, adding 'edited_by' and 'edited_date' columns")
-					cursor.execute(u"ALTER TABLE list_entries ADD COLUMN edited_by TEXT")
-					cursor.execute(u"ALTER TABLE list_entries ADD COLUMN edited_date REAL")
+					cursor.execute("ALTER TABLE list_entries ADD COLUMN edited_by TEXT")
+					cursor.execute("ALTER TABLE list_entries ADD COLUMN edited_date REAL")
 					connection.commit()
 
 	def getHelp(self, message):
@@ -98,13 +98,13 @@ class Command(CommandTemplate):
 		shouldAddEntryInfo = (message.trigger == 'listf')
 		with sqlite3.connect(self.databasePath) as connection:
 			cursor = connection.cursor()
-			servername = message.bot.serverfolder.decode('utf-8', errors='replace')
-			channelname = message.source.decode('utf-8', errors='replace')
+			servername = message.bot.serverfolder
+			channelname = message.source
 			if subcommand == 'list':
 				if not self.doTablesExist(cursor):
 					return message.reply("Seems like there's no lists at all. Seems a bit boring, to be honest")
 				# List all available lists
-				result = cursor.execute(u"SELECT name, channel FROM lists WHERE server=? AND (channel=? OR channel IS NULL)", (servername, channelname)).fetchall()
+				result = cursor.execute("SELECT name, channel FROM lists WHERE server=? AND (channel=? OR channel IS NULL)", (servername, channelname)).fetchall()
 				if not result:
 					return message.reply("I couldn't find any lists. You should think up a good idea for one!")
 				channelListNames = []
@@ -116,11 +116,11 @@ class Command(CommandTemplate):
 						channelListNames.append(listname)
 					else:
 						serverListNames.append(listname)
-				replytext = u""
+				replytext = ""
 				if serverListNames:
-					replytext += u" Server lists: {}".format(", ".join(sorted(serverListNames)))
+					replytext += " Server lists: {}".format(", ".join(sorted(serverListNames)))
 				if channelListNames:
-					replytext += u" Channel lists: {}".format(", ".join(sorted(channelListNames)))
+					replytext += " Channel lists: {}".format(", ".join(sorted(channelListNames)))
 				return message.reply(replytext.lstrip())
 
 			elif subcommand == 'create':
@@ -147,28 +147,28 @@ class Command(CommandTemplate):
 					raise CommandInputException("Creating a channel list doesn't work in private messages, either create a server list or create this list in a channel")
 
 				listname = self.normalizeListname(createParam)
-				listDescription = ' '.join(createParams).decode('utf-8', errors='replace') if createParams else None
+				listDescription = ' '.join(createParams) if createParams else None
 
 				# Check if the database exists
 				if not self.doTablesExist(cursor):
-					cursor.execute(u"CREATE TABLE lists ("
-								   u"id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT, server TEXT NOT NULL, channel TEXT, creator TEXT, creation_date REAL, is_admin_only INTEGER)")
-					cursor.execute(u"CREATE TABLE list_entries ("
-								   u"id INTEGER NOT NULL, list_id INTEGER NOT NULL, text TEXT NOT NULL, creator TEXT, creation_date REAL, edited_by TEXT, edited_date REAL,"
-								   u"PRIMARY KEY (id, list_id), FOREIGN KEY(list_id) REFERENCES lists(id))")
+					cursor.execute("CREATE TABLE lists ("
+								   "id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT, server TEXT NOT NULL, channel TEXT, creator TEXT, creation_date REAL, is_admin_only INTEGER)")
+					cursor.execute("CREATE TABLE list_entries ("
+								   "id INTEGER NOT NULL, list_id INTEGER NOT NULL, text TEXT NOT NULL, creator TEXT, creation_date REAL, edited_by TEXT, edited_date REAL,"
+								   "PRIMARY KEY (id, list_id), FOREIGN KEY(list_id) REFERENCES lists(id))")
 				# If the database exists, check whether a list with the provided name already exists for the provided server
 				else:
 					if self.getBasicListData(cursor, listname, servername, channelname)[0] is not None:
 						# A match has been found, so the list already exists, either for this channel or for the server. Abort
-						raise CommandInputException(u"A list with the name '{}' already exists. That's easier for both of us, you just need to add your ideas to that list then!".format(listname))
+						raise CommandInputException("A list with the name '{}' already exists. That's easier for both of us, you just need to add your ideas to that list then!".format(listname))
 
 				# Create the list
-				cursor.execute(u"INSERT INTO lists (name, description, server, channel, creator, creation_date, is_admin_only) "
-							   u"VALUES (:listname, :description, :servername, :channelname, :creator, :creation_date, :isadmin)",
+				cursor.execute("INSERT INTO lists (name, description, server, channel, creator, creation_date, is_admin_only) "
+							   "VALUES (:listname, :description, :servername, :channelname, :creator, :creation_date, :isadmin)",
 							   {'listname': listname, 'description': listDescription, 'servername': servername, 'channelname': channelname if isChannelList else None,
-								'creator': message.userNickname.decode('utf-8', errors='replace'), 'creation_date': time.time(), 'isadmin': isListAdminOnly if isListAdminOnly else None})
+								'creator': message.userNickname, 'creation_date': time.time(), 'isadmin': isListAdminOnly if isListAdminOnly else None})
 				connection.commit()
-				return message.reply(u"Successfully created the '{}' list. Now add some entries to it with the 'add' subcommand. Enjoy!".format(listname))
+				return message.reply("Successfully created the '{}' list. Now add some entries to it with the 'add' subcommand. Enjoy!".format(listname))
 
 			# All subsequent subcommands need a list, so check if a listname was provided, and check if that list exists
 			if message.messagePartsLength < 2:
@@ -178,21 +178,21 @@ class Command(CommandTemplate):
 			listname = self.normalizeListname(message.messageParts[1])
 			listId, isListAdminOnly = self.getBasicListData(cursor, listname, servername, channelname)
 			if not listId:
-				raise CommandInputException(u"I couldn't find a list called '{}'. Maybe you made a typo? See the available lists with the 'list' subcommand".format(listname))
+				raise CommandInputException("I couldn't find a list called '{}'. Maybe you made a typo? See the available lists with the 'list' subcommand".format(listname))
 
 			if subcommand == 'destroy':
 				if not message.isSenderAdmin():
 					raise CommandInputException("Sorry, only my admins are allowed to destroy lists")
-				entryCount = cursor.execute(u"SELECT COUNT(*) FROM list_entries WHERE list_id=?", (listId,)).fetchone()[0]
+				entryCount = cursor.execute("SELECT COUNT(*) FROM list_entries WHERE list_id=?", (listId,)).fetchone()[0]
 				# Delete all the list entries
 				if entryCount > 0:
-					cursor.execute(u"DELETE FROM list_entries WHERE list_id=?", (listId,))
-				cursor.execute(u"DELETE FROM lists WHERE id=?", (listId,))
+					cursor.execute("DELETE FROM list_entries WHERE list_id=?", (listId,))
+				cursor.execute("DELETE FROM lists WHERE id=?", (listId,))
 				# Destroying a large list may leave the database fragmented, the sqlite 'vacuum' command solves that (it's kind of like defragging)
 				# This needs extra diskspace though, because it basically recreates the database file and then replaces the existing file with the new one
 				cursor.execute("VACUUM")
 				connection.commit()
-				return message.reply(u"Ok, the '{}' list and its {:,} entr{} are gone forever. I hope none of that was important!".format(listname, entryCount, u'y' if entryCount == 1 else u'ies'))
+				return message.reply("Ok, the '{}' list and its {:,} entr{} are gone forever. I hope none of that was important!".format(listname, entryCount, 'y' if entryCount == 1 else 'ies'))
 
 			elif subcommand == 'get':
 				# 'get' can accept no arguments (works same as 'random'), a numeric entry id argument (works same as 'getbyid'), or a text searchquery argument (works the same as 'search')
@@ -216,21 +216,21 @@ class Command(CommandTemplate):
 
 			elif subcommand == 'add':
 				if message.messagePartsLength < 3:
-					raise CommandInputException(u"Please provide some text to add to the '{}' list. I''m not good at making stuff up myself".format(listname))
+					raise CommandInputException("Please provide some text to add to the '{}' list. I''m not good at making stuff up myself".format(listname))
 				if isListAdminOnly and not message.isSenderAdmin():
-					raise CommandInputException(u"Sorry, only my admins are allowed to add entries to the '{}' list. Ask one of them to add your idea!".format(listname))
-				maxIdResult = cursor.execute(u"SELECT max(id) FROM list_entries WHERE list_id=?", (listId,)).fetchone()
+					raise CommandInputException("Sorry, only my admins are allowed to add entries to the '{}' list. Ask one of them to add your idea!".format(listname))
+				maxIdResult = cursor.execute("SELECT max(id) FROM list_entries WHERE list_id=?", (listId,)).fetchone()
 				entryId = maxIdResult[0] + 1 if maxIdResult[0] else 1
-				entryText = " ".join(message.messageParts[2:]).decode('utf-8', errors='replace')
+				entryText = " ".join(message.messageParts[2:])
 				cursor.execute(u"INSERT INTO list_entries VALUES (:id, :listId, :text, :creator, :creationDate, NULL, NULL)",
-							   {'id': entryId, 'listId': listId, 'text': entryText, 'creator': message.userNickname.decode('utf-8', errors='replace'), 'creationDate': time.time()})
+							   {'id': entryId, 'listId': listId, 'text': entryText, 'creator': message.userNickname, 'creationDate': time.time()})
 				connection.commit()
-				return message.reply(u"Added your entry to the '{}' list under entry id {}".format(listname, entryId))
+				return message.reply("Added your entry to the '{}' list under entry id {}".format(listname, entryId))
 
 			# 'getbyid' and 'remove' need to do a lot of the same checks, so combine them
 			elif subcommand in ('getbyid', 'remove'):
 				if message.messagePartsLength < 3:
-					raise CommandInputException(u"Please provide an entry ID for the '{}' list. I'm not gonna guess one (though if you want that, use the 'get' subcommand without an id)".format(listname))
+					raise CommandInputException("Please provide an entry ID for the '{}' list. I'm not gonna guess one (though if you want that, use the 'get' subcommand without an id)".format(listname))
 				try:
 					entryId = int(message.messageParts[2], 10)
 				except ValueError:
@@ -238,10 +238,10 @@ class Command(CommandTemplate):
 				entry = self.getEntryById(cursor, listname, listId, entryId)
 				if subcommand == 'remove':
 					if isListAdminOnly and not message.isSenderAdmin():
-						raise CommandInputException(u"Sorry, only my admins are allowed to remove entries from the '{}' list".format(listname))
-					cursor.execute(u"DELETE FROM list_entries WHERE list_id=? AND id=?", (listId, entryId))
+						raise CommandInputException("Sorry, only my admins are allowed to remove entries from the '{}' list".format(listname))
+					cursor.execute("DELETE FROM list_entries WHERE list_id=? AND id=?", (listId, entryId))
 					connection.commit()
-					return message.reply(u"Successfully deleted {} from the '{}' list".format(self.formatEntry(entry, True), listname))
+					return message.reply("Successfully deleted {} from the '{}' list".format(self.formatEntry(entry, True), listname))
 				else:
 					# 'getbyid'
 					return message.reply(self.formatEntry(entry, shouldAddEntryInfo))
@@ -254,41 +254,41 @@ class Command(CommandTemplate):
 
 			elif subcommand == 'getall':
 				searchQuery = None if message.messagePartsLength < 3 else self.normalizeSearchQuery(" ".join(message.messageParts[2:]))
-				sqlQuery = u"SELECT * FROM list_entries WHERE list_id=:listId"
+				sqlQuery = "SELECT * FROM list_entries WHERE list_id=:listId"
 				if searchQuery:
-					sqlQuery += u" AND text LIKE :searchQuery"
+					sqlQuery += " AND text LIKE :searchQuery"
 				entries = cursor.execute(sqlQuery, {'listId': listId, 'searchQuery': searchQuery}).fetchall()
 				# Don't bother uploading if the list is empty or short
 				if len(entries) == 0:
-					return message.reply(u"The '{}' list doesn't have any entries at all, so listing those is easy:  . Done!".format(listname))
+					return message.reply("The '{}' list doesn't have any entries at all, so listing those is easy:  . Done!".format(listname))
 				elif len(entries) == 1:
-					return message.reply(u"The '{}' list only has one entry: {}".format(listname, self.formatEntry(entries[0], shouldAddEntryInfo)))
+					return message.reply("The '{}' list only has one entry: {}".format(listname, self.formatEntry(entries[0], shouldAddEntryInfo)))
 				# Destructively iterate over the found entries so long lists don't use a lot of memory
 				formattedEntries = []
 				while entries:
 					entry = entries.pop(0)
 					formattedEntries.append(self.formatEntry(entry, True))
 				try:
-					pasteLink = WebUtil.uploadText(u"\n".join(formattedEntries), u"Entries for the '{}' list".format(listname), 600)
+					pasteLink = WebUtil.uploadText("\n".join(formattedEntries), "Entries for the '{}' list".format(listname), 600)
 				except WebRequestException as wre:
-					self.logError(u"[List] An error occurred while trying to upload '{}' list entries (Search query is '{}': {}".format(listname, searchQuery, wre))
-					return message.reply(u"Uh oh, something went wrong with uploading the '{}' list entries. Try again in a bit, and if it keeps happening, please tell my owner(s)".format(listname))
-				return message.reply(u"Here's all the entries for the '{}' list{}: {} (Link expires in 10 minutes)".format(listname, u" that match your query" if searchQuery else u"", pasteLink))
+					self.logError("[List] An error occurred while trying to upload '{}' list entries (Search query is '{}': {}".format(listname, searchQuery, wre))
+					return message.reply("Uh oh, something went wrong with uploading the '{}' list entries. Try again in a bit, and if it keeps happening, please tell my owner(s)".format(listname))
+				return message.reply("Here's all the entries for the '{}' list{}: {} (Link expires in 10 minutes)".format(listname, " that match your query" if searchQuery else "", pasteLink))
 
 			elif subcommand == 'info':
-				listResult = cursor.execute(u"SELECT * FROM lists WHERE id=?", (listId,)).fetchone()
-				entryCount = cursor.execute(u"SELECT COUNT(*) FROM list_entries WHERE list_id=?", (listId,)).fetchone()[0]
-				replytext = u"{} list '{}' ".format(u'Channel' if listResult[4] else u'Server', listname)
+				listResult = cursor.execute("SELECT * FROM lists WHERE id=?", (listId,)).fetchone()
+				entryCount = cursor.execute("SELECT COUNT(*) FROM list_entries WHERE list_id=?", (listId,)).fetchone()[0]
+				replytext = "{} list '{}' ".format('Channel' if listResult[4] else 'Server', listname)
 				if shouldAddEntryInfo:
-					replytext += u"was created on {} by {} and ".format(self.formatTimestamp(listResult[6]), listResult[5])
-				replytext += u"has {:,} entr{}".format(entryCount, u'y' if entryCount == 1 else u'ies')
+					replytext += "was created on {} by {} and ".format(self.formatTimestamp(listResult[6]), listResult[5])
+				replytext += "has {:,} entr{}".format(entryCount, 'y' if entryCount == 1 else 'ies')
 				if listResult[7]:
-					replytext += u". Only my admin(s) can add and remove entries from this list"
+					replytext += ". Only my admin(s) can add and remove entries from this list"
 				description = listResult[2]
 				if description:
-					replytext += u". Description: {}".format(description)
+					replytext += ". Description: {}".format(description)
 				else:
-					replytext += u". No list description has been set"
+					replytext += ". No list description has been set"
 				return message.reply(replytext)
 
 			elif subcommand == 'rename':
@@ -300,10 +300,10 @@ class Command(CommandTemplate):
 				if listname == newListname:
 					raise CommandInputException("But... those two names are the same, the list is already called that. I don't think that qualifies as 'renaming' then")
 				if self.getBasicListData(cursor, newListname, servername, channelname)[0] is not None:
-					raise CommandInputException(u"The list '{}' already exists, so I can't rename the '{}' list to that".format(newListname, listname))
-				cursor.execute(u"UPDATE lists SET name=? WHERE id=?", (newListname, listId))
+					raise CommandInputException("The list '{}' already exists, so I can't rename the '{}' list to that".format(newListname, listname))
+				cursor.execute("UPDATE lists SET name=? WHERE id=?", (newListname, listId))
 				connection.commit()
-				return message.reply(u"Successfully renamed the '{}' list to '{}'. Don't forget to tell people about the rename though, they might think it got deleted".format(listname, newListname))
+				return message.reply("Successfully renamed the '{}' list to '{}'. Don't forget to tell people about the rename though, they might think it got deleted".format(listname, newListname))
 
 			elif subcommand == 'edit':
 				if isListAdminOnly and not message.isSenderAdmin():
@@ -317,11 +317,10 @@ class Command(CommandTemplate):
 				except ValueError:
 					raise CommandInputException("I can't parse '{}' as a number, and it should be an entry ID".format(message.messageParts[1]))
 				oldEntry = self.getEntryById(cursor, listname, listId, entryId)
-				newEntryText = " ".join(message.messageParts[3:]).decode('utf-8', errors='replace')
-				editingUser = message.userNickname.decode('utf-8', errors='replace')
-				cursor.execute("UPDATE list_entries SET text = ?, edited_by = ?, edited_date = ? WHERE list_id=? AND id=?", (newEntryText, editingUser, time.time(), listId, entryId))
+				newEntryText = " ".join(message.messageParts[3:])
+				cursor.execute("UPDATE list_entries SET text = ?, edited_by = ?, edited_date = ? WHERE list_id=? AND id=?", (newEntryText, message.userNickname, time.time(), listId, entryId))
 				connection.commit()
-				return message.reply(u"Successfully updated entry {} in list {} from '{}' to '{}'".format(entryId, listname, self.formatEntry(oldEntry, False), newEntryText))
+				return message.reply("Successfully updated entry {} in list {} from '{}' to '{}'".format(entryId, listname, self.formatEntry(oldEntry, False), newEntryText))
 
 			elif subcommand == 'setdescription' or subcommand == 'cleardescription':
 				if not message.isSenderAdmin():
@@ -330,10 +329,10 @@ class Command(CommandTemplate):
 				if subcommand == 'setdescription':
 					if message.messagePartsLength < 3:
 						raise CommandInputException("Please add a description to set. If you just want to remove the existing description, use the 'cleardescription' subcommand")
-					description = " ".join(message.messageParts[2:]).decode('utf-8', errors='replace')
-				cursor.execute(u"UPDATE lists SET description=? WHERE id=?", (description, listId))
+					description = " ".join(message.messageParts[2:])
+				cursor.execute("UPDATE lists SET description=? WHERE id=?", (description, listId))
 				connection.commit()
-				return message.reply(u"Successfully {} the description for the '{}' list".format(u'cleared' if subcommand == 'cleardescription' else u'updated', listname))
+				return message.reply("Successfully {} the description for the '{}' list".format('cleared' if subcommand == 'cleardescription' else 'updated', listname))
 
 			elif subcommand == 'setadmin':
 				if not message.isSenderAdmin():
@@ -345,10 +344,10 @@ class Command(CommandTemplate):
 					raise CommandInputException("I don't know how to interpret the setting value '{}', sorry. Please use either 'true' or 'false'".format(message.messageParts[2]))
 				shouldBeAdminOnly = shouldBeAdminOnly == 'true'
 				if shouldBeAdminOnly is isListAdminOnly:
-					return message.reply(u"The '{}' list is already set to {}admin-only. Saves me updating this database!".format(listname, u'' if isListAdminOnly else u'non-'))
-				cursor.execute(u"UPDATE lists SET is_admin_only=? WHERE id=?", (shouldBeAdminOnly, listId))
+					return message.reply("The '{}' list is already set to {}admin-only. Saves me updating this database!".format(listname, '' if isListAdminOnly else 'non-'))
+				cursor.execute("UPDATE lists SET is_admin_only=? WHERE id=?", (shouldBeAdminOnly, listId))
 				connection.commit()
-				return message.reply(u"Successfully made the '{}' list {}admin-only".format(listname, u'' if shouldBeAdminOnly else u'non-'))
+				return message.reply("Successfully made the '{}' list {}admin-only".format(listname, '' if shouldBeAdminOnly else 'non-'))
 
 			else:
 				return message.reply("I don't know what to do with the subcommand '{}', sorry. Maybe (re)read the list help text?".format(subcommand))
@@ -359,7 +358,7 @@ class Command(CommandTemplate):
 		:param cursor: The cursor to use to query the database
 		:return: True if the required list tables exist, False otherwise
 		"""
-		cursor.execute(u"SELECT name FROM sqlite_master	WHERE type = 'table' AND name='lists'")
+		cursor.execute("SELECT name FROM sqlite_master	WHERE type = 'table' AND name='lists'")
 		return True if cursor.fetchone() else False
 
 	def getBasicListData(self, cursor, listname, servername, channelname=None):
@@ -374,12 +373,12 @@ class Command(CommandTemplate):
 		# First check if there's a channel list, so we don't accidentally return the serverlist if there's one with the same name
 		result = None
 		if channelname:
-			cursor.execute(u"SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel=?", (listname, servername, channelname))
+			cursor.execute("SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel=?", (listname, servername, channelname))
 			result = cursor.fetchone()
 		# If no channellist was found, or no channelname was provided, try to find a serverlist
 		if result is None and channelname:
 			# Check if there's a server list
-			result = cursor.execute(u"SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel IS NULL", (listname, servername)).fetchone()
+			result = cursor.execute("SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel IS NULL", (listname, servername)).fetchone()
 			if result is None:
 				return None, None
 		# SQLite doesn't support booleans, so 'true' is 1 and 'false' is 0. Turn it into a boolean so it's easier and more intuitive to use
@@ -390,19 +389,15 @@ class Command(CommandTemplate):
 		if not inputSearchQuery:
 			return None
 		outputSearchQuery = inputSearchQuery
-		if not isinstance(outputSearchQuery, unicode):
-			outputSearchQuery = outputSearchQuery.decode('utf-8', errors='replace')
 		# SQL queries use % and _ as multi- and single-character wildcards, respectively. * and ? are more common, so replace those
-		outputSearchQuery = outputSearchQuery.replace(u'*', u'%').replace(u'?', u'_')
+		outputSearchQuery = outputSearchQuery.replace('*', '%').replace('?', '_')
 		# Since it's natural to assume searching doesn't only search for the literal string, add wildcards to the start and end if there are no wildcards yet
-		if u'_' not in outputSearchQuery and u'%' not in outputSearchQuery:
-			outputSearchQuery = u"%{}%".format(outputSearchQuery)
+		if '_' not in outputSearchQuery and '%' not in outputSearchQuery:
+			outputSearchQuery = "%{}%".format(outputSearchQuery)
 		return outputSearchQuery
 
 	def normalizeListname(self, inputListname):
 		outputListname = inputListname
-		if not isinstance(outputListname, unicode):
-			outputListname = outputListname.decode('utf-8', errors='replace')
 		# There's multiple ways to create unicode characters, and there's duplicate characters for historical reasons
 		# Python and SQLite kind of disagree on that, so normalize it here to prevent any disagreements resulting in errors
 		outputListname = unicodedata.normalize('NFKC', outputListname)
@@ -412,13 +407,13 @@ class Command(CommandTemplate):
 
 	def getRandomEntry(self, cursor, listname=None, listId=None, searchquery=None, shouldAddEntryInfo=False, randomGenerator=None):
 		# Inner select is to get a count of entries, the random offset picks a random one of those, the outer select actually retrieves the entry
-		entryData = cursor.execute(u"SELECT * FROM list_entries WHERE list_id=:listId{0} LIMIT 1 OFFSET CAST((SELECT COUNT(*) FROM list_entries WHERE list_id=:listId{0}) * :randomFloat AS INT)".format(u" AND text LIKE :query" if searchquery else u''),
+		entryData = cursor.execute("SELECT * FROM list_entries WHERE list_id=:listId{0} LIMIT 1 OFFSET CAST((SELECT COUNT(*) FROM list_entries WHERE list_id=:listId{0}) * :randomFloat AS INT)".format(" AND text LIKE :query" if searchquery else ''),
 						   {'listId': listId, 'randomFloat': randomGenerator.random() if randomGenerator else random.random(), 'query': searchquery}).fetchone()
 		if not entryData:
 			if searchquery:
-				return u"The '{}' list doesn't have any entries that match your search query, sorry".format(listname)
+				return "The '{}' list doesn't have any entries that match your search query, sorry".format(listname)
 			else:
-				return u"Huh, seems the '{}' list is empty. Weird that somebody made a list but then didn't add anything to it".format(listname)
+				return "Huh, seems the '{}' list is empty. Weird that somebody made a list but then didn't add anything to it".format(listname)
 		return self.formatEntry(entryData, shouldAddEntryInfo)
 
 	def getRandomListEntry(self, servername, channelname, listname, searchquery=None, randomGenerator=None):
@@ -436,39 +431,39 @@ class Command(CommandTemplate):
 			listname = self.normalizeListname(listname)
 			listId = self.getBasicListData(cursor, listname, servername, channelname)[0]
 			if listId is None:
-				raise CommandInputException(u"No matching list found for listname '{}' on server '{}' and channel '{}'".format(listname, servername, channelname))
+				raise CommandInputException("No matching list found for listname '{}' on server '{}' and channel '{}'".format(listname, servername, channelname))
 			return self.getRandomEntry(connection.cursor(), listname, listId, self.normalizeSearchQuery(searchquery), randomGenerator=randomGenerator)
 
 	def searchForEntry(self, cursor, listname, listId, searchquery, shouldAddEntryInfo=False):
-		matchCount = cursor.execute(u"SELECT COUNT(*) FROM list_entries WHERE list_id=? AND text LIKE ?", (listId, searchquery)).fetchone()[0]
+		matchCount = cursor.execute("SELECT COUNT(*) FROM list_entries WHERE list_id=? AND text LIKE ?", (listId, searchquery)).fetchone()[0]
 		if matchCount == 0:
-			replytext = u"Sorry, the '{}' list doesn't have any entries that match your search query".format(listname)
+			replytext = "Sorry, the '{}' list doesn't have any entries that match your search query".format(listname)
 		elif matchCount == 1:
-			matchedEntry = cursor.execute(u"SELECT * FROM list_entries WHERE list_id=? AND text LIKE ?", (listId, searchquery)).fetchone()
+			matchedEntry = cursor.execute("SELECT * FROM list_entries WHERE list_id=? AND text LIKE ?", (listId, searchquery)).fetchone()
 			replytext = self.formatEntry(matchedEntry, shouldAddEntryInfo)
 		else:
 			replytext = self.getRandomEntry(cursor, listId=listId, searchquery=searchquery, shouldAddEntryInfo=shouldAddEntryInfo)
 			if shouldAddEntryInfo:
-				replytext += u" ({:,} more match{})".format(matchCount - 1, u'' if matchCount == 2 else u'es')
+				replytext += " ({:,} more match{})".format(matchCount - 1, '' if matchCount == 2 else 'es')
 		return replytext
 
 	def getEntryById(self, cursor, listname, listId, entryId):
 		if entryId <= 0:
 			raise CommandInputException("Entry IDs can't be zero or smaller, they start at 1")
-		entry = cursor.execute(u"SELECT * FROM list_entries WHERE list_id=? AND id=?", (listId, entryId)).fetchone()
+		entry = cursor.execute("SELECT * FROM list_entries WHERE list_id=? AND id=?", (listId, entryId)).fetchone()
 		if not entry:
-			raise CommandInputException(u"The '{}' list doesn't have an entry with ID {}, that's weird. Are you sure you typed it correctly?".format(listname, entryId))
+			raise CommandInputException("The '{}' list doesn't have an entry with ID {}, that's weird. Are you sure you typed it correctly?".format(listname, entryId))
 		return entry
 
 	def formatEntry(self, entryData, shouldAddEntryInfo=False):
 		if shouldAddEntryInfo:
-			formattedEntry = u"Entry {:,}: {} (by {} on {}".format(entryData[0], entryData[2], entryData[3], self.formatTimestamp(entryData[4]))
+			formattedEntry = "Entry {:,}: {} (by {} on {}".format(entryData[0], entryData[2], entryData[3], self.formatTimestamp(entryData[4]))
 			if entryData[5] and entryData[6]:
-				formattedEntry += u", edited by {} on {}".format(entryData[5], self.formatTimestamp(entryData[6]))
-			formattedEntry += u")"
+				formattedEntry += ", edited by {} on {}".format(entryData[5], self.formatTimestamp(entryData[6]))
+			formattedEntry += ")"
 			return formattedEntry
 		else:
 			return entryData[2]
 
 	def formatTimestamp(self, timestamp):
-		return datetime.datetime.utcfromtimestamp(timestamp).strftime(u"%Y-%m-%d %H:%M UTC")
+		return datetime.datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M UTC")

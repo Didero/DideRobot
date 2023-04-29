@@ -24,13 +24,13 @@ class CommandHandler:
 			self.logger.error("API key file at not found! It should be in the 'data' subfolder and called 'apikeys.json'")
 		else:
 			try:
-				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json')) as apikeysFile:
+				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json'), encoding='utf-8') as apikeysFile:
 					self.apikeys = json.load(apikeysFile)
 			except ValueError:
 				self.logger.error("API key file is invalid JSON!")
 
 	def saveApiKeys(self):
-		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json'), 'w') as apifile:
+		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json'), 'w', encoding='utf-8') as apifile:
 			apifile.write(json.dumps(self.apikeys, sort_keys=True, indent=4))
 
 	def addCommandFunction(self, module, name, function):
@@ -57,7 +57,7 @@ class CommandHandler:
 		"""
 		success = True
 		#Assuming the provided arguments are in 'name, function' format, cycle through them
-		for i in xrange(0, len(args), 2):
+		for i in range(0, len(args), 2):
 			if not self.addCommandFunction(module, args[i], args[i+1]):
 				success = False
 		return success
@@ -98,7 +98,7 @@ class CommandHandler:
 			return
 
 		#Then check whether any of our loaded commands need to react to this message
-		for commandname, command in self.commands.iteritems():
+		for commandname, command in self.commands.items():
 			if not self.isCommandAllowedForBot(message.bot, commandname):
 				continue
 
@@ -166,7 +166,7 @@ class CommandHandler:
 		try:
 			loadedModule = importlib.import_module(folder + '.' + name)
 			#Since the module may already have been loaded in the past, make sure we have the latest version
-			reload(loadedModule)
+			importlib.reload(loadedModule)
 			command = loadedModule.Command()
 			self.commands[name] = command
 			return command
@@ -203,8 +203,8 @@ class CommandHandler:
 	def unloadAllCommands(self):
 		self.logger.info("Unloading all commands")
 		commandsWithErrors = []
-		#Take the keys instead of iteritems() to prevent size change errors
-		for commandname in self.commands.keys():
+		#Take the keys instead of just iterating over the dict, to prevent size change errors
+		for commandname in list(self.commands.keys()):
 			try:
 				self.unloadCommand(commandname)
 			except CommandException:

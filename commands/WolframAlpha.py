@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import re
-import urllib
+import urllib.parse
 import xml.etree.ElementTree as ElementTree
 
 import requests
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
 from IrcMessage import IrcMessage
@@ -40,7 +40,7 @@ class Command(CommandTemplate):
 		params = {'appid': GlobalStore.commandhandler.apikeys['wolframalpha'], 'input': query}
 		if podsToFetch > 0:
 			podIndexParam = ""
-			for i in xrange(1, podsToFetch):
+			for i in range(1, podsToFetch):
 				podIndexParam += "{},".format(i)
 			podIndexParam = podIndexParam[:-1]
 			params['podindex'] = podIndexParam
@@ -56,10 +56,9 @@ class Command(CommandTemplate):
 			raise CommandException("Sorry, Wolfram returned unusable data")
 		#Since Wolfram apparently doesn't really understand unicode, fix '\:XXXX' characters by turning them into their proper '\uXXXX' characters
 		#  (Thanks, ekimekim!)
-		xmltext = re.sub(r"\\:[0-9a-f]{4}", lambda x: unichr(int(x.group(0)[2:], 16)), xmltext)
 		# When making changes to the encoding, always test a 'euro to gbp' conversion (euro for utf8, gbp for latin-1),
 		# power-of-ten conversion (e.g. minutes to millenia), and pokemon (accented e and Japanese characters)
-		xmltext = xmltext.encode('utf8')  #Return a string, not a Unicode object
+		xmltext = re.sub(r"\\:[0-9a-f]{4}", lambda x: chr(int(x.group(0)[2:], 16)), xmltext)
 		return xmltext
 
 	
@@ -87,7 +86,7 @@ class Command(CommandTemplate):
 					if didyoumean.attrib['level'] != 'low':
 						suggestion = StringUtil.removeNewlines(didyoumean.text, '')
 						if len(suggestion) > 0:
-							suggestions.append(suggestion.encode('utf-8'))
+							suggestions.append(suggestion)
 				if len(suggestions) > 0:
 					replystring += ". Did you perhaps mean: {}".format(", ".join(suggestions))
 		else:
@@ -120,5 +119,5 @@ class Command(CommandTemplate):
 
 		suffixes = None
 		if includeUrl:
-			suffixes = (Constants.GREY_SEPARATOR, "https://wolframalpha.com/input/?i=", urllib.quote_plus(query))
+			suffixes = (Constants.GREY_SEPARATOR, "https://wolframalpha.com/input/?i=", urllib.parse.quote_plus(query))
 		return StringWithSuffix(replystring, suffixes)

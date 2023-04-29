@@ -4,8 +4,8 @@ import requests
 
 import Constants
 import GlobalStore
-from util import DateTimeUtil, DictUtil, IrcFormattingUtil, StringUtil
-from CommandTemplate import CommandTemplate
+from util import DateTimeUtil, DictUtil, IrcFormattingUtil
+from commands.CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException, CommandInputException
 from StringWithSuffix import StringWithSuffix
 
@@ -29,7 +29,7 @@ class Command(CommandTemplate):
 	#  https://www.youtube.com/playlist?list=PLV_qemO0oatisNFQMcP3hl4P7XvP3pqem
 	#  https://www.youtube.com/watch?v=ufvjjMp1rUg&list=PLV_qemO0oatisNFQMcP3hl4P7XvP3pqem
 	playlistUrlMatcher = re.compile(r"^https?://(?:www\.)?youtube.com/.+[?&]list=(?P<playlistid>[^&]+)(?:&.+)*$")
-	newVideoPrefix = IrcFormattingUtil.makeTextBold(u'New: ')
+	newVideoPrefix = IrcFormattingUtil.makeTextBold('New: ')
 
 	def parseVideoPublishDateTime(self, publishedAtDateTimeString):
 		"""
@@ -50,7 +50,7 @@ class Command(CommandTemplate):
 			self.scheduledFunctionTime = None
 			return
 		if os.path.isfile(self.datafilepath):
-			with open(self.datafilepath, 'r') as datafile:
+			with open(self.datafilepath, 'r', encoding='utf-8') as datafile:
 				self.watchedPlaylistsData = json.load(datafile)
 			#Turn all the video timestamps into datetime objects, for easy comparison later
 			for playlistId in self.watchedPlaylistsData:
@@ -61,7 +61,7 @@ class Command(CommandTemplate):
 		shouldSaveWatchedData = False
 		now = datetime.datetime.now()
 		#Retrieve the latest videos of each of the channels we're watching
-		for playlistId, playlistData in self.watchedPlaylistsData.iteritems():
+		for playlistId, playlistData in self.watchedPlaylistsData.items():
 			videosList = self.retrieveLatestVideos(playlistId, 2)
 			newVideoList = []
 			#Check if these videos are newer than the latest video we have stored
@@ -165,7 +165,7 @@ class Command(CommandTemplate):
 
 	def getWatchList(self, serverChannelString):
 		watchedChannelNames = []
-		for playlistId, playlistData in self.watchedPlaylistsData.iteritems():
+		for playlistId, playlistData in self.watchedPlaylistsData.items():
 			if serverChannelString in playlistData['reportChannels']:
 				if 'playlistname' in playlistData:
 					#This isn't just the normal Uploads playlist, but a specific one, so add the playlist name too
@@ -182,7 +182,7 @@ class Command(CommandTemplate):
 	def addWatchedChannel(self, serverChannelString, channelName):
 		#First check if we're already following this Youtube channel
 		lowercaseChannelName = channelName.lower()
-		for playlistId, playlistData in self.watchedPlaylistsData.iteritems():
+		for playlistId, playlistData in self.watchedPlaylistsData.items():
 			#Check for the 'playlistname' key, because if it's absent it means this is just the Uploads playlist, and this method should watch the Uploads playlist
 			if 'playlistname' not in playlistData and lowercaseChannelName == playlistData['channelname'].lower():
 				if serverChannelString in playlistData['reportChannels']:
@@ -273,7 +273,7 @@ class Command(CommandTemplate):
 		saveData = copy.deepcopy(self.watchedPlaylistsData)
 		for channelId in saveData:
 			saveData[channelId]['latestVideoUploadTime'] = saveData[channelId]['latestVideoUploadTime'].strftime(self.datetimeFormatString)
-		with open(self.datafilepath, 'w') as datafile:
+		with open(self.datafilepath, 'w', encoding='utf-8') as datafile:
 			datafile.write(json.dumps(saveData))
 
 	def findChannelInfoByChannelName(self, channelName):
@@ -346,7 +346,7 @@ class Command(CommandTemplate):
 	def getPlaylistIdsFromNameSearch(self, channelOrPlaylistNameToSearchFor, serverChannelStringToMatch=None):
 		lowerChannelOrPlaylistNameToSearchFor = channelOrPlaylistNameToSearchFor.lower()
 		matchingPlaylistIds = []
-		for playlistId, playlistData in self.watchedPlaylistsData.iteritems():
+		for playlistId, playlistData in self.watchedPlaylistsData.items():
 			if serverChannelStringToMatch and serverChannelStringToMatch not in playlistData['reportChannels']:
 				continue
 			if lowerChannelOrPlaylistNameToSearchFor != playlistData['channelname'].lower():
@@ -354,7 +354,7 @@ class Command(CommandTemplate):
 			matchingPlaylistIds.append(playlistId)
 		if not matchingPlaylistIds:
 			# If we didn't find a direct channel name match, check if the search query matches (part of) the playlist name
-			for playlistId, playlistData in self.watchedPlaylistsData.iteritems():
+			for playlistId, playlistData in self.watchedPlaylistsData.items():
 				if 'playlistname' not in playlistData:
 					continue
 				if serverChannelStringToMatch and serverChannelStringToMatch not in playlistData['reportChannels']:
@@ -382,33 +382,33 @@ class Command(CommandTemplate):
 				  'fields': 'items/snippet(title,channelTitle,description,publishedAt),items/contentDetails/duration,items/statistics(viewCount)'}).json()
 
 		if not googleJson or 'error' in googleJson:
-			self.logError(u"[YoutubeWatcher] ERROR while retrieving info for video ID {}. {}: {}. [{}]".format(videoId, googleJson['error']['code'], googleJson['error']['message'], json.dumps(googleJson).replace('\n',' ')))
+			self.logError("[YoutubeWatcher] ERROR while retrieving info for video ID {}. {}: {}. [{}]".format(videoId, googleJson['error']['code'], googleJson['error']['message'], json.dumps(googleJson).replace('\n',' ')))
 			return None
 		if 'items' not in googleJson or len(googleJson['items']) != 1:
-			CommandTemplate.logError(u"[YoutubeWatcher] Unexpected reply from Google API: {}".format(json.dumps(googleJson).replace('\n', ' ')))
+			CommandTemplate.logError("[YoutubeWatcher] Unexpected reply from Google API: {}".format(json.dumps(googleJson).replace('\n', ' ')))
 			return None
 		videoData = googleJson['items'][0]
 		durationtimes = DateTimeUtil.parseIsoDuration(videoData['contentDetails']['duration'])
-		durationstring = u""
+		durationstring = ""
 		if durationtimes['day'] > 0:
-			durationstring += u"{day} d, "
+			durationstring += "{day} d, "
 		if durationtimes['hour'] > 0:
-			durationstring += u"{hour:02}:"
-		durationstring += u"{minute:02}:{second:02}"
+			durationstring += "{hour:02}:"
+		durationstring += "{minute:02}:{second:02}"
 		durationstring = durationstring.format(**durationtimes)
 		#Check if there's a description
 		description = videoData['snippet']['description'].strip()
 		if not description:
-			description = u"<No description>"
+			description = "<No description>"
 		else:
 			description = description.replace('\n', ' ')
 
 		snippetData = videoData['snippet']
-		resultStringParts = [u"{prefix}{title} {by} {channel}".format(prefix=prefix if prefix else '', title=snippetData['title'].strip(),
-																	  by=IrcFormattingUtil.makeTextColoured(u'by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']),
+		resultStringParts = ["{prefix}{title} {by} {channel}".format(prefix=prefix if prefix else '', title=snippetData['title'].strip(),
+																	  by=IrcFormattingUtil.makeTextColoured('by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']),
 							 durationstring]
 		if includeViewCount:
-			resultStringParts.append(u"{:,} views".format(int(videoData['statistics']['viewCount'])))
+			resultStringParts.append("{:,} views".format(int(videoData['statistics']['viewCount'])))
 		if includeUploadDate:
 			resultStringParts.append(snippetData['publishedAt'].split('T', 1)[0])
 		resultStringParts.append(description)

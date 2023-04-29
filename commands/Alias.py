@@ -1,7 +1,7 @@
 import json, os
 
 import GlobalStore
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandInputException
 
@@ -19,10 +19,10 @@ class Command(CommandTemplate):
 	def onLoad(self):
 		filepath = os.path.join(GlobalStore.scriptfolder, "data", "Aliases.json")
 		if os.path.isfile(filepath):
-			with open(filepath, "r") as f:
+			with open(filepath, 'r', encoding='utf-8') as f:
 				self.aliases = json.load(f)
 			#Build the quick-lookup aliasname list
-			for aliasTarget, aliasDict in self.aliases.iteritems():
+			for aliasTarget, aliasDict in self.aliases.items():
 				for aliasName in aliasDict:
 					if aliasName not in self.aliasNameList:
 						self.aliasNameList.append(aliasName)
@@ -56,7 +56,7 @@ class Command(CommandTemplate):
 			if len(aliasNames) == 0:
 				return message.reply("No aliases stored yet. You could be the first to add one!")
 			else:
-				return message.reply(u"{:,} alias{}: {}".format(len(aliasNames), u"es" if len(aliasNames) > 1 else u"", u", ".join(sorted(aliasNames))))
+				return message.reply("{:,} alias{}: {}".format(len(aliasNames), "es" if len(aliasNames) > 1 else "", ", ".join(sorted(aliasNames))))
 
 		# Check if an alias name has been provided and retrieve the alias if so, because all following subcommands need that information
 		if message.messagePartsLength <= 1:
@@ -84,27 +84,26 @@ class Command(CommandTemplate):
 
 			#Check if an alias with the same name doesn't exist already
 			if alias is not None:
-				message.reply(u"'{}' already is an alias! Looks like you weren't the only one with this presumably great idea!".format(aliasname))
+				message.reply("'{}' already is an alias! Looks like you weren't the only one with this presumably great idea!".format(aliasname))
 				return
 
 			#Check if there is a module that already has the trigger that we want to set for this alias
-			for modulename, module in GlobalStore.commandhandler.commands.iteritems():
+			for modulename, module in GlobalStore.commandhandler.commands.items():
 				#Also check if the module is enabled for this server, because if, say, the help module is disabled, creating a 'help' alias isn't a problem
 				if aliasname in module.triggers and GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, modulename):
-					message.reply(u"'{}' is already a trigger for the {} module, so using it as an alias would just get confusing. I'm sure you can think of another name though!".format(aliasname, modulename))
+					message.reply("'{}' is already a trigger for the {} module, so using it as an alias would just get confusing. I'm sure you can think of another name though!".format(aliasname, modulename))
 					return
 
 			if parameter == "serveradd" and server not in self.aliases:
 				self.aliases[server] = {}
 			elif (parameter == "channeladd" or parameter == "add") and serverChannelString not in self.aliases:
 				self.aliases[serverChannelString] = {}
-			#Make sure it's unicode, since that's what the Generator module expects
-			aliasToAdd = unicode(" ".join(message.messageParts[2:]), 'utf-8', 'replace')
+			aliasToAdd = " ".join(message.messageParts[2:])
 			self.aliases[server if parameter == "serveradd" else serverChannelString][aliasname] = aliasToAdd
 			self.saveAliases()
 			if aliasname not in self.aliasNameList:
 				self.aliasNameList.append(aliasname)
-			return message.reply(u"Stored the alias '{}' for this {}!".format(aliasname, "server" if parameter == "serveradd" else "channel"))
+			return message.reply("Stored the alias '{}' for this {}!".format(aliasname, "server" if parameter == "serveradd" else "channel"))
 
 		# All of the following subcommands need an existing alias, so check if we have one
 		if not alias:
@@ -126,7 +125,7 @@ class Command(CommandTemplate):
 				aliasKey = serverChannelString
 
 			if not aliasKey:
-				return message.reply(u"I don't know the alias '{}', so removal mission accomplished I guess?".format(aliasname))
+				return message.reply("I don't know the alias '{}', so removal mission accomplished I guess?".format(aliasname))
 			else:
 				del self.aliases[aliasKey][aliasname]
 				#If no other aliases are stored for this server/channel, remove the entire key
@@ -134,12 +133,12 @@ class Command(CommandTemplate):
 					del self.aliases[aliasKey]
 					self.aliasNameList.remove(aliasname)
 				self.saveAliases()
-				return message.reply(u"Ok, successfully removed the alias '{}'".format(aliasname))
+				return message.reply("Ok, successfully removed the alias '{}'".format(aliasname))
 
 		elif parameter == "help":
 			if not alias.helptext:
-				return message.reply("The alias '{0}' doesn't have any help text set, sorry. Either ask my admin(s) for an explanation, or try to parse it yourself by using '{1}alias show {0}'".format(aliasName, message.bot.commandPrefix))
-			return message.reply(u"{}{}: {}".format(message.bot.commandPrefix, aliasname, alias.helptext))
+				return message.reply("The alias '{0}' doesn't have any help text set, sorry. Either ask my admin(s) for an explanation, or try to parse it yourself by using '{1}alias show {0}'".format(aliasname, message.bot.commandPrefix))
+			return message.reply("{}{}: {}".format(message.bot.commandPrefix, aliasname, alias.helptext))
 
 		elif parameter == 'sethelp':
 			if message.messagePartsLength <= 2:
@@ -185,41 +184,34 @@ class Command(CommandTemplate):
 			return
 
 		#Create a grammar dictionary out of the alias text
-		aliasDict = {u'start': alias.command}
+		aliasDict = {'start': alias.command}
 		#Numbered fields refer to message parts.
 		# Use '<0>' to refer to the whole message (grammar also accepts '<_params>' but this is for completion's sake
-		aliasDict[u'0'] = message.message if message.messagePartsLength > 0 else u""
+		aliasDict['0'] = message.message if message.messagePartsLength > 0 else ""
 		#  Fill in enough fields for aliases that use numbered fields not to error out
-		for i in xrange(0, 11):
-			aliasDict[unicode(i+1)] = message.messageParts[i] if i < message.messagePartsLength else u""
-		aliasDict[u'nick'] = message.userNickname
-		aliasDict[u'CP'] = message.bot.commandPrefix
+		for i in range(0, 11):
+			aliasDict[str(i+1)] = message.messageParts[i] if i < message.messagePartsLength else ""
+		aliasDict['nick'] = message.userNickname
+		aliasDict['CP'] = message.bot.commandPrefix
 		# The grammar module stores some info from the message the grammar file is called from, fill that in here too because some grammar commands use it
-		variableDict = {u'_sourceserver': server, u'_sourcechannel': message.source, u'_sourcenick': message.userNickname}
+		variableDict = {'_sourceserver': server, '_sourcechannel': message.source, '_sourcenick': message.userNickname}
 		# Pass along the last message so the alias can use it, if needed
-		if u'lastMessage' in alias.command:
+		if 'lastMessage' in alias.command:
 			lastMessage = GlobalStore.commandhandler.runCommandFunction('getLastMessage', '', server, message.source, '')
-			# Generator module expects all text to be unicode
-			if not isinstance(lastMessage, unicode):
-				lastMessage = unicode(lastMessage, 'utf-8', errors='replace')
 			# Escape any special grammar characters in the message, otherwise stuff like URLs get parsed wrong because of the /
 			lastMessage = GlobalStore.commandhandler.runCommandFunction('escapeGrammarString', lastMessage, lastMessage)
 			# Pass it along as a variable to the alias
-			variableDict[u'lastMessage'] = lastMessage
+			variableDict['lastMessage'] = lastMessage
 		#Always send along parameters
 		parameters = message.messageParts if message.messagePartsLength > 0 else None
 		newMessageText = GlobalStore.commandhandler.runCommandFunction('parseGrammarDict', None, aliasDict, message.trigger,
 																	   parameters=parameters, variableDict=variableDict)
 		#Check if the parsing went well
-		if newMessageText.startswith(u"Error: "):
-			message.reply(u"Something went wrong with executing the alias: " + newMessageText.split(': ', 1)[1])
+		if newMessageText.startswith("Error: "):
+			message.reply("Something went wrong with executing the alias: " + newMessageText.split(': ', 1)[1])
 			return
 		#Aliases that use parameters can end with whitespace at the end. Remove that
 		newMessageText = newMessageText.rstrip()
-
-		# Modules won't expect incoming messages to be unicode. Best convert it
-		if isinstance(newMessageText, unicode):
-			newMessageText = newMessageText.encode('utf-8', errors='replace')
 
 		# Allow for newlines in aliases, each a new message
 		for newMessageLine in newMessageText.split("\\n"):
@@ -228,7 +220,7 @@ class Command(CommandTemplate):
 			GlobalStore.commandhandler.handleMessage(newMessage)
 
 	def saveAliases(self):
-		with open(os.path.join(GlobalStore.scriptfolder, "data", "Aliases.json"), "w") as aliasFile:
+		with open(os.path.join(GlobalStore.scriptfolder, "data", "Aliases.json"), 'w', encoding='utf-8') as aliasFile:
 			aliasFile.write(json.dumps(self.aliases))
 
 	def createServerChannelString(self, server, channel):

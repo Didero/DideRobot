@@ -1,5 +1,5 @@
 import Constants
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 import MessageTypes
 

@@ -2,7 +2,7 @@ import os, sys
 
 import gevent
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandInputException
@@ -18,7 +18,7 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		quitmessage = u"Don't worry, I'll be right back!"
+		quitmessage = "Don't worry, I'll be right back!"
 
 		if message.trigger == 'restart':
 			if message.isPrivateMessage:

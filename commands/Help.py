@@ -1,4 +1,4 @@
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 
 import GlobalStore
 from IrcMessage import IrcMessage
@@ -16,13 +16,13 @@ class Command(CommandTemplate):
 		triggerlist = {}
 		shortTriggerlist = {}
 		isUserAdmin = message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress)
-		for commandname, command in GlobalStore.commandhandler.commands.iteritems():
+		for commandname, command in GlobalStore.commandhandler.commands.items():
 			if command.showInCommandList and (isUserAdmin or not command.adminOnly) and len(command.triggers) > 0 and GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, commandname):
 				shortTriggerlist[command.triggers[0]] = command
 				for trigger in command.triggers:
 					triggerlist[trigger] = command
 				
-		replytext = u""
+		replytext = ""
 		#Check if a command has been passed as argument
 		command = None
 		if message.messagePartsLength > 0:

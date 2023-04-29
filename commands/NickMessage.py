@@ -1,6 +1,6 @@
 import json, os, time
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 from util import DateTimeUtil
 
@@ -22,7 +22,7 @@ class Command(CommandTemplate):
 		if os.path.exists(nickmessagesFilepath):
 			#If the file exists but is empty, an error is thrown. Prevent that error, even though an empty file should never exist
 			try:
-				with open(nickmessagesFilepath, 'r') as nickmessagesFile:
+				with open(nickmessagesFilepath, 'r', encoding='utf-8') as nickmessagesFile:
 					nickmessages = json.load(nickmessagesFile)
 			except ValueError:
 				self.logError("[NickMessage] An error occurred while trying to load the NickMessages file. Something probably went wrong with storing the data")
@@ -35,13 +35,13 @@ class Command(CommandTemplate):
 			nickToSearchFor = message.messageParts[0].lower() if message.messagePartsLength > 0 else message.userNickname.lower()
 
 			if serverfolder not in nickmessages or nickToSearchFor not in nickmessages[serverfolder]:
-				message.reply(u"I don't have a nick message stored for '{}'".format(nickToSearchFor))
+				message.reply("I don't have a nick message stored for '{}'".format(nickToSearchFor))
 			else:
 				nickmessage = nickmessages[serverfolder][nickToSearchFor]
-				message.reply(u"Nick message for {}: {} (Set {} ago)".format(nickToSearchFor, nickmessage[0], DateTimeUtil.durationSecondsToText(time.time() - nickmessage[1])))
+				message.reply("Nick message for {}: {} (Set {} ago)".format(nickToSearchFor, nickmessage[0], DateTimeUtil.durationSecondsToText(time.time() - nickmessage[1])))
 		elif message.trigger == 'setnickmessage':
 			if message.messagePartsLength == 0:
-				message.reply(u"Please provide some text to set as your nick message")
+				message.reply("Please provide some text to set as your nick message")
 			else:
 				if serverfolder not in nickmessages:
 					nickmessages[serverfolder] = {}
@@ -50,19 +50,19 @@ class Command(CommandTemplate):
 				try:
 					nickMessagesString = json.dumps(nickmessages)
 				except UnicodeDecodeError:
-					message.reply(u"I'm sorry, but there's a weird character in your message. I can't store it like this. Please remove any unusual characters, and try again")
+					message.reply("I'm sorry, but there's a weird character in your message. I can't store it like this. Please remove any unusual characters, and try again")
 				else:
-					with open(nickmessagesFilepath, 'w') as nickmessagesFile:
+					with open(nickmessagesFilepath, 'w', encoding='utf-8') as nickmessagesFile:
 						nickmessagesFile.write(nickMessagesString)
-					message.reply(u"Your nick message was successfully set")
+					message.reply("Your nick message was successfully set")
 		elif message.trigger == 'clearnickmessage':
 			if serverfolder not in nickmessages or message.userNickname.lower() not in nickmessages[serverfolder]:
-				message.reply(u"There is no message stored for your nick")
+				message.reply("There is no message stored for your nick")
 			else:
 				del nickmessages[serverfolder][message.userNickname.lower()]
 				#Might as well clear the serverfolder entry if there's no messages in it
 				if len(nickmessages[serverfolder]) == 0:
 					del nickmessages[serverfolder]
-				with open(nickmessagesFilepath, 'w') as nickmessagesFile:
+				with open(nickmessagesFilepath, 'w', encoding='utf-8') as nickmessagesFile:
 					nickmessagesFile.write(json.dumps(nickmessages))
-				message.reply(u"Your nick message was successfully cleared")
+				message.reply("Your nick message was successfully cleared")

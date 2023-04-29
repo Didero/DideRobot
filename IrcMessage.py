@@ -85,7 +85,7 @@ class IrcMessage(object):
 		"""
 		Reply to this message with the provided string with optional suffix, with the main text shortened to the maximum message length that fits in a message to this source
 		:param reply: The string or stringWithSuffix object that contains the text to reply with
-		:type reply: basestring or StringWithSuffix
+		:type reply: str or StringWithSuffix
 		:param messagetype: The type of the message to respond with. Leave empty to reply to a private notice with a notice and to everything else with a normal text message
 		:return: None
 		"""

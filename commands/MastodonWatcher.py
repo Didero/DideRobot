@@ -3,10 +3,10 @@ import datetime, json, os, re
 import requests
 from bs4 import BeautifulSoup
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
-from util import DateTimeUtil, IrcFormattingUtil, StringUtil
+from util import DateTimeUtil, IrcFormattingUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
 from StringWithSuffix import StringWithSuffix
@@ -30,7 +30,7 @@ class Command(CommandTemplate):
 
 		# Retrieve which accounts we should follow, if that file exists
 		if os.path.exists(self.watchDataFilePath):
-			with open(self.watchDataFilePath, 'r') as watchDataFile:
+			with open(self.watchDataFilePath, 'r', encoding='utf-8') as watchDataFile:
 				self.watchData = json.load(watchDataFile)
 
 	def executeScheduledFunction(self):
@@ -54,7 +54,7 @@ class Command(CommandTemplate):
 		if parameter == 'list':
 			#List all the users we're watching for this channel
 			watchlist = []
-			for username, usernameData in self.watchData.iteritems():
+			for username, usernameData in self.watchData.items():
 				if serverChannelPair in usernameData['targets']:
 					watchlist.append(username)
 			watchlistLength = len(watchlist)
@@ -228,7 +228,7 @@ class Command(CommandTemplate):
 				targetbot = GlobalStore.bothandler.bots[target[0]]
 				if target[1] not in targetbot.channelsUserList:
 					continue
-				targetchannel = target[1].encode('utf-8')  # Make sure it's not a unicode object
+				targetchannel = target[1]
 				# Now go tell that channel all about the new messages
 				for messageData in messageList:
 					formattedMessage  = self.formatMessage(username, messageData)
@@ -281,7 +281,7 @@ class Command(CommandTemplate):
 
 	def formatMessage(self, username, messageData, addMessageAge=False, addUrl=True):
 		# Mastodon messages are HTML, so remove all the tags and resolve all the special characters ('&amp;' to '&' for instance)
-		parsedMessage = BeautifulSoup(messageData['content'].replace(u'<br />', Constants.GREY_SEPARATOR), 'html.parser')
+		parsedMessage = BeautifulSoup(messageData['content'].replace('<br />', Constants.GREY_SEPARATOR), 'html.parser')
 		# Mastodon organises newlines into <p> paragraphs, so iterate over those and get the text from them
 		messageTextParts = []
 		for paragraph in parsedMessage.find_all('p'):
@@ -290,25 +290,25 @@ class Command(CommandTemplate):
 				messageTextParts.append(paragraphText)
 		formattedMessageText = Constants.GREY_SEPARATOR.join(messageTextParts)
 		# Add the username
-		formattedMessageText = u"{}: {}".format(StringUtil.forceToUnicode(IrcFormattingUtil.makeTextBold(self.getDisplayName(username))), formattedMessageText)
+		formattedMessageText = "{}: {}".format(IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), formattedMessageText)
 		suffixes = []
 		# If there's an attached image or video, mention that
 		if len(messageData['media_attachments']) > 0:
-			suffixes.append(u" (has {})".format(messageData['media_attachments'][0]['type']))
+			suffixes.append(" (has {})".format(messageData['media_attachments'][0]['type']))
 		# Add the message age, if requested
 		if addMessageAge:
 			postDateTime = self.getMessagePostTime(messageData['created_at'])
 			messageAge = datetime.datetime.utcnow() - postDateTime
 			# For older tweets, list the post date, otherwise list how old it is
 			if messageAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
-				suffixes.append(u' ({})'.format(postDateTime.strftime('%Y-%m-%d')))
+				suffixes.append(' ({})'.format(postDateTime.strftime('%Y-%m-%d')))
 			elif messageAge.total_seconds() <= 60:
-				suffixes.append(u' (posted just now)')
+				suffixes.append(' (posted just now)')
 			else:
-				suffixes.append(u' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision=DateTimeUtil.MINUTES)))
+				suffixes.append(' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision=DateTimeUtil.MINUTES)))
 		# Only add the URL if requested
 		if addUrl:
-			suffixes.append(u' | {}'.format(messageData['url']))
+			suffixes.append(' | {}'.format(messageData['url']))
 		return StringWithSuffix(formattedMessageText, suffixes)
 
 	def getMessageDescription(self, server, username, messageId, addUrl=True):
@@ -344,11 +344,11 @@ class Command(CommandTemplate):
 
 	def findUsernameFromDisplayname(self, displayname, serverChannel):
 		loweredDisplayname = displayname.lower()
-		for username, userdata in self.watchData.iteritems():
+		for username, userdata in self.watchData.items():
 			if 'displayname' in userdata and serverChannel in userdata['targets'] and userdata['displayname'].lower() == loweredDisplayname:
 				return username
 		return None
 
 	def saveWatchData(self):
-		with open(self.watchDataFilePath, 'w') as watchDataFile:
+		with open(self.watchDataFilePath, 'w', encoding='utf-8') as watchDataFile:
 			watchDataFile.write(json.dumps(self.watchData))

@@ -17,9 +17,9 @@ def parseInt(text, defaultValue=None, lowestValue=None, highestValue=None):
 		return defaultValue
 
 def dictToString(dictionary):
-	dictstring = u""
-	for key, value in dictionary.iteritems():
-		dictstring += u"{}: {}, ".format(key, forceToUnicode(value))
+	dictstring = ""
+	for key, value in dictionary.items():
+		dictstring += "{}: {}, ".format(key, forceToString(value))
 	if len(dictstring) > 2:
 		dictstring = dictstring[:-2]
 	return dictstring
@@ -62,16 +62,16 @@ def removeNewlines(string, replacementString=" "):
 		return string
 	return re.sub(r" *[\r\n]+ *", replacementString, string.rstrip('\r\n'))
 
-def forceToUnicode(varToForceToUnicode):
-	if isinstance(varToForceToUnicode, unicode):
-		return varToForceToUnicode
-	if isinstance(varToForceToUnicode, dict):
-		return dictToString(varToForceToUnicode)
-	if isinstance(varToForceToUnicode, int):
-		return u'{}'.format(varToForceToUnicode)
-	if not isinstance(varToForceToUnicode, basestring):
-		varToForceToUnicode = str(varToForceToUnicode)
-	return unicode(varToForceToUnicode, encoding='utf-8', errors='replace')
+def forceToString(varToForceToString):
+	if isinstance(varToForceToString, str):
+		return varToForceToString
+	if isinstance(varToForceToString, dict):
+		return dictToString(varToForceToString)
+	if isinstance(varToForceToString, int):
+		return '{}'.format(varToForceToString)
+	if isinstance(varToForceToString, bytes):
+		return varToForceToString.decode('utf-8', errors='replace')
+	return str(varToForceToString)
 
 def limitStringLength(stringToShorten, maxLength=Constants.MAX_MESSAGE_LENGTH, suffixes=None, shortenIndicator='[...]'):
 	"""
@@ -85,7 +85,7 @@ def limitStringLength(stringToShorten, maxLength=Constants.MAX_MESSAGE_LENGTH, s
 	suffixesLength = 0
 	suffix = None
 	if suffixes:
-		if isinstance(suffixes, basestring):
+		if isinstance(suffixes, str):
 			suffix = suffixes
 		else:
 			suffix = "".join(suffixes)

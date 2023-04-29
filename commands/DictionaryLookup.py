@@ -2,7 +2,7 @@ import unicodedata
 
 import requests
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 import Constants
 from CustomExceptions import CommandException, CommandInputException
@@ -12,7 +12,7 @@ class Command(CommandTemplate):
 	triggers = ['define']
 	helptext = "Looks up the definition of the provided word or term. Or tries to, anyway, because language is hard. Add a word type ('noun', 'verb', ect) before your query to get only results of that type"
 
-	termTypeToAbbreviation = {u'adjective': u'adj', u'noun': u'n', u'verb': u'v'}
+	termTypeToAbbreviation = {'adjective': 'adj', 'noun': 'n', 'verb': 'v'}
 
 	def execute(self, message):
 		"""
@@ -31,7 +31,7 @@ class Command(CommandTemplate):
 		if message.messagePartsLength > 1:
 			# Check if the first parameter is a word type, if so only show definitions of that type
 			firstArg = message.messageParts[0].lower()
-			for termType, abbreviation in self.termTypeToAbbreviation.iteritems():
+			for termType, abbreviation in self.termTypeToAbbreviation.items():
 				if firstArg == termType or firstArg == abbreviation:
 					termTypeToSearch = termType
 					termToDefine = ' '.join(message.messageParts[1:])
@@ -51,13 +51,13 @@ class Command(CommandTemplate):
 			raise CommandException("The dictionary API returned an error, for some reason. Maybe try again later, or tell my owner(s)?")
 		if not apiData:
 			return message.reply("That term doesn't exist in the dictionary I use. Either they're behind on slang, or you invented a new word!")
-		if isinstance(apiData[0], (str, unicode)):
+		if isinstance(apiData[0], str):
 			# If the API returned a list of strings, no direct result was found, but it returned suggestions
-			return message.reply(u"That exact term isn't in this dictionary, but maybe you meant: {}".format(', '.join(apiData)))
+			return message.reply("That exact term isn't in this dictionary, but maybe you meant: {}".format(', '.join(apiData)))
 
 		# The definitions are in a list, each entry being a dictionary
 		# Expanded definitions are hidden pretty deep inside a tree, but there's also a 'shortdef' key with a list of short definitions, which is good enough for us
-		comparableTermToDefine = unicodedata.normalize('NFKD', unicode(termToDefine.lower(), encoding='utf-8', errors='replace'))
+		comparableTermToDefine = unicodedata.normalize('NFKD', termToDefine.lower())
 		definitions = []
 		relatedTerms = []
 		otherTermTypes = []
@@ -75,19 +75,19 @@ class Command(CommandTemplate):
 			if termType in self.termTypeToAbbreviation:
 				termType = self.termTypeToAbbreviation[termType]
 			for shortDefinition in definitionEntry['shortdef']:
-				definition = u"{}: ".format(headword) if comparableHeadword != comparableTermToDefine else u""
-				definition += u"{} ({})".format(shortDefinition, termType)
+				definition = "{}: ".format(headword) if comparableHeadword != comparableTermToDefine else ""
+				definition += "{} ({})".format(shortDefinition, termType)
 				definitions.append(definition)
 
 		if not definitions:
 			# Apparently we didn't find any good definitions for some reason
-			replytext = u"No exact definitions found, sorry"
+			replytext = "No exact definitions found, sorry"
 			if otherTermTypes:
 				replytext += ". I did find definitions for a{} {} though".format('n' if otherTermTypes[0][0] in 'aeiou' else '', " or ".join(otherTermTypes))
 			if relatedTerms:
-				replytext += u". Maybe you meant: {}?".format(", ".join(relatedTerms))
+				replytext += ". Maybe you meant: {}?".format(", ".join(relatedTerms))
 		else:
-			replytext = u""
+			replytext = ""
 			# Keep adding definitions to the output text until we run out of message space
 			separatorLength = len(Constants.GREY_SEPARATOR)
 			numberOfDefinitionsShown = 0
@@ -103,7 +103,7 @@ class Command(CommandTemplate):
 				# There are definitions, but all of them are too long to show in one message. Show the first one anyway
 				replytext = definitions[0]
 			elif len(definitions) > numberOfDefinitionsShown:
-				replytext += u" ({:,} more)".format(len(definitions) - numberOfDefinitionsShown)
+				replytext += " ({:,} more)".format(len(definitions) - numberOfDefinitionsShown)
 
 		#Done! Show our result
 		message.reply(replytext)

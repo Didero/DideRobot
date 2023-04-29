@@ -1,9 +1,8 @@
 import codecs, os
 
-import Constants, GlobalStore
-from CommandTemplate import CommandTemplate
+import GlobalStore
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-from util import StringUtil
 
 
 class Command(CommandTemplate):

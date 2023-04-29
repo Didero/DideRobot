@@ -31,7 +31,6 @@ class BotSettingsManager(object):
 				#Clear the incomplete settings file
 				self.settings = {}
 			else:
-				self.parseSettings()
 				self.loadedSuccessfully = True
 
 		#Don't keep a possibly broken settings file around
@@ -45,13 +44,13 @@ class BotSettingsManager(object):
 	def loadSettings(self):
 		try:
 			#First load in the default settings
-			with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', "globalsettings.json"), 'r') as globalSettingsFile:
+			with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', "globalsettings.json"), 'r', encoding='utf-8') as globalSettingsFile:
 				self.settings = json.load(globalSettingsFile)
 			#Then update the defaults with the server-specific ones
-			with open(self._settingsPath) as serverSettingsFile:
+			with open(self._settingsPath, encoding='utf-8') as serverSettingsFile:
 				self.settings.update(json.load(serverSettingsFile))
 		except ValueError as e:
-			self._logger.critical("|SettingsManager {}| Error while trying to load settings file: {}".format(self.serverfolder, e.message))
+			self._logger.critical("|SettingsManager {}| Error while trying to load settings file: {}".format(self.serverfolder, e))
 			return False
 		else:
 			return True
@@ -65,21 +64,15 @@ class BotSettingsManager(object):
 		for settingToEnsure in ("server", "port", "nickname", "keepSystemLogs", "keepChannelLogs", "keepPrivateLogs", "commandPrefix", "admins"):
 			if settingToEnsure not in self.settings:
 				raise SettingException("Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
-			elif isinstance(self.settings[settingToEnsure], (list, unicode)) and len(self.settings[settingToEnsure]) == 0:
+			elif isinstance(self.settings[settingToEnsure], (list, str)) and len(self.settings[settingToEnsure]) == 0:
 				raise SettingException("Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder))
-
-	def parseSettings(self):
-		#All the strings should be strings and not unicode, which makes it a lot easier to use later
-		for key, value in self.settings.iteritems():
-			if isinstance(value, unicode):
-				self.settings[key] = value.encode('utf-8')
 
 	def saveSettings(self):
 		#First get only the keys that are different from the globalsettings
 		settingsToSave = {}
-		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', 'globalsettings.json'), 'r') as globalSettingsFile:
+		with open(os.path.join(GlobalStore.scriptfolder, 'serverSettings', 'globalsettings.json'), 'r', encoding='utf-8') as globalSettingsFile:
 			globalsettings = json.load(globalSettingsFile)
-		for key, value in self.settings.iteritems():
+		for key, value in self.settings.items():
 			if key not in globalsettings or value != globalsettings[key]:
 				settingsToSave[key] = value
 
@@ -87,7 +80,7 @@ class BotSettingsManager(object):
 		if os.path.exists(self._settingsPath + '.new'):
 			os.remove(self._settingsPath + '.new')
 		#Save the data to a new file, so we don't end up without a settings file if something goes wrong
-		with open(self._settingsPath + '.new', 'w') as f:
+		with open(self._settingsPath + '.new', 'w', encoding='utf-8') as f:
 			f.write(json.dumps(settingsToSave, indent=2))
 		#Remove the previous backup file
 		if os.path.exists(self._settingsPath + '.old'):

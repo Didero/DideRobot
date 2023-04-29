@@ -1,9 +1,8 @@
-import json, re
-import HTMLParser
+import html, re
 
 import requests
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
 import MessageTypes
@@ -78,7 +77,7 @@ class Command(CommandTemplate):
 			return None
 		title = StringUtil.removeNewlines(titlematch.group(1).strip())
 		# Convert weird characters like &#39 back into normal ones like '
-		title = HTMLParser.HTMLParser().unescape(title)
+		title = html.unescape(title)
 		return title
 
 	@staticmethod
@@ -133,23 +132,23 @@ class Command(CommandTemplate):
 		try:
 			imgdata = imgurDataPage.json()
 		except ValueError as e:
-			CommandTemplate.logError("[url] Imgur API didn't return JSON for type {} image id {}".format(imageType, imageId))
+			CommandTemplate.logError("[url] Imgur API didn't return JSON for type {} image id {}: {}".format(imageType, imageId, e))
 			return None
 		if imgdata['success'] is not True or imgdata['status'] != 200:
-			CommandTemplate.logError("[url] Error while retrieving ImgUr image data: {}".format(imgurDataPage.text.encode('utf-8')))
+			CommandTemplate.logError("[url] Error while retrieving ImgUr image data: {}".format(imgurDataPage.text))
 			return None
 		imgdata = imgdata['data']
-		titleParts = [imgdata['title'] if imgdata['title'] else u"No Title"]
+		titleParts = [imgdata['title'] if imgdata['title'] else "No Title"]
 		if isGallery:
-			titleParts.append(u"{:,} image{}".format(imgdata['images_count'], u's' if imgdata['images_count'] > 1 else u''))
+			titleParts.append("{:,} image{}".format(imgdata['images_count'], 's' if imgdata['images_count'] > 1 else ''))
 		else:
-			titleParts.append(u"{:,} x {:,}".format(imgdata['width'], imgdata['height']))
-			titleParts.append(u"{:,.0f} kb".format(imgdata['size'] / 1024.0))
-		titleParts.append(u"{:,} views".format(imgdata['views']))
+			titleParts.append("{:,} x {:,}".format(imgdata['width'], imgdata['height']))
+			titleParts.append("{:,.0f} kb".format(imgdata['size'] / 1024.0))
+		titleParts.append("{:,} views".format(imgdata['views']))
 		if 'animated' in imgdata and imgdata['animated'] is True:
-			titleParts.append(u"Animated")
+			titleParts.append("Animated")
 		if 'nsfw' in imgdata and imgdata['nsfw'] is True:
-			titleParts.append(IrcFormattingUtil.makeTextBold(IrcFormattingUtil.makeTextColoured(u'NSFW', IrcFormattingUtil.Colours.RED)))
+			titleParts.append(IrcFormattingUtil.makeTextBold(IrcFormattingUtil.makeTextColoured('NSFW', IrcFormattingUtil.Colours.RED)))
 		return Constants.GREY_SEPARATOR.join(titleParts)
 
 	@staticmethod

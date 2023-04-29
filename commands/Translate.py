@@ -2,7 +2,7 @@ import json
 
 import requests
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 
 
@@ -66,7 +66,7 @@ class Command(CommandTemplate):
 						continue
 					if match['match'] > translationMatchIndex:
 						translationMatchIndex = match['match']
-						translation = match['translation'].encode('utf-8')
+						translation = match['translation']
 				if len(translation) == 0:
 					replytext = "Translation is empty, sorry. Are you sure you entered something? If so, sorry!"
 				else:

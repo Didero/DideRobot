@@ -1,6 +1,6 @@
 import random
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 
 
 class Command(CommandTemplate):

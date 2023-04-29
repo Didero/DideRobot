@@ -20,7 +20,7 @@ def parseIsoDuration(isoString, formatstring=""):
 	if result is None:
 		raise CommandException("No ISO-8601 duration string found in '{}'".format(isoString))
 	else:
-		for group, value in result.groupdict().iteritems():
+		for group, value in result.groupdict().items():
 			if value is not None:
 				durations[group] = int(float(value))
 
@@ -46,7 +46,7 @@ def durationSecondsToText(durationInSeconds, precision=SECONDS, numberOfParts=2)
 			timeParts['second'] = durationInSeconds % 60
 
 	# Remove any part that is (or will be rounded to) zero
-	for timePartName in timeParts.keys():
+	for timePartName in list(timeParts.keys()):
 		if timeParts[timePartName] < 0.5:
 			del timeParts[timePartName]
 
@@ -57,7 +57,7 @@ def durationSecondsToText(durationInSeconds, precision=SECONDS, numberOfParts=2)
 		numberOfPartsLeft = numberOfParts
 
 	durationTextParts = []
-	for timePartName, timePartValue in timeParts.iteritems():
+	for timePartName, timePartValue in timeParts.items():
 		if numberOfPartsLeft > 1:
 			# There's another time part entry coming, so make sure rounding the value results in flooring it
 			timePartValue = timePartValue - 0.5

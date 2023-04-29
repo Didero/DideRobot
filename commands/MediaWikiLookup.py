@@ -2,12 +2,11 @@ import re
 
 import requests
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
 import Constants
 from util import StringUtil
-from StringWithSuffix import StringWithSuffix
 
 
 class Command(CommandTemplate):
@@ -31,7 +30,7 @@ class Command(CommandTemplate):
 		else:
 			wikiDisplayName = "the {} Fandom wiki".format(message.messageParts[0])
 			wikiApiUrl = "https://{}.fandom.com/api.php".format(message.messageParts[0])
-			searchQuery = u" ".join(message.messageParts[1:])
+			searchQuery = " ".join(message.messageParts[1:])
 
 		shouldPickRandomPage = message.trigger.endswith('random')
 		#Searches need a search term
@@ -61,13 +60,13 @@ class Command(CommandTemplate):
 			# Should only happen for Fandom searches and a non-existent wiki
 			raise CommandInputException("{} doesn't appear to exist. Maybe you made a typo? Or maybe you made a whole new fandom!".format(wikiDisplayName))
 		if apiResult.status_code != 200:
-			self.logError(u"[MediaWiki] {} returned an unexpected result for commandtrigger '{}' and query '{}'. Status code is {}, response is {}".format(wikiApiUrl, message.trigger, searchQuery, apiResult.status_code, apiResult.text))
+			self.logError("[MediaWiki] {} returned an unexpected result for commandtrigger '{}' and query '{}'. Status code is {}, response is {}".format(wikiApiUrl, message.trigger, searchQuery, apiResult.status_code, apiResult.text))
 			raise CommandException("Uh oh, something went wrong with retrieving data from {}. Either they're having issues, or I am. If this keeps happening, please tell my owner(s) to look into this!".format(wikiDisplayName))
 
 		try:
 			apiData = apiResult.json()
 		except ValueError:
-			self.logError(u"[MediaWiki] Invalid JSON reply from API. Wiki url is {}, query was '{}', response is {}".format(wikiApiUrl, searchQuery, apiResult.text))
+			self.logError("[MediaWiki] Invalid JSON reply from API. Wiki url is {}, query was '{}', response is {}".format(wikiApiUrl, searchQuery, apiResult.text))
 			raise CommandException("Hmm, the data that {} returned isn't exactly what I expected, I'm not sure what to do with this. If this keeps happening, please tell my owner(s) about this!".format(wikiDisplayName))
 
 		if 'query' not in apiData or 'pages' not in apiData['query'] or "-1" in apiData['query']['pages']:
@@ -82,11 +81,11 @@ class Command(CommandTemplate):
 		articleText = articleData["extract"]
 		articleUrl = articleData["canonicalurl"]
 		# If we got more text than just from the first section, it's got newlines and a header indicator (multiple '='s in MediaWiki formatting). Only get the first section
-		if u'\n=' in articleText:
+		if '\n=' in articleText:
 			articleText = re.split('\n+=+', articleText, maxsplit=1)[0]
 		# Some articles put images and captions at the start of the article, separated by tabs, so we have to remove those
-		if u'\t' in articleText:
-			articleText = articleText.rsplit(u'\t', 1)[1].strip()
+		if '\t' in articleText:
+			articleText = articleText.rsplit('\t', 1)[1].strip()
 		# Replace any remaining newlines with spaces
 		articleText = StringUtil.removeNewlines(articleText)
 		message.replyWithLengthLimit(articleText, (Constants.GREY_SEPARATOR, articleUrl))

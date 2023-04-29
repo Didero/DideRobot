@@ -1,9 +1,9 @@
 # DideRobot
 
-A modular Python 2 IRC bot built with Gevent
+A modular Python 3 IRC bot built with Gevent
 
 ### 1) Initial Setup
-1. Install the libraries listed in 'requirements.txt', either manually or (preferably) by pointing pip to it with 'pip install -r requirements.txt'
+1. Install the libraries listed in 'requirements.txt', either manually or (preferably) by pointing pip to it with 'python -m pip install -r requirements.txt'
 2. In the 'serverSettings' folder, make a copy of 'globalsettings.json.example'
 3. Rename the copy to 'globalsettings.json'
 4. Open the file in your favourite text editor
@@ -25,7 +25,7 @@ A modular Python 2 IRC bot built with Gevent
 * maxConnectionRetries: If the bot can't establish a connection to the server, or if it loses connection, it will try to re-establish the connection as often as specified here, with an increasingly long wait between attempts. If the number specified is lower than 0, it will keep retrying forever
 * minSecondsBetweenMessages: A float specifying how many seconds the bot will wait between sending messages to the server. Useful in case the server has rate-limiting
 * keepChannelLogs, keepPrivateLogs, keepSystemLogs: A boolean that specifies whether the bot should respectively write messages from channels, private messages, or from the server itself to a log file (which will be stored in the 'serverSettings' folder of this server, in a 'logs' subfolder)
-* commandPrefix: If a message starts with the character specified here, the bot will interpret the message as a possible command, and will send it to the modules. The bot will do the same for messages starting with its nickname (f.i. 'DideRobot: quit')
+* commandPrefix: If a message starts with the character specified here, the bot will interpret the message as a possible command, and will send it to the modules. The bot will do the same for messages starting with its nickname (f.i. 'DideRobot help')
 * joinChannels: A list of channels the bot should join when it connects to the server. Can be empty
 * allowedChannels: A list of channels the bot is allowed to join through a 'join' command. Admins can make the bot join channels not in this list, but normal users can't
 * admins: A list of user addresses and/or nicknames of people that are allowed to call important commands like 'quit' and 'shutdown'. Only put nicknames in this list if you are sure nobody can impersonate that nick
@@ -39,7 +39,7 @@ A modular Python 2 IRC bot built with Gevent
 
 ### 5) Stopping The Bot
 0. Connect to a server the bot is connected to, if you're not connected already
-1. Either in a channel the bot is in, or in a private message, type the specified command character, followed by either 'quit' to make the bot leave just that server, or 'shutdown' to make the bot disconnect from all servers it is connected to. (Make sure the settings file for the bot specifies you as an admin, because only bot admins can make the bot quit or shut down)
+1. Either in a channel the bot is in, or in a private message, type the specified command character, followed by either 'quit' to make the bot leave just that server, or 'shutdown' to make the bot disconnect from all servers it is connected to. Make sure the settings file for the bot specifies you as an admin, because only bot admins can make the bot quit or shut down
 2. Once DideRobot isn't connected to any server (Either because it quit from the last server it was connected to, or because of a 'shutdown' call), the program will exit
 
 ### Bonus) Creating Your Own Command Module
@@ -48,6 +48,11 @@ A modular Python 2 IRC bot built with Gevent
 3. Check the 'CommandTemplate' class to see which class variables you can set. The most important one is 'triggers' since that determines how your command gets called
 4. While you're in the 'CommandTemplate' class, look at the methods defined in there. You should at least implement the 'execute' method in your command, since that gets called when one of your triggers is used in a chat. The other methods described there might come in handy too
 ##### Some suggestions
-* It's probably helpful to look at a simple command like 'Source' or 'Uptime' for basic examples of commands. 'Choice' is also a good one since it uses the 'IrcMessage' class, which represents the chat message the bot received and what 'execute' receives. You'll probably use the 'IrcMessage' class a lot in your command
+* It's probably helpful to look at a simple command like 'Info' or 'Uptime' for basic examples of commands. 'Choice' is also a good one since it uses the 'IrcMessage' class, which represents the chat message the bot received and what 'execute' receives. You'll probably use the 'IrcMessage' class a lot in your commands
 * To have your command be able to reply when it gets called, you can use 'message.reply' inside the 'execute' method
 * Commands can also have a method that periodically gets called, 'executeScheduledFunction', and you set the period with the 'scheduledFunctionTime' class variable
+* If you have long replies, and you don't want to exceed the maximum IRC message length, you can use 'message.replyWithLengthLimit'. It takes either a single string, or a StringWithSuffix instance
+
+### Python 2
+DideRobot was originally written in Python 2. After 9 years, and Python 2 being unsupported for 3 years, I finally decided to port DideRobot to Python 3.  
+The Python 2 version can still be found in the 'python2' branch, but that branch won't receive fixes anymore.  

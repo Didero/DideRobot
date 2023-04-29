@@ -1,7 +1,7 @@
 import requests
 
 import Constants, GlobalStore
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException, CommandInputException
 from IrcMessage import IrcMessage
 from util import StringUtil
@@ -30,13 +30,13 @@ class Command(CommandTemplate):
 		try:
 			searchResult = requests.get("https://store.steampowered.com/api/storesearch", params={'term': message.message, 'cc': 'US'}, timeout=5)
 			searchData = searchResult.json()
-			if searchData[u'total'] == 0 or not searchData[u'items']:
+			if searchData['total'] == 0 or not searchData['items']:
 				raise CommandInputException("That search didn't return any results. Maybe you made a typo? Or you've got a game to make")
-			matchingApp = searchData[u'items'][0]
+			matchingApp = searchData['items'][0]
 			pricesByCountry = {}
-			if u'price' in matchingApp:
-				pricesByCountry['US'] = u'${:.2f}'.format(matchingApp[u'price'][u'final'] / 100)
-			appId = StringUtil.forceToUnicode(matchingApp['id'])
+			if 'price' in matchingApp:
+				pricesByCountry['US'] = '${:.2f}'.format(matchingApp['price']['final'] / 100)
+			appId = StringUtil.forceToString(matchingApp['id'])
 			return message.replyWithLengthLimit(self.getDescriptionFromAppId(appId, True, pricesByCountry))
 		except requests.exceptions.Timeout:
 			raise CommandException("Seems Steam is having some issues, they didn't return the data as quickly as normal. You should try again in a little while", False)
@@ -51,65 +51,65 @@ class Command(CommandTemplate):
 		"""
 		appResult = requests.get("https://store.steampowered.com/api/appdetails", params={'appids': appId, 'cc': 'NL'}, timeout=5.0)
 		appData = appResult.json()
-		if appId not in appData or not appData[appId][u'success']:
-			self.logError(u"[Steam] Retrieving data for app ID {} failed, api reply: {}".format(appId, appData))
+		if appId not in appData or not appData[appId]['success']:
+			self.logError("[Steam] Retrieving data for app ID {} failed, api reply: {}".format(appId, appData))
 			raise CommandException("Something went wrong with retrieving extra information, sorry. Try again in a little while, see if it works then")
 		appData = appData[appId]['data']
 
-		developerString = u"by {}".format(u", ".join(appData[u'developers']))
+		developerString = "by {}".format(", ".join(appData['developers']))
 
 		priceString = None
-		if appData[u'is_free']:
-			priceString = u"Free"
-		elif u'price_overview' in appData:
+		if appData['is_free']:
+			priceString = "Free"
+		elif 'price_overview' in appData:
 			if pricesByCountry is None:
 				pricesByCountry = {}
 			priceParts = []
-			pricesByCountry['NL'] = appData[u'price_overview'][u'final_formatted']
+			pricesByCountry['NL'] = appData['price_overview']['final_formatted']
 			for countryCode in self.COUNTRY_PRICES_TO_RETRIEVE:
 				if countryCode not in pricesByCountry:
 					pricesByCountry[countryCode] = self.getPriceForCountry(appId, countryCode)
 				if pricesByCountry[countryCode]:
 					priceParts.append(pricesByCountry[countryCode].replace(' ', '').replace(',','.'))
 
-			discount = appData[u'price_overview']['discount_percent']
+			discount = appData['price_overview']['discount_percent']
 			if discount:
-				priceParts.append(u'-{}%'.format(discount))
-			priceString = u" ".join(priceParts)
+				priceParts.append('-{}%'.format(discount))
+			priceString = " ".join(priceParts)
 
 		supportedPlatforms = []
-		for platform, isSupported in appData[u'platforms'].iteritems():
+		for platform, isSupported in appData['platforms'].items():
 			if isSupported:
 				supportedPlatforms.append(platform.title())
 
 		genres = []
-		if u'genres' in appData:
+		if 'genres' in appData:
 			genreCount = 0
-			for genreEntry in appData[u'genres']:
-				genre = genreEntry[u'description']
+			for genreEntry in appData['genres']:
+				genre = genreEntry['description']
 				# Skip adding 'Free to Play', since that's already shown in the price
-				if genre != u'Free to Play':
+				if genre != 'Free to Play':
 					genreCount += 1
 					if genreCount < self.MAX_GENRES:
 						genres.append(genre)
 			if genreCount > self.MAX_GENRES:
-				genres.append(u'+{:,}'.format(genreCount))
+				genres.append('+{:,}'.format(genreCount))
 
 		# Collected and parsed all data, now use it to build the description string
-		replyParts = [appData[u'name'], developerString, appData[u'release_date'][u'date'], u" ".join(supportedPlatforms)]
+		replyParts = [appData['name'], developerString, appData['release_date']['date'], " ".join(supportedPlatforms)]
 		if priceString:
 			replyParts.append(priceString)
-		if appData[u'type'] != u'game':
-			replyParts.append(appData[u'type'])
+		if appData['type'] != 'game':
+			replyParts.append(appData['type'])
 		if genres:
-			replyParts.append(u", ".join(genres))
-		if u'fullgame' in appData:
-			replyParts.append(u"DLC for {}".format(appData[u'fullgame'][u'name']))
-		replyParts.append(appData[u'short_description'])
+			replyParts.append(", ".join(genres))
+		if 'fullgame' in appData:
+			replyParts.append("DLC for {}".format(appData['fullgame']['name']))
+		replyParts.append(appData['short_description'])
 
 		replySuffixes = None
 		if includeUrl:
-			replySuffixes = (Constants.GREY_SEPARATOR, u"https://store.steampowered.com/app/", appId)
+			replySuffixes = (Constants.GREY_SEPARATOR, "https://store.steampowered.com/app/", appId)
 		return StringWithSuffix(Constants.GREY_SEPARATOR.join(replyParts), replySuffixes)
 
 	def getPriceForCountry(self, appId, countryCode):
@@ -117,5 +117,4 @@ class Command(CommandTemplate):
 			apiReply = requests.get('https://store.steampowered.com/api/appdetails', params={'appids': appId, 'cc': countryCode, 'filters': 'price_overview'}, timeout=5)
 		except requests.exceptions.Timeout:
 			return None
-		return apiReply.json()[appId][u'data'][u'price_overview'][u'final_formatted']
-
+		return apiReply.json()[appId]['data']['price_overview']['final_formatted']

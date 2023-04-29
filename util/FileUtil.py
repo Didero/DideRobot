@@ -33,7 +33,7 @@ def getLineFromFile(filename, wantedLineNumber):
 	if not isAllowedPath(filename):
 		return None
 	if not os.path.isfile(filename):
-		logger.error(u"Can't read line {} from file '{}'; file does not exist".format(wantedLineNumber, filename))
+		logger.error("Can't read line {} from file '{}'; file does not exist".format(wantedLineNumber, filename))
 		return None
 	with codecs.open(filename, 'r', 'utf-8') as f:
 		for lineNumber, line in enumerate(f):
@@ -57,7 +57,7 @@ def getAllLinesFromFile(filename):
 	if not isAllowedPath(filename):
 		return None
 	if not os.path.exists(filename):
-		logger.error(u"Can't read lines from file '{}'; it does not exist".format(filename))
+		logger.error("Can't read lines from file '{}'; it does not exist".format(filename))
 		return None
 	#Get all the lines!
 	with codecs.open(filename, 'r', 'utf-8') as linesfile:

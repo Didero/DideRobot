@@ -1,7 +1,7 @@
 import os, json
 from datetime import datetime
 
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 import GlobalStore
 import MessageTypes
 from util import DateTimeUtil
@@ -18,7 +18,7 @@ class Command(CommandTemplate):
 
 	def onLoad(self):
 		if os.path.exists(self.tellsFileLocation):
-			with open(self.tellsFileLocation, 'r') as tellsfile:
+			with open(self.tellsFileLocation, 'r', encoding='utf-8') as tellsfile:
 				self.storedTells = json.load(tellsfile)
 
 	def shouldExecute(self, message):
@@ -48,7 +48,7 @@ class Command(CommandTemplate):
 				sentTell = True
 			#If we haven't spammed the user enough, send them their private tells as well
 			if len(publicTells) < self.maxTellsAtATime:
-				for tell in self.retrieveTells(serverfolder, usernick, u"_private", self.maxTellsAtATime - len(publicTells)):
+				for tell in self.retrieveTells(serverfolder, usernick, "_private", self.maxTellsAtATime - len(publicTells)):
 					message.bot.sendMessage(message.userNickname, self.formatTell(message.userNickname, tell), MessageTypes.NOTICE)
 					sentTell = True
 			if sentTell:
@@ -61,16 +61,16 @@ class Command(CommandTemplate):
 		#Check if we need to add a new tell
 		if message.trigger and message.trigger in self.triggers:
 			if message.messagePartsLength == 0:
-				replytext = u"Add a username and a message as arguments, then we'll tell-I mean talk"
+				replytext = "Add a username and a message as arguments, then we'll tell-I mean talk"
 			elif message.messagePartsLength == 1:
-				replytext = u"What do you want me to tell {}? Add that as an argument too, otherwise I'm just gonna stare at them and we'll all be uncomfortable".format(message.messageParts[0])
+				replytext = "What do you want me to tell {}? Add that as an argument too, otherwise I'm just gonna stare at them and we'll all be uncomfortable".format(message.messageParts[0])
 			elif message.messageParts[0].lower() == message.bot.nickname.lower():
-				replytext = u"All right, I'll tell myself to tell myself that. Hey {}, what {} said! There, done".format(message.bot.nickname, message.userNickname)
+				replytext = "All right, I'll tell myself to tell myself that. Hey {}, what {} said! There, done".format(message.bot.nickname, message.userNickname)
 			else:
 				#Store that tell!
-				messageTarget = u"_private" if message.isPrivateMessage else message.source
+				messageTarget = "_private" if message.isPrivateMessage else message.source
 
-				targetnicks = message.messageParts[0].lower().split(u'&')
+				targetnicks = message.messageParts[0].lower().split('&')
 				for targetnick in targetnicks:
 					#Make sure all the nested dictionaries exist
 					if serverfolder not in self.storedTells:
@@ -83,8 +83,8 @@ class Command(CommandTemplate):
 					self.storedTells[serverfolder][targetnick][messageTarget].append(self.createTell(message))
 				self.saveTellsToFile()
 
-				targetnick = u"them" if len(targetnicks) > 1 else message.messageParts[0]
-				replytext = u"Ok, I'll tell {} that when they show a sign of life".format(targetnick)
+				targetnick = "them" if len(targetnicks) > 1 else message.messageParts[0]
+				replytext = "Ok, I'll tell {} that when they show a sign of life".format(targetnick)
 
 			message.reply(replytext)
 
@@ -92,7 +92,7 @@ class Command(CommandTemplate):
 	@staticmethod
 	def createTell(message):
 		#		round to remove the milliseconds for nicer display
-		tell = {u"sentAt": round(message.createdAt), u"sender": message.userNickname, u"text": u" ".join(message.messageParts[1:])}
+		tell = {"sentAt": round(message.createdAt), "sender": message.userNickname, "text": " ".join(message.messageParts[1:])}
 		return tell
 
 	def retrieveTells(self, serverfolder, usernick, field, tellLimit=None):
@@ -109,12 +109,12 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def formatTell(targetNick, tell):
-		timeSent = datetime.utcfromtimestamp(tell[u"sentAt"])
+		timeSent = datetime.utcfromtimestamp(tell["sentAt"])
 		timeSinceTell = DateTimeUtil.durationSecondsToText((datetime.utcnow() - timeSent).seconds)
 
-		return u"{recipient}: {message} (sent by {sender} on {timeSent} UTC; {timeSinceTell} ago)"\
-			.format(recipient=targetNick, message=tell[u"text"], sender=tell[u"sender"], timeSent=timeSent.isoformat(' '), timeSinceTell=timeSinceTell)
+		return "{recipient}: {message} (sent by {sender} on {timeSent} UTC; {timeSinceTell} ago)"\
+			.format(recipient=targetNick, message=tell["text"], sender=tell["sender"], timeSent=timeSent.isoformat(' '), timeSinceTell=timeSinceTell)
 
 	def saveTellsToFile(self):
-		with open(self.tellsFileLocation, 'w') as tellsfile:
+		with open(self.tellsFileLocation, 'w', encoding='utf-8') as tellsfile:
 			tellsfile.write(json.dumps(self.storedTells)) #Faster than 'json.dump(self.storedTells, tellsfile)'

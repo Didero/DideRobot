@@ -1,4 +1,4 @@
-from CommandTemplate import CommandTemplate
+from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 import GlobalStore
 
@@ -13,7 +13,7 @@ class Command(CommandTemplate):
 		"""
 		# Check if there's an argument provided, and if it's a module name, link to that directly
 		if message.messagePartsLength > 0:
-			for commandName, command in GlobalStore.commandhandler.commands.iteritems():
+			for commandName, command in GlobalStore.commandhandler.commands.items():
 					if commandName == message.messageParts[0] or (command.triggers and message.messageParts[0] in command.triggers):
 						# Found a matching module, link to that
 						return message.reply("You want to peek behind the magic of the {0} command? Sure, that's what open-source means, here you go: https://github.com/Didero/DideRobot/blob/master/commands/{0}.py".format(commandName))
