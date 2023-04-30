@@ -306,10 +306,12 @@ class Command(CommandTemplate):
 				reportStrings.append(StringUtil.removeNewlines("{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url)))
 		return Constants.GREY_SEPARATOR.join(reportStrings)
 
-	def getStreamerInfo(self, streamername, shouldIncludeUrl=True, serverChannelString=None):
+	def getStreamerInfo(self, streamername, shouldIncludeViewerCount=True, shouldIncludeUptime=True, shouldIncludeUrl=True, serverChannelString=None):
 		"""
 		Get info on the provided streamer, if they're live
 		:param streamername: The name of the streamer to get info on
+		:param shouldIncludeViewerCount: Whether the current number of viewers of the stream should be added, if the stream is currently live
+		:param shouldIncludeUptime: Whether the uptime of the stream should be included, if the stream is currently live
 		:param shouldIncludeUrl: Whether the output should include a link to the Twitch channel at the end of the output
 		:param serverChannelString: The server-channel pair where the request originated from. Needed to determine whether we need to use a nickname
 		:return: A StringWithSuffix containing info on the provided streamer
@@ -331,17 +333,17 @@ class Command(CommandTemplate):
 			if channelInfo is None:
 				channelInfo = self.retrieveChannelInfo(streamername)
 			description = StringUtil.removeNewlines(channelInfo['description'])
-			streamerInfoOutput = "{} (offline): {}".format(displayName, description)
-		else:
-			#Streamer is live, return info on them
-			providedStreamerData = streamerData[streamerId]
-			liveDurationSeconds = (datetime.datetime.utcnow() - datetime.datetime.strptime(providedStreamerData['started_at'], "%Y-%m-%dT%H:%M:%SZ")).total_seconds()
-			streamerInfoOutput = f"{displayName} {IrcFormattingUtil.makeTextColoured('is streaming', IrcFormattingUtil.Colours.GREY)} {providedStreamerData['game_name']}{Constants.GREY_SEPARATOR}" \
-								 f"{StringUtil.removeNewlines(providedStreamerData['title'])}{Constants.GREY_SEPARATOR}{providedStreamerData['viewer_count']:,} viewers{Constants.GREY_SEPARATOR}" \
-								 f"Uptime: {DateTimeUtil.durationSecondsToText(liveDurationSeconds, DateTimeUtil.MINUTES)}"
-		suffixes = None
+			return StringWithSuffix("{} (offline): {}".format(displayName, description), None)
+		streamerInfoOutput = f"{displayName if displayName else streamerData['user_name']} {IrcFormattingUtil.makeTextColoured('is streaming', IrcFormattingUtil.Colours.GREY)} {streamerData['game_name']}" \
+							 f"{Constants.GREY_SEPARATOR}{StringUtil.removeNewlines(streamerData['title'])}"
+		suffixes = []
+		if shouldIncludeViewerCount:
+			suffixes.append(f"{Constants.GREY_SEPARATOR}{streamerData['viewer_count']:,} viewers")
+		if shouldIncludeUptime:
+			liveDurationSeconds = (datetime.datetime.utcnow() - datetime.datetime.strptime(streamerData['started_at'], "%Y-%m-%dT%H:%M:%SZ")).total_seconds()
+			suffixes.append(f"{Constants.GREY_SEPARATOR}Uptime: {DateTimeUtil.durationSecondsToText(liveDurationSeconds, DateTimeUtil.MINUTES)}")
 		if shouldIncludeUrl:
-			suffixes = (Constants.GREY_SEPARATOR, 'https://twitch.tv/', streamername)
+			suffixes.append(f"{Constants.GREY_SEPARATOR}https://twitch.tv/{streamerData['user_login']}")
 		return StringWithSuffix(streamerInfoOutput, suffixes)
 
 	def executeScheduledFunction(self):
