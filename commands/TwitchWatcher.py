@@ -336,11 +336,12 @@ class Command(CommandTemplate):
 			#Streamer is live, return info on them
 			providedStreamerData = streamerData[streamerId]
 			liveDurationSeconds = (datetime.datetime.utcnow() - datetime.datetime.strptime(providedStreamerData['started_at'], "%Y-%m-%dT%H:%M:%SZ")).total_seconds()
-			streamerInfoOutput = "{} is streaming {}: {} [{} viewers, for {}]".format(displayName, providedStreamerData['game_name'],
-				StringUtil.removeNewlines(providedStreamerData['title']), providedStreamerData['viewer_count'], DateTimeUtil.durationSecondsToText(liveDurationSeconds, DateTimeUtil.MINUTES))
+			streamerInfoOutput = f"{displayName} {IrcFormattingUtil.makeTextColoured('is streaming', IrcFormattingUtil.Colours.GREY)} {providedStreamerData['game_name']}{Constants.GREY_SEPARATOR}" \
+								 f"{StringUtil.removeNewlines(providedStreamerData['title'])}{Constants.GREY_SEPARATOR}{providedStreamerData['viewer_count']:,} viewers{Constants.GREY_SEPARATOR}" \
+								 f"Uptime: {DateTimeUtil.durationSecondsToText(liveDurationSeconds, DateTimeUtil.MINUTES)}"
 		suffixes = None
 		if shouldIncludeUrl:
-			suffixes = (' | https://twitch.tv/', streamername)
+			suffixes = (Constants.GREY_SEPARATOR, 'https://twitch.tv/', streamername)
 		return StringWithSuffix(streamerInfoOutput, suffixes)
 
 	def executeScheduledFunction(self):
