@@ -310,30 +310,34 @@ class Command(CommandTemplate):
 			self.saveWatchData()
 
 	def formatNewTweetText(self, username, tweetData, addTweetAge=False, addTweetUrl=True):
-		tweetAge = ''
-		if addTweetAge:
-			postDateTime = self.getTweetPostTime(tweetData['created_at'])
-			tweetAge = datetime.datetime.utcnow() - postDateTime
-			# For older tweets, list the post date, otherwise list how old it is
-			if tweetAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
-				tweetAge = ' ({})'.format(postDateTime.strftime('%Y-%m-%d'))
-			else:
-				tweetAge = ' ({} ago)'.format(DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision=DateTimeUtil.MINUTES))
-		tweetUrl = "https://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
 		#Remove newlines
 		formattedTweetText = StringUtil.removeNewlines(tweetData['full_text'], Constants.GREY_SEPARATOR)
 		#Fix special characters (convert '&amp;' to '&' for instance)
 		formattedTweetText = html.unescape(formattedTweetText)
+		suffixes = []
 		#Remove the link to the photo at the end, but mention that there is one
 		if 'media' in tweetData['entities']:
 			for mediaItem in tweetData['entities']['media']:
 				formattedTweetText = formattedTweetText.replace(mediaItem['url'], '')
-				formattedTweetText += "(has {})".format(mediaItem['type'])
-		# Finalize the return text, limited to message length
+				suffixes.append("(has ")
+				suffixes.append(mediaItem['type'])
+				suffixes.append(")")
+		# Finalize the return text
 		formattedTweetText = "{}: {}".format(IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), formattedTweetText)
-		suffixes = [tweetAge]
+		if addTweetAge:
+			postDateTime = self.getTweetPostTime(tweetData['created_at'])
+			tweetAge = datetime.datetime.utcnow() - postDateTime
+			suffixes.append(" (")
+			# For older tweets, list the post date, otherwise list how old it is
+			if tweetAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
+				suffixes.append(postDateTime.strftime('%Y-%m-%d'))
+			else:
+				suffixes.append(DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision=DateTimeUtil.MINUTES))
+				suffixes.append(" ago")
+			suffixes.append(")")
 		if addTweetUrl:
-			suffixes.extend([' | ', tweetUrl])
+			suffixes.append(" | https://twitter.com/_/status/{}")  #Use _ instead of username to save some characters
+			suffixes.append(tweetData['id_str'])
 		return StringWithSuffix(formattedTweetText, suffixes)
 
 	def getTweetDescription(self, twitterUsername, tweetId, addTweetUrl=True):
