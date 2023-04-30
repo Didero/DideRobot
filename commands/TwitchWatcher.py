@@ -118,7 +118,7 @@ class Command(CommandTemplate):
 		elif parameter == "live":
 			reply = self.getCurrentlyLiveStreamers(serverChannelString)
 		elif parameter == "lookup":
-			reply = self.getStreamerInfo(streamername, serverChannelString)
+			reply = self.getStreamerInfo(streamername, True, serverChannelString)
 		else:
 			reply = "I don't know what to do with the parameter '{}', sorry. Try (re)reading the help text, or check for typos?".format(parameter)
 		#Show the result of whatever command was called
@@ -306,12 +306,12 @@ class Command(CommandTemplate):
 				reportStrings.append(StringUtil.removeNewlines("{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url)))
 		return Constants.GREY_SEPARATOR.join(reportStrings)
 
-	def getStreamerInfo(self, streamername, serverChannelString=None, shouldIncludeUrl=True):
+	def getStreamerInfo(self, streamername, shouldIncludeUrl=True, serverChannelString=None):
 		"""
 		Get info on the provided streamer, if they're live
 		:param streamername: The name of the streamer to get info on
-		:param serverChannelString: The server-channel pair where the request originated from. Needed to determine whether we need to use a nickname
 		:param shouldIncludeUrl: Whether the output should include a link to the Twitch channel at the end of the output
+		:param serverChannelString: The server-channel pair where the request originated from. Needed to determine whether we need to use a nickname
 		:return: A user-aimed message giving info on the provided streamer
 		"""
 		# Check if we happen to have the streamer's ID on file, saves retrieving it
