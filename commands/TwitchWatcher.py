@@ -461,16 +461,15 @@ class Command(CommandTemplate):
 			return {}
 
 		gameIds = []
-
 		streamerIdToData = {}
 		for streamdata in apireply['data']:
 			streamerId = streamdata['user_id']
 			streamerIdToData[streamerId] = streamdata
-			if shouldRetrieveGameNames and streamdata['game_id'] not in gameIds:
+			if shouldRetrieveGameNames and streamdata['game_id'] not in gameIds and 'game_name' not in streamdata:
 				gameIds.append(streamdata['game_id'])
 
-		#Add game names to each streamer's stream data, if requested
-		if shouldRetrieveGameNames:
+		#Add game names to each streamer's stream data, if requested and necessary
+		if shouldRetrieveGameNames and len(gameIds) > 0:
 			gameIdToName = self.retrieveGameNamesForIds(gameIds)
 			for streamerId, streamdata in streamerIdToData.items():
 				streamdata['game_name'] = gameIdToName.get(streamdata['game_id'], "[Unknown]")
