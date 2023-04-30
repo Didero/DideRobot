@@ -29,6 +29,8 @@ class Command(CommandTemplate):
 	# Gets stored in the watch data when the module gets unloaded, and gets removed from the watch data when the module is loaded, to make iterating over it easier
 	lastLiveCheckTime = None
 
+	streamerWentLivePrefix = IrcFormattingUtil.makeTextBold("Live") + ": "
+
 	def onLoad(self):
 		if 'twitch' not in GlobalStore.commandhandler.apikeys:
 			self.logError("[TwitchWatcher] Twitch API key not found! TwitchWatch module will not work")
@@ -397,8 +399,7 @@ class Command(CommandTemplate):
 						#Add this stream's data to the channel's reporting output
 						if serverChannelString not in channelMessages:
 							channelMessages[serverChannelString] = []
-						channelMessages[serverChannelString].append({'streamername': streamername, 'gameName': liveStreamDataById[streamerId]['game_name'],
-																	 'title': liveStreamDataById[streamerId]['title']})
+						channelMessages[serverChannelString].append(liveStreamDataById[streamerId])
 
 		#Save live status of all the streams
 		self.saveWatchedStreamerData()
@@ -411,22 +412,26 @@ class Command(CommandTemplate):
 				if server not in GlobalStore.bothandler.bots or channel not in GlobalStore.bothandler.bots[server].channelsUserList:
 					continue
 
-				reportStrings = []
+				reportEntries = []
 				#If we have a lot of live streamers to report, keep it short. Otherwise, we can be a bit more verbose
 				useShortReportString = len(streamdatalist) >= 3
 				for streamdata in streamdatalist:
-					displayname = self.getStreamerNickname(streamdata['streamername'], serverChannelString)
-					url = "https://twitch.tv/" + streamdata['streamername']
+					displayname = self.getStreamerNickname(streamdata['user_login'], serverChannelString)
+					url = "https://twitch.tv/" + streamdata['user_login']
 					#A lot of live streamers to report, keep it short. Just the streamer name and the URL
 					if useShortReportString:
-						reportStrings.append("{} ({})".format(displayname, url))
+						reportEntries.append("{} ({})".format(displayname, url))
 					# Only a few streamers live, we can be a bit more verbose
 					else:
-						reportStrings.append(StringUtil.removeNewlines("{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url)))
+						reportEntries.append(self._formatLiveStreamerData(streamdata, shouldIncludeViewerCount=False, shouldIncludeUptime=False, shouldIncludeUrl=True))
 				#Now make the bot say it
-				GlobalStore.bothandler.bots[server].sendMessage(channel, "Streamer{} went live: ".format('s' if len(reportStrings) > 1 else '') + Constants.GREY_SEPARATOR.join(reportStrings))
-
-
+				if useShortReportString:
+					# 'reportEntries' is a list of strings, report them all in one go
+					GlobalStore.bothandler.bots[server].sendMessage(channel, self.streamerWentLivePrefix + Constants.GREY_SEPARATOR.join(reportEntries))
+				else:
+					# 'reportEntries' is a list of StringWithSuffix's, report each separately
+					for reportEntry in reportEntries:
+						GlobalStore.bothandler.bots[server].sendLengthLimitedMessage(channel, self.streamerWentLivePrefix + reportEntry.mainString, reportEntry.suffix)
 
 	def retrieveChannelInfo(self, streamername):
 		try:
