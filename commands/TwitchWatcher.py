@@ -407,7 +407,7 @@ class Command(CommandTemplate):
 
 				reportStrings = []
 				#If we have a lot of live streamers to report, keep it short. Otherwise, we can be a bit more verbose
-				useShortReportString = len(streamdatalist) >= 4
+				useShortReportString = len(streamdatalist) >= 3
 				for streamdata in streamdatalist:
 					displayname = self.getStreamerNickname(streamdata['streamername'], serverChannelString)
 					url = "https://twitch.tv/" + streamdata['streamername']
