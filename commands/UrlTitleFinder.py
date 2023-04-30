@@ -89,7 +89,7 @@ class Command(CommandTemplate):
 		#Make the TwitchWatcher module look up the streamer info
 		# If that doesn't work for some reason (TwitchWatcher not loaded, Twitch API being down), return None to fall back on the generic lookup
 		try:
-			return GlobalStore.commandhandler.runCommandFunction('getTwitchStreamInfo', None, channel)
+			return GlobalStore.commandhandler.runCommandFunction('getTwitchStreamInfo', None, channel, False)
 		except CommandException:
 			return None
 
