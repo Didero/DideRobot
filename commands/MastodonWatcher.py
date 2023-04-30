@@ -300,15 +300,18 @@ class Command(CommandTemplate):
 			postDateTime = self.getMessagePostTime(messageData['created_at'])
 			messageAge = datetime.datetime.utcnow() - postDateTime
 			# For older tweets, list the post date, otherwise list how old it is
+			messageAgeString = " | "
 			if messageAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
-				suffixes.append(' ({})'.format(postDateTime.strftime('%Y-%m-%d')))
+				messageAgeString += postDateTime.strftime('%Y-%m-%d')
 			elif messageAge.total_seconds() <= 60:
-				suffixes.append(' (posted just now)')
+				messageAgeString += "posted just now"
 			else:
-				suffixes.append(' ({} ago)'.format(DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision=DateTimeUtil.MINUTES)))
+				messageAgeString += f"{DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision=DateTimeUtil.MINUTES)} ago"
+			suffixes.append(IrcFormattingUtil.makeTextColoured(messageAgeString, IrcFormattingUtil.Colours.GREY))
 		# Only add the URL if requested
 		if addUrl:
-			suffixes.append(' | {}'.format(messageData['url']))
+			suffixes.append(Constants.GREY_SEPARATOR)
+			suffixes.append(messageData['url'])
 		return StringWithSuffix(formattedMessageText, suffixes)
 
 	def getMessageDescription(self, server, username, messageId, addUrl=True):
