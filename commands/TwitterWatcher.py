@@ -331,6 +331,8 @@ class Command(CommandTemplate):
 			tweetAgeString = " | "
 			if tweetAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
 				tweetAgeString += postDateTime.strftime('%Y-%m-%d')
+			elif tweetAge.total_seconds() <= 60:
+				tweetAgeString += "posted just now"
 			else:
 				tweetAgeString += f"{DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision=DateTimeUtil.MINUTES)} ago"
 			suffixes.append(IrcFormattingUtil.makeTextColoured(tweetAgeString, IrcFormattingUtil.Colours.GREY))
