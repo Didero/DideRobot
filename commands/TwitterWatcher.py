@@ -3,7 +3,7 @@ import base64, datetime, html, json, os
 import requests
 
 from commands.CommandTemplate import CommandTemplate
-import GlobalStore
+import Constants, GlobalStore
 from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import WebRequestException
@@ -321,7 +321,7 @@ class Command(CommandTemplate):
 				tweetAge = ' ({} ago)'.format(DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision=DateTimeUtil.MINUTES))
 		tweetUrl = "https://twitter.com/_/status/{}".format(tweetData['id_str'])  #Use _ instead of username to save some characters
 		#Remove newlines
-		formattedTweetText = StringUtil.removeNewlines(tweetData['full_text'], ' | ')
+		formattedTweetText = StringUtil.removeNewlines(tweetData['full_text'], Constants.GREY_SEPARATOR)
 		#Fix special characters (convert '&amp;' to '&' for instance)
 		formattedTweetText = html.unescape(formattedTweetText)
 		#Remove the link to the photo at the end, but mention that there is one
