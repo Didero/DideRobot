@@ -334,6 +334,10 @@ class Command(CommandTemplate):
 				channelInfo = self.retrieveChannelInfo(streamername)
 			description = StringUtil.removeNewlines(channelInfo['description'])
 			return StringWithSuffix("{} (offline): {}".format(displayName, description), None)
+		else:
+			return self._formatLiveStreamerData(streamerData[streamerId], shouldIncludeViewerCount, shouldIncludeUptime, shouldIncludeUrl)
+
+	def _formatLiveStreamerData(self, streamerData, shouldIncludeViewerCount=True, shouldIncludeUptime=True, shouldIncludeUrl=True, displayName=None):
 		streamerInfoOutput = f"{displayName if displayName else streamerData['user_name']} {IrcFormattingUtil.makeTextColoured('is streaming', IrcFormattingUtil.Colours.GREY)} {streamerData['game_name']}" \
 							 f"{Constants.GREY_SEPARATOR}{StringUtil.removeNewlines(streamerData['title'])}"
 		suffixes = []
