@@ -2,7 +2,7 @@ import datetime, json, os, time
 
 import requests
 
-import GlobalStore
+import Constants, GlobalStore
 from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from commands.CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException
@@ -304,7 +304,7 @@ class Command(CommandTemplate):
 				reportStrings.append("{} ({})".format(displayname, url))
 			else:
 				reportStrings.append(StringUtil.removeNewlines("{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url)))
-		return StringUtil.joinWithSeparator(reportStrings)
+		return Constants.GREY_SEPARATOR.join(reportStrings)
 
 	def getStreamerInfo(self, streamername, serverChannelString=None, shouldIncludeUrl=True):
 		"""
@@ -417,8 +417,7 @@ class Command(CommandTemplate):
 					else:
 						reportStrings.append(StringUtil.removeNewlines("{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamdata['title'], streamdata['gameName'], url)))
 				#Now make the bot say it
-				GlobalStore.bothandler.bots[server].sendMessage(channel, "Streamer{} went live: ".format('s' if len(reportStrings) > 1 else '') +
-																StringUtil.joinWithSeparator(reportStrings))
+				GlobalStore.bothandler.bots[server].sendMessage(channel, "Streamer{} went live: ".format('s' if len(reportStrings) > 1 else '') + Constants.GREY_SEPARATOR.join(reportStrings))
 
 
 

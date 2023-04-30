@@ -46,11 +46,6 @@ def stringToDict(string, removeStartAndEndQuotes=True):
 		dictionary[key] = item
 	return dictionary
 
-def joinWithSeparator(listOfStrings, separator=None):
-	if not separator:
-		separator = Constants.GREY_SEPARATOR
-	return separator.join(listOfStrings)
-
 def removeNewlines(string, replacementString=" "):
 	"""
 	Returns the provided string with newline characters removed

@@ -5,7 +5,7 @@ from IrcMessage import IrcMessage
 from util import FileUtil
 from util import IrcFormattingUtil
 from util import StringUtil
-import GlobalStore
+import Constants, GlobalStore
 from CustomExceptions import CommandException
 
 
@@ -712,7 +712,7 @@ class Command(CommandTemplate):
 			else:
 				names.append("{} {}".format(firstName, lastName))
 
-		return StringUtil.joinWithSeparator(names)
+		return Constants.GREY_SEPARATOR.join(names)
 
 
 	@staticmethod

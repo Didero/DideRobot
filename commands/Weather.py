@@ -6,9 +6,8 @@ import requests
 
 from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
-import GlobalStore
+import Constants, GlobalStore
 from util import IrcFormattingUtil
-from util import StringUtil
 
 
 class Command(CommandTemplate):
@@ -123,7 +122,6 @@ class Command(CommandTemplate):
 													   minTempF=celsiusToFahrenheit(day['temp']['min']), maxTempF=celsiusToFahrenheit(day['temp']['max']),
 													   humidity=day['humidity'], windSpeed=day['speed'], windDir=getWindDirection(day['deg']), weatherType=day['weather'][0]['description'])
 							forecasts.append(forecast)
-						replytext += StringUtil.joinWithSeparator(forecasts)
-
+						replytext += Constants.GREY_SEPARATOR.join(forecasts)
 
 		message.bot.sendMessage(message.source, replytext)
