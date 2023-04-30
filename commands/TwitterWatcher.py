@@ -327,14 +327,13 @@ class Command(CommandTemplate):
 		if addTweetAge:
 			postDateTime = self.getTweetPostTime(tweetData['created_at'])
 			tweetAge = datetime.datetime.utcnow() - postDateTime
-			suffixes.append(" (")
 			# For older tweets, list the post date, otherwise list how old it is
+			tweetAgeString = " | "
 			if tweetAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
-				suffixes.append(postDateTime.strftime('%Y-%m-%d'))
+				tweetAgeString += postDateTime.strftime('%Y-%m-%d')
 			else:
-				suffixes.append(DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision=DateTimeUtil.MINUTES))
-				suffixes.append(" ago")
-			suffixes.append(")")
+				tweetAgeString += f"{DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision=DateTimeUtil.MINUTES)} ago"
+			suffixes.append(IrcFormattingUtil.makeTextColoured(tweetAgeString, IrcFormattingUtil.Colours.GREY))
 		if addTweetUrl:
 			suffixes.append(" | https://twitter.com/_/status/{}")  #Use _ instead of username to save some characters
 			suffixes.append(tweetData['id_str'])
