@@ -108,7 +108,7 @@ class Command(CommandTemplate):
 		if not videoIdMatch:
 			return None
 		videoId = videoIdMatch.group(1)
-		return GlobalStore.commandhandler.runCommandFunction('getYoutubeVideoDescription', None, videoId, True, True, False)
+		return GlobalStore.commandhandler.runCommandFunction('getYoutubeVideoDescription', None, videoId, includeViewCount=True, includeUploadDate=True, includeUrl=False)
 
 	@staticmethod
 	def retrieveImgurTitle(url):
