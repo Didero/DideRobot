@@ -102,7 +102,9 @@ class Command(CommandTemplate):
 				server, channel = serverChannelString.rsplit(' ', 1)
 				if server in GlobalStore.bothandler.bots:
 					if videoId not in videoIdToDescription:
-						videoIdToDescription[videoId] = self.getVideoDisplayString(videoId, includeViewCount=False, includeUploadDate=False, includeUrl=True, prefix=self.newVideoPrefix)
+						description = self.getVideoDisplayString(videoId, includeViewCount=False, includeUploadDate=False, includeUrl=True)
+						description.mainString = self.newVideoPrefix + description.mainString
+						videoIdToDescription[videoId] = description
 					GlobalStore.bothandler.bots[server].sendLengthLimitedMessage(channel, videoIdToDescription[videoId].mainString, videoIdToDescription[videoId].suffix)
 		if shouldSaveWatchedData:
 			#New video info was stored, so save it to disk too
@@ -364,14 +366,13 @@ class Command(CommandTemplate):
 				matchingPlaylistIds.append(playlistId)
 		return matchingPlaylistIds
 
-	def getVideoDisplayString(self, videoId, includeViewCount=True, includeUploadDate=True, includeUrl=True, prefix=None):
+	def getVideoDisplayString(self, videoId, includeViewCount=True, includeUploadDate=True, includeUrl=True):
 		"""
 		Gets a display string describing the video of the provided ID
 		:param videoId: The ID to get the display string of
 		:param includeViewCount: Whether the view count should be included in the result
 		:param includeUploadDate: If True, the date when the video was uploaded will be included in the output
 		:param includeUrl: If True, the URL to the video will be added to the end of the output
-		:param prefix: An optional string to add in front of the output. This is needed to properly cut off descriptions that are too long
 		:return: The display string describing the video, or None if something went wrong with retrieving the data
 		"""
 		if 'google' not in GlobalStore.commandhandler.apikeys:
@@ -404,8 +405,7 @@ class Command(CommandTemplate):
 			description = description.replace('\n', ' ')
 
 		snippetData = videoData['snippet']
-		resultStringParts = ["{prefix}{title} {by} {channel}".format(prefix=prefix if prefix else '', title=snippetData['title'].strip(),
-																	  by=IrcFormattingUtil.makeTextColoured('by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']),
+		resultStringParts = ["{title} {by} {channel}".format(title=snippetData['title'].strip(), by=IrcFormattingUtil.makeTextColoured('by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']),
 							 durationstring]
 		if includeViewCount:
 			resultStringParts.append("{:,} views".format(int(videoData['statistics']['viewCount'])))
