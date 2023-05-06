@@ -317,11 +317,12 @@ class Command(CommandTemplate):
 		suffixes = []
 		#Remove the link to the photo at the end, but mention that there is one
 		if 'media' in tweetData['entities']:
+			mediaTypes = []
 			for mediaItem in tweetData['entities']['media']:
 				formattedTweetText = formattedTweetText.replace(mediaItem['url'], '')
-				suffixes.append("(has ")
-				suffixes.append(mediaItem['type'])
-				suffixes.append(")")
+				if mediaItem['type'] not in mediaTypes:
+					mediaTypes.append(mediaItem['type'])
+			suffixes.append("(has {})".format(", ".join(mediaTypes)))
 		# Finalize the return text
 		formattedTweetText = "{}: {}".format(IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), formattedTweetText)
 		if addTweetAge:
