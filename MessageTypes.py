@@ -5,6 +5,13 @@ SAY = 'PRIVMSG'  # The most common message type, a user typed something in a cha
 ACTION = 'ACTION'  # A user typing a '/me' message
 NOTICE = 'NOTICE'  # A special notice-type message sent by a user, a channel, or the server. Don't use 'message.reply' with these in the latter two cases, since that spams the entire channel/server
 
+# Channel and user actions
+JOIN = 'JOIN'
+KICK = 'KICK'
+NICK = 'NICK'
+PART = 'PART'
+QUIT = 'QUIT'
+
 # Server messages
 RPL_CREATED = 'RPL_CREATED'
 RPL_ENDOFMOTD = 'RPL_ENDOFMOTD'

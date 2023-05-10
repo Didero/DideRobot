@@ -204,7 +204,7 @@ class DideRobot(object):
 		if self.nickname != self.settings['nickname']:
 			self.logger.info("|{}| Nickname not available. Wanted '{}', got '{}'".format(self.serverfolder, self.settings['nickname'], self.nickname))
 		# Inform all the modules that we connected
-		message = IrcMessage("RPL_WELCOME", self, None, source, " ".join(parameters))
+		message = IrcMessage(MessageTypes.RPL_WELCOME, self, None, source, " ".join(parameters))
 		GlobalStore.commandhandler.handleMessage(message)
 		# Join the channels we should, if there are any
 		if len(self.settings['joinChannels']) == 0:
@@ -275,7 +275,7 @@ class DideRobot(object):
 	def irc_JOIN(self, prefix, params):
 		"""Called when a user or the bot joins a channel"""
 		# 'prefix' is the user, 'params' is a list with apparently just one entry, the channel
-		message = IrcMessage('join', self, prefix, params[0])
+		message = IrcMessage(MessageTypes.JOIN, self, prefix, params[0])
 		self.messageLogger.log("JOIN: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
 		# If we just joined a channel, or if don't have a record of this channel yet, get all the users in it
 		if message.userNickname == self.nickname or params[0] not in self.channelsUserList:
@@ -288,7 +288,7 @@ class DideRobot(object):
 	def irc_PART(self, prefix, params):
 		"""Called when a user or the bot leaves a channel"""
 		# 'prefix' is the user, 'params' is a list with only the channel
-		message = IrcMessage('part', self, prefix, params[0])
+		message = IrcMessage(MessageTypes.PART, self, prefix, params[0])
 		self.messageLogger.log("PART: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
 		# If a user parts before we have a proper channellist built, catch that error
 		if params[0] not in self.channelsUserList:
@@ -308,7 +308,7 @@ class DideRobot(object):
 		"""Called when a user quits"""
 		# 'prefix' is the user address, 'params' is a single-item list with the quit messages
 		# log for every channel the user was in that they quit
-		message = IrcMessage('quit', self, prefix, None, params[0])
+		message = IrcMessage(MessageTypes.QUIT, self, prefix, None, params[0])
 		logMessage = "QUIT: {nick} ({address}): '{quitmessage}' ".format(nick=message.userNickname, address=prefix, quitmessage=params[0])
 		for channel, userlist in self.channelsUserList.items():
 			if prefix in userlist:
@@ -319,7 +319,7 @@ class DideRobot(object):
 	def irc_KICK(self, prefix, params):
 		"""Called when a user is kicked"""
 		# 'prefix' is the kicker, params[0] is the channel, params[1] is the user address of the kicked, params[-1] is the kick reason
-		message = IrcMessage('kick', self, prefix, params[0], params[-1])
+		message = IrcMessage(MessageTypes.KICK, self, prefix, params[0], params[-1])
 		kickedUserNick = params[1].split("!", 1)[0]
 		self.messageLogger.log("KICK: {} was kicked by {}, reason: '{}'".format(kickedUserNick, message.userNickname, params[-1]), params[0])
 		# Keep track of the channels we're in
@@ -333,7 +333,7 @@ class DideRobot(object):
 	def irc_NICK(self, prefix, params):
 		"""Called when a user or me change their nickname"""
 		# 'prefix' is the full user address with the old nickname, params[0] is the new nickname
-		message = IrcMessage('nickchange', self, prefix, None, params[0])
+		message = IrcMessage(MessageTypes.NICK, self, prefix, None, params[0])
 		oldnick = message.userNickname
 		newnick = params[0]
 		# New nick plus old address

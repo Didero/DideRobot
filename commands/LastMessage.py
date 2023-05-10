@@ -39,10 +39,10 @@ class Command(CommandTemplate):
 		if not isBotEvent and message.messageType == MessageTypes.SAY:
 			self._storeMessage(server, message.source, message.message)
 		elif isBotEvent:
-			if message.messageType == 'part':
+			if message.messageType == MessageTypes.PART:
 				# If we leave a channel, no need to store the last message for that channel anymore
 				self._removeChannelMessage(server, message.source)
-			elif message.messageType == 'quit':
+			elif message.messageType == MessageTypes.QUIT:
 				# If we quit a server, forget all the messages for all channels in that server
 				self._removeServer(server)
 		# Since we never need to execute anything, always return False
