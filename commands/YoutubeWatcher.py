@@ -4,7 +4,7 @@ import requests
 
 import Constants
 import GlobalStore
-from util import DateTimeUtil, DictUtil, IrcFormattingUtil
+from util import DateTimeUtil, DictUtil, IrcFormattingUtil, StringUtil
 from commands.CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException, CommandInputException
 from StringWithSuffix import StringWithSuffix
@@ -383,10 +383,10 @@ class Command(CommandTemplate):
 				  'fields': 'items/snippet(title,channelTitle,description,publishedAt),items/contentDetails/duration,items/statistics(viewCount)'}).json()
 
 		if not googleJson or 'error' in googleJson:
-			self.logError("[YoutubeWatcher] ERROR while retrieving info for video ID {}. {}: {}. [{}]".format(videoId, googleJson['error']['code'], googleJson['error']['message'], json.dumps(googleJson).replace('\n',' ')))
+			self.logError("[YoutubeWatcher] ERROR while retrieving info for video ID {}. {}: {}. [{}]".format(videoId, googleJson['error']['code'], googleJson['error']['message'], StringUtil.removeNewlines(json.dumps(googleJson))))
 			return None
 		if 'items' not in googleJson or len(googleJson['items']) != 1:
-			CommandTemplate.logError("[YoutubeWatcher] Unexpected reply from Google API: {}".format(json.dumps(googleJson).replace('\n', ' ')))
+			CommandTemplate.logError("[YoutubeWatcher] Unexpected reply from Google API: {}".format(StringUtil.removeNewlines(json.dumps(googleJson))))
 			return None
 		videoData = googleJson['items'][0]
 		durationtimes = DateTimeUtil.parseIsoDuration(videoData['contentDetails']['duration'])
@@ -402,7 +402,7 @@ class Command(CommandTemplate):
 		if not description:
 			description = "<No description>"
 		else:
-			description = description.replace('\n', ' ')
+			description = StringUtil.removeNewlines(description)
 
 		snippetData = videoData['snippet']
 		resultStringParts = ["{title} {by} {channel}".format(title=snippetData['title'].strip(), by=IrcFormattingUtil.makeTextColoured('by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']),

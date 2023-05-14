@@ -211,7 +211,7 @@ class Command(CommandTemplate):
 				self.logError("[TwitterWatcher] Twitter API reply took too long to arrive")
 				raise WebRequestException("Twitter took too long to respond")
 			except ValueError:
-				self.logError("[TwitterWatcher] Didn't get parsable JSON return from Twitter API: {}".format(req.text.replace('\n', '|') if req else "[no response retrieved]"))
+				self.logError("[TwitterWatcher] Didn't get parsable JSON return from Twitter API: {}".format(StringUtil.removeNewlines(req.text, '|') if req else "[no response retrieved]"))
 				raise WebRequestException("Twitter API returned unexpected data")
 			except Exception as e:
 				self.logError("[TwitterWatcher] Tweet download threw an unexpected error of type '{}': {}".format(type(e), str(e)))

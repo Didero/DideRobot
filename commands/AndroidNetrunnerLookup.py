@@ -328,7 +328,7 @@ class Command(CommandTemplate):
 					#Some fields have HTML tags for some reason, remove those
 					card[field] = card[field].replace('<strong>', '').replace('</strong>', '').replace('<sup>', '').replace('</sup>', '')
 					#Also remove newlines
-					card[field] = card[field].replace('\r\n', ' ').replace('\n', ' ')
+					card[field] = StringUtil.removeNewlines(card[field])
 					#Fix stray HTML entities
 					card[field] = html.unescape(card[field])
 

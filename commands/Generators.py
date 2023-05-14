@@ -87,7 +87,7 @@ class Command(CommandTemplate):
 			helptext = "No helptext was set for this generator, sorry"
 			if generator.__doc__:
 				#Get the docstring, with the newlines and tabs removed
-				helptext = inspect.cleandoc(generator.__doc__).replace('\n', ' ')
+				helptext = StringUtil.removeNewlines(inspect.cleandoc(generator.__doc__))
 			return "{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, helptext)
 		else:
 			self.logError("[Gen] Generator for trigger '{}' has type '{}', and we can't get the help from that".format(requestedTrigger, type(generator)))
