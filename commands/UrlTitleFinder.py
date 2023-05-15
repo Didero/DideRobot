@@ -163,8 +163,9 @@ class Command(CommandTemplate):
 		if not re.match('https?://en(?:\.m)?\.wikipedia.org/wiki', url, re.IGNORECASE):
 			return None
 		articleTitle = url.rsplit('/', 1)[-1]
+		# Limit length to maximum line length instead of maximum message length because it will be auto-shortened automatically
 		apiReturn = requests.get("https://en.wikipedia.org/w/api.php", params={'format': 'json', 'utf8': True, 'redirects': True, 'action': 'query', 'prop': 'extracts', 'titles': articleTitle,
-																			   'exchars': Constants.MAX_MESSAGE_LENGTH, 'exlimit': 1, 'explaintext': True, 'exsectionformat': 'plain'})
+																			   'exchars': Constants.MAX_LINE_LENGTH, 'exlimit': 1, 'explaintext': True, 'exsectionformat': 'plain'})
 		if apiReturn.status_code != 200:
 			return None
 		apiData = apiReturn.json()
