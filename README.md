@@ -42,6 +42,12 @@ A modular Python 3 IRC bot built with Gevent
 1. Either in a channel the bot is in, or in a private message, type the specified command character, followed by either 'quit' to make the bot leave just that server, or 'shutdown' to make the bot disconnect from all servers it is connected to. Make sure the settings file for the bot specifies you as an admin, because only bot admins can make the bot quit or shut down
 2. Once DideRobot isn't connected to any server (Either because it quit from the last server it was connected to, or because of a 'shutdown' call), the program will exit
 
+### 6) Bot Maintenance
+There are three important commands for keeping the bot up-to-date, all of which can only be used by bot admins:
+* !update: Fetches all the latest code updates from DideRobot's GitHub repository. This does NOT immediately put the code changes in effect
+* !reload: Call this command, followed by the name(s) of the command module(s) to reload. Usually commits listed by !update mention which command module(s) have been changed. Modules need to be reloaded before changes retrieved with !update will take effect
+* !restartfull: This fully restarts the bot, putting all code changes from !update in effect. This is needed when core files (like a util method, a handler, or the bot code itself) were updated, since those can't be reloaded with !reload. Restarting in this way will show as the bot quitting all the channels and servers it's in, and then rejoining after 10 to 15 seconds (Just enough time to get worried something broke). It will rejoin all the servers originally provided on the commandline when the bot was started, so if you made the bot leave or join any servers while it was running, you'll have to do that again
+
 ### Bonus) Creating Your Own Command Module
 1. Create a new '.py' file in the 'commands' subfolder
 2. In that file, create a new class called 'Command', and have it inherit from 'CommandTemplate'
