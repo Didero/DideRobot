@@ -13,6 +13,7 @@
 	"merriamwebster": "your key here",
 	"openweathermap": "your key here",
 	"paste.ee": "your key here",
+	"tumblr": "your tumblr consumer API key here",
 	"twitch": {
 		"access_token": "your access token will be generated here", 
 		"client_id": "your client ID here", 
