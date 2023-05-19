@@ -536,18 +536,19 @@ class DideRobot(object):
 				logtext += "[notice] "
 				messageCommand = MessageTypes.NOTICE
 			logtext += "{user}: {message}"
+			extraMessages = None
+			# Turn newlines in this message into multiple messages
+			if '\n' in messageText or '\r' in messageText:
+				extraMessages = messageText.splitlines()
+				messageText = extraMessages.pop(0)
+			# Check if the message isn't too long to send
+			prefixLength = self.calculateMessagePrefixLength(target, messageType)
+			if prefixLength + len(messageText) > Constants.MAX_LINE_LENGTH:
+				if not extraMessages:
+					extraMessages = []
+				extraMessages.insert(0, messageText[Constants.MAX_LINE_LENGTH - prefixLength + 1:])
+				messageText = messageText[:Constants.MAX_LINE_LENGTH - prefixLength + 1]
 			line = "{} {} :{}".format(messageCommand, target, messageText)
-			extraLines = None
-			#Turn newlines in this line into multiple lines
-			if '\n' in line or '\r' in line:
-				extraLines = line.splitlines()
-				line = extraLines.pop(0)
-			#Check if the line isn't too long to send
-			if len(line) > Constants.MAX_LINE_LENGTH:
-				if not extraLines:
-					extraLines = []
-				extraLines.insert(0, line[Constants.MAX_LINE_LENGTH + 1:])
-				line = line[:Constants.MAX_LINE_LENGTH + 1]
 			if target[0] not in Constants.CHANNEL_PREFIXES:
 				#If it's a PM, bypass the message queue
 				self.sendLineToServer(line)
@@ -555,10 +556,10 @@ class DideRobot(object):
 				self.queueLineToSend(line)
 			self.messageLogger.log(logtext.format(user=self.nickname, message=messageText), target)
 			#Make sure any non-empty extra lines get sent too
-			if extraLines:
-				for extraLine in extraLines:
-					if extraLine:
-						self.sendMessage(target, extraLine, messageType)
+			if extraMessages:
+				for extraMessage in extraMessages:
+					if extraMessage:
+						self.sendMessage(target, extraMessage, messageType)
 
 	def sendLengthLimitedMessage(self, target, messageTextToShorten, suffix=None, messageType=MessageTypes.SAY):
 		"""
