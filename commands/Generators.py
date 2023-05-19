@@ -351,9 +351,12 @@ class Command(CommandTemplate):
 		for initializer in initializers:
 			if initializer == 'parseGender':
 				gender = None
-				if grammarParseState.parameterList and Command.isGenderParameter(grammarParseState.parameterList[0]):
-					gender = grammarParseState.parameterList.pop(0)
-					shouldUpdateParamsVar = True
+				if grammarParseState.parameterList:
+					for paramIndex, param in enumerate(grammarParseState.parameterList):
+						if Command.isGenderParameter(param):
+							gender = grammarParseState.parameterList.pop(paramIndex)
+							shouldUpdateParamsVar = True
+							break
 				grammarParseState.variableDict.update(Command.getGenderWords(grammarParseState.random, gender))  # If no gender was provided, 'getGenderWords' will pick a random one
 			elif initializer == 'generateName':
 				# If a gender was provided or requested, use that to generate a name, otherwise make the function pick a gender
