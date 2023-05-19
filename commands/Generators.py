@@ -407,7 +407,8 @@ class Command(CommandTemplate):
 						repeats = 1
 					elif maxRepeats and repeats > maxRepeats:
 						repeats = maxRepeats
-				grammarParseState.variableDict['_repeats'] = repeats
+				# Store as a string, since that's what the code assumes, and the commands that need this as a number already convert it to an int
+				grammarParseState.variableDict['_repeats'] = str(repeats)
 				shouldUpdateParamsVar = True
 			elif initializer == "setSeed":
 				#If a seed has already been set, don't overwrite it
