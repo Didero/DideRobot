@@ -64,4 +64,5 @@ DideRobot was originally written in Python 2. After 9 years, and Python 2 being 
 The Python 2 version can still be found in the 'python2' branch, but that branch won't receive fixes anymore.  
 
 ### Twitch
-Since Twitch Chat is based on IRC, DideRobot should work there too, so DideRobot can be used as a Twitch bot. However, this has not been extensively tested. One thing that does not work is formatting, so output might be a bit harder to read than on actual IRC
+Since Twitch Chat is based on IRC, DideRobot should work there too, so DideRobot can be used as a Twitch bot. However, this has not been extensively tested. One thing that does not work is formatting, so output might be a bit harder to read than on actual IRC.  
+You already need to have made a Twitch account for the bot. Then you need to set the 'serverpassword' field to the OAUTH token you can get as described [in the Twitch documentation](https://dev.twitch.tv/docs/irc/authenticate-bot/)  
