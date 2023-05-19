@@ -348,7 +348,14 @@ class Command(CommandTemplate):
 		shouldUpdateParamsVar = False
 		# Parse initializers in order, and if an initializer needs a parameter, only look at the first parameter in the parameters list.
 		# This prevents odd behaviour where it thinks you specified a gender if in the middle of the parameters there's 'man', for instance
-		for initializer in initializers:
+		for initializerString in initializers:
+			if ':' in initializerString:
+				initializerParameters = initializerString.split(':')
+				initializer = initializerParameters.pop(0)
+			else:
+				initializerParameters = None
+				initializer = initializerString
+
 			if initializer == 'parseGender':
 				gender = None
 				if grammarParseState.parameterList:
@@ -367,46 +374,42 @@ class Command(CommandTemplate):
 				grammarParseState.variableDict['lastname'] = nameparts[-1]  # Use -1 because names might have a middle initial
 			# A lot of generators support repeating output. Support it through an option
 			elif initializer == 'parseRepeats':
-				Command.parseRepeatsFromParams(grammarParseState)
+				maxRepeats = None
+				if initializerParameters:
+					maxRepeats = initializerParameters[0]
+					if not maxRepeats.isnumeric():
+						raise GrammarException(f"Initializer '{initializerString}' specifies a non-numeric maximum repeat count.  Format is 'parseRepeats:[maxRepeats]', or just 'parseRepeats' if no max is wanted")
+					maxRepeats = int(maxRepeats, 10)
+					if maxRepeats <= 0:
+						raise GrammarException("Initializer '{}' specifies a negative or zero maximum number of repeats, which isn't supported".format(initializer))
+
+				repeats = None
+				# Go through all the parameters and remove the first number from it, assuming it's the repeat count
+				if grammarParseState.parameterList:
+					for paramIndex, param in enumerate(grammarParseState.parameterList):
+						if param.isnumeric():
+							# Remove the parameter from the parameters list, so the parameters can be used for other things in a generator too
+							repeats = grammarParseState.parameterList.pop(paramIndex)
+							break
+				if not repeats:
+					repeats = 1
+				else:
+					# Make sure the repeat parameter is within the allowed range
+					repeats = int(repeats, 10)
+					if repeats < 1:
+						repeats = 1
+					elif maxRepeats and repeats > maxRepeats:
+						repeats = maxRepeats
+				grammarParseState.variableDict['_repeats'] = repeats
 				shouldUpdateParamsVar = True
-			# Support an optional parameter indicating the max repeats allowed, check if that's in there
-			elif initializer.startswith("parseRepeats:"):
-				# Separation character is a colon
-				maxRepeats = initializer.split(':', 1)[1]
-				if not maxRepeats or not maxRepeats.isnumeric():
-					raise GrammarException("Initializer '{}' specifies a non-numeric maximum repeat count.  Format is 'parseRepeats:[maxRepeats], or just 'parseRepeats' if no max is wanted".format(initializer))
-				maxRepeats = int(maxRepeats, 10)
-				if maxRepeats <= 0:
-					raise GrammarException("Initializer '{}' specifies a negative or zero maximum number of repeats, which isn't supported".format(initializer))
-				Command.parseRepeatsFromParams(grammarParseState, maxRepeats)
-				shouldUpdateParamsVar = True
-			elif initializer.startswith("setSeed:"):
+			elif initializer == "setSeed":
 				#If a seed has already been set, don't overwrite it
 				if not grammarParseState.seed:
-					seedParts = initializer.split(":")[1:]  # Remove the first element since that's the 'setSeed' text
-					grammarParseState.setSeed(Command.parseSeedString(seedParts))
+					grammarParseState.setSeed(Command.parseSeedString(initializerParameters))
 			else:
 				raise GrammarException("Unkown initializer '{}' specified".format(initializer))
 		if shouldUpdateParamsVar:
 			grammarParseState.updateParamsVar()
-
-	@staticmethod
-	def parseRepeatsFromParams(grammarParseState, maximumRepeats=None):
-		repeats = None
-		# Go through all the parameters and remove the first number from it, assuming it's the repeat count
-		if grammarParseState.parameterList and grammarParseState.parameterList[0].isnumeric():
-			# Remove the parameter from the parameters list, so the parameters can be used for other things in a generator too
-			repeats = grammarParseState.parameterList.pop(0)
-		if not repeats:
-			repeats = 1
-		else:
-			# Make sure the repeat parameter is within the allowed range
-			repeats = int(repeats, 10)
-			if repeats < 1:
-				repeats = 1
-			elif maximumRepeats and repeats > maximumRepeats:
-				repeats = maximumRepeats
-		grammarParseState.variableDict['_repeats'] = repeats
 
 	@staticmethod
 	def parseSeedString(seedParts, variableDict=None):
