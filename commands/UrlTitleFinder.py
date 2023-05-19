@@ -135,7 +135,7 @@ class Command(CommandTemplate):
 			CommandTemplate.logError("[url] Imgur API didn't return JSON for type {} image id {}: {}".format(imageType, imageId, e))
 			return None
 		if imgdata['success'] is not True or imgdata['status'] != 200:
-			CommandTemplate.logError("[url] Error while retrieving ImgUr image data: {}".format(imgurDataPage.text))
+			CommandTemplate.logError("[url] Error while retrieving Imgur image data: {}".format(imgurDataPage.text))
 			return None
 		imgdata = imgdata['data']
 		titleParts = [imgdata['title'] if imgdata['title'] else "No Title"]
