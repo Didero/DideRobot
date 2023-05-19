@@ -207,7 +207,8 @@ class CommandHandler:
 		for commandname in list(self.commands.keys()):
 			try:
 				self.unloadCommand(commandname)
-			except CommandException:
+			except CommandException as e:
+				self.logger.error(f"Error while unloading '{commandname}': {e}")
 				commandsWithErrors.append(commandname)
 		return commandsWithErrors
 		
