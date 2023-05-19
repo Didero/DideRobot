@@ -372,9 +372,10 @@ class Command(CommandTemplate):
 				nameparts = grammarParseState.variableDict['name'].split(' ')
 				grammarParseState.variableDict['firstname'] = nameparts[0]
 				grammarParseState.variableDict['lastname'] = nameparts[-1]  # Use -1 because names might have a middle initial
-			# A lot of generators support repeating output. Support it through an option
+			# A lot of generators support repeating output. Support it through an option. Optional arguments are a maximum repeat count, and a default value if no repeat count is provided
 			elif initializer == 'parseRepeats':
 				maxRepeats = None
+				defaultValue = 1
 				if initializerParameters:
 					maxRepeats = initializerParameters[0]
 					if not maxRepeats.isnumeric():
@@ -382,6 +383,12 @@ class Command(CommandTemplate):
 					maxRepeats = int(maxRepeats, 10)
 					if maxRepeats <= 0:
 						raise GrammarException("Initializer '{}' specifies a negative or zero maximum number of repeats, which isn't supported".format(initializer))
+					if len(initializerParameters) >= 2:
+						defaultValue = initializerParameters[1]
+						if not defaultValue.isnumeric():
+							raise GrammarException(f"Initializer '{initializerString}' specifies a non-numeric default value.  Format is 'parseRepeats:[maxRepeats]:[defaultValue]', "
+												   "or just 'parseRepeats:[maxRepeats]' if no default value is wanted")
+						defaultValue = int(defaultValue, 10)
 
 				repeats = None
 				# Go through all the parameters and remove the first number from it, assuming it's the repeat count
@@ -392,7 +399,7 @@ class Command(CommandTemplate):
 							repeats = grammarParseState.parameterList.pop(paramIndex)
 							break
 				if not repeats:
-					repeats = 1
+					repeats = defaultValue
 				else:
 					# Make sure the repeat parameter is within the allowed range
 					repeats = int(repeats, 10)
