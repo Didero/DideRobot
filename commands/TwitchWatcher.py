@@ -563,11 +563,12 @@ class Command(CommandTemplate):
 			errorMessage += ". [{}]".format(r.status_code)
 			raise CommandException(errorMessage)
 
-		if 'access_token' not in r.json() or 'expires_in' not in r.json():
-			self.logError("[TwitchWatcher] Unexpected reply from the Twitch API during token refresh. Expected 'access_token' and 'expires_in' fields, API returned: " + r.json())
+		apiReply = r.json()
+		if 'access_token' not in apiReply or 'expires_in' not in apiReply:
+			self.logError("[TwitchWatcher] Unexpected reply from the Twitch API during token refresh. Expected 'access_token' and 'expires_in' fields, API returned: " + apiReply)
 			raise CommandException("The Twitch API sent an unexpected reply")
 
 		#Token successfully retrieved. Store it, and also when it expires
-		apikeys['access_token'] = r.json()['access_token']
-		apikeys['expiration_time'] = time.time() + r.json()['expires_in'] - 10  #-10 to build in some leeway
+		apikeys['access_token'] = apiReply['access_token']
+		apikeys['expiration_time'] = time.time() + apiReply['expires_in'] - 10  #-10 to build in some leeway
 		GlobalStore.commandhandler.saveApiKeys()
