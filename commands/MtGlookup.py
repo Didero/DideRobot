@@ -1001,7 +1001,7 @@ class Command(CommandTemplate):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'w', encoding='utf-8') as versionFile:
 			versionFile.write(json.dumps({'formatVersion': self.dataFormatVersion, 'dataVersion': latestVersionNumber, 'lastUpdateTime': time.time(), 'cardCount': numberOfCards}))
 
-		replytext = "MtG card database successfully updated (Changelog: https://mtgjson.com/changelog/)"
+		replytext = "MtG card database successfully updated (Changelog: https://mtgjson.com/changelogs/mtgjson-v5/ )"
 		if shouldUpdateDefinitions and definitionsFile:
 			#Download the definitions too, and add them to the definitions we found in the card texts
 			try:
