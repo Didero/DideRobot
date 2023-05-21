@@ -21,13 +21,13 @@ class CommandHandler:
 	def loadApiKeys(self):
 		self.apikeys = {}
 		if not os.path.exists(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json')):
-			self.logger.error("API key file at not found! It should be in the 'data' subfolder and called 'apikeys.json'")
+			self.logger.error("API key file not found, it should be in the 'data' subfolder and called 'apikeys.json'")
 		else:
 			try:
 				with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json'), encoding='utf-8') as apikeysFile:
 					self.apikeys = json.load(apikeysFile)
-			except ValueError:
-				self.logger.error("API key file is invalid JSON!")
+			except ValueError as e:
+				self.logger.error(f"API key file is invalid JSON: {e}")
 
 	def saveApiKeys(self):
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json'), 'w', encoding='utf-8') as apifile:
