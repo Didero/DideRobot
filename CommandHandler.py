@@ -33,6 +33,24 @@ class CommandHandler:
 		with open(os.path.join(GlobalStore.scriptfolder, 'data', 'apikeys.json'), 'w', encoding='utf-8') as apifile:
 			apifile.write(json.dumps(self.apikeys, sort_keys=True, indent=4))
 
+	def getApiKey(self, keyName, parentKey=None):
+		"""
+		Get the value of the provided api key name, optionally from inside a parent key
+		:param keyName: The name of the key to get
+		:param parentKey: If the key you want is nested inside a sub-dictionary, provide the parent key name
+		:return: The value for the provided key name, or None if no key is stored or if it wasn't filled in
+		"""
+		apiKey = None
+		if parentKey:
+			if parentKey in self.apikeys and keyName in self.apikeys[parentKey]:
+				apiKey = self.apikeys[parentKey][keyName]
+		else:
+			apiKey = self.apikeys.get(keyName, None)
+		# The apikeys.json.example has a string for each key, something like "your [keyName] API key here" or "your secret token here". Ignore those values
+		if isinstance(apiKey, str) and apiKey.startswith("your "):
+			apiKey = None
+		return apiKey
+
 	def addCommandFunction(self, module, name, function):
 		"""
 		Add a global function available to all commands thorugh 'CommandHandler.runCommandFunction'

@@ -80,10 +80,6 @@ class Command(CommandTemplate):
 			return
 
 		parameter = message.messageParts[0].lower()
-		if (parameter == "add" or parameter == "live") and 'twitch' not in GlobalStore.commandhandler.apikeys:
-			message.reply("Oh, I'm sorry, I seem to have lost my access key to Twitch. Inform my owner(s), they can probably find it for me!")
-			return
-
 		#All options need this for lookup
 		serverChannelString = "{} {}".format(message.bot.serverfolder, message.source)
 		streamername = None if message.messagePartsLength < 2 else message.messageParts[1]
@@ -517,14 +513,15 @@ class Command(CommandTemplate):
 		if not self.isTokenValid():
 			self.updateAccessToken()
 		#Valid token, construct the header, ready to be passed to requests's 'headers=' keyword argument
-		return {"Client-ID": GlobalStore.commandhandler.apikeys['twitch']['client_id'],
-				"Authorization": "Bearer " + GlobalStore.commandhandler.apikeys['twitch']['access_token']}
+		return {"Client-ID": GlobalStore.commandhandler.getApiKey('client_id', 'twitch'),
+				"Authorization": "Bearer " + GlobalStore.commandhandler.getApiKey('access_token', 'twitch')}
 
 	def isTokenValid(self):
-		apikeys = GlobalStore.commandhandler.apikeys['twitch']
-		if 'access_token' not in apikeys or 'expiration_time' not in apikeys:
+		accessToken = GlobalStore.commandhandler.getApiKey('access_token', 'twitch')
+		expirationTime = GlobalStore.commandhandler.getApiKey('expiration_time', 'twitch')
+		if not accessToken or not expirationTime:
 			return False
-		if time.time() >= apikeys['expiration_time']:
+		if time.time() >= expirationTime:
 			return False
 		return True
 
@@ -534,19 +531,20 @@ class Command(CommandTemplate):
 		:return: None
 		:raises CommandException: Raised when required API keys can't be found or the API token request gives an error
 		"""
-		apikeys = GlobalStore.commandhandler.apikeys['twitch']
-
-		if 'client_id' not in apikeys or 'client_secret' not in apikeys:
-			raise CommandException("No Twitch client_id and/or client_secret stored")
+		clientId = GlobalStore.commandhandler.getApiKey('client_id', 'twitch')
+		clientSecret = GlobalStore.commandhandler.getApiKey('client_secret', 'twitch')
+		if not clientId or not clientSecret:
+			raise CommandException("Sorry, I seem to be missing a client ID and/or client Secret, and I need those to access the Twitch API. Please tell my owner(s), they can probably fix that")
 
 		#If we already have an access token, revoke it to prevent multiple tokens being registered and Twitch getting mad about that
-		if 'access_token' in apikeys:
+		accessToken = GlobalStore.commandhandler.getApiKey('access_token', 'twitch')
+		if accessToken:
 			#We don't care about the response, so no need to store it
-			requests.post("https://id.twitch.tv/oauth2/revoke", params={'client_id': apikeys['client_id'], 'token': apikeys['access_token']}, timeout=20.0)
+			requests.post("https://id.twitch.tv/oauth2/revoke", params={'client_id': clientId, 'token': accessToken}, timeout=20.0)
 
 		#Get a new token
 		try:
-			r = requests.post("https://id.twitch.tv/oauth2/token", params={'client_id': apikeys['client_id'], 'client_secret': apikeys['client_secret'], 'grant_type': 'client_credentials'}, timeout=20.0)
+			r = requests.post("https://id.twitch.tv/oauth2/token", params={'client_id': clientId, 'client_secret': clientSecret, 'grant_type': 'client_credentials'}, timeout=20.0)
 		except requests.exceptions.Timeout:
 			raise CommandException("Requesting an access token from Twitch took too long")
 		if r.status_code != 200:
@@ -569,6 +567,6 @@ class Command(CommandTemplate):
 			raise CommandException("The Twitch API sent an unexpected reply")
 
 		#Token successfully retrieved. Store it, and also when it expires
-		apikeys['access_token'] = apiReply['access_token']
-		apikeys['expiration_time'] = time.time() + apiReply['expires_in'] - 10  #-10 to build in some leeway
+		GlobalStore.commandhandler.apikeys['twitch']['access_token'] = apiReply['access_token']
+		GlobalStore.commandhandler.apikeys['twitch']['expiration_time'] = time.time() + apiReply['expires_in'] - 10  #-10 to build in some leeway
 		GlobalStore.commandhandler.saveApiKeys()

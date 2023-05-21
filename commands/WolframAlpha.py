@@ -34,10 +34,11 @@ class Command(CommandTemplate):
 
 	def fetchWolframData(self, query, podsToFetch=5):
 		#First check if there is an API key
-		if 'wolframalpha' not in GlobalStore.commandhandler.apikeys:
+		apiKey = GlobalStore.commandhandler.getApiKey('wolframalpha')
+		if not apiKey:
 			raise CommandException("No Wolfram Alpha API key found")
 
-		params = {'appid': GlobalStore.commandhandler.apikeys['wolframalpha'], 'input': query}
+		params = {'appid': apiKey, 'input': query}
 		if podsToFetch > 0:
 			podIndexParam = ""
 			for i in range(1, podsToFetch):

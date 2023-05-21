@@ -19,7 +19,9 @@ class Command(CommandTemplate):
 		"""
 
 		#First check for the presence of the API key
-		if 'locatorhq' not in GlobalStore.commandhandler.apikeys or 'key' not in GlobalStore.commandhandler.apikeys['locatorhq'] or 'username' not in GlobalStore.commandhandler.apikeys['locatorhq']:
+		apiKey = GlobalStore.commandhandler.getApiKey('key', 'locatorhq')
+		apiUsername = GlobalStore.commandhandler.getApiKey('username', 'locatorhq')
+		if not apiKey or not apiUsername:
 			message.reply("I'm sorry, my owner hasn't filled in the required API key for this module. Please poke them to add it")
 			return
 
@@ -79,14 +81,10 @@ class Command(CommandTemplate):
 				else:
 					replytext = "That's on my server! And I'm right here"
 			else:
-				params = {'key': GlobalStore.commandhandler.apikeys['locatorhq']['key'],
-						  'user': GlobalStore.commandhandler.apikeys['locatorhq']['username'],
-						  'ip': userIp, 'format': 'json'}
-
 				apiReturn = None
 				try:
-					apiReturn = requests.get("http://api.locatorhq.com", params=params, timeout=10.0)
-					data = json.loads(apiReturn.text)
+					apiReturn = requests.get("http://api.locatorhq.com", params={'key': apiKey, 'user': apiUsername, 'ip': userIp, 'format': 'json'}, timeout=10.0)
+					data = apiReturn.json()
 				except requests.exceptions.Timeout:
 					replytext = "I'm sorry, pinpointing {} location took too long for some reason. Maybe try again later?"
 					replytext = replytext.format("your" if message.messagePartsLength == 0 else username + "'s")

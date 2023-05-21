@@ -41,11 +41,17 @@ class Command(CommandTemplate):
 		#The publish date sometimes seems to have a period and sometimes not. Remove it if it's there
 		return datetime.datetime.strptime(publishedAtDateTimeString.replace('.', ''), self.datetimeFormatString)
 
+	def getApiKey(self):
+		apiKey = GlobalStore.commandhandler.getApiKey('google')
+		if not apiKey:
+			raise CommandException("I don't seem to have an API key for Google's APIs, which I need to look up Youtube information. Please tell my owner(s), they can probably fix this")
+		return apiKey
+
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'getYoutubeVideoDescription', self.getVideoDisplayString)
 
-		if 'google' not in GlobalStore.commandhandler.apikeys:
-			self.logError("[YoutubeWatcher] Google API key not found! YoutubeWatcher module will not work")
+		if not GlobalStore.commandhandler.getApiKey('google'):
+			self.logError("[YoutubeWatcher] Google API key not found, YoutubeWatcher module will not work")
 			#Disable the automatic scheduled function if we don't have an API key because that won't work
 			self.scheduledFunctionTime = None
 			return
@@ -287,8 +293,9 @@ class Command(CommandTemplate):
 		:raises CommandInputExcepiton: Raised when the provided channel name could not be found
 		"""
 
+		apiKey = self.getApiKey()
 		#First get the channel ID, which we need to get the playlists
-		request = requests.get('https://www.googleapis.com/youtube/v3/search', timeout=10.0, params={'key': GlobalStore.commandhandler.apikeys['google'], 'part': 'snippet', 'maxResults': 1, 'type': 'channel', 'q': channelName})
+		request = requests.get('https://www.googleapis.com/youtube/v3/search', timeout=10.0, params={'key': apiKey, 'part': 'snippet', 'maxResults': 1, 'type': 'channel', 'q': channelName})
 		if request.status_code != 200:
 			self.logError("[YoutubeWatcher] An error occurred while searching for the channel ID of channel '{}': {} (status code {})".format(channelName, request.content, request.status_code))
 			raise CommandException("Something went wrong searching for channel {}, sorry (status code {})".format(channelName, request.status_code))
@@ -298,7 +305,7 @@ class Command(CommandTemplate):
 		channelId = requestJson['items'][0]['snippet']['channelId']
 
 		#Use the found channel ID to retrieve the playlists and in particular the 'Uploads' playlist
-		request = requests.get('https://www.googleapis.com/youtube/v3/channels', timeout=10.0, params={'key': GlobalStore.commandhandler.apikeys['google'], 'part': 'contentDetails', 'id': channelId})
+		request = requests.get('https://www.googleapis.com/youtube/v3/channels', timeout=10.0, params={'key': apiKey, 'part': 'contentDetails', 'id': channelId})
 		if request.status_code != 200:
 			self.logError("[YoutubeWatcher] An error occurred while searching for the upload playlist ID of channel '{}' (ID '{}'): {} (status code {})".format(channelName, channelId, request.content, request.status_code))
 			raise CommandException("Something went wrong with searching for the uploads of channel {}, sorry (status code {})".format(channelName, request.status_code))
@@ -314,7 +321,7 @@ class Command(CommandTemplate):
 		:return: A dict with the playlist info
 		:raises CommandException: Raised when something goes wrong with accessing teh Youtube API
 		"""
-		request = requests.get("https://www.googleapis.com/youtube/v3/playlists", timeout=10.0, params={'key': GlobalStore.commandhandler.apikeys['google'], 'part': 'snippet', 'id': playlistId})
+		request = requests.get("https://www.googleapis.com/youtube/v3/playlists", timeout=10.0, params={'key': self.getApiKey(), 'part': 'snippet', 'id': playlistId})
 		if request.status_code != 200:
 			self.logError("[YoutubeWatcher] An error occurred while searching for the playlist info for playlist ID '{}': {} (status code {})".format(playlistId, request.content, request.status_code))
 			raise CommandException("Something went wrong searching for info on playlist ID {}, sorry (status code {})".format(playlistId, request.status_code))
@@ -326,7 +333,7 @@ class Command(CommandTemplate):
 	def retrieveLatestVideos(self, playlistId, numberOfVideos=5):
 		if numberOfVideos < 1 or numberOfVideos > 50:
 			numberOfVideos = 5
-		request = requests.get('https://www.googleapis.com/youtube/v3/playlistItems', timeout=10.0, params={'key': GlobalStore.commandhandler.apikeys['google'], 'playlistId': playlistId, 'part': 'snippet', 'maxResults': numberOfVideos})
+		request = requests.get('https://www.googleapis.com/youtube/v3/playlistItems', timeout=10.0, params={'key': self.getApiKey(), 'playlistId': playlistId, 'part': 'snippet', 'maxResults': numberOfVideos})
 		if request.status_code != 200:
 			self.logError("[YoutubeWatcher] An error occurred while retrieving videos from playlist ID '{}': {} (status code {})".format(playlistId, request.content, request.status_code))
 			raise CommandException("Something went wrong with the request (Status code {})".format(request.status_code))
@@ -375,11 +382,7 @@ class Command(CommandTemplate):
 		:param includeUrl: If True, the URL to the video will be added to the end of the output
 		:return: The display string describing the video, or None if something went wrong with retrieving the data
 		"""
-		if 'google' not in GlobalStore.commandhandler.apikeys:
-			self.logError("[YoutubeWatcher] Google API key not found!")
-			return None
-
-		googleJson = requests.get("https://www.googleapis.com/youtube/v3/videos", timeout=5, params={'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': GlobalStore.commandhandler.apikeys['google'],
+		googleJson = requests.get("https://www.googleapis.com/youtube/v3/videos", timeout=5, params={'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': self.getApiKey(),
 				  'fields': 'items/snippet(title,channelTitle,description,publishedAt),items/contentDetails/duration,items/statistics(viewCount)'}).json()
 
 		if not googleJson or 'error' in googleJson:

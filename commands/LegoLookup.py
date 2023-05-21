@@ -18,7 +18,7 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 
-		apiKey = GlobalStore.commandhandler.apikeys['brickset']
+		apiKey = GlobalStore.commandhandler.getApiKey('brickset')
 		if not apiKey:
 			raise CommandException("I don't have an API key for Brickset.com, so I can't retrieve Lego data from there, sorry! Please tell my owner(s) about this, they can hopefully fix it")
 
@@ -42,7 +42,7 @@ class Command(CommandTemplate):
 
 		apiResult = None
 		try:
-			apiResult = requests.get('https://brickset.com/api/v3.asmx/getSets', params={'apiKey': GlobalStore.commandhandler.apikeys['brickset'], 'userHash': '', 'params': json.dumps(apiParams)}, timeout=10)
+			apiResult = requests.get('https://brickset.com/api/v3.asmx/getSets', params={'apiKey': apiKey, 'userHash': '', 'params': json.dumps(apiParams)}, timeout=10)
 			apiData = apiResult.json()
 		except requests.exceptions.Timeout:
 			raise CommandException("My connection to Brickset.com timed out. Try again in a while")

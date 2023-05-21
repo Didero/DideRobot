@@ -156,12 +156,13 @@ class Command(CommandTemplate):
 		message.replyWithLengthLimit(reply)
 
 	def updateTwitterToken(self):
-		apikeys = GlobalStore.commandhandler.apikeys
-		if 'twitter' not in apikeys or 'key' not in apikeys['twitter'] or 'secret' not in apikeys['twitter']:
-			self.logError("[TwitterWatcher] No Twitter API key and/or secret found!")
+		apiKey = GlobalStore.commandhandler.getApiKey('key', 'twitter')
+		apiSecret = GlobalStore.commandhandler.getApiKey('secret', 'twitter')
+		if not apiKey or not apiSecret:
+			self.logError("[TwitterWatcher] No Twitter API key and/or secret found")
 			return False
 
-		credentials = base64.b64encode("{}:{}".format(apikeys['twitter']['key'], apikeys['twitter']['secret']))
+		credentials = base64.b64encode("{}:{}".format(apiKey, apiSecret))
 		headers = {"Authorization": "Basic {}".format(credentials), "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"}
 		data = "grant_type=client_credentials"
 
@@ -171,19 +172,16 @@ class Command(CommandTemplate):
 			self.logError("[TwitterWatcher] An error occurred while retrieving Twitter token: " + json.dumps(reply))
 			return False
 
-		if 'twitter' not in apikeys:
-			apikeys['twitter'] = {}
-		apikeys['twitter']['token'] = reply['access_token']
-		apikeys['twitter']['tokentype'] = reply['token_type']
-
+		GlobalStore.commandhandler.apikeys['twitter']['token'] = reply['access_token']
+		GlobalStore.commandhandler.apikeys['twitter']['tokentype'] = reply['token_type']
 		GlobalStore.commandhandler.saveApiKeys()
 		return True
 
 	def downloadTweets(self, username, maxTweetCount=200, downloadNewerThanId=None, downloadOlderThanId=None, includeReplies=False, includeRetweets=False):
 		# First check if we can even connect to the Twitter API
-		if 'twitter' not in GlobalStore.commandhandler.apikeys or \
-				'token' not in GlobalStore.commandhandler.apikeys['twitter'] or \
-				'tokentype' not in GlobalStore.commandhandler.apikeys['twitter']:
+		apiToken = GlobalStore.commandhandler.getApiKey('token', 'twitter')
+		apiTokenType = GlobalStore.commandhandler.getApiKey('tokentype', 'twitter')
+		if not apiToken or not apiTokenType:
 			self.logInfo("[TwitterWatcher] No twitter token found, retrieving a new one")
 			tokenUpdateSuccess = self.updateTwitterToken()
 			if not tokenUpdateSuccess:
@@ -191,7 +189,7 @@ class Command(CommandTemplate):
 				raise WebRequestException("Unable to retrieve Twitter authentication token!")
 
 		# Now download tweets!
-		headers = {'Authorization': "{} {}".format(GlobalStore.commandhandler.apikeys['twitter']['tokentype'], GlobalStore.commandhandler.apikeys['twitter']['token'])}
+		headers = {'Authorization': "{} {}".format(apiTokenType, apiToken)}
 		params = {'screen_name': username, 'count': min(200, maxTweetCount), 'trim_user': 'true', 'tweet_mode': 'extended',
 				  'exclude_replies': 'false' if includeReplies else 'true',
 				  'include_rts': True}  # Always get retweets, remove them later if necessary. Needed because 'count' always includes retweets, even if you don't want them

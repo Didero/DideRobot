@@ -115,8 +115,9 @@ class Command(CommandTemplate):
 		imageIdMatches = re.search('imgur\.com/([^.]+)', url, re.IGNORECASE)
 		if imageIdMatches is None:
 			return None
-		if 'imgur' not in GlobalStore.commandhandler.apikeys or 'clientid' not in GlobalStore.commandhandler.apikeys['imgur']:
-			CommandTemplate.logError("[url] Imgur API key not found!")
+		apiClientId = GlobalStore.commandhandler.getApiKey('clientid', 'imgur')
+		if not apiClientId:
+			CommandTemplate.logError("[url] Imgur API key not found")
 			return None
 		imageId = imageIdMatches.group(1)
 		isGallery = False
@@ -126,7 +127,7 @@ class Command(CommandTemplate):
 				imageType = 'gallery/album'
 				isGallery = True
 			imageId = imageId[imageId.rfind('/')+1:]
-		headers = {"Authorization": "Client-ID " + GlobalStore.commandhandler.apikeys['imgur']['clientid']}
+		headers = {"Authorization": "Client-ID " + apiClientId}
 		imgurUrl = "https://api.imgur.com/3/{type}/{id}".format(type=imageType, id=imageId)
 		imgurDataPage = requests.get(imgurUrl, headers=headers, timeout=Command.lookupTimeoutSeconds)
 		try:
@@ -194,10 +195,11 @@ class Command(CommandTemplate):
 		urlMatch = re.match('https://(?:www\.)?tumblr.com/(?P<user>[^/]+)/(?P<postId>\d+)', url, re.IGNORECASE)
 		if not urlMatch:
 			return None
-		if 'tumblr' not in GlobalStore.commandhandler.apikeys:
+		apiKey = GlobalStore.commandhandler.getApiKey('tumblr')
+		if not apiKey:
 			Command.logWarning("[UrlTitleFinder] No Tumblr API key stored")
 			return None
-		apiReply = requests.get("https://api.tumblr.com/v2/blog/{}/posts".format(urlMatch.group('user')), params={'api_key': GlobalStore.commandhandler.apikeys['tumblr'], 'id': urlMatch.group('postId'), 'filter': 'text', 'npf': True})
+		apiReply = requests.get("https://api.tumblr.com/v2/blog/{}/posts".format(urlMatch.group('user')), params={'api_key': apiKey, 'id': urlMatch.group('postId'), 'filter': 'text', 'npf': True})
 		if apiReply.status_code != 200:
 			Command.logError("[UrlTitleFinder] Tumblr API returned error result, status code {}: {}".format(apiReply.status_code, apiReply.text))
 			return None

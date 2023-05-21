@@ -18,7 +18,8 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage.IrcMessage
 		"""
-		if 'merriamwebster' not in GlobalStore.commandhandler.apikeys:
+		apiKey = GlobalStore.commandhandler.getApiKey('merriamwebster')
+		if not apiKey:
 			self.logError("[DictionaryLookup] Missing key for Merriam-Webster API")
 			raise CommandException("Since I don't know a lot of words myself, I need access to the Merriam-Webster Dictionaries, and I don't seem to have the API key required, sorry! "
 								 "Poke my owner(s), they can probably add them", False)
@@ -38,7 +39,7 @@ class Command(CommandTemplate):
 					break
 
 		try:
-			apiresult = requests.get("https://dictionaryapi.com/api/v3/references/collegiate/json/" + termToDefine, params={'key': GlobalStore.commandhandler.apikeys['merriamwebster']}, timeout=15.0)
+			apiresult = requests.get("https://dictionaryapi.com/api/v3/references/collegiate/json/" + termToDefine, params={'key': apiKey}, timeout=15.0)
 		except requests.exceptions.Timeout:
 			raise CommandException("Hmm, it took the dictionary site a bit too long to respond. They're probably busy trying to keep up with internet slang or something. Try again in a bit!")
 		if apiresult.status_code != 200:

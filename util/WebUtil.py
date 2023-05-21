@@ -27,7 +27,7 @@ def uploadText(textToUpload, uploadDescription="Text Upload", expireInSeconds=60
 	:return: The link to the uploaded text on Paste.ee
 	:raise WebRequestException: Raised when something went wrong with uploading the text
 	"""
-	apiKey = GlobalStore.commandhandler.apikeys.get('paste.ee', None)
+	apiKey = GlobalStore.commandhandler.getApiKey('paste.ee')
 	if not apiKey:
 		raise WebRequestException("API key for Paste.ee is missing")
 	# Send the actual request ('expire' is documented on https://paste.ee/wiki/API:Basics as being in minute, but it's in seconds)
