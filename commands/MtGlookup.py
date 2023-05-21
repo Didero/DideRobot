@@ -30,6 +30,7 @@ class Command(CommandTemplate):
 
 	areCardfilesInUse = False
 	dataFormatVersion = '4.5.1'
+	FORCE_UPDATE_AFTER_SECONDS = 7776000 # 90 days in seconds
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'searchMagicTheGatheringCards', self.getFormattedResultFromSearchString)
@@ -712,9 +713,13 @@ class Command(CommandTemplate):
 		#We should update if the latest formatting version differs from the stored one
 		if versiondata['formatVersion'] != self.dataFormatVersion:
 			return True
+		secondsSinceLastUpdate = time.time() - versiondata['lastUpdateTime']
 		#If the last update check has been recent, don't update (with some leniency to prevent edge cases)
-		if time.time() - versiondata['lastUpdateTime'] < self.scheduledFunctionTime - 5.0:
+		if secondsSinceLastUpdate < self.scheduledFunctionTime - 5.0:
 			return False
+		# Since the MtGJSON dataset also sometimes updates without increasing the version number, force an update if none has been downloaded for a while
+		elif secondsSinceLastUpdate > self.FORCE_UPDATE_AFTER_SECONDS:
+			return True
 		#Get the latest online version to see if we're behind
 		return self.getLatestVersionNumber() != versiondata['dataVersion']
 
