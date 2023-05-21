@@ -18,9 +18,6 @@ if __name__ == '__main__':
 	argparser.add_argument("serverlist", help="The comma-separated list of folders in serverSettings that you want to load the config from and start")
 	args = argparser.parse_args()
 
-	#Store where in the filesystem we are for future reference
-	GlobalStore.scriptfolder = os.path.dirname(os.path.abspath(__file__))
-
 	#Set up error and debug logging
 	logger = logging.getLogger('DideRobot')
 	logger.setLevel(logging.DEBUG)
