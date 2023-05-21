@@ -542,12 +542,12 @@ class DideRobot(object):
 				extraMessages = messageText.splitlines()
 				messageText = extraMessages.pop(0)
 			# Check if the message isn't too long to send
-			prefixLength = self.calculateMessagePrefixLength(target, messageType)
-			if prefixLength + len(messageText) > Constants.MAX_LINE_LENGTH:
+			maxMessageLength = Constants.MAX_LINE_LENGTH - self.calculateMessagePrefixLength(target, messageType)
+			if len(messageText) > maxMessageLength:
 				if not extraMessages:
 					extraMessages = []
-				extraMessages.insert(0, messageText[Constants.MAX_LINE_LENGTH - prefixLength + 1:])
-				messageText = messageText[:Constants.MAX_LINE_LENGTH - prefixLength + 1]
+				extraMessages.insert(0, messageText[maxMessageLength + 1:])
+				messageText = messageText[:maxMessageLength + 1]
 			line = "{} {} :{}".format(messageCommand, target, messageText)
 			if target[0] not in Constants.CHANNEL_PREFIXES:
 				#If it's a PM, bypass the message queue
