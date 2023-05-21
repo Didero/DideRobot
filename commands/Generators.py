@@ -206,9 +206,17 @@ class Command(CommandTemplate):
 		return line
 
 	@staticmethod
-	def numberToText(number):
+	def numberToText(number: int, asOrdinal=False):
+		"""
+		Turn an integer into the human-readable text form, for instance '1032' into 'one thousand thirty two'.
+		If 'asOrdinal' is True, return the result as an ordinal string, for instance '1032' into 'one thousand thirty second'
+		:param number: The number to convert
+		:param asOrdinal: If not set or set to False, return a normal number ('three'). If True, return the number as an ordinal '(third')
+		:return: The provided integer as a human-readable number string
+		"""
 		baseNumberNames = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen")
 		tensNames = ("twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety")
+		ordinalBaseNumberNames = ("zeroth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth")
 		numberTextParts = []
 
 		#Handle negative numbers too
@@ -217,8 +225,13 @@ class Command(CommandTemplate):
 			numberTextParts.append("minus")
 
 		#Easiest case if the number is small enough to be in the base number list
-		if number < 20:
+		if asOrdinal and number <= 12:
+			numberTextParts.append(ordinalBaseNumberNames[number])
+			return " ".join(numberTextParts)
+		elif number <= 19:
 			numberTextParts.append(baseNumberNames[number])
+			if asOrdinal:
+				numberTextParts[-1] += 'th'
 			return " ".join(numberTextParts)
 
 		#We only handle up to a hundred trillion (trillion is 10 to the 12th, so hundred trillion is 10 to the 14th)
@@ -238,9 +251,12 @@ class Command(CommandTemplate):
 		periodNames = ("", "thousand", "million", "billion", "trillion")
 
 		numberPeriodsCount = len(numberPeriods)
+		maxPeriodIndex = numberPeriodsCount - 1
 		for periodIndex, periodValue in enumerate(numberPeriods):
 			#Ignore empty periods (So 12,000 doesn't turn into 'twelve thousand zero')
 			if periodValue == 0:
+				if asOrdinal and periodIndex == maxPeriodIndex:
+					numberTextParts[-1] += 'th'
 				continue
 
 			#If the number period is larger than 100, we need to mention the first number separately (204,000 is 'two hundred and four thousand')
@@ -252,7 +268,13 @@ class Command(CommandTemplate):
 			#If the number period is smaller than 20, it's in the base list
 			# Skip zero though, otherwise 100 becomes 'one hundred zero'
 			if 0 < periodValue < 20:
-				numberTextParts.append(baseNumberNames[periodValue])
+				if asOrdinal and periodIndex == maxPeriodIndex:
+					if periodValue <= 12:
+						numberTextParts.append(ordinalBaseNumberNames[periodValue])
+					else:
+						numberTextParts.append(baseNumberNames[periodValue] + 'th')
+				else:
+					numberTextParts.append(baseNumberNames[periodValue])
 			#Otherwise we need to split it up a bit more
 			else:
 				tensValue = periodValue // 10
@@ -261,13 +283,21 @@ class Command(CommandTemplate):
 				#Make sure it doesn't turn 20 into 'twenty zero'
 				onesValue = periodValue % 10
 				if onesValue > 0:
-					numberTextParts.append(baseNumberNames[onesValue])
+					if asOrdinal and periodIndex == maxPeriodIndex:
+						numberTextParts.append(ordinalBaseNumberNames[onesValue])
+					else:
+						numberTextParts.append(baseNumberNames[onesValue])
+				elif asOrdinal and periodIndex == maxPeriodIndex:
+					# Turn the tens name into its ordinal form
+					numberTextParts[-1] = numberTextParts[-1].replace('y', 'ie') + 'th'
 
 			#Since we're parsing left to right, and the period names are sorted small to large, we need to get the distance between the start
 			# of the periods and the current period to get the name, minus one because the index starts at 0 but the names at 'thousand'
 			periodName = periodNames[numberPeriodsCount - periodIndex - 1]
 			if len(periodName) > 0:
 				numberTextParts.append(periodName)
+				if asOrdinal and periodIndex == maxPeriodIndex:
+					numberTextParts[-1] += 'th'
 
 		#Done! Stick the parts together
 		return " ".join(numberTextParts)
@@ -1648,10 +1678,11 @@ class GrammarCommands(object):
 	@validateArguments(argumentCount=1, numericArgumentIndexes=0)
 	def command_numbertotext(argumentList, grammarParseState):
 		"""
-		<$numbertotext|numberToDisplayAsText>
+		<$numbertotext|numberToDisplayAsText[|asOrdinal]>
 		Converts the provided number to its English representation. For instance, '4' would get turned into 'four'
+		If 'asOrdinal' is present and set to 'true', the result will be ordinal text. For instance, '4' would get turned into 'fourth'
 		"""
-		return Command.numberToText(argumentList[0])
+		return Command.numberToText(argumentList[0], len(argumentList) > 1 and GrammarCommands._evaluateAsBoolean(argumentList[1]))
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
