@@ -281,7 +281,7 @@ class Command(CommandTemplate):
 
 	def formatMessage(self, username, messageData, addMessageAge=False, addUrl=True):
 		# Mastodon messages are HTML, so remove all the tags and resolve all the special characters ('&amp;' to '&' for instance)
-		parsedMessage = BeautifulSoup(messageData['content'].replace('<br />', Constants.GREY_SEPARATOR), 'html.parser')
+		parsedMessage = BeautifulSoup(re.sub('<br ?/?>', Constants.GREY_SEPARATOR, messageData['content']), 'html.parser')
 		# Mastodon organises newlines into <p> paragraphs, so iterate over those and get the text from them
 		messageTextParts = []
 		for paragraph in parsedMessage.find_all('p'):
