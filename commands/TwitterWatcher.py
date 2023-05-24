@@ -300,7 +300,7 @@ class Command(CommandTemplate):
 				#Now go tell that channel all about the tweets
 				for tweet in tweets:
 					formattedTweet = self.formatNewTweetText(username, tweet)
-					targetbot.sendLengthLimitedMessage(target, formattedTweet.mainString, suffix=formattedTweet.suffix)
+					targetbot.sendLengthLimitedMessage(targetchannel, formattedTweet.mainString, suffix=formattedTweet.suffix)
 				#If we skipped a few tweets, make a mention of that too
 				if tweetsSkipped > 0:
 					targetbot.sendMessage(targetchannel, "(skipped {:,} of {}'s tweets)".format(tweetsSkipped, self.getDisplayName(username)))
