@@ -308,10 +308,8 @@ class Command(CommandTemplate):
 			self.saveWatchData()
 
 	def formatNewTweetText(self, username, tweetData, addTweetAge=False, addTweetUrl=True):
-		#Remove newlines
-		formattedTweetText = StringUtil.removeNewlines(tweetData['full_text'], Constants.GREY_SEPARATOR)
-		#Fix special characters (convert '&amp;' to '&' for instance)
-		formattedTweetText = html.unescape(formattedTweetText)
+		# Fix special characters (convert '&amp;' to '&' for instance), and remove newlines
+		formattedTweetText = StringUtil.removeNewlines(html.unescape(tweetData['full_text']), Constants.GREY_SEPARATOR)
 		suffixes = []
 		#Remove the link to the photo at the end, but mention that there is one
 		if 'media' in tweetData['entities']:
