@@ -336,7 +336,7 @@ class Command(CommandTemplate):
 				tweetAgeString += f"{DateTimeUtil.durationSecondsToText(tweetAge.total_seconds(), precision=DateTimeUtil.MINUTES)} ago"
 			suffixes.append(IrcFormattingUtil.makeTextColoured(tweetAgeString, IrcFormattingUtil.Colours.GREY))
 		if addTweetUrl:
-			suffixes.append(" | https://twitter.com/_/status/{}")  #Use _ instead of username to save some characters
+			suffixes.append(" | https://twitter.com/_/status/")  #Use _ instead of username to save some characters
 			suffixes.append(tweetData['id_str'])
 		return StringWithSuffix(formattedTweetText, suffixes)
 
