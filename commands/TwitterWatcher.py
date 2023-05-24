@@ -327,7 +327,7 @@ class Command(CommandTemplate):
 			postDateTime = self.getTweetPostTime(tweetData['created_at'])
 			tweetAge = datetime.datetime.utcnow() - postDateTime
 			# For older tweets, list the post date, otherwise list how old it is
-			tweetAgeString = " | "
+			tweetAgeString = " | "  # Use a normal pipe here instead of GREY_SEPARATOR, because we're going to color the whole age string grey
 			if tweetAge.total_seconds() > self.SECONDS_AGE_FOR_FULL_DATE:
 				tweetAgeString += postDateTime.strftime('%Y-%m-%d')
 			elif tweetAge.total_seconds() <= 60:
