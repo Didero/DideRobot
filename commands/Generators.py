@@ -404,22 +404,29 @@ class Command(CommandTemplate):
 				grammarParseState.variableDict['lastname'] = nameparts[-1]  # Use -1 because names might have a middle initial
 			# A lot of generators support repeating output. Support it through an option. Optional arguments are a maximum repeat count, and a default value if no repeat count is provided
 			elif initializer == 'parseRepeats':
+				# Format: parseRepeats[:maximumAllowed[:defaultValue[:defaultUpperBound]]]
+				# Takes the first number provided as a parameter, and sets the %_repeats variable to that value. If it's negative, this will get set to 1
+				# If 'maximumAllowed' is provided, the repeat count will get clamped to this value if it exceeds it
+				# If just 'defaultValue' is provided, this value will be used if the user didn't provide a numerical parameter. It should be positive
+				# If 'defaultUpperBound' is also provided, if the user didn't provide a numerical parameter, a repeat value will be randomly chosen from 'defaultValue' to 'defaultMaxValue', inclusive
 				maxRepeats = None
 				defaultValue = 1
+				defaultValueMax = None
 				if initializerParameters:
+					# All parameters need to be numeric, so convert them all
+					for initParamIndex, initParam in enumerate(initializerParameters):
+						if not initParam.isnumeric():
+							raise GrammarException(f"Initializer '{initializerString}' specifies a non-numeric parameter")
+						initializerParameters[initParamIndex] = int(initParam, 10)
 					maxRepeats = initializerParameters[0]
-					if not maxRepeats.isnumeric():
-						raise GrammarException(f"Initializer '{initializerString}' specifies a non-numeric maximum repeat count.  Format is 'parseRepeats:[maxRepeats]', or just 'parseRepeats' if no max is wanted")
-					maxRepeats = int(maxRepeats, 10)
 					if maxRepeats <= 0:
-						raise GrammarException("Initializer '{}' specifies a negative or zero maximum number of repeats, which isn't supported".format(initializer))
+						raise GrammarException(f"Initializer '{initializerString}' specifies a negative or zero maximum number of repeats, which isn't supported")
 					if len(initializerParameters) >= 2:
 						defaultValue = initializerParameters[1]
-						if not defaultValue.isnumeric():
-							raise GrammarException(f"Initializer '{initializerString}' specifies a non-numeric default value.  Format is 'parseRepeats:[maxRepeats]:[defaultValue]', "
-												   "or just 'parseRepeats:[maxRepeats]' if no default value is wanted")
-						defaultValue = int(defaultValue, 10)
-
+						if len(initializerParameters) >= 3:
+							defaultValueMax = initializerParameters[2]
+							if defaultValueMax <= defaultValue:
+								raise GrammarException(f"In initializer '{initializerString}', the maximum default range value ({defaultValueMax}) is lower than or equal to the minimum ({defaultValue})")
 				repeats = None
 				# Go through all the parameters and remove the first number from it, assuming it's the repeat count
 				if grammarParseState.parameterList:
@@ -429,7 +436,10 @@ class Command(CommandTemplate):
 							repeats = int(grammarParseState.parameterList.pop(paramIndex), 10)
 							break
 				if not repeats:
-					repeats = defaultValue
+					if defaultValueMax:
+						repeats = grammarParseState.random.randint(defaultValue, defaultValueMax)
+					else:
+						repeats = defaultValue
 				else:
 					# Make sure the repeat parameter is within the allowed range
 					if repeats < 1:
