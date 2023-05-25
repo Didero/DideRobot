@@ -426,13 +426,12 @@ class Command(CommandTemplate):
 					for paramIndex, param in enumerate(grammarParseState.parameterList):
 						if param.isnumeric():
 							# Remove the parameter from the parameters list, so the parameters can be used for other things in a generator too
-							repeats = grammarParseState.parameterList.pop(paramIndex)
+							repeats = int(grammarParseState.parameterList.pop(paramIndex), 10)
 							break
 				if not repeats:
 					repeats = defaultValue
 				else:
 					# Make sure the repeat parameter is within the allowed range
-					repeats = int(repeats, 10)
 					if repeats < 1:
 						repeats = 1
 					elif maxRepeats and repeats > maxRepeats:
