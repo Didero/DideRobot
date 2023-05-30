@@ -7,7 +7,7 @@ import Constants
 import GlobalStore
 import MessageTypes
 from IrcMessage import IrcMessage
-from CustomExceptions import CommandException
+from CustomExceptions import CommandException, WebRequestException
 from util import IrcFormattingUtil, StringUtil
 
 class Command(CommandTemplate):
@@ -46,6 +46,8 @@ class Command(CommandTemplate):
 						self.logWarning("[url] '{}' took too long to respond, ignoring".format(url))
 					except requests.exceptions.ConnectionError as error:
 						self.logError("[url] A connection error occurred while trying to retrieve '{}': {}".format(url, error))
+					except WebRequestException as error:
+						self.logError(f"[UrlTitleFinder] A WebRequestException happened while resolving URL '{url}': {error}")
 					# Found a title, so we're done. It could be either a string or a StringWithSuffix, but the reply method can handle both
 					if title:
 						message.replyWithLengthLimit(title)
