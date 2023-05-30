@@ -219,6 +219,8 @@ class Command(CommandTemplate):
 				# No more tweets to parse!
 				break
 			# Check for errors
+			if req.status_code == 404:
+				raise WebRequestException("The provided tweet(s) couldn't be found, sorry")
 			if isinstance(apireply, dict) and 'errors' in apireply:
 				errorMessages = '; '.join(e['message'] for e in apireply['errors'])
 				self.logError("[TwitterWatcher] Error occurred while retrieving tweets for {}. Parameters: {}; apireply: {}; errors: {}".format(username, params, apireply, errorMessages))
