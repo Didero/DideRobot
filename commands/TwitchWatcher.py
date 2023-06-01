@@ -30,6 +30,7 @@ class Command(CommandTemplate):
 	lastLiveCheckTime = None
 
 	streamerWentLivePrefix = IrcFormattingUtil.makeTextBold("Live") + ": "
+	MAX_CHANNELS_TO_MENTION = 3  # The maximum number of channels to fully describe, use shorter descriptions if there are more
 
 	def onLoad(self):
 		if 'twitch' not in GlobalStore.commandhandler.apikeys:
@@ -298,7 +299,7 @@ class Command(CommandTemplate):
 			return ["Nobody's live, it seems. Time for videogames and/or random streams, I guess!"]
 		#One or more streamers are live, show info on each of them
 		reportStrings = []
-		shouldUseShortReportString = len(streamerDataById) >= 3
+		shouldUseShortReportString = len(streamerDataById) > self.MAX_CHANNELS_TO_MENTION
 		for streamerId, streamerdata in streamerDataById.items():
 			streamername = streamerIdsToCheck[streamerId]
 			displayname = streamername
@@ -416,7 +417,7 @@ class Command(CommandTemplate):
 
 				reportEntries = []
 				#If we have a lot of live streamers to report, keep it short. Otherwise, we can be a bit more verbose
-				useShortReportString = len(streamdatalist) >= 3
+				useShortReportString = len(streamdatalist) > self.MAX_CHANNELS_TO_MENTION
 				for streamdata in streamdatalist:
 					displayname = self.getStreamerNickname(streamdata['user_login'], serverChannelString)
 					url = "https://twitch.tv/" + streamdata['user_login']
