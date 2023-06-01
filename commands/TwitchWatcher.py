@@ -114,7 +114,14 @@ class Command(CommandTemplate):
 			else:
 				reply = self.removeStreamerNickname(serverChannelString, streamername)
 		elif parameter == "live":
-			reply = self.getCurrentlyLiveStreamers(serverChannelString)
+			replies = self.getCurrentlyLiveStreamers(serverChannelString)
+			if replies and isinstance(replies[0], StringWithSuffix):
+				# It's a list of StringWithSuffix's, they need sending separately
+				for reply in replies:
+					message.replyWithLengthLimit(reply)
+				return
+			else:
+				reply = Constants.GREY_SEPARATOR.join(replies)
 		elif parameter == "lookup":
 			reply = self.getStreamerInfo(streamername, True, serverChannelString)
 		else:
@@ -277,10 +284,10 @@ class Command(CommandTemplate):
 
 	def getCurrentlyLiveStreamers(self, serverChannelString):
 		"""
-		Get a string with all the currently live streamers that the provided channel follows.
+		Get a list of strings with all the currently live streamers that the provided channel follows.
 		If there's only a few streamers live, more expansive info is shown per streamer.
 		:param serverChannelString: The server name followed by the channel name, separated by a space
-		:return: A user-aimed message describing whether the action succeeded or not
+		:return: A list of strings or StringWithSuffix's describing the currently live streamers
 		"""
 		streamerIdsToCheck = {}
 		for streamername, streamerdata in self.watchedStreamersData.items():
@@ -288,21 +295,20 @@ class Command(CommandTemplate):
 				streamerIdsToCheck[streamerdata['clientId']] = streamername
 		streamerDataById = self.retrieveStreamDataForIds(streamerIdsToCheck)
 		if len(streamerDataById) == 0:
-			return "Nobody's live, it seems. Time for videogames and/or random streams, I guess!"
+			return ["Nobody's live, it seems. Time for videogames and/or random streams, I guess!"]
 		#One or more streamers are live, show info on each of them
 		reportStrings = []
-		shouldUseShortReportString = len(streamerDataById) >= 4  # Use shorter report strings if there's 4 or more people live
+		shouldUseShortReportString = len(streamerDataById) >= 3
 		for streamerId, streamerdata in streamerDataById.items():
 			streamername = streamerIdsToCheck[streamerId]
 			displayname = streamername
 			if self.doesStreamerHaveNickname(streamername, serverChannelString):
 				displayname = self.watchedStreamersData[streamername]['nicknames'][serverChannelString]
-			url = "https://twitch.tv/{}".format(streamername)
 			if shouldUseShortReportString:
-				reportStrings.append("{} ({})".format(displayname, url))
+				reportStrings.append("{} (https://twitch.tv/{})".format(displayname, streamername))
 			else:
-				reportStrings.append(StringUtil.removeNewlines("{}: {} [{}] ({})".format(IrcFormattingUtil.makeTextBold(displayname), streamerdata['title'], streamerdata['game_name'], url)))
-		return Constants.GREY_SEPARATOR.join(reportStrings)
+				reportStrings.append(self._formatLiveStreamerData(streamerdata, displayName=displayname))
+		return reportStrings
 
 	def getStreamerInfo(self, streamername, shouldIncludeViewerCount=True, shouldIncludeUptime=True, shouldIncludeUrl=True, serverChannelString=None):
 		"""
