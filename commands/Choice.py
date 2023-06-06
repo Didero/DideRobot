@@ -1,4 +1,5 @@
 import random
+from typing import Generator
 
 from commands.CommandTemplate import CommandTemplate
 
@@ -11,7 +12,7 @@ class Command(CommandTemplate):
 					   "Let's go with... {}. No wait! No, yeah, that one", "I don't know! *rolls dice* Seems you should go for {}",
 					   "Pick {0}, pick {0}!", "Eh, {} will do", "Why not {}?", "The first one! The last one! {}!", "Just pick {}"]
 
-	def pickRandomReply(self):
+	def _pickRandomReply(self) -> Generator[str, None, None]:
 		#Based on a suggestion by ekimekim
 		while True:
 			#Shuffle the list initially
@@ -19,6 +20,9 @@ class Command(CommandTemplate):
 			#Then just feed a reply every time one is requested. Once we run out, the list is reshuffled, ready to start again
 			for reply in self.possibleReplies:
 				yield reply
+
+	def onLoad(self):
+		self._replyGenerator = self._pickRandomReply()
 
 	def execute(self, message):
 		"""
@@ -44,5 +48,5 @@ class Command(CommandTemplate):
 				#Make a new random generator with the choices as seed, so every time you ask the bot to make a choice from the same list, it picks the same outcome
 				choice = random.Random("".join(sorted(choices)).lower()).choice(choices).strip()
 				#Pick a random reply sentence, and then add in the previously picked choice, enclosed in quotes
-				replytext = self.pickRandomReply().next().format('"' + choice + '"')
+				replytext = next(self._replyGenerator).format(f'"{choice}"')
 		message.bot.sendMessage(message.source, replytext)
