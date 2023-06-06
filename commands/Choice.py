@@ -42,7 +42,7 @@ class Command(CommandTemplate):
 				replytext = "Ooh, that's a tough one. I'd go with the first option, seeing as there is only one"
 			else:
 				#Make a new random generator with the choices as seed, so every time you ask the bot to make a choice from the same list, it picks the same outcome
-				choice = random.Random(tuple(sorted(choices))).choice(choices).strip()
+				choice = random.Random("".join(sorted(choices)).lower()).choice(choices).strip()
 				#Pick a random reply sentence, and then add in the previously picked choice, enclosed in quotes
 				replytext = self.pickRandomReply().next().format('"' + choice + '"')
 		message.bot.sendMessage(message.source, replytext)
