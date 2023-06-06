@@ -35,7 +35,7 @@ class Command(CommandTemplate):
 			else:
 				choices = message.messageParts
 			#Remove all the empty choices from the list
-			choices = filter(bool, choices)
+			choices = list(filter(bool, choices))
 			if len(choices) == 0:
 				replytext = "That's just an empty list of choices... I'll pick nothing then"
 			elif len(choices) == 1:
