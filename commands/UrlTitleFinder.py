@@ -146,7 +146,7 @@ class Command(CommandTemplate):
 			titleParts.append("{:,} image{}".format(imgdata['images_count'], 's' if imgdata['images_count'] > 1 else ''))
 		else:
 			titleParts.append("{:,} x {:,}".format(imgdata['width'], imgdata['height']))
-			titleParts.append("{:,.0f} kb".format(imgdata['size'] / 1024.0))
+			titleParts.append("{:,.0f} kB".format(imgdata['size'] / 1024.0))
 		titleParts.append("{:,} views".format(imgdata['views']))
 		if 'animated' in imgdata and imgdata['animated'] is True:
 			titleParts.append("Animated")
