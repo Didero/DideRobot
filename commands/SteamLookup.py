@@ -1,3 +1,5 @@
+import html
+
 import requests
 
 import Constants, GlobalStore
@@ -105,7 +107,7 @@ class Command(CommandTemplate):
 			replyParts.append(", ".join(genres))
 		if 'fullgame' in appData:
 			replyParts.append("DLC for {}".format(appData['fullgame']['name']))
-		replyParts.append(appData['short_description'])
+		replyParts.append(html.unescape(appData['short_description']))
 
 		replySuffixes = None
 		if includeUrl:
