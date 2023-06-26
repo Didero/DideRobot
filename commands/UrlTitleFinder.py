@@ -64,7 +64,8 @@ class Command(CommandTemplate):
 		# We need to add a User-Agent, otherwise the request gets discarded by some sites
 		try:
 			headersResponse = requests.head(url, headers={'User-Agent': 'DideRobot'}, allow_redirects=True, timeout=Command.lookupTimeoutSeconds)
-			if headersResponse.status_code != 200:
+			# Some sites return a 405 or similar error code while still filling in the header, so ignore known 'lying' status codes
+			if headersResponse.status_code != 200 and headersResponse.status_code != 405:
 				return None
 			if 'Content-Type' in headersResponse.headers and not headersResponse.headers['Content-Type'].startswith('text'):
 				return None
