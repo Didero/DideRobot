@@ -7,6 +7,7 @@ from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
 import Constants
 from util import StringUtil
+from StringWithSuffix import StringWithSuffix
 
 
 class Command(CommandTemplate):
@@ -79,7 +80,6 @@ class Command(CommandTemplate):
 		if not 'extract' in articleData:
 			raise CommandException("For some reason {}'s API didn't actually return any article text... Tell my owner(s), maybe they can do something about this?".format(wikiDisplayName))
 		articleText = articleData["extract"]
-		articleUrl = articleData["canonicalurl"]
 		# If we got more text than just from the first section, it's got newlines and a header indicator (multiple '='s in MediaWiki formatting). Only get the first section
 		if '\n=' in articleText:
 			articleText = re.split('\n+=+', articleText, maxsplit=1)[0]
@@ -88,4 +88,4 @@ class Command(CommandTemplate):
 			articleText = articleText.rsplit('\t', 1)[1].strip()
 		# Replace any remaining newlines with spaces
 		articleText = StringUtil.removeNewlines(articleText)
-		message.replyWithLengthLimit(articleText, (Constants.GREY_SEPARATOR, articleUrl))
+		message.replyWithLengthLimit(StringWithSuffix(articleText, Constants.GREY_SEPARATOR + articleData["canonicalurl"]))
