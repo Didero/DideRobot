@@ -1,6 +1,6 @@
 import subprocess, sys
 
-import Constants
+import Constants, PermissionLevel
 from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 
@@ -8,7 +8,7 @@ from IrcMessage import IrcMessage
 class Command(CommandTemplate):
 	triggers = ['update', 'updatelibraries']
 	helptext = "Gets the latest files from the GitHub repository, if there are any. Use '{commandPrefix}updatelibraries' to update the libraries I need to run"
-	adminOnly = True
+	minPermissionLevel = PermissionLevel.BOT
 
 	lastCommitHash = ""
 	MAX_UPDATES_TO_DISPLAY = 5

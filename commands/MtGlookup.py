@@ -10,6 +10,7 @@ import gevent
 from commands.CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
+import PermissionLevel
 from util import IrcFormattingUtil
 from util import FileUtil
 from util import StringUtil
@@ -68,8 +69,8 @@ class Command(CommandTemplate):
 
 		#Check for update command before file existence, to prevent message that card file is missing after update, which doesn't make much sense
 		if searchType == 'update' or searchType == 'forceupdate':
-			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-				replytext = "Sorry, only admins can use my update function"
+			if not message.doesSenderHavePermission(PermissionLevel.BOT):
+				replytext = "Sorry, only my bot admins can use my update function"
 			elif not searchType == 'forceupdate' and not self.shouldUpdate():
 				replytext = "I've already got all the latest card data, no update is needed"
 			else:

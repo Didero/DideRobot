@@ -5,6 +5,7 @@ from IrcMessage import IrcMessage
 import GlobalStore
 from CustomExceptions import CommandInputException, WebRequestException
 from util import IrcFormattingUtil, WebUtil
+import PermissionLevel
 
 
 class Command(CommandTemplate):
@@ -124,8 +125,6 @@ class Command(CommandTemplate):
 				return message.reply(replytext.lstrip())
 
 			elif subcommand == 'create':
-				if not message.isSenderAdmin():
-					raise CommandInputException("Only my admins are allowed to create lists, sorry. Ask one of them to create this list for you!")
 				if message.messagePartsLength == 1:
 					raise CommandInputException("You'll need to add at least a name of the list to create, read the 'create' subcommand help for other options")
 				createParams = message.messageParts[1:]
@@ -145,6 +144,8 @@ class Command(CommandTemplate):
 					createParam = createParams.pop(0).lower()
 				if isChannelList and message.isPrivateMessage:
 					raise CommandInputException("Creating a channel list doesn't work in private messages, either create a server list or create this list in a channel")
+				if not message.doesSenderHavePermission(PermissionLevel.CHANNEL if isChannelList else PermissionLevel.SERVER):
+					raise CommandInputException("Sorry, only {0} admins are allowed to create {0} lists".format("channel" if isChannelList else "server"))
 
 				listname = self.normalizeListname(createParam)
 				listDescription = ' '.join(createParams) if createParams else None
@@ -176,13 +177,13 @@ class Command(CommandTemplate):
 			if not self.doTablesExist(cursor):
 				return message.reply("Hmm, I don't seem to have any lists stored yet, so I can't execute that subcommand. Sorry!")
 			listname = self.normalizeListname(message.messageParts[1])
-			listId, isListAdminOnly = self.getBasicListData(cursor, listname, servername, channelname)
+			listId, isListAdminOnly, isChannelSpecificList = self.getBasicListData(cursor, listname, servername, channelname)
 			if not listId:
 				raise CommandInputException("I couldn't find a list called '{}'. Maybe you made a typo? See the available lists with the 'list' subcommand".format(listname))
 
 			if subcommand == 'destroy':
-				if not message.isSenderAdmin():
-					raise CommandInputException("Sorry, only my admins are allowed to destroy lists")
+				if not message.doesSenderHavePermission(PermissionLevel.CHANNEL if isChannelSpecificList else PermissionLevel.SERVER):
+					raise CommandInputException("Sorry, only my {0} admins are allowed to destroy {0} lists".format("channel" if isChannelSpecificList else "server"))
 				entryCount = cursor.execute("SELECT COUNT(*) FROM list_entries WHERE list_id=?", (listId,)).fetchone()[0]
 				# Delete all the list entries
 				if entryCount > 0:
@@ -217,8 +218,9 @@ class Command(CommandTemplate):
 			elif subcommand == 'add':
 				if message.messagePartsLength < 3:
 					raise CommandInputException("Please provide some text to add to the '{}' list. I''m not good at making stuff up myself".format(listname))
-				if isListAdminOnly and not message.isSenderAdmin():
-					raise CommandInputException("Sorry, only my admins are allowed to add entries to the '{}' list. Ask one of them to add your idea!".format(listname))
+				if isListAdminOnly and not message.doesSenderHavePermission(PermissionLevel.CHANNEL if isChannelSpecificList else PermissionLevel.SERVER):
+					raise CommandInputException("Sorry, only my  {listtype} admins are allowed to add entries to the '{listname}' {listtype} list. Ask one of them to add your idea!"
+												.format(listtype="channel" if isChannelSpecificList else "server", listname=listname))
 				maxIdResult = cursor.execute("SELECT max(id) FROM list_entries WHERE list_id=?", (listId,)).fetchone()
 				entryId = maxIdResult[0] + 1 if maxIdResult[0] else 1
 				entryText = " ".join(message.messageParts[2:])
@@ -237,8 +239,8 @@ class Command(CommandTemplate):
 					raise CommandInputException("The provided entry id '{}' couldn't be parsed as a number. Please check that you entered it correctly".format(message.messageParts[2]))
 				entry = self.getEntryById(cursor, listname, listId, entryId)
 				if subcommand == 'remove':
-					if isListAdminOnly and not message.isSenderAdmin():
-						raise CommandInputException("Sorry, only my admins are allowed to remove entries from the '{}' list".format(listname))
+					if isListAdminOnly and not message.doesSenderHavePermission(PermissionLevel.CHANNEL if isChannelSpecificList else PermissionLevel.SERVER):
+						raise CommandInputException("Sorry, only my {listtype} admins are allowed to remove entries from the '{listname}' {listtype} list".format(listtype="channel" if isChannelSpecificList else "server", listname=listname))
 					cursor.execute("DELETE FROM list_entries WHERE list_id=? AND id=?", (listId, entryId))
 					connection.commit()
 					return message.reply("Successfully deleted {} from the '{}' list".format(self.formatEntry(entry, True), listname))
@@ -292,8 +294,8 @@ class Command(CommandTemplate):
 				return message.reply(replytext)
 
 			elif subcommand == 'rename':
-				if not message.isSenderAdmin():
-					raise CommandInputException("Sorry, only my admins can rename lists")
+				if not message.doesSenderHavePermission(PermissionLevel.CHANNEL if isChannelSpecificList else PermissionLevel.SERVER):
+					raise CommandInputException("Sorry, only my admins can rename {} lists".format("channel" if isChannelSpecificList else "server"))
 				if message.messagePartsLength < 3:
 					raise CommandInputException("Please add a new list name too, because I'm not good at thinking up names")
 				newListname = self.normalizeListname(message.messageParts[2])
@@ -306,8 +308,8 @@ class Command(CommandTemplate):
 				return message.reply("Successfully renamed the '{}' list to '{}'. Don't forget to tell people about the rename though, they might think it got deleted".format(listname, newListname))
 
 			elif subcommand == 'edit':
-				if isListAdminOnly and not message.isSenderAdmin():
-					raise CommandInputException("Sorry, only my admins can edit entries in this list")
+				if isListAdminOnly and not message.doesSenderHavePermission(PermissionLevel.CHANNEL if isChannelSpecificList else PermissionLevel.SERVER):
+					raise CommandInputException("Sorry, only my {0} admins can edit entries in this {0} list".format("channel" if isChannelSpecificList else "server"))
 				if message.messagePartsLength < 3:
 					raise CommandInputException("Please add the id of the entry to edit and the new text for that entry. Nobody wants me to replace a random entry with gibberish")
 				if message.messagePartsLength < 4:
@@ -323,8 +325,8 @@ class Command(CommandTemplate):
 				return message.reply("Successfully updated entry {} in list {} from '{}' to '{}'".format(entryId, listname, self.formatEntry(oldEntry, False), newEntryText))
 
 			elif subcommand == 'setdescription' or subcommand == 'cleardescription':
-				if not message.isSenderAdmin():
-					raise CommandInputException("Sorry, only my admins are allowed to change a list's description")
+				if not message.doesSenderHavePermission(PermissionLevel.CHANNEL if isChannelSpecificList else PermissionLevel.SERVER):
+					raise CommandInputException("Sorry, only my {0} admins are allowed to change a {0} list's description".format("channel" if isChannelSpecificList else "server"))
 				description = None
 				if subcommand == 'setdescription':
 					if message.messagePartsLength < 3:
@@ -335,8 +337,8 @@ class Command(CommandTemplate):
 				return message.reply("Successfully {} the description for the '{}' list".format('cleared' if subcommand == 'cleardescription' else 'updated', listname))
 
 			elif subcommand == 'setadmin':
-				if not message.isSenderAdmin():
-					raise CommandInputException("Sorry, only my admins can toggle the admin-only state of lists. Makes sense too, otherwise the feature would be pretty useless!")
+				if not message.doesSenderHavePermission(PermissionLevel.CHANNEL if isChannelSpecificList else PermissionLevel.SERVER):
+					raise CommandInputException("Sorry, only my {0} admins can toggle the admin-only state of {0} lists. Makes sense too, otherwise the feature would be pretty useless!".format("channel" if isChannelSpecificList else "server"))
 				if message.messagePartsLength < 3:
 					raise CommandInputException("Please add whether you want to make the provided list admin-only or not")
 				shouldBeAdminOnly = message.messageParts[2].lower()
@@ -367,23 +369,27 @@ class Command(CommandTemplate):
 		:param cursor: The cursor to use for the data retrieval
 		:param listname: The name of the list to retrieve the info for
 		:param servername: The servername to retrieve the list for
-		:param channelname: The (optional) channelname to retrieve the list for. If there's a serverwide list named 'listname', that will get retrieved, otherwise a channel-specific list will
-		:return: A tuple with the first entry the list id or None if no list for the parameters could be found, and the second entry says whether the list is admin-only (can be either None, True, or False)
+		:param channelname: The (optional) channelname to retrieve the list for. If there's a channel-specific list named 'listname', that will get retrieved, otherwise a serverwide list will
+		:return: A tuple with the first entry the list id or None if no list for the parameters could be found, the second entry says whether the list is admin-only, and the third entry whether it's a channel-specific list (values can be either None, True, or False)
 		"""
 		# First check if there's a channel list, so we don't accidentally return the serverlist if there's one with the same name
 		result = None
+		isChannelSpecificList = None
 		if channelname:
 			cursor.execute("SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel=?", (listname, servername, channelname))
 			result = cursor.fetchone()
+			if result:
+				isChannelSpecificList = True
 		# If no channellist was found, or no channelname was provided, try to find a serverlist
 		if result is None:
 			# Check if there's a server list
 			result = cursor.execute("SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel IS NULL", (listname, servername)).fetchone()
 			if result is None:
-				return None, None
+				return None, None, None
+			isChannelSpecificList = False
 		# SQLite doesn't support booleans, so 'true' is 1 and 'false' is 0. Turn it into a boolean so it's easier and more intuitive to use
 		isAdminOnly = True if result[1] else False
-		return result[0], isAdminOnly
+		return result[0], isAdminOnly, isChannelSpecificList
 
 	def normalizeSearchQuery(self, inputSearchQuery):
 		if not inputSearchQuery:

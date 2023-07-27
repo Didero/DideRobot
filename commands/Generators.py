@@ -5,7 +5,7 @@ from IrcMessage import IrcMessage
 from util import FileUtil
 from util import IrcFormattingUtil
 from util import StringUtil
-import Constants, GlobalStore
+import Constants, GlobalStore, PermissionLevel
 from CustomExceptions import CommandException
 
 
@@ -101,8 +101,8 @@ class Command(CommandTemplate):
 			return message.reply(self.getHelp(message))
 
 		if message.messageParts[0].lower() == 'reload':
-			if 	not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-				return message.reply("I'm sorry, only admins are allowed to make me reload my generators. Try asking one if my admins. Sorry!")
+			if not message.doesSenderHavePermission(PermissionLevel.BOT):
+				return message.reply("I'm sorry, only bot admins are allowed to make me reload my generators. Try asking one if them. Sorry!")
 			Command.loadGenerators()
 			return message.reply("Ok, I reloaded all the generators from disk. I now have these {:,} generators loaded: {}".format(len(Command.generators), ", ".join(Command.getAvailableTriggers())))
 

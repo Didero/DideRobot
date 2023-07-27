@@ -14,7 +14,7 @@ class CommandTemplate(object):
 	helptext = "This help text has not yet been filled in. Oops"  #This text will get shown when users call '!help [trigger]', and should explain how the command works. Use '{commandPrefix}' in the help text to have the current command prefix filled in
 	allowedMessageTypes = [MessageTypes.SAY]  #The message type(s) this command should react to. See the 'MessageTypeEnum' class for the available message types
 
-	adminOnly = False  #If this is set to True, only users in the admin list for this server can call this command
+	minPermissionLevel = None  # If kept on None, every user is allowed to call this command. If it's set to a PermissionLevel (see the PermissionLevel class), then only users with at least that permission level are allowed to use this command
 	callInThread = False  #If you think your command will be slow, set this to True to make it run in a separate 'thread', meaning the bot won't be blocked while the command is running
 	showInCommandList = True  #If this is set to False, this command won't be shown in the '!help' list of all commands
 	stopAfterThisCommand = False  #Some commands might affect the list of loaded commands, which leads to errors if all commands get called. If this is set to True and the command executes, no further commands are asked if they should execute
@@ -77,8 +77,8 @@ class CommandTemplate(object):
 		else:
 			replytext = "(no command trigger)"
 		#Some commands can only be used by people in the admins list. Inform users of that
-		if self.adminOnly:
-			replytext += " [admin-only]"
+		if self.minPermissionLevel:
+			replytext += f" [{self.minPermissionLevel} only]"
 		replytext += ": " + self.helptext
 		# Since some modules have '{commandPrefix}' in their helptext, turn that into the actual command prefix
 		replytext = replytext.format(commandPrefix=message.bot.commandPrefix)

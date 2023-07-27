@@ -1,12 +1,12 @@
 from commands.CommandTemplate import CommandTemplate
-import GlobalStore
+import GlobalStore, PermissionLevel
 from IrcMessage import IrcMessage
 
 
 class Command(CommandTemplate):
 	triggers = ['quit', 'shutdown']
 	helptext = "Shuts down the bot. {commandPrefix}quit closes down just this bot, {commandPrefix}shutdown shuts down all instances of DideRobot on all servers it's connected to"
-	adminOnly = True
+	minPermissionLevel = PermissionLevel.SERVER  # There's an extra bot-level permission check on the 'shutdown' subcommand handling
 	stopAfterThisCommand = True  #Since 'shutdown' unloads all the modules, prevent iteration errors
 	
 	def execute(self, message):
@@ -30,6 +30,8 @@ class Command(CommandTemplate):
 			GlobalStore.bothandler.stopBot(message.bot.serverfolder, quitmessage)
 
 		elif message.trigger == 'shutdown':
+			if not message.doesSenderHavePermission(PermissionLevel.BOT):
+				return message.reply("Only bot admins can shut me down entirely")
 			#SHUT DOWN EVERYTHING
 			quitmessage = "Total shutdown initiated. Bye..."
 			if message.messagePartsLength > 0:

@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from commands.CommandTemplate import CommandTemplate
 import Constants
 import GlobalStore
+import PermissionLevel
 from util import DateTimeUtil, IrcFormattingUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
@@ -69,7 +70,7 @@ class Command(CommandTemplate):
 			return
 		# 'update' forces an update check, but it's only available to admins. Also doesn't need a username
 		if parameter == 'update':
-			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
+			if not message.doesSenderHavePermission(PermissionLevel.BOT):
 				reply = "Only my admin(s) can force an update, sorry!"
 			elif self.scheduledFunctionIsExecuting:
 				reply = "I was updating already! Lucky you, now it'll be done quicker"
@@ -100,6 +101,8 @@ class Command(CommandTemplate):
 		if parameter == 'add':
 			if isUserBeingWatchedHere:
 				reply = "I'm already keeping a close eye on {}. On their messages, I mean".format(providedName)
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				raise CommandInputException("I'm sorry, only my channel admins are allowed to make me watch people's Mastodon messages")
 			else:
 				if storedUsername in self.watchData:
 					# Existing account, all we need to do is add this channel to the target list
@@ -126,6 +129,8 @@ class Command(CommandTemplate):
 		elif parameter == 'remove':
 			if not isUserBeingWatchedHere:
 				reply = "I already wasn't watching {}! That was easy".format(providedName)
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				raise CommandInputException("Sorry, only my channel admins are allowed to make me stop watching people's Mastodon messages")
 			else:
 				self.watchData[storedUsername]['targets'].remove(serverChannelPair)
 				# If this channel was the only place we were reporting this user's messages to, remove it all together
@@ -160,6 +165,8 @@ class Command(CommandTemplate):
 			# Allow users to set a display name
 			if not isUserBeingWatchedHere:
 				reply = "I'm not watching {}, so I can't change the display name. Add them with the 'add' parameter first".format(providedName)
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				raise CommandInputException("Only my channel admins are allowed to set a display name, sorry")
 			elif message.messagePartsLength < 2:
 				reply = "Please add a display name for '{}' too. You don't want me thinking up nicknames for people".format(providedName)
 			else:
@@ -169,6 +176,8 @@ class Command(CommandTemplate):
 		elif parameter == 'removename':
 			if not isUserBeingWatchedHere:
 				reply = "I wasn't calling {} anything special anyway, since I'm not watching them".format(providedName)
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				raise CommandInputException("Only my channel admins are allowed to remove a display name, sorry")
 			elif 'displayname' not in self.watchData[storedUsername]:
 				reply = "I didn't have a display name listed for {} anyway, so I guess I did what you asked?".format(providedName)
 			else:

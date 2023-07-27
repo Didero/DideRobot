@@ -1,4 +1,4 @@
-import Constants
+import Constants, PermissionLevel
 from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 
@@ -21,8 +21,8 @@ class Command(CommandTemplate):
 
 			if channel in message.bot.channelsUserList or '#' + channelWithoutPrefix in message.bot.channelsUserList:
 				replytext = "I'm already there, waiting for you. You're welcome!"
-			elif channelWithoutPrefix not in message.bot.settings['allowedChannels'] and not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-				replytext = "I'm sorry, I'm not allowed to go there. Please ask my admin(s) for permission"
+			elif channelWithoutPrefix not in message.bot.settings['allowedChannels'] and not message.doesSenderHavePermission(PermissionLevel.SERVER):
+				replytext = "I'm sorry, I'm not allowed to go there. Please ask my server admin(s) for permission"
 			else:
 				replytext = "All right, I'll go to '{}'. See you there!".format(channel)
 				message.bot.joinChannel(channel)

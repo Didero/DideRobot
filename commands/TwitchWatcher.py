@@ -2,7 +2,7 @@ import datetime, json, os, time
 
 import requests
 
-import Constants, GlobalStore
+import Constants, GlobalStore, PermissionLevel
 from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from commands.CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException
@@ -90,28 +90,38 @@ class Command(CommandTemplate):
 		elif parameter == "add" or parameter == "follow":
 			if message.messagePartsLength < 2:
 				reply = "Watch which streamer? There's at least 26 streamers on Twitch so you're going to have to be more specific"
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				reply = "Only channel admins can let me report on specific Twitch streams going live, sorry. Ask them if they like the same Twitch channel, maybe they'll add it!"
 			else:
 				shouldAutoReport = message.messagePartsLength <= 2 or message.messageParts[2].lower() != 'silent'
 				reply = self.startFollowingStreamer(serverChannelString, streamername, shouldAutoReport)
 		elif parameter == "remove":
 			if message.messagePartsLength < 2:
 				reply = "I'm not going to remove all the streamers I watch! Please be more specific"
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				reply = "Sorry, only channel admins canremove streams from my watch list. Ask them if they agree to remove it"
 			else:
 				reply = self.stopFollowingStreamer(serverChannelString, streamername)
 		elif parameter == "toggle" or parameter == "autoreport":
 			#Toggle auto-reporting
 			if message.messagePartsLength < 2:
 				reply = "I can't toggle autoreporting for everybody, that'd get confusing! Please provide a streamer name too"
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				reply = "Sorry, only channel admins are allowed to toggle whether I auto-report when a stream goes live. Ask them to toggle it for you"
 			else:
 				reply = self.toggleStreamerAutoreport(serverChannelString, streamername)
 		elif parameter == "setnick":
 			if message.messagePartsLength < 3:
 				reply = "I'm not going to make up a nick! Please add a nickname too"
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				reply = "Only channel admins can set a nickname for a stream, sorry"
 			else:
 				reply = self.setStreamerNickname(serverChannelString, streamername, message.messageParts[2])
 		elif parameter == "removenick":
 			if message.messagePartsLength < 2:
 				reply = "I'm not going to delete everybody's nickname! Add the name of the streamer whose nick you want removed"
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				reply = "Only channel admins can remove a nickname for a stream, sorry"
 			else:
 				reply = self.removeStreamerNickname(serverChannelString, streamername)
 		elif parameter == "live":

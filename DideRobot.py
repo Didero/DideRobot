@@ -10,6 +10,7 @@ from BotSettingsManager import BotSettingsManager
 from IrcMessage import IrcMessage
 from MessageLogger import MessageLogger
 import MessageTypes
+import PermissionLevel
 from util import StringUtil
 
 
@@ -590,13 +591,33 @@ class DideRobot(object):
 
 	#USER LIST CHECKING FUNCTIONS
 	def isUserAdmin(self, user, userNick=None, userAddress=None):
-		return self.isUserInList(self.settings['admins'], user, userNick, userAddress)
+		return self._isUserInList(self.settings['admins'], user, userNick, userAddress)
 
 	def shouldUserBeIgnored(self, user, userNick=None, userAddress=None):
-		return self.isUserInList(self.settings['userIgnoreList'], user, userNick, userAddress)
+		return self._isUserInList(self.settings['userIgnoreList'], user, userNick, userAddress)
+
+	def doesUserHavePermission(self, permissionLevel: PermissionLevel.PermissionLevel, user: str, userNick: str, userAddress: str, channel: str = None) -> bool:
+		if permissionLevel <= PermissionLevel.BASIC:
+			return True
+		if permissionLevel <= PermissionLevel.BOT and self._isUserInList(self.settings['admins'], user, userNick, userAddress):
+			return True
+		elif permissionLevel <= PermissionLevel.SERVER and self._isUserInList(self.settings.get('serverAdmins', []), user, userNick, userAddress):
+			return True
+		elif permissionLevel <= PermissionLevel.CHANNEL and self._isUserInList(self.settings.get('channelAdmins', [], channel), user, userNick, userAddress):
+			return True
+		return False
+
+	def getUserPermissionLevel(self, user: str, userNick: str, userAddress: str, channel: str = None):
+		if self._isUserInList(self.settings['admins'], user, userNick, userAddress):
+			return PermissionLevel.BOT
+		elif self._isUserInList(self.settings.get('serverAdmins', []), user, userNick, userAddress):
+			return PermissionLevel.SERVER
+		elif self._isUserInList(self.settings.get('channelAdmins', [], channel), user, userNick, userAddress):
+			return PermissionLevel.CHANNEL
+		return PermissionLevel.BASIC
 
 	@staticmethod
-	def isUserInList(userlist, user, userNick=None, userAddress=None):
+	def _isUserInList(userlist, user, userNick=None, userAddress=None) -> bool:
 		if user is None:
 			return False
 		if user in userlist or user.lower() in userlist:

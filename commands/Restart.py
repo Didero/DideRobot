@@ -3,7 +3,7 @@ import os, sys
 import gevent
 
 from commands.CommandTemplate import CommandTemplate
-import GlobalStore
+import GlobalStore, PermissionLevel
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandInputException
 
@@ -11,7 +11,7 @@ from CustomExceptions import CommandInputException
 class Command(CommandTemplate):
 	triggers = ['restart', 'restartother', 'restartfull']
 	helptext = "Restarts the bot instance or the whole program"
-	adminOnly = True
+	minPermissionLevel = PermissionLevel.BOT
 	stopAfterThisCommand = True
 
 	def execute(self, message):

@@ -4,6 +4,7 @@ import requests
 
 import Constants
 import GlobalStore
+import PermissionLevel
 from util import DateTimeUtil, DictUtil, IrcFormattingUtil, StringUtil
 from commands.CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException, CommandInputException
@@ -140,6 +141,8 @@ class Command(CommandTemplate):
 		else:
 			channelName = " ".join(message.messageParts[1:])
 			if subcommand == 'add':
+				if not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+					raise CommandInputException("Only my channel admins are allowed to make me keep my eye on Youtube channels and playlists, sorry. Ask them if they think your watch idea is suitable for me!")
 				#Check if the parameter is a URL to a playlist
 				playlistUrlMatch = self.playlistUrlMatcher.match(channelName)
 				if playlistUrlMatch:
@@ -149,6 +152,8 @@ class Command(CommandTemplate):
 					#Add Uploads playlist of the provided channel name
 					replytext = self.addWatchedChannel(serverChannelString, channelName)
 			elif subcommand == 'remove':
+				if not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+					raise CommandInputException("Sorry, only my channel admins are allowed to make me stop watching Youtube stuff. Maybe let them know you don't care about this channel or playlist being watched")
 				if self.scheduledFunctionIsExecuting:
 					replytext = "Sorry, I'm currently checking for new videos, so we best not change the watch list. Try again in a minute or so"
 				else:
@@ -160,8 +165,8 @@ class Command(CommandTemplate):
 			elif subcommand == 'forcecheck':
 				if self.scheduledFunctionIsExecuting:
 					replytext = "I'm already checking at the moment! You're welcome"
-				elif not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-					replytext = "I'm sorry, only my admins can force a manual check for new videos"
+				elif not message.doesSenderHavePermission(PermissionLevel.BOT):
+					replytext = "I'm sorry, only my bot admins can force a manual check for new videos"
 				else:
 					#Reset the scheduled timer first
 					self.resetScheduledFunctionGreenlet()

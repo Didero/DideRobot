@@ -15,9 +15,9 @@ class Command(CommandTemplate):
 		#First get all the existing triggers, since we either need to list them or check if the provided one exists
 		triggerlist = {}
 		shortTriggerlist = {}
-		isUserAdmin = message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress)
+		userPermissionLevel = message.bot.getUserPermissionLevel(message.user, message.userNickname, message.userAddress, message.source)
 		for commandname, command in GlobalStore.commandhandler.commands.items():
-			if command.showInCommandList and (isUserAdmin or not command.adminOnly) and len(command.triggers) > 0 and GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, commandname):
+			if command.showInCommandList and (not command.minPermissionLevel or userPermissionLevel >= command.minPermissionLevel) and len(command.triggers) > 0 and GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, commandname):
 				shortTriggerlist[command.triggers[0]] = command
 				for trigger in command.triggers:
 					triggerlist[trigger] = command

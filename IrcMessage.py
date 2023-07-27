@@ -3,6 +3,7 @@ import time
 import Constants
 import MessageTypes
 from StringWithSuffix import StringWithSuffix
+from PermissionLevel import PermissionLevel
 
 
 class IrcMessage(object):
@@ -99,8 +100,10 @@ class IrcMessage(object):
 			suffix = None
 		self.bot.sendLengthLimitedMessage(self.source, mainReply, suffix, messagetype)
 
-	def isSenderAdmin(self):
+	def doesSenderHavePermission(self, permissionLevel: PermissionLevel) -> bool:
 		"""
-		:return: True if the person that sent this message is a bot admin, False otherwise
+		Checks whether the user that sent this message has at least the provided permission level
+		:param permissionLevel: The minimum permission level the user that sent this message should have
+		:return: True if the user that sent this message has the provided permission level or a higher one, False otherwise
 		"""
-		return self.bot.isUserAdmin(self.user, self.userNickname, self.userAddress)
+		return self.bot.doesUserHavePermission(permissionLevel, self.user, self.userNickname, self.userAddress, self.source)

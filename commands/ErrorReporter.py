@@ -1,6 +1,6 @@
 import codecs, os
 
-import GlobalStore
+import GlobalStore, PermissionLevel
 from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 
@@ -8,14 +8,13 @@ from IrcMessage import IrcMessage
 class Command(CommandTemplate):
 	triggers = ['errorreport', 'warningreport']
 	helptext = "Looks through the bot's logs and reports any errors or warnings (depending on the trigger) it finds. Admin-only, and only works in private messages to prevent spam"
+	minPermissionLevel = PermissionLevel.BOT
 
 	def execute(self, message):
 		"""
 		:type message: IrcMessage
 		"""
 
-		if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-			return message.reply("Sorry, this command is admin-only")
 		if not message.isPrivateMessage:
 			return message.reply("Sorry, this command only works in private messages, to prevent spam and possibly showing private information")
 

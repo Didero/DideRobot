@@ -1,12 +1,12 @@
 from commands.CommandTemplate import CommandTemplate
-import GlobalStore
+import GlobalStore, PermissionLevel
 from IrcMessage import IrcMessage
 
 
 class Command(CommandTemplate):
 	triggers = ['joinserver']
 	helptext = "Makes me join a server, if it's preconfigured."
-	adminOnly = True
+	minPermissionLevel = PermissionLevel.BOT
 
 	def execute(self, message):
 		"""

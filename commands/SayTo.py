@@ -1,4 +1,4 @@
-import Constants
+import Constants, PermissionLevel
 from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 import MessageTypes
@@ -8,7 +8,7 @@ class Command(CommandTemplate):
 	triggers = ['sayto', 'doto', 'noticeto', 'saydef', 'dodef', 'noticedef']
 	helptext = "Makes the bot say the provided text in the provided channel  (format 'sayto [channel/user] [text]'). " \
 			   "Set a default with 'sayto setdefault [default]', and use 'saydef [text]' to use that default to save on typing"
-	adminOnly = True
+	minPermissionLevel = PermissionLevel.SERVER
 	showInCommandList = False
 
 	defaultTargets = {}

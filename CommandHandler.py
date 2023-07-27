@@ -121,8 +121,8 @@ class CommandHandler:
 				continue
 
 			if command.shouldExecute(message):
-				if command.adminOnly and not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-					message.reply("Sorry, this command is admin-only")
+				if command.minPermissionLevel and not message.doesSenderHavePermission(command.minPermissionLevel):
+					message.reply("Sorry, this command can only be used by {}s".format(command.minPermissionLevel))
 				else:
 					if command.callInThread:
 						gevent.spawn(self.executeCommand, commandname, message)

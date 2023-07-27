@@ -3,10 +3,10 @@ import base64, datetime, html, json, os
 import requests
 
 from commands.CommandTemplate import CommandTemplate
-import Constants, GlobalStore
+import Constants, GlobalStore, PermissionLevel
 from util import DateTimeUtil, IrcFormattingUtil, StringUtil
 from IrcMessage import IrcMessage
-from CustomExceptions import WebRequestException
+from CustomExceptions import CommandInputException, WebRequestException
 from StringWithSuffix import StringWithSuffix
 
 
@@ -70,8 +70,8 @@ class Command(CommandTemplate):
 			return
 		#'update' forces an update check, but it's only available to admins. Also doesn't need a username
 		if parameter == 'update':
-			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-				reply = "Only my admin(s) can force an update, sorry!"
+			if not message.doesSenderHavePermission(PermissionLevel.BOT):
+				reply = "Only my bot admin(s) can force an update, sorry!"
 			elif self.scheduledFunctionIsExecuting:
 				reply = "I was updating already! Lucky you, now it'll be done quicker"
 			else:
@@ -93,6 +93,8 @@ class Command(CommandTemplate):
 		if parameter == 'add':
 			if isUserBeingWatchedHere:
 				reply = "I'm already keeping a close eye on {}. On their tweets, I mean".format(self.getDisplayName(accountNameLowered, accountName))
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				raise CommandInputException("Sorry, only my channel admins are allowed to add people to my watch list")
 			else:
 				#New account
 				if accountNameLowered not in self.watchData:
@@ -112,6 +114,8 @@ class Command(CommandTemplate):
 		elif parameter == 'remove':
 			if not isUserBeingWatchedHere:
 				reply = "I already wasn't watching {}! Not even secretly".format(accountName)
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				raise CommandInputException("Only my channel admins are allowed to remove people from my watch list, sorry")
 			else:
 				self.watchData[accountNameLowered]['targets'].remove(serverChannelPair)
 				#If this channel was the only place we were reporting this user's tweets to, remove it all together
@@ -135,6 +139,8 @@ class Command(CommandTemplate):
 			#Allow users to set a display name
 			if not isUserBeingWatchedHere:
 				reply = "I'm not watching {}, so I can't change the display name. Add them with the 'add' parameter first".format(accountName)
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				raise CommandInputException("Sorry, only my channel admins are allowed to set nicknames for the people on my watch list")
 			elif message.messagePartsLength < 2:
 				reply = "Please add a display name for '{}' too. You don't want me thinking up nicknames for people".format(accountName)
 			else:
@@ -146,6 +152,8 @@ class Command(CommandTemplate):
 				reply = "I wasn't calling them anything anyway, since I'm not following {}".format(accountName)
 			elif 'displayname' not in self.watchData[accountNameLowered]:
 				reply = "I didn't have a nickname listed for {} anyway, so I guess I did what you asked?".format(accountNameLowered)
+			elif not message.doesSenderHavePermission(PermissionLevel.CHANNEL):
+				raise CommandInputException("Only my channel admins are allowed to remove nicknames for the people on my watch list, sorry")
 			else:
 				del self.watchData[accountNameLowered]['displayname']
 				self.saveWatchData()

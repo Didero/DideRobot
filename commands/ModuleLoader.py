@@ -1,5 +1,5 @@
 from commands.CommandTemplate import CommandTemplate
-import GlobalStore
+import GlobalStore, PermissionLevel
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
 
@@ -7,7 +7,7 @@ from CustomExceptions import CommandException, CommandInputException
 class Command(CommandTemplate):
 	triggers = ['load', 'unload', 'reload', 'reloadall']
 	helptext = "(Re)loads one or more modules from disk, updating them with any changes, or unloads them. 'reloadall' unloads all modules and then loads all of them again"
-	adminOnly = True
+	minPermissionLevel = PermissionLevel.BOT
 	showInCommandList = False
 	stopAfterThisCommand = True
 	

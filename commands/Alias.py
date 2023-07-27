@@ -1,6 +1,6 @@
 import json, os
 
-import GlobalStore
+import GlobalStore, PermissionLevel
 from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandInputException
@@ -65,10 +65,9 @@ class Command(CommandTemplate):
 		alias = self.retrieveAlias(message.bot.serverfolder, message.source, aliasname)
 
 		if parameter == "serveradd" or parameter == "channeladd" or parameter == "add":
-			#Restrict alias creation to bot admins for now
-			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-				message.reply("Alias creation is limited to bot admins only for now, sorry! Poke them if you want an alias created")
-				return
+			#Restrict alias creation to admins for now
+			if not message.doesSenderHavePermission(PermissionLevel.SERVER if parameter == "serveradd" else PermissionLevel.CHANNEL):
+				raise CommandInputException("Only {0} admins can create {0} aliases, sorry! Poke one of them if you want an alias created")
 
 			if parameter != "serveradd" and message.isPrivateMessage:
 				message.reply("Channel aliases aren't allowed in private messages, sorry")
@@ -115,8 +114,8 @@ class Command(CommandTemplate):
 
 		elif parameter == "remove":
 			#Restrict alias removal to bot admins as well
-			if not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
-				return message.reply("Alias removal is limited to bot admins only for now, sorry! Poke them if you think an alias should be removed")
+			if not message.doesSenderHavePermission(PermissionLevel.SERVER if alias.isServerAlias else PermissionLevel.CHANNEL):
+				return message.reply("Removing {0} aliases is limited to {0} admins only for now, sorry! Poke them if you think an alias should be removed".format("server" if alias.isServerAlias else "channel"))
 			aliasname = message.messageParts[1].lower()
 			aliasKey = None
 			if server in self.aliases and aliasname in self.aliases[server]:
@@ -141,6 +140,8 @@ class Command(CommandTemplate):
 			return message.reply("{}{}: {}".format(message.bot.commandPrefix, aliasname, alias.helptext))
 
 		elif parameter == 'sethelp':
+			if not message.doesSenderHavePermission(PermissionLevel.SERVER if alias.isServerAlias else PermissionLevel.CHANNEL):
+				return message.reply("Only {0} admins are allowed to set or change a {0} alias's helptext, sorry! Tell one of them that you have an idea for an alias helptext!".format("server" if alias.isServerAlias else "channel"))
 			if message.messagePartsLength <= 2:
 				return message.reply("Please add the help text you want to set for the '{}' alias, because I sure can't explain how it works".format(message.messageParts[1]))
 			self.aliases[alias.aliasKey][aliasname.lower()] = [alias.command, " ".join(message.messageParts[2:])]
@@ -154,9 +155,11 @@ class Command(CommandTemplate):
 		loweredAliasName = aliasname.lower()
 		aliasData = None
 		aliasKey = None
+		isServerAlias = False
 		if server in self.aliases and loweredAliasName in self.aliases[server]:
 			aliasData = self.aliases[server][loweredAliasName]
 			aliasKey = server
+			isServerAlias = True
 		else:
 			serverChannelString = self.createServerChannelString(server, channel)
 			if serverChannelString in self.aliases and loweredAliasName in self.aliases[serverChannelString]:
@@ -169,7 +172,7 @@ class Command(CommandTemplate):
 			aliasCommand, aliasHelptext = aliasData
 		else:
 			aliasCommand = aliasData
-		return Alias(aliasname, aliasCommand, aliasKey, aliasHelptext)
+		return Alias(aliasname, aliasCommand, aliasKey, isServerAlias, aliasHelptext)
 
 	def parseAndSendAlias(self, message):
 		"""
@@ -228,8 +231,9 @@ class Command(CommandTemplate):
 
 
 class Alias(object):
-	def __init__(self, name, command, aliasKey, helptext=None):
+	def __init__(self, name, command, aliasKey, isServerAlias, helptext=None):
 		self.name = name
 		self.command = command
 		self.aliasKey = aliasKey
+		self.isServerAlias = isServerAlias
 		self.helptext = helptext

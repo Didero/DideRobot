@@ -8,6 +8,7 @@ import GlobalStore
 from util import StringUtil
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException
+import PermissionLevel
 
 
 class Command(CommandTemplate):
@@ -40,7 +41,7 @@ class Command(CommandTemplate):
 		if searchType == 'update' or searchType == 'forceupdate':
 			if self.areCardfilesBeingUpdated:
 				replytext = "I'm already updating!"
-			elif not message.bot.isUserAdmin(message.user, message.userNickname, message.userAddress):
+			elif not message.doesSenderHavePermission(PermissionLevel.BOT):
 				replytext = "Sorry, only admins can use my update function"
 			elif not searchType == 'forceupdate' and not self.shouldUpdate():
 				replytext = "The last update check was done pretty recently, there's no need to check again so soon"
