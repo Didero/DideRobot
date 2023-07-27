@@ -1,7 +1,7 @@
 import os, re
 
 from commands.CommandTemplate import CommandTemplate
-import GlobalStore
+import GlobalStore, PermissionLevel
 from IrcMessage import IrcMessage
 from CustomExceptions import SettingException
 
@@ -11,7 +11,7 @@ class Command(CommandTemplate):
 	helptext = "Used to view or change bot settings. See all keys with the parameter 'list', or use 'get' to see a single value. " \
 			   "Use 'set' to change a value or 'delete' to delete it. Use 'add' and 'remove' to add to or remove from a list, " \
 			   "and 'setlist' to change the entire list (';' as separator). The 'reload' triggers reload the setting and key files from disk"
-	adminOnly = True
+	minPermissionLevel = PermissionLevel.BOT
 
 	def execute(self, message):
 		"""
@@ -169,4 +169,4 @@ class Command(CommandTemplate):
 			raise se
 		else:
 			bot.settings.saveSettings()
-			bot.settings.parseSettings()
+			bot.parseSettings()
