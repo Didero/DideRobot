@@ -376,7 +376,7 @@ class Command(CommandTemplate):
 			cursor.execute("SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel=?", (listname, servername, channelname))
 			result = cursor.fetchone()
 		# If no channellist was found, or no channelname was provided, try to find a serverlist
-		if result is None and channelname:
+		if result is None:
 			# Check if there's a server list
 			result = cursor.execute("SELECT id, is_admin_only FROM lists WHERE name=? AND server=? AND channel IS NULL", (listname, servername)).fetchone()
 			if result is None:
