@@ -169,4 +169,4 @@ class Command(CommandTemplate):
 			raise se
 		else:
 			bot.settings.saveSettings()
-			bot.settings.parseSettings()
+			bot.parseSettings()
