@@ -11,7 +11,7 @@ from IrcMessage import IrcMessage
 from MessageLogger import MessageLogger
 import MessageTypes
 import PermissionLevel
-from util import StringUtil
+from util import IrcFormattingUtil, StringUtil
 
 
 class DideRobot(object):
@@ -537,6 +537,8 @@ class DideRobot(object):
 				logtext += "[notice] "
 				messageCommand = MessageTypes.NOTICE
 			logtext += "{user}: {message}"
+			if self.settings.get('textDecoration', 'irc') != 'irc':
+				messageText = IrcFormattingUtil.removeFormatting(messageText)
 			extraMessages = None
 			# Turn newlines in this message into multiple messages
 			if '\n' in messageText or '\r' in messageText:
@@ -572,6 +574,8 @@ class DideRobot(object):
 		:param messageType: The type of the message to send, or a normal text message if not provided
 		"""
 		maxMessageLength = Constants.MAX_LINE_LENGTH - self.calculateMessagePrefixLength(target, messageType)
+		if self.settings.get('textDecoration', 'irc') != 'irc':
+			messageTextToShorten = IrcFormattingUtil.removeFormatting(messageTextToShorten)
 		shortenedMessageText = StringUtil.limitStringLength(messageTextToShorten, maxMessageLength, suffixes=suffix)
 		self.sendMessage(target, shortenedMessageText, messageType)
 

@@ -34,6 +34,7 @@ A modular Python 3 IRC bot built with Gevent
 * userIgnoreList: A list of user addresses and/or nicknames that the bot should ignore commands from. Useful if there are other bots in a channel to prevent accidental command calls
 * commandWhitelist: Only the commands in this list are allowed to respond to messages on this server. Should be the exact same name as the command filename. Supercedes the blacklist
 * commandBlacklist: The commands are not allowed to respond to messages on this server. Should be the exact same name as the command filename. If a command whitelist is also provided, this field is ignored
+* textDecoration: An optional field. If provided and set to anything but 'irc', all text decorations, like bold and colours, are removed from all the bot output. Useful for servers or channels that don't support or discourage text decorations
 
 ### 4) Starting The Bot
 1. Navigate to the 'DideRobot' folder
