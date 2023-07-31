@@ -17,7 +17,7 @@
 	"serverAdmins": [],
 	"channelAdmins": [],
 	"userIgnoreList": [],
-	"commandWhitelist": [],
-	"commandBlacklist": [],
+	"commandAllowlist": [],
+	"commandBlocklist": [],
 	"textDecoration": "irc"
 }

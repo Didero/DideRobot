@@ -57,7 +57,7 @@ class BotSettingsManager(object):
 
 	def verifySettings(self):
 		"""
-		Checks whether some required settings exist and are filled in
+		Checks whether some required settings exist and are filled in, and changes deprecated key names to their new names
 		:return: None
 		:raise SettingException: Raised when a required setting is missing or isn't filled in
 		"""
@@ -66,6 +66,14 @@ class BotSettingsManager(object):
 				raise SettingException("Required option '{}' not found in settings.json file for server '{}'".format(settingToEnsure, self.serverfolder))
 			elif isinstance(self.settings[settingToEnsure], (list, str)) and len(self.settings[settingToEnsure]) == 0:
 				raise SettingException("Option '{}' in settings.json for server '{}' is empty when it shouldn't be".format(settingToEnsure, self.serverfolder))
+		for keyToRename, keyNewName in {'commandBlacklist': 'commandBlocklist', 'commandWhitelist': 'commandAllowlist'}.items():
+			if keyToRename in self.settings:
+				if keyNewName in self.settings and self.settings[keyNewName]:
+					self._logger.warning(f"|SettingsManager {self.serverfolder}| Deprecated key name '{keyToRename}' and the new name '{keyNewName}' both exist, removing old key")
+					del self.settings[keyToRename]
+				else:
+					self._logger.warning(f"|SettingsManager {self.serverfolder}| Renaming deprecated key '{keyToRename}' to '{keyNewName}'")
+					self.settings[keyNewName] = self.settings.pop(keyToRename)
 
 	def saveSettings(self):
 		#First get only the keys that are different from the globalsettings
