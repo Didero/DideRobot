@@ -1,3 +1,4 @@
+import re
 import time
 
 import Constants
@@ -47,8 +48,8 @@ class IrcMessage(object):
 				#Get the part from the end of the command prefix to the first space (the 'help' part of '!help say')
 				self.trigger = self.rawText[bot.commandPrefixLength:].split(" ", 1)[0].lower()
 				self.message = self.rawText[bot.commandPrefixLength + len(self.trigger):].lstrip()
-			# Check if the text starts with the nick of the bot, then a space, and then something that could be a command trigger, for instance 'DideRobot help' or 'DideRobot generate random'
-			elif bot.nickname and self.rawText.startswith(bot.nickname) and self.rawText[len(bot.nickname)] == " ":
+			# Check if the text starts with the nick of the bot, and then something that could be a command trigger, for instance 'DideRobot help', '@DideRobot generate random', or 'DideRobot: source'
+			elif bot.nickname and bot.nickname in self.rawText and re.search(f"^@?{bot.nickname}:? ", self.rawText):
 				messageParts = self.rawText.split(" ", 2)
 				self.trigger = messageParts[1].lower()
 				self.message = messageParts[2] if len(messageParts) > 2 else ""
