@@ -29,10 +29,10 @@ class Command(CommandTemplate):
 		if os.path.exists(watchedFilepath):
 			with open(watchedFilepath, 'r', encoding='utf-8') as watchedFile:
 				self.watchData = json.load(watchedFile)
-		#If we can't identify to Twitter, stop right here
-		if 'twitter' not in GlobalStore.commandhandler.apikeys:
+		#If we can't identify to Twitter, disable the automatic check for new messages
+		if not GlobalStore.commandhandler.getApiKey('key', 'twitter') or not GlobalStore.commandhandler.getApiKey('secret', 'twitter'):
 			self.logWarning("[TwitterWatcher] Twitter API credentials not found!")
-			return
+			self.scheduledFunctionTime = None
 
 	def executeScheduledFunction(self):
 		self.checkForNewTweets()
