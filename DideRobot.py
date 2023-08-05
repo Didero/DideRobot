@@ -280,6 +280,9 @@ class DideRobot(object):
 		self.messageLogger.log("JOIN: {nick} ({address})".format(nick=message.userNickname, address=prefix), params[0])
 		# If we just joined a channel, or if don't have a record of this channel yet, get all the users in it
 		if message.userNickname == self.nickname or params[0] not in self.channelsUserList:
+			# Already create a userlist entry, so the rest of the bot knows we're in this channel, even if retrieving the channel users goes wrong somehow (Looking at you, Twitch Chat)
+			self.channelsUserList[params[0]] = []
+			# Then try to fill the userlist
 			self.retrieveChannelUsers(params[0])
 		# If we don't know this user yet, add it to our list
 		elif prefix not in self.channelsUserList[params[0]]:
