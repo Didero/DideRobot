@@ -242,7 +242,7 @@ class DideRobot(object):
 		self.isUpdatingChannelsUserList = True
 		#Make sure we don't get duplicate data
 		if channel in self.channelsUserList:
-			self.channelsUserList.pop(channel)
+			self.channelsUserList[channel].clear()
 		self.sendLineToServer("WHO {}".format(channel))
 
 	def quit(self, quitMessage=None):
