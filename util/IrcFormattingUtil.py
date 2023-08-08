@@ -107,7 +107,10 @@ def removeFormatting(text):
 	:param text: The text to remove the IRC formatting from
 	:return: The provided text without any IRC formatting
 	"""
-	for formattingChar in (BOLD, CLEAR, ITALIC, UNDERLINE):
+	if COLOUR in text:
+		# The colour character is followed by color numbers
+		text = re.sub(COLOUR + "\d{1,2}(,\d{1,2})?", '', text)
+	for formattingChar in (BOLD, COLOUR, CLEAR, ITALIC, UNDERLINE):
 		if formattingChar in text:
 			text = text.replace(formattingChar, '')
 	if COLOUR in text:
