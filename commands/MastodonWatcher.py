@@ -158,7 +158,7 @@ class Command(CommandTemplate):
 				reply = "Whoops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe the Mastodon instance is having issues, in which case all we can do is wait"
 			else:
 				if not latestMessages:
-					reply = "Seems like that {} hasn't posted anything yet".format(providedName)
+					reply = "Seems like {} hasn't posted anything yet".format(providedName)
 				else:
 					reply = self.formatMessage(providedName, latestMessages[0], addMessageAge=True)
 		elif parameter == 'setname':
