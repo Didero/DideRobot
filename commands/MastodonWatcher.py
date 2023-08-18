@@ -152,13 +152,33 @@ class Command(CommandTemplate):
 				if not userId:
 					raise CommandException("I'm sorry, I couldn't find the user '{}'. Maybe you made a typo? Make sure the username is formatted like '@username@server'".format(providedName), False)
 				server = userMatch.group('server')
+			searchQuery = None
+			if message.messagePartsLength > 2:
+				# A search query was added, so we need to retrieve more messages to see if we can find a match
+				searchQuery = " ".join(message.messageParts[2:]).lower()
 			try:
-				latestMessages = self.retrieveMessagesForUser(providedName, userId, server, 1)
+				latestMessages = self.retrieveMessagesForUser(providedName, userId, server, 5 if searchQuery else 1)
 			except Exception as e:
 				reply = "Whoops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe the Mastodon instance is having issues, in which case all we can do is wait"
 			else:
 				if not latestMessages:
 					reply = "Seems like {} hasn't posted anything yet".format(providedName)
+				elif searchQuery:
+					# Search through the messages to find a message with the query
+					matchingMessage = None
+					for messageToCheck in latestMessages:
+						messageTextParts = self.getMessageText(messageToCheck)
+						for textPart in messageTextParts:
+							if searchQuery in textPart.lower():
+								matchingMessage = messageToCheck
+								break
+						if matchingMessage:
+							break
+					if not matchingMessage:
+						userUrl = latestMessages[0]['url'].rsplit('/', 1)[0]
+						reply = "Hmm, '{}' doesn't appear in {}'s last few messages, sorry. You could check their post history (histootry?) to check older messages: {}".format(searchQuery, providedName, userUrl)
+					else:
+						reply = self.formatMessage(providedName, matchingMessage, addMessageAge=True)
 				else:
 					reply = self.formatMessage(providedName, latestMessages[0], addMessageAge=True)
 		elif parameter == 'setname':
@@ -288,7 +308,12 @@ class Command(CommandTemplate):
 			return None
 		return responseData['id']
 
-	def formatMessage(self, username, messageData, addMessageAge=False, addUrl=True):
+	def getMessageText(self, messageData):
+		"""
+		Get the message text from the provided message data, which should be a reply from a Mastodon API
+		:param messageData: The message data
+		:return: A list of lines, the text of the message
+		"""
 		# Mastodon messages are HTML, so remove all the tags and resolve all the special characters ('&amp;' to '&' for instance)
 		parsedMessage = BeautifulSoup(re.sub('<br ?/?>', Constants.GREY_SEPARATOR, messageData['content']), 'html.parser')
 		# Mastodon organises newlines into <p> paragraphs, so iterate over those and get the text from them
@@ -297,7 +322,10 @@ class Command(CommandTemplate):
 			paragraphText = paragraph.get_text().strip()
 			if paragraphText:
 				messageTextParts.append(paragraphText)
-		formattedMessageText = Constants.GREY_SEPARATOR.join(messageTextParts)
+		return messageTextParts
+
+	def formatMessage(self, username, messageData, addMessageAge=False, addUrl=True):
+		formattedMessageText = Constants.GREY_SEPARATOR.join(self.getMessageText(messageData))
 		# Add the username
 		formattedMessageText = "{}: {}".format(IrcFormattingUtil.makeTextBold(self.getDisplayName(username)), formattedMessageText)
 		suffixes = []
