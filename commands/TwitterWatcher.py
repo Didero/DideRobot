@@ -22,7 +22,6 @@ class Command(CommandTemplate):
 	SECONDS_AGE_FOR_FULL_DATE = 604800  # After 7 days, don't list a tweet as '6 days, 7 hours ago', but as the full date
 
 	def onLoad(self):
-		GlobalStore.commandhandler.addCommandFunction(__file__, 'getTweetDescription', self.getTweetDescription)
 
 		#First retrieve which Twitter accounts we should follow, if that file exists
 		watchedFilepath = os.path.join(GlobalStore.scriptfolder, 'data', 'WatchedTwitterAccounts.json')
@@ -33,6 +32,9 @@ class Command(CommandTemplate):
 		if not GlobalStore.commandhandler.getApiKey('key', 'twitter') or not GlobalStore.commandhandler.getApiKey('secret', 'twitter'):
 			self.logWarning("[TwitterWatcher] Twitter API credentials not found!")
 			self.scheduledFunctionTime = None
+		else:
+			# Only register our command function if we can actually retrieve tweets
+			GlobalStore.commandhandler.addCommandFunction(__file__, 'getTweetDescription', self.getTweetDescription)
 
 	def executeScheduledFunction(self):
 		self.checkForNewTweets()
