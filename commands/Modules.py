@@ -16,18 +16,17 @@ class Command(CommandTemplate):
 		if message.messagePartsLength > 0:
 			modulename = message.messageParts[0]
 		
-		if modulename in GlobalStore.commandhandler.commands and GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, modulename):
+		if modulename in GlobalStore.commandhandler.commands and GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, modulename, message.source):
 			module = GlobalStore.commandhandler.commands[modulename]
 			replytext = "Module '{0}' has triggers: {1}; Helptext: {2}".format(modulename, ", ".join(module.triggers), module.helptext.format(commandPrefix=message.bot.commandPrefix))
 		else:
 			if modulename != "":
 				replytext = "Unknown module. "
-			modules = []
-			for loadedModuleName in GlobalStore.commandhandler.commands.keys():
-				if GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, loadedModuleName):
-					modules.append(loadedModuleName)
-			modules = sorted(modules, key=lambda s: s.lower())  #The key=lambda part is so the sort ignores case
+			moduleNames = []
+			for loadedModuleName, loadedModule in GlobalStore.commandhandler.getCommandsIterator(message.bot, message.source):
+					moduleNames.append(loadedModuleName)
+			moduleNames = sorted(moduleNames, key=lambda s: s.lower())  #The key=lambda part is so the sort ignores case
 
-			replytext += "Modules loaded: {}".format(", ".join(modules)) 
+			replytext += "Modules loaded: {}".format(", ".join(moduleNames))
 			
 		message.reply(replytext)

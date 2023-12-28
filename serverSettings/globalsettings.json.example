@@ -20,4 +20,5 @@
 	"commandAllowlist": [],
 	"commandBlocklist": [],
 	"textDecoration": "irc"
+	"channelSettings": {}
 }

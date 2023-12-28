@@ -596,6 +596,19 @@ class DideRobot(object):
 			prefixLength += 10
 		return prefixLength
 
+	def getCommandAllowAndBlockLists(self, channel: str = None) -> Tuple[Union[None, List[str]], Union[None, List[str]]]:
+		"""
+		Get the command allow and block lists for this bot, optionally for the specified channel. Can be useful if you'ree going to iterate over commands and check permissions, so you don't have to keep getting the allow and/or block lists
+		:param channel: Optionally, the channel to get the allow and block lists for. If omitted, or if the specified channel doesn't have a channel-specific list, the server allow and block lists are returned
+		:return: The command allow and block lists, optionally for the specified channel. If an allow list is set, the block list is None
+		"""
+		allowlist = self.settings.get('commandAllowList', None, channel)
+		if allowlist:
+			blocklist = None
+		else:
+			blocklist = self.settings.get('commandBlocklist', None, channel)
+		return (allowlist, blocklist)
+
 	#USER LIST CHECKING FUNCTIONS
 	def isUserAdmin(self, user, userNick=None, userAddress=None):
 		return self._isUserInList(self.settings['admins'], user, userNick, userAddress)

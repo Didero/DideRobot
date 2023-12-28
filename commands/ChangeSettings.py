@@ -3,12 +3,12 @@ import os, re
 from commands.CommandTemplate import CommandTemplate
 import GlobalStore, PermissionLevel
 from IrcMessage import IrcMessage
-from CustomExceptions import SettingException
+from CustomExceptions import CommandInputException, SettingException
 
 
 class Command(CommandTemplate):
-	triggers = ['setting', 'reloadsettings', 'reloadkeys']
-	helptext = "Used to view or change bot settings. See all keys with the parameter 'list', or use 'get' to see a single value. " \
+	triggers = ['setting', 'channelsetting', 'reloadsettings', 'reloadkeys']
+	helptext = "Used to view or change bot or channel settings. See all keys with the parameter 'list', or use 'get' to see a single value. " \
 			   "Use 'set' to change a value or 'delete' to delete it. Use 'add' and 'remove' to add to or remove from a list, " \
 			   "and 'setlist' to change the entire list (';' as separator). The 'reload' triggers reload the setting and key files from disk"
 	minPermissionLevel = PermissionLevel.BOT
@@ -18,17 +18,28 @@ class Command(CommandTemplate):
 		:type message: IrcMessage
 		"""
 		replytext = ""
-		if message.trigger == 'setting':
+		if message.trigger == 'setting' or message.trigger == 'channelsetting':
 			if message.messagePartsLength == 0:
 				return message.reply("Please add what I need to do to the settings")
 
 			param = message.messageParts[0].lower()
+			settings = message.bot.settings
 
 			#Check for a valid parameter
 			if param not in ('list', 'get', 'delete', 'set', 'setlist', 'add', 'remove'):
 				return message.reply("I don't know what to do with the parameter '{}', please check your spelling or read the help for this module".format(param))
+			if message.trigger == 'channelsetting':
+				if message.isPrivateMessage:
+					raise CommandInputException("Private messages can't have channel-specific settings, sorry")
+				# Some parameters require channel settings to exist, check for that
+				if param in ('list', 'get', 'delete', 'remove') and message.source not in message.bot.settings['channelSettings']:
+					return message.reply("There are no channel-specific settings stored for this channel")
+				# The other parameters create settings, so make sure the channel-specific setting field exists
+				else:
+					if message.source not in settings['channelSettings']:
+						settings['channelSettings'][message.source] = {}
+					settings = settings['channelSettings'][message.source]
 
-			settings = message.bot.settings
 			if param == 'list':
 				return message.reply("Keys in config file: {}".format('; '.join(sorted(settings.keys()))))
 
@@ -37,6 +48,9 @@ class Command(CommandTemplate):
 				return message.reply("'{}' what? Please add a config key")
 
 			settingsKey = message.messageParts[1]  #Can't make this lower(), because some keys are camelCase
+			if settingsKey == 'channelSettings' and message.trigger != 'channelsetting':
+				raise CommandInputException(f"Please use '{message.bot.getCommandPrefix(message.source)}channelsetting' to check or change channel-specific settings")
+
 			if param == 'get':
 				if settingsKey in settings:
 					if settings[settingsKey] is None:

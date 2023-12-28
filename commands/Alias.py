@@ -87,9 +87,9 @@ class Command(CommandTemplate):
 				return
 
 			#Check if there is a module that already has the trigger that we want to set for this alias
-			for modulename, module in GlobalStore.commandhandler.commands.items():
+			for modulename, module in GlobalStore.commandhandler.getCommandsIterator(message.bot, message.source):
 				#Also check if the module is enabled for this server, because if, say, the help module is disabled, creating a 'help' alias isn't a problem
-				if aliasname in module.triggers and GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, modulename):
+				if aliasname in module.triggers:
 					message.reply("'{}' is already a trigger for the {} module, so using it as an alias would just get confusing. I'm sure you can think of another name though!".format(aliasname, modulename))
 					return
 

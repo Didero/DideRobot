@@ -35,6 +35,7 @@ A modular Python 3 IRC bot built with Gevent
 * commandAllowlist: Only the commands in this list are allowed to respond to messages on this server. List entries should be the exact same name as the command filename. Supercedes the blocklist
 * commandBlocklist: These commands are not allowed to respond to messages on this server. List entries should be the exact same name as the command filename. If a command allowlist is also provided, this field is ignored
 * textDecoration: An optional field. If provided and set to anything but 'irc', all text decorations, like bold and colours, are removed from all the bot output. Useful for servers or channels that don't support or discourage text decorations
+* channelSettings: A special dictionary that can override the above settings but only for a specified channel. '. Example: 'channelSettings: {"#myChannel": {"channelAdmins": ["aNickName"], "commandPrefix": "?"}}'
 
 ### 4) Starting The Bot
 1. Navigate to the 'DideRobot' folder

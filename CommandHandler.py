@@ -116,10 +116,8 @@ class CommandHandler:
 			return
 
 		#Then check whether any of our loaded commands need to react to this message
-		for commandname, command in self.commands.items():
-			if not self.isCommandAllowedForBot(message.bot, commandname):
-				continue
-
+		settingSource = None if message.isPrivateMessage else message.source
+		for commandname, command in self.getCommandsIterator(message.bot, settingSource):
 			if command.shouldExecute(message):
 				if command.minPermissionLevel and not message.doesSenderHavePermission(command.minPermissionLevel):
 					message.reply("Sorry, this command can only be used by {}s".format(command.minPermissionLevel))
@@ -152,10 +150,12 @@ class CommandHandler:
 				self.logger.error("{} exception thrown while handling command '{}' and message '{}': {}".format(type(e).__name__, commandname, message.rawText, str(e)), exc_info=shouldLogStacktrace)
 
 	@staticmethod
-	def isCommandAllowedForBot(bot, commandname):
-		if bot.settings['commandAllowlist'] and commandname not in bot.settings['commandAllowlist']:
+	def isCommandAllowedForBot(bot, commandname: str, channel: str = None, allowlist = None, blocklist = None):
+		if allowlist is None and blocklist is None:
+			allowlist, blocklist = bot.getCommandAllowAndBlockLists(channel)
+		if allowlist and commandname not in allowlist:
 			return False
-		elif bot.settings['commandBlocklist'] and commandname in bot.settings['commandBlocklist']:
+		if blocklist and commandname in blocklist:
 			return False
 		return True
 	
@@ -236,3 +236,15 @@ class CommandHandler:
 			self.loadCommand(name, folder)
 		else:
 			raise CommandException("Told to reload '{}' but it's not in command list".format(name))
+
+	def getCommandsIterator(self, bot, channel: str = None):
+		"""
+		Get an iterator over all the commands allowed for the provided bot and optionally for the provided channel
+		:param bot: The bot instance to get the allowed commands for
+		:param channel: The channel to get the allowed commands for. If omitted, or if no channel-specific allow- or blocklist is set for the provided channel, the commands allowed for the server are returned
+		:return: An iterator returning commandname-commandobject pairs for the allowed commands for the bot and optionally the channel
+		"""
+		allowlist, blocklist = bot.getCommandAllowAndBlockLists(channel)
+		for commandname, command in self.commands.items():
+			if self.isCommandAllowedForBot(bot, commandname, allowlist=allowlist, blocklist=blocklist):
+				yield commandname, command

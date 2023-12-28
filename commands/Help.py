@@ -16,8 +16,8 @@ class Command(CommandTemplate):
 		triggerlist = {}
 		shortTriggerlist = {}
 		userPermissionLevel = message.bot.getUserPermissionLevel(message.user, message.userNickname, message.userAddress, message.source)
-		for commandname, command in GlobalStore.commandhandler.commands.items():
-			if command.showInCommandList and (not command.minPermissionLevel or userPermissionLevel >= command.minPermissionLevel) and len(command.triggers) > 0 and GlobalStore.commandhandler.isCommandAllowedForBot(message.bot, commandname):
+		for commandname, command in GlobalStore.commandhandler.getCommandsIterator(message.bot, message.source):
+			if command.showInCommandList and (not command.minPermissionLevel or userPermissionLevel >= command.minPermissionLevel) and len(command.triggers) > 0:
 				shortTriggerlist[command.triggers[0]] = command
 				for trigger in command.triggers:
 					triggerlist[trigger] = command
