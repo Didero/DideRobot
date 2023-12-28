@@ -1,5 +1,8 @@
 import re
 import time
+import typing
+if typing.TYPE_CHECKING:
+	from DideRobot import DideRobot
 
 import Constants
 import MessageTypes
@@ -10,7 +13,7 @@ from PermissionLevel import PermissionLevel
 class IrcMessage(object):
 	"""Parses incoming messages into usable parts like the command trigger"""
 
-	def __init__(self, messageType, bot, user=None, source=None, rawText=""):
+	def __init__(self, messageType, bot: 'DideRobot', user=None, source=None, rawText=""):
 		self.createdAt = time.time()
 		#MessageType is what kind of message it is. A 'say', 'action' or 'quit', for instance. See the MessagesTypes class for all the message types
 		self.messageType = messageType
