@@ -7,3 +7,9 @@ class StringWithSuffix(object):
 		self.suffix = suffix
 		if isinstance(self.suffix, list) or isinstance(self.suffix, tuple):
 			self.suffix = "".join(self.suffix)
+
+	def __str__(self):
+		if self.suffix:
+			return self.mainString + self.suffix
+		else:
+			return self.mainString
