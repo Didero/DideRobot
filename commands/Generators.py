@@ -75,7 +75,7 @@ class Command(CommandTemplate):
 			with open(os.path.join(Command.filesLocation, generator), 'r', encoding='utf-8') as grammarFile:
 				grammarDict = json.load(grammarFile)
 				if '_description' in grammarDict:
-					helpstring = "{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, grammarDict['_description'])
+					helpstring = "{}{} {}: {}".format(message.bot.getCommandPrefix(message.source), message.messageParts[0], requestedTrigger, grammarDict['_description'])
 					if '_version' in grammarDict:
 						helpstring += " [Version {}]".format(grammarDict['_version'])
 					return helpstring
@@ -88,7 +88,7 @@ class Command(CommandTemplate):
 			if generator.__doc__:
 				#Get the docstring, with the newlines and tabs removed
 				helptext = StringUtil.removeNewlines(inspect.cleandoc(generator.__doc__))
-			return "{}{} {}: {}".format(message.bot.commandPrefix, message.messageParts[0], requestedTrigger, helptext)
+			return "{}{} {}: {}".format(message.bot.getCommandPrefix(message.source), message.messageParts[0], requestedTrigger, helptext)
 		else:
 			self.logError("[Gen] Generator for trigger '{}' has type '{}', and we can't get the help from that".format(requestedTrigger, type(generator)))
 			return "I'm not sure how to get help for '{}', sorry. Maybe just try it out and see what happens instead?".format(requestedTrigger)

@@ -44,10 +44,11 @@ class IrcMessage(object):
 			self.messagePartsLength = 0
 		else:
 			#Collect information about the possible command in this message
-			if self.rawText.startswith(bot.commandPrefix):
+			commandPrefix = bot.settings.get("commandPrefix", None, self.source)
+			if commandPrefix and self.rawText.startswith(commandPrefix):
 				#Get the part from the end of the command prefix to the first space (the 'help' part of '!help say')
-				self.trigger = self.rawText[bot.commandPrefixLength:].split(" ", 1)[0].lower()
-				self.message = self.rawText[bot.commandPrefixLength + len(self.trigger):].lstrip()
+				self.trigger = self.rawText[len(commandPrefix):].split(" ", 1)[0].lower()
+				self.message = self.rawText[len(commandPrefix) + len(self.trigger):].lstrip()
 			# Check if the text starts with the nick of the bot, and then something that could be a command trigger, for instance 'DideRobot help', '@DideRobot generate random', or 'DideRobot: source'
 			elif bot.nickname and bot.nickname in self.rawText and re.search(f"^@?{bot.nickname}:? ", self.rawText):
 				messageParts = self.rawText.split(" ", 2)

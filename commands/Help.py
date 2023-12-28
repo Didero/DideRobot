@@ -28,8 +28,9 @@ class Command(CommandTemplate):
 		if message.messagePartsLength > 0:
 			command = message.messageParts[0].lower()
 			#Remove the command prefix if it's there, because the lookup doesn't have it
-			if command.startswith(message.bot.commandPrefix):
-					command = command[message.bot.commandPrefixLength:]
+			commandPrefix = message.bot.getCommandPrefix(message.source)
+			if command.startswith(commandPrefix):
+					command = command[len(commandPrefix):]
 		
 		#check if the provided argument exists
 		if command and command in triggerlist:
@@ -44,6 +45,6 @@ class Command(CommandTemplate):
 				commandslist = ", ".join(sorted(triggerlist.keys()))
 			else:
 				commandslist = ", ".join(sorted(shortTriggerlist.keys()))
-			replytext += "Commands loaded: {}. Type '{}help [commandname]' for info on how to use that command".format(commandslist, message.bot.commandPrefix)
+			replytext += "Commands loaded: {}. Type '{}help [commandname]' for info on how to use that command".format(commandslist, message.bot.getCommandPrefix(message.source))
 		
 		message.bot.sendMessage(message.source, replytext)

@@ -38,9 +38,6 @@ class DideRobot(object):
 		self.linesToSend = None  # A list with all the lines to send if there is a queue and rate limiting
 		self.lineSendingGreenlet = None  # Will store the greenlet that is currently working its way through the message queue, or is None if there is none
 
-		self.commandPrefix = ""  # Pulled from the settings file, separate variable because it's referenced a lot
-		self.commandPrefixLength = 0  # The length if the prefix is also often needed, prevent constant recalculation
-
 		#Load the settings, and only connect to the server if that succeeded
 		self.settings = BotSettingsManager(self.serverfolder)
 		if self.settings.loadedSuccessfully:
@@ -54,10 +51,6 @@ class DideRobot(object):
 
 	def parseSettings(self):
 		"""Retrieve some frequently-used values, to store them in a more easily-accessible way"""
-		#The command prefix is going to be needed often, as will its length. Put that in an easy-to-reach place
-		self.commandPrefix = self.settings['commandPrefix']
-		self.commandPrefixLength = len(self.commandPrefix)
-
 		#Load in the maximum connection settings to try, if there is any
 		self.maxConnectionRetries = self.settings.get('maxConnectionRetries', -1)
 		#Assume values smaller than zero mean endless retries
@@ -608,6 +601,9 @@ class DideRobot(object):
 		else:
 			blocklist = self.settings.get('commandBlocklist', None, channel)
 		return (allowlist, blocklist)
+
+	def getCommandPrefix(self, channel: str = None):
+		return self.settings.get("commandPrefix", "!", channel)
 
 	#USER LIST CHECKING FUNCTIONS
 	def isUserAdmin(self, user, userNick=None, userAddress=None):

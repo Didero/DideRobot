@@ -81,7 +81,7 @@ class Command(CommandTemplate):
 		# Some commands can only be used by bot admins, add that
 		elif subcommand in ('create', 'destroy', 'rename', 'setdescription', 'cleardescription', 'setadmin'):
 			helptext += ". This subcommand is admin-only"
-		return helptext.format(commandPrefix=message.bot.commandPrefix, subcommand=subcommand)
+		return helptext.format(commandPrefix=message.bot.getCommandPrefix(message.source), subcommand=subcommand)
 
 
 	def execute(self, message):

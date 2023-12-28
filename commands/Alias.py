@@ -135,9 +135,10 @@ class Command(CommandTemplate):
 				return message.reply("Ok, successfully removed the alias '{}'".format(aliasname))
 
 		elif parameter == "help":
+			commandPrefix = message.bot.getCommandPrefix(message.source)
 			if not alias.helptext:
-				return message.reply("The alias '{0}' doesn't have any help text set, sorry. Either ask my admin(s) for an explanation, or try to parse it yourself by using '{1}alias show {0}'".format(aliasname, message.bot.commandPrefix))
-			return message.reply("{}{}: {}".format(message.bot.commandPrefix, aliasname, alias.helptext))
+				return message.reply("The alias '{0}' doesn't have any help text set, sorry. Either ask my admin(s) for an explanation, or try to parse it yourself by using '{1}alias show {0}'".format(aliasname, commandPrefix))
+			return message.reply("{}{}: {}".format(commandPrefix, aliasname, alias.helptext))
 
 		elif parameter == 'sethelp':
 			if not message.doesSenderHavePermission(PermissionLevel.SERVER if alias.isServerAlias else PermissionLevel.CHANNEL):
@@ -195,7 +196,7 @@ class Command(CommandTemplate):
 		for i in range(0, 11):
 			aliasDict[str(i+1)] = message.messageParts[i] if i < message.messagePartsLength else ""
 		aliasDict['nick'] = message.userNickname
-		aliasDict['CP'] = message.bot.commandPrefix
+		aliasDict['CP'] = message.bot.getCommandPrefix(message.source)
 		# The grammar module stores some info from the message the grammar file is called from, fill that in here too because some grammar commands use it
 		variableDict = {'_sourceserver': server, '_sourcechannel': message.source, '_sourcenick': message.userNickname}
 		# Pass along the last message so the alias can use it, if needed

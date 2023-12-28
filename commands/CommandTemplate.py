@@ -81,7 +81,7 @@ class CommandTemplate(object):
 			replytext += f" [{self.minPermissionLevel} only]"
 		replytext += ": " + self.helptext
 		# Since some modules have '{commandPrefix}' in their helptext, turn that into the actual command prefix
-		replytext = replytext.format(commandPrefix=message.bot.commandPrefix)
+		replytext = replytext.format(commandPrefix=message.bot.getCommandPrefix(message.source))
 		return replytext
 
 	def shouldExecute(self, message):
