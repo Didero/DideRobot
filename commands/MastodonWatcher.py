@@ -15,7 +15,7 @@ from StringWithSuffix import StringWithSuffix
 
 class Command(CommandTemplate):
 	triggers = ['mastodonwatcher', 'mastodonwatch']
-	helptext = "Automatically reports when watched accounts post new messages. Use parameter 'add' to add an account to watch and 'remove' to stop watching an account. 'latest' shows latest message. " \
+	helptext = "Automatically reports when watched accounts post new messages. Use parameter 'add' to add an account to watch and 'remove' to stop watching an account. 'latest' shows latest message (optionally with a search query). " \
 			   "Use 'setname' and 'removename' to set and remove a display name. These parameters need to be followed by a full Mastodon username. 'list' lists all accounts being watched"
 	scheduledFunctionTime = 300.0  #Check every 5 minutes
 	runInThread = True
@@ -177,7 +177,7 @@ class Command(CommandTemplate):
 							break
 					if not matchingMessage:
 						userUrl = latestMessages[0]['url'].rsplit('/', 1)[0]
-						reply = "Hmm, '{}' doesn't appear in {}'s last few messages, sorry. You could check their post history (histootry?) to check older messages: {}".format(searchQuery, providedName, userUrl)
+						reply = f"Hmm, '{searchQuery}' doesn't appear in {providedName}'s last {self.LATEST_MESSAGES_SEARCH_COUNT} messages, sorry. You could check their post history (histootry?) to check older messages: {userUrl}"
 					else:
 						reply = self.formatMessage(providedName, matchingMessage, addMessageAge=True)
 				else:
