@@ -344,8 +344,8 @@ class DideRobot(object):
 		for channel, userlist in self.channelsUserList.items():
 			if prefix in userlist:
 				# Update the userlists for all channels this user is in
-				userlist.append(newaddress)
 				userlist.remove(prefix)
+				userlist.append(newaddress)
 				self.messageLogger.log("NICK CHANGE: {oldnick} changed their nick to {newnick}".format(oldnick=oldnick, newnick=newnick), channel)
 		GlobalStore.commandhandler.handleMessage(message)
 
