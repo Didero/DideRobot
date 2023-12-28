@@ -50,7 +50,7 @@ class IrcMessage(object):
 				self.trigger = self.rawText[len(commandPrefix):].split(" ", 1)[0].lower()
 				self.message = self.rawText[len(commandPrefix) + len(self.trigger):].lstrip()
 			# Check if the text starts with the nick of the bot, and then something that could be a command trigger, for instance 'DideRobot help', '@DideRobot generate random', or 'DideRobot: source'
-			elif bot.nickname and bot.nickname in self.rawText and re.search(f"^@?{bot.nickname}:? ", self.rawText):
+			elif bot.nickname and bot.nickname in self.rawText and re.match(f"@?{bot.nickname}:? ", self.rawText):
 				messageParts = self.rawText.split(" ", 2)
 				self.trigger = messageParts[1].lower()
 				self.message = messageParts[2] if len(messageParts) > 2 else ""
