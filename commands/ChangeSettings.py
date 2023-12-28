@@ -17,7 +17,6 @@ class Command(CommandTemplate):
 		"""
 		:type message: IrcMessage
 		"""
-		replytext = ""
 		if message.trigger == 'setting' or message.trigger == 'channelsetting':
 			if message.messagePartsLength == 0:
 				return message.reply("Please add what I need to do to the settings")
@@ -144,6 +143,7 @@ class Command(CommandTemplate):
 				replytext = "Reloaded all settings"
 				if len(serversWithReloadFault) > 0:
 					replytext += " (error reloading settings for {})".format("; ".join(serversWithReloadFault))
+				return message.reply(replytext)
 			#Load the backup settings
 			elif argument == "old" or argument == "previous":
 				settingsFilepath = os.path.join(GlobalStore.scriptfolder, "serverSettings", message.bot.serverfolder, "settings.json")
@@ -152,26 +152,24 @@ class Command(CommandTemplate):
 				os.rename(settingsFilepath, settingsFilepath + ".new")
 				os.rename(settingsFilepath + ".old", settingsFilepath)
 				if message.bot.reloadSettings():
-					replytext = "Old settings file successfully reloaded"
+					return message.reply("Old settings file successfully reloaded")
 				else:
 					#Loading went wrong, put the other file back
 					os.rename(settingsFilepath, settingsFilepath + ".old")
 					os.rename(settingsFilepath + ".new", settingsFilepath)
 					#And have the bot reload the previous settings
 					message.bot.reloadSettings()
-					replytext = "Something went wrong when reloading the old settings file, check the log for errors. Original settings file has been reinstated"
+					return message.reply("Something went wrong when reloading the old settings file, check the log for errors. Original settings file has been reinstated")
 			#Otherwise, just reload the settings of this bot
 			else:
 				if message.bot.reloadSettings():
-					replytext = "Successfully reloaded settings for this bot"
+					return message.reply("Successfully reloaded settings for this bot")
 				else:
-					replytext = "An error occurred while trying to reload the settings for this bot, check the debug output for the cause"
+					return message.reply("An error occurred while trying to reload the settings for this bot, check the debug output for the cause")
 		elif message.trigger == 'reloadkeys':
 			#Reload the api keys
 			GlobalStore.commandhandler.loadApiKeys()
-			replytext = "API keys file reloaded"
-
-		message.reply(replytext)
+			return message.reply("API keys file reloaded")
 
 	def verifyAndParseSettings(self, bot, changedKey=None, oldValue=None):
 		try:
