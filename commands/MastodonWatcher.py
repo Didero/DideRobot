@@ -25,6 +25,7 @@ class Command(CommandTemplate):
 	MAX_MESSAGES_TO_MENTION = 3
 	USERNAME_REGEX = re.compile("@?(?P<name>[^@]+)@(?P<server>.+)")
 	SECONDS_AGE_FOR_FULL_DATE = 604800  # After 7 days, don't list a tweet as '6 days, 7 hours ago', but as the full date
+	LATEST_MESSAGES_SEARCH_COUNT = 5  # With 'last' and a search query, how many messages to retrieve to search through
 
 	def onLoad(self):
 		GlobalStore.commandhandler.addCommandFunction(__file__, 'getMastodonMessageDescription', self.getMessageDescription)
@@ -157,7 +158,7 @@ class Command(CommandTemplate):
 				# A search query was added, so we need to retrieve more messages to see if we can find a match
 				searchQuery = " ".join(message.messageParts[2:]).lower()
 			try:
-				latestMessages = self.retrieveMessagesForUser(providedName, userId, server, 5 if searchQuery else 1)
+				latestMessages = self.retrieveMessagesForUser(providedName, userId, server, self.LATEST_MESSAGES_SEARCH_COUNT if searchQuery else 1)
 			except Exception as e:
 				reply = "Whoops, something went wrong there. Tell my owner(s), maybe it's something they can fix. Or maybe the Mastodon instance is having issues, in which case all we can do is wait"
 			else:
