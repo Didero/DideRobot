@@ -1,4 +1,5 @@
 import logging, json, os
+from typing import Any
 
 import GlobalStore
 from CustomExceptions import SettingException
@@ -74,6 +75,9 @@ class BotSettingsManager(object):
 				else:
 					self._logger.warning(f"|SettingsManager {self.serverfolder}| Renaming deprecated key '{keyToRename}' to '{keyNewName}'")
 					self.settings[keyNewName] = self.settings.pop(keyToRename)
+		# Since we need to check for channel-specific settings often, making sure the 'channelSettings' key always exists saves a check
+		if 'channelSettings' not in self.settings:
+			self.settings['channelSettings'] = {}
 
 	def saveSettings(self):
 		#First get only the keys that are different from the globalsettings
@@ -122,8 +126,16 @@ class BotSettingsManager(object):
 	def __contains__(self, key):
 		return key in self.settings
 
-	def get(self, keyname, defaultValue=None):
-		#Convenience function to get at the underlying settings easier
+	def get(self, keyname: str, defaultValue: Any = None, channel: str = None):
+		"""
+		Convenience function to get at the underlying settings easier, taking channel overrides into account if a 'channel' value is passed
+		:param keyname: The name of the settings key to retrieve the value of
+		:param defaultValue: The value to return if the settings key doesn't exist
+		:param channel: If provided, check if that channel has an override for the provided value. If not passed or no override value exists, the non-channel-specific value is used
+		:return: The value of the setting specified by the keyname, optionally taking the channel override into account, or the 'defaultValue' value if that key does not exist
+		"""
+		if channel and self.settings and channel in self.settings['channelSettings'] and keyname in self.settings['channelSettings'][channel]:
+			return self.settings['channelSettings'][channel][keyname]
 		return self.settings.get(keyname, defaultValue)
 
 	def has_key(self, keyname):
