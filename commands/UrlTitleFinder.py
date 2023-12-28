@@ -160,7 +160,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveTwitterTitle(url):
-		tweetMatches = re.search('twitter.com/(?P<name>[^/]+)(?:/status/(?P<id>[^/?]+).*)?', url)
+		tweetMatches = re.search('twitter.com/(?P<name>[^/]+)/status/(?P<id>[^/?]+).*', url)
 		if not tweetMatches:
 			return None
 		return GlobalStore.commandhandler.runCommandFunction('getTweetDescription', None, tweetMatches.group('name'), tweetMatches.group('id'), False)
