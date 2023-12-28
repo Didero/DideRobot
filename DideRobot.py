@@ -596,7 +596,7 @@ class DideRobot(object):
 		:param channel: Optionally, the channel to get the allow and block lists for. If omitted, or if the specified channel doesn't have a channel-specific list, the server allow and block lists are returned
 		:return: The command allow and block lists, optionally for the specified channel. If an allow list is set, the block list is None
 		"""
-		allowlist = self.settings.get('commandAllowList', None, channel)
+		allowlist = self.settings.get('commandAllowlist', None, channel)
 		if allowlist:
 			blocklist = None
 		else:
