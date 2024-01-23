@@ -76,6 +76,9 @@ class Command(CommandTemplate):
 		except requests.exceptions.TooManyRedirects as e:
 			Command.logError("[UrlTitleFinder] Too many redirects for url '{}': {}".format(url, e))
 			return None
+		except requests.exceptions.InvalidURL as e:
+			Command.logWarning(f"[urlTitleFinder] Unable to parse URL '{url}', invalid URL")
+			return None
 		if retrievedPage.status_code != 200:
 			return None
 		titlematch = re.search(r'<title ?.*?>(.+?)</title>', retrievedPage.text, re.DOTALL | re.IGNORECASE)
