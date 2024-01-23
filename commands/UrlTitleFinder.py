@@ -69,7 +69,8 @@ class Command(CommandTemplate):
 			# Some sites return a 405 or similar error code while still filling in the header, so ignore known 'lying' status codes
 			if headersResponse.status_code != 200 and headersResponse.status_code != 405:
 				return None
-			if 'Content-Type' in headersResponse.headers and not headersResponse.headers['Content-Type'].startswith('text'):
+			# Since we're going to look for a <title> HTML tag, only accept HTML pages
+			if 'Content-Type' not in headersResponse.headers or not headersResponse.headers['Content-Type'].lower().startswith("text/html"):
 				return None
 			# The URL (most likely) refers to an HTML page, retrieve it and get the title from it (don't catch timeout since that's handled in the main 'execute' method)
 			retrievedPage = requests.get(url, headers={'User-Agent': 'DideRobot'}, timeout=Command.lookupTimeoutSeconds)
