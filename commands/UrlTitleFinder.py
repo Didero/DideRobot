@@ -1,5 +1,5 @@
 import html, json, re
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 import requests
 
@@ -173,7 +173,7 @@ class Command(CommandTemplate):
 	def retrieveWikipediaTitle(url):
 		if not re.match('https?://en(?:\.m)?\.wikipedia.org/wiki', url, re.IGNORECASE):
 			return None
-		articleTitle = url.rsplit('/', 1)[-1]
+		articleTitle = unquote(url.rsplit('/', 1)[-1])
 		# Limit length to maximum line length instead of maximum message length because it will be auto-shortened automatically
 		apiReturn = requests.get("https://en.wikipedia.org/w/api.php", params={'format': 'json', 'utf8': True, 'redirects': True, 'action': 'query', 'prop': 'extracts', 'titles': articleTitle,
 																			   'exchars': Constants.MAX_LINE_LENGTH, 'exlimit': 1, 'explaintext': True, 'exsectionformat': 'plain'})
