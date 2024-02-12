@@ -368,6 +368,9 @@ class Command(CommandTemplate):
 		except Exception as e:
 			self.logError("[MastodonWatcher] Error while retrieving message id '{}' from Mastodon instance '{}': {}".format(messageId, server, e))
 			return None
+		if response.status_code != 200:
+			self.logWarning("[MastodonWatcher] Non-OK status code received from instance '{}': {}. Content: {}".format(server, response.status_code, response.content if response.content else "[empty]"))
+			return None
 		return self.formatMessage(username, response.json(), addMessageAge=True, addUrl=addUrl)
 
 	@staticmethod
