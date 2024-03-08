@@ -1,4 +1,4 @@
-import html, json, re
+import datetime, html, json, re
 from urllib.parse import unquote, urlparse
 
 import requests
@@ -9,7 +9,8 @@ import GlobalStore
 import MessageTypes
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, WebRequestException
-from util import IrcFormattingUtil, StringUtil
+from util import DateTimeUtil, IrcFormattingUtil, StringUtil
+from StringWithSuffix import StringWithSuffix
 
 class Command(CommandTemplate):
 
@@ -39,8 +40,8 @@ class Command(CommandTemplate):
 			for url in urlmatches:
 				# Go through the methods alphabetically, and use the generic method last
 				title = None
-				for parseMethod in (self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveSteamTitle, self.retrieveTumblrTitle, self.retrieveTwitchTitle,
-									self.retrieveTwitterTitle, self.retrieveWikipediaTitle, self.retrieveYoutubeTitle, self.retrieveGenericTitle):
+				for parseMethod in (self.retrieveBlueskyTitle, self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveSteamTitle, self.retrieveTumblrTitle,
+									self.retrieveTwitchTitle, self.retrieveTwitterTitle, self.retrieveWikipediaTitle, self.retrieveYoutubeTitle, self.retrieveGenericTitle):
 					try:
 						title = parseMethod(url)
 					except requests.exceptions.Timeout:
@@ -246,3 +247,40 @@ class Command(CommandTemplate):
 
 		# Send the result, if any
 		return StringUtil.removeNewlines(postText) if postText else None
+
+	@staticmethod
+	def retrieveBlueskyTitle(url):
+		# Information on how to retrieve data of Bluesky posts is from the website https://skyview.social/
+		urlPartsMatch = re.match("https://bsky.app/profile/([^/]+)/post/([^&]+)", url)
+		if not urlPartsMatch:
+			return None
+		username = urlPartsMatch.group(1)
+		postId = urlPartsMatch.group(2)
+		messageRequest = requests.get(f"https://bsky.social/xrpc/com.atproto.repo.getRecord?repo={username}&collection=app.bsky.feed.post&rkey={postId}")
+		if messageRequest.status_code != 200:
+			Command.logWarning(f"[UrlTitlefinder BlueSkyTitle] Retrieving data on post ID {postId} from user {username} failed, statuscode is {messageRequest.status_code}, response is {messageRequest.text!r}")
+			return None
+		messageData = messageRequest.json()['value']
+		displayname = username
+		if displayname.endswith(".bsky.social"):
+			displayname = displayname.rsplit(".", 2)[0]
+		blueskyText = f"{IrcFormattingUtil.makeTextBold(displayname)}: {StringUtil.removeNewlines(messageData['text'], Constants.GREY_SEPARATOR)}"
+		embedSuffix = ""
+		if "embed" in messageData:
+			embedData = messageData["embed"]
+			if "images" in embedData:
+				embedSuffix = " (has image)"
+			elif "record" in embedData:
+				embedSuffix = " (quotes post)"
+		messagePostTime = datetime.datetime.fromisoformat(messageData["createdAt"])
+		messageAge = datetime.datetime.now(tz=messagePostTime.tzinfo) - messagePostTime
+		# For older messages, list the post date, otherwise list how old it is
+		messageAgeString = " | "
+		if messageAge.total_seconds() > 604800:  # After 7 days, don't list a message as '6 days, 7 hours ago', but as the full date
+			messageAgeString += messagePostTime.strftime('%Y-%m-%d')
+		elif messageAge.total_seconds() <= 60:
+			messageAgeString += "posted just now"
+		else:
+			messageAgeString += f"{DateTimeUtil.durationSecondsToText(messageAge.total_seconds(), precision=DateTimeUtil.MINUTES)} ago"
+		messageAgeString = IrcFormattingUtil.makeTextColoured(messageAgeString, IrcFormattingUtil.Colours.GREY)
+		return StringWithSuffix(blueskyText, embedSuffix + messageAgeString)
