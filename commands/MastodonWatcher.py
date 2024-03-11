@@ -364,7 +364,7 @@ class Command(CommandTemplate):
 		if not server.startswith('http'):
 			server = "https://" + server
 		try:
-			response = requests.get("{}/api/v1/statuses/{}".format(server, messageId), timeout=10)
+			response = requests.get("{}/api/v1/statuses/{}".format(server, messageId), timeout=10, headers={"User-Agent": "DideRobot"})
 		except Exception as e:
 			self.logError("[MastodonWatcher] Error while retrieving message id '{}' from Mastodon instance '{}': {}".format(messageId, server, e))
 			return None
