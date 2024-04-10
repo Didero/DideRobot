@@ -83,7 +83,11 @@ class Command(CommandTemplate):
 
 		#Allow checking of card database version
 		elif searchType == 'version':
-			with open(os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json'), 'r', encoding='utf-8') as versionfile:
+			versionFilePath = os.path.join(GlobalStore.scriptfolder, 'data', 'MTGversion.json')
+			if not os.path.isfile(versionFilePath):
+				message.reply("I don't have any stored version yet, since my MtG files seem to be missing, sorry")
+				return
+			with open(versionFilePath, 'r', encoding='utf-8') as versionfile:
 				versions = json.load(versionfile)
 			message.reply("My card database is based on version {} from http://www.mtgjson.com".format(versions['dataVersion']))
 			return
