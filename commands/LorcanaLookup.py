@@ -184,7 +184,7 @@ class Command(CommandTemplate):
 			if 'echantedId' in card:
 				outputParts.append("has Enchanted version")
 			if 'promoIds' in card:
-				outputParts.append("has promos")
+				outputParts.append("has promo version" + "s" if len(card['promoIds']) > 1 else "")
 		return Constants.GREY_SEPARATOR.join(outputParts)
 
 	def shouldUpdate(self) -> bool:
