@@ -119,7 +119,7 @@ class Command(CommandTemplate):
 						else:
 							raise CommandException(f"Unsupported card list entry type '{type(card[fieldName][0])}' in card {card['fullName']} (ID {card['id']})")
 					else:
-						raise CommandException(f"Unsupported card entry type '{type(card[fieldName][0])}' in card {card['fullName']} (ID {card['id']})")
+						raise CommandException(f"Unsupported card entry type '{type(card[fieldName]).__name__}' in card {card['fullName']} (ID {card['id']})")
 			except StopIteration:
 				# Card doesn't match, move on to the next one
 				continue
