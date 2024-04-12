@@ -81,6 +81,9 @@ class Command(CommandTemplate):
 		except requests.exceptions.InvalidURL as e:
 			Command.logWarning(f"[urlTitleFinder] Unable to parse URL '{url}', invalid URL")
 			return None
+		except requests.exceptions.Timeout:
+			Command.logWarning(f"[urlTitleFinder] URL '{url}' retrieval timed out")
+			return None
 		if retrievedPage.status_code != 200:
 			return None
 		titlematch = re.search(r'<title ?.*?>(.+?)</title>', retrievedPage.text, re.DOTALL | re.IGNORECASE)
