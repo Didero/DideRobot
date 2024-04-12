@@ -23,7 +23,7 @@ class Command(CommandTemplate):
 
 	def executeScheduledFunction(self):
 		if self.shouldUpdate():
-			self.downloadCardDataset()
+			self.updateCardData()
 
 	def execute(self, message: IrcMessage):
 		if message.messagePartsLength == 0:
@@ -41,7 +41,7 @@ class Command(CommandTemplate):
 				# Missing card file
 				message.reply("I don't seem to have my Lorcana cards data file, so I can't help you, sorry! I'll try retrieving it now, so try again in a minute or so")
 			self.resetScheduledFunctionGreenlet()
-			self.downloadCardDataset()
+			self.updateCardData()
 			return
 
 		if parameter == 'version':
@@ -198,7 +198,7 @@ class Command(CommandTemplate):
 				return True
 		return False
 
-	def downloadCardDataset(self):
+	def updateCardData(self):
 		cardDownloadRequest = requests.get("https://lorcanajson.org/files/current/en/allCards.json")
 		cardData: Dict[str, Any] = cardDownloadRequest.json()
 		# We're going to be searching the cards from the end to front of the list, for efficiency. Since promo cards have higher IDs, reverse the list so the 'normal' versions come first
