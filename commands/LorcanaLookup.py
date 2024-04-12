@@ -158,7 +158,7 @@ class Command(CommandTemplate):
 		if 'subtypes' in card:
 			outputParts.append(", ".join(card['subtypes']))
 		outputParts.append(card['color'])
-		outputParts.append(f"{card['cost']}⬡, {'Inkable' if card['inkwell'] else 'Non-inkable'}")
+		outputParts.append(f"{card['cost']}⬡, {'Inkable' if card['inkwell'] == 'True' else 'Non-inkable'}")
 		singleValues = []
 		if 'moveCost' in card:
 			singleValues.append(f"{card['moveCost']}⭳")
@@ -206,6 +206,12 @@ class Command(CommandTemplate):
 		cardData: Dict[str, Any] = cardDownloadRequest.json()
 		# We're going to be searching the cards from the end to front of the list, for efficiency. Since promo cards have higher IDs, reverse the list so the 'normal' versions come first
 		cardData['cards'].reverse()
+		# Store boolean and numerical card values as strings, to match regexes easier while searching
+		fieldNamesToStringify = ('cost', 'id', 'inkwell', 'lore', 'moveCost', 'number', 'setNumber', 'strength', 'willpower')
+		for card in cardData['cards']:
+			for fieldName in fieldNamesToStringify:
+				if fieldName in card:
+					card[fieldName] = str(card[fieldName])
 		with open(self.CARD_FILE_PATH, "w", encoding="utf-8") as cardFile:
 			json.dump(cardData, cardFile)
 		with open(self.VERSION_FILE_PATH, "w", encoding="utf-8") as versionFile:
