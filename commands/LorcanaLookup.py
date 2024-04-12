@@ -142,7 +142,7 @@ class Command(CommandTemplate):
 			else:
 				replytext = self.formatCardData(matchingCard, showFullCardInfo)
 			if parameter == 'random' and numberOfCardsFound > 1:
-				replytext += f" ({numberOfCardsFound - 1:,} more matches)"
+				replytext += f" ({numberOfCardsFound - 1:,} more)"
 		else:
 			replytext = f"Found {numberOfCardsFound:,} matches: "
 			# Pick some random names from the found results
