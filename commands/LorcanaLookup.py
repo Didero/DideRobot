@@ -20,6 +20,7 @@ class Command(CommandTemplate):
 	MAX_CARDS_TO_LIST = 5
 	VERSION_FILE_PATH = os.path.join(GlobalStore.scriptfolder, "data", "LorcanaVersion.json")
 	CARD_FILE_PATH = os.path.join(GlobalStore.scriptfolder, "data", "LorcanaCards.json")
+	FORMAT_VERSION = 1
 
 	def executeScheduledFunction(self):
 		if self.shouldUpdate():
@@ -192,6 +193,8 @@ class Command(CommandTemplate):
 			return True
 		with open(self.VERSION_FILE_PATH, 'r', encoding='utf-8') as versionFile:
 			versionData = json.load(versionFile)
+		if versionData.get('_parsedFormatVersion', None) != self.FORMAT_VERSION:
+			return True
 		metadata = requests.get('https://lorcanajson.org/files/current/en/metadata.json').json()
 		for key, value in metadata.items():
 			if key not in versionData or value != versionData[key]:
@@ -206,4 +209,6 @@ class Command(CommandTemplate):
 		with open(self.CARD_FILE_PATH, "w", encoding="utf-8") as cardFile:
 			json.dump(cardData, cardFile)
 		with open(self.VERSION_FILE_PATH, "w", encoding="utf-8") as versionFile:
-			json.dump(cardData['metadata'], versionFile)
+			versionData = cardData['metadata']
+			versionData['_parsedFormatVersion'] = self.FORMAT_VERSION
+			json.dump(versionData, versionFile)
