@@ -64,9 +64,20 @@ class Command(CommandTemplate):
 				if urlPath.endswith(ext):
 					return None
 		# Only parse text documents, and not images or videos or the like. Retrieve the url header to check the content type
-		# We need to add a User-Agent, otherwise the request gets discarded by some sites
+		headers = {'Accept-Language': 'en'}
 		try:
-			headersResponse = requests.head(url, headers={'User-Agent': 'DideRobot', 'Accept-Language': 'en'}, allow_redirects=True, timeout=Command.lookupTimeoutSeconds)
+			# Some sites work only with a user agent, and some only without one, so try both
+			try:
+				headersResponse = requests.head(url, headers=headers, allow_redirects=True, timeout=Command.lookupTimeoutSeconds)
+				# Some sites return a 405 or similar error code while still filling in the header, so ignore known 'lying' status codes
+				if headersResponse.status_code != 200 and headersResponse.status_code != 405:
+					headersResponse = None
+			except requests.exceptions.Timeout:
+				headersResponse = None
+			# Try getting the header again with a user agent
+			if headersResponse is None:
+				headers['User-Agent'] = 'DideRobot'
+				headersResponse = requests.head(url, headers=headers, allow_redirects=True, timeout=Command.lookupTimeoutSeconds)
 			# Some sites return a 405 or similar error code while still filling in the header, so ignore known 'lying' status codes
 			if headersResponse.status_code != 200 and headersResponse.status_code != 405:
 				return None
@@ -74,7 +85,7 @@ class Command(CommandTemplate):
 			if 'Content-Type' not in headersResponse.headers or not headersResponse.headers['Content-Type'].lower().startswith("text/html"):
 				return None
 			# The URL (most likely) refers to an HTML page, retrieve it and get the title from it (don't catch timeout since that's handled in the main 'execute' method)
-			retrievedPage = requests.get(url, headers={'User-Agent': 'DideRobot'}, timeout=Command.lookupTimeoutSeconds)
+			retrievedPage = requests.get(url, headers=headers, timeout=Command.lookupTimeoutSeconds)
 		except requests.exceptions.TooManyRedirects as e:
 			Command.logError("[UrlTitleFinder] Too many redirects for url '{}': {}".format(url, e))
 			return None
