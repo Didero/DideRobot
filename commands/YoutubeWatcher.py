@@ -394,7 +394,7 @@ class Command(CommandTemplate):
 			self.logError("[YoutubeWatcher] ERROR while retrieving info for video ID {}. {}: {}. [{}]".format(videoId, googleJson['error']['code'], googleJson['error']['message'], StringUtil.removeNewlines(json.dumps(googleJson))))
 			return None
 		if 'items' not in googleJson or len(googleJson['items']) != 1:
-			CommandTemplate.logError("[YoutubeWatcher] Unexpected reply from Google API: {}".format(StringUtil.removeNewlines(json.dumps(googleJson))))
+			self.logError("[YoutubeWatcher] Unexpected reply from Google API: {}".format(StringUtil.removeNewlines(json.dumps(googleJson))))
 			return None
 		videoData = googleJson['items'][0]
 		durationtimes = DateTimeUtil.parseIsoDuration(videoData['contentDetails']['duration'])
