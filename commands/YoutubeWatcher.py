@@ -387,8 +387,8 @@ class Command(CommandTemplate):
 		:param includeUrl: If True, the URL to the video will be added to the end of the output
 		:return: The display string describing the video, or None if something went wrong with retrieving the data
 		"""
-		googleJson = requests.get("https://www.googleapis.com/youtube/v3/videos", timeout=5, params={'part': 'statistics,snippet,contentDetails', 'id': videoId, 'key': self.getApiKey(),
-				  'fields': 'items/snippet(title,channelTitle,description,publishedAt),items/contentDetails/duration,items/statistics(viewCount)'}).json()
+		googleJson = requests.get("https://www.googleapis.com/youtube/v3/videos", timeout=5, params={'part': 'statistics,snippet,contentDetails,liveStreamingDetails', 'id': videoId, 'key': self.getApiKey(),
+				  'fields': 'items/snippet(title,channelTitle,description,publishedAt),items/contentDetails/duration,items/statistics(viewCount),items/liveStreamingDetails(actualStartTime,actualEndTime,concurrentViewers)'}).json()
 
 		if not googleJson or 'error' in googleJson:
 			self.logError("[YoutubeWatcher] ERROR while retrieving info for video ID {}. {}: {}. [{}]".format(videoId, googleJson['error']['code'], googleJson['error']['message'], StringUtil.removeNewlines(json.dumps(googleJson))))
@@ -400,14 +400,33 @@ class Command(CommandTemplate):
 
 		snippetData = videoData['snippet']
 		resultStringParts = ["{title} {by} {channel}".format(title=snippetData['title'].strip(), by=IrcFormattingUtil.makeTextColoured('by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle'])]
-		durationtimes = DateTimeUtil.parseIsoDuration(videoData['contentDetails']['duration'])
-		durationstring = ""
-		if durationtimes['day'] > 0:
-			durationstring += "{day} d, "
-		if durationtimes['hour'] > 0:
-			durationstring += "{hour:02}:"
-		durationstring += "{minute:02}:{second:02}"
-		resultStringParts.append(durationstring.format(**durationtimes))
+		if 'liveStreamingDetails' in videoData and 'actualEndTime' not in videoData['liveStreamingDetails']:
+			# Livestreaming video
+			livestreamData = videoData['liveStreamingDetails']
+			if 'actualStartTime' in livestreamData:
+				# Video is currently livestreaming
+				livestreamStart = datetime.datetime.fromisoformat(livestreamData['actualStartTime'])
+				liveDuration = datetime.datetime.now(datetime.timezone.utc) - livestreamStart
+				resultStringParts.append(f"Live for {DateTimeUtil.durationSecondsToText(liveDuration.total_seconds())}")
+				# Show the number of current viewers, instead of total views
+				resultStringParts.append(f"{int(livestreamData['concurrentViewers']):,} viewers")
+				includeViewCount = False
+			else:
+				# Video will go live later
+				livestreamStart = datetime.datetime.fromisoformat(livestreamData['scheduledStartTime'])
+				untilLiveDuration = livestreamStart - datetime.datetime.now(datetime.timezone.utc)
+				resultStringParts.append(f"Live in {DateTimeUtil.durationSecondsToText(untilLiveDuration.total_seconds())}")
+			# Since live videos are usually very recent, no need to show the upload date
+			includeUploadDate = False
+		else:
+			durationtimes = DateTimeUtil.parseIsoDuration(videoData['contentDetails']['duration'])
+			durationstring = ""
+			if durationtimes['day'] > 0:
+				durationstring += "{day} d, "
+			if durationtimes['hour'] > 0:
+				durationstring += "{hour:02}:"
+			durationstring += "{minute:02}:{second:02}"
+			resultStringParts.append(durationstring.format(**durationtimes))
 
 		if includeViewCount:
 			resultStringParts.append("{:,} views".format(int(videoData['statistics']['viewCount'])))
