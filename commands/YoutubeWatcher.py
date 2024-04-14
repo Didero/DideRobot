@@ -397,6 +397,9 @@ class Command(CommandTemplate):
 			self.logError("[YoutubeWatcher] Unexpected reply from Google API: {}".format(StringUtil.removeNewlines(json.dumps(googleJson))))
 			return None
 		videoData = googleJson['items'][0]
+
+		snippetData = videoData['snippet']
+		resultStringParts = ["{title} {by} {channel}".format(title=snippetData['title'].strip(), by=IrcFormattingUtil.makeTextColoured('by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle'])]
 		durationtimes = DateTimeUtil.parseIsoDuration(videoData['contentDetails']['duration'])
 		durationstring = ""
 		if durationtimes['day'] > 0:
@@ -404,21 +407,18 @@ class Command(CommandTemplate):
 		if durationtimes['hour'] > 0:
 			durationstring += "{hour:02}:"
 		durationstring += "{minute:02}:{second:02}"
-		durationstring = durationstring.format(**durationtimes)
+		resultStringParts.append(durationstring.format(**durationtimes))
+
+		if includeViewCount:
+			resultStringParts.append("{:,} views".format(int(videoData['statistics']['viewCount'])))
+		if includeUploadDate:
+			resultStringParts.append(snippetData['publishedAt'].split('T', 1)[0])
 		#Check if there's a description
 		description = videoData['snippet']['description'].strip()
 		if not description:
 			description = "<No description>"
 		else:
 			description = StringUtil.removeNewlines(description)
-
-		snippetData = videoData['snippet']
-		resultStringParts = ["{title} {by} {channel}".format(title=snippetData['title'].strip(), by=IrcFormattingUtil.makeTextColoured('by', IrcFormattingUtil.Colours.GREY), channel=snippetData['channelTitle']),
-							 durationstring]
-		if includeViewCount:
-			resultStringParts.append("{:,} views".format(int(videoData['statistics']['viewCount'])))
-		if includeUploadDate:
-			resultStringParts.append(snippetData['publishedAt'].split('T', 1)[0])
 		resultStringParts.append(description)
 
 		suffixes = None
