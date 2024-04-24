@@ -1,5 +1,5 @@
 import json, os, random, re
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import requests
 
@@ -50,22 +50,48 @@ class Command(CommandTemplate):
 				versionData = json.load(versionFile)
 			return message.reply(f"I'm currently using the Lorcana data created on {versionData['generatedOn']} from https://lorcanajson.org")
 
+		if parameter in ("random", "search"):
+			matchingCards = self.searchCards(" ".join(message.messageParts[1:]), parameter)
+		else:
+			# No specific search type provided, assume the whole message is the search query
+			matchingCards = self.searchCards(message.message)
+
+		showFullCardInfo = message.trigger == 'lorcanafull'
+		numberOfCardsFound = len(matchingCards)
+		if numberOfCardsFound == 0:
+			replytext = "Hmm, that doesn't seem to match any of the cards I have on file. Maybe you made a typo?"
+		elif numberOfCardsFound == 1 or parameter == 'random':
+			if numberOfCardsFound == 1:
+				matchingCard = matchingCards[0]
+			else:
+				matchingCard = random.choice(matchingCards)
+			if message.trigger == 'lorcanaimage':
+				replytext = f"{matchingCard['fullName']}: {matchingCard['images']['full']}"
+			else:
+				replytext = self.formatCardData(matchingCard, showFullCardInfo)
+			if parameter == 'random' and numberOfCardsFound > 1:
+				replytext += f" ({numberOfCardsFound - 1:,} more)"
+		else:
+			replytext = f"Found {numberOfCardsFound:,} matches: "
+			# Pick some random names from the found results
+			names = [card['fullName'] for card in (random.sample(matchingCards, self.MAX_CARDS_TO_LIST) if numberOfCardsFound > self.MAX_CARDS_TO_LIST else matchingCards)]
+			replytext += Constants.GREY_SEPARATOR.join(names)
+			if numberOfCardsFound > self.MAX_CARDS_TO_LIST:
+				replytext += f" ({numberOfCardsFound - self.MAX_CARDS_TO_LIST:,} more)"
+		message.reply(replytext)
+
+	def searchCards(self, searchString: str, searchType: str = "search") -> List[Dict]:
 		# Card file exists and is needed, load it into memory
 		with open(self.CARD_FILE_PATH, "r", encoding="utf-8") as cardFile:
 			cardsData = json.load(cardFile)
 
-		showFullCardInfo = message.trigger == 'lorcanafull'
-		if parameter == 'random' and message.messagePartsLength == 1:
-			card = random.choice(cardsData['cards'])
-			return message.reply(self.formatCardData(card, showFullCardInfo))
+		if searchType == 'random' and not searchString:
+			# Pick one card from all cards
+			return [random.choice(cardsData['cards'])]
 
-		if parameter == 'search' or parameter == 'random':
-			if message.messagePartsLength == 1:
-				raise CommandInputException("Please also add a search query. Check my help text to find which query fields are available")
-			searchString = " ".join(message.messageParts[1:])
-		else:
-			# Assume the entire entered text is a name search
-			searchString = message.message
+		if not searchString:
+			raise CommandInputException("Please also add a search query. Add (part of) a name to search for, or check my help text to find which query fields are available")
+
 		searchString = searchString.lower()
 
 		# Allow searching for specific fields
@@ -129,29 +155,7 @@ class Command(CommandTemplate):
 				if card['fullName'] not in fullNamesMatched:
 					matchingCards.append(card)
 					fullNamesMatched.add(card['fullName'])
-
-		numberOfCardsFound = len(matchingCards)
-		if numberOfCardsFound == 0:
-			replytext = "Hmm, that doesn't seem to match any of the cards I have on file. Maybe you made a typo?"
-		elif numberOfCardsFound == 1 or parameter == 'random':
-			if numberOfCardsFound == 1:
-				matchingCard = matchingCards[0]
-			else:
-				matchingCard = random.choice(matchingCards)
-			if message.trigger == 'lorcanaimage':
-				replytext = f"{matchingCard['fullName']}: {matchingCard['images']['full']}"
-			else:
-				replytext = self.formatCardData(matchingCard, showFullCardInfo)
-			if parameter == 'random' and numberOfCardsFound > 1:
-				replytext += f" ({numberOfCardsFound - 1:,} more)"
-		else:
-			replytext = f"Found {numberOfCardsFound:,} matches: "
-			# Pick some random names from the found results
-			names = [card['fullName'] for card in (random.sample(matchingCards, self.MAX_CARDS_TO_LIST) if numberOfCardsFound > self.MAX_CARDS_TO_LIST else matchingCards)]
-			replytext += Constants.GREY_SEPARATOR.join(names)
-			if numberOfCardsFound > self.MAX_CARDS_TO_LIST:
-				replytext += f" ({numberOfCardsFound - self.MAX_CARDS_TO_LIST:,} more)"
-		message.reply(replytext)
+		return matchingCards
 
 	def formatCardData(self, card: Dict[str, Any], addExtendedInfo: bool = False) -> str:
 		outputParts = [IrcFormattingUtil.makeTextBold(card['fullName']), card['type']]
