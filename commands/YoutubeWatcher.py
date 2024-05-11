@@ -413,9 +413,12 @@ class Command(CommandTemplate):
 				includeViewCount = False
 			else:
 				# Video will go live later
-				livestreamStart = datetime.datetime.fromisoformat(livestreamData['scheduledStartTime'])
-				untilLiveDuration = livestreamStart - datetime.datetime.now(datetime.timezone.utc)
-				resultStringParts.append(f"Live in {DateTimeUtil.durationSecondsToText(untilLiveDuration.total_seconds())}")
+				if 'scheduledStartTime' in livestreamData:
+					livestreamStart = datetime.datetime.fromisoformat(livestreamData['scheduledStartTime'])
+					untilLiveDuration = livestreamStart - datetime.datetime.now(datetime.timezone.utc)
+					resultStringParts.append(f"Live in {DateTimeUtil.durationSecondsToText(untilLiveDuration.total_seconds())}")
+				else:
+					resultStringParts.append("Live at an unknown time")
 			# Since live videos are usually very recent, no need to show the upload date
 			includeUploadDate = False
 		else:
