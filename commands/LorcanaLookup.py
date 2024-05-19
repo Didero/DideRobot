@@ -30,17 +30,18 @@ class Command(CommandTemplate):
 		if message.messagePartsLength == 0:
 			return message.reply(self.getHelp(message))
 
+		if not os.path.isfile(self.CARD_FILE_PATH):
+			message.reply("I don't seem to have my Lorcana cards data file at all, so I'll have to update. This should only take a few seconds")
+			self.resetScheduledFunctionGreenlet()
+			self.updateCardData()
+
 		parameter = message.messageParts[0].lower()
 
-		hasCardFile: bool = os.path.isfile(self.CARD_FILE_PATH)
-		if not hasCardFile or parameter == 'update' or parameter == 'forceupdate':
-			if hasCardFile and parameter != 'forceupdate' and not self.shouldUpdate():
+		if parameter == 'update' or parameter == 'forceupdate':
+			if parameter == 'update' and not self.shouldUpdate():
 				return message.reply("I checked, and apparently an update is not necessary, since I've got all the latest Lorcana data already. Hooray")
-			elif parameter == 'forceupdate':
-				message.reply("Ok, I'll update my Lorcana knowledge, feel free to test it in like half a minute")
-			else:
-				# Missing card file
-				message.reply("I don't seem to have my Lorcana cards data file, so I can't help you, sorry! I'll try retrieving it now, so try again in a minute or so")
+			# We need to update
+			message.reply("Ok, I'll update my Lorcana knowledge, feel free to test it in like half a minute")
 			self.resetScheduledFunctionGreenlet()
 			self.updateCardData()
 			return
