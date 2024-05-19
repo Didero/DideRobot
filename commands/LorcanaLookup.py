@@ -190,7 +190,7 @@ class Command(CommandTemplate):
 			if 'flavorText' in card:
 				outputParts.append(IrcFormattingUtil.makeTextColoured(card['flavorText'], IrcFormattingUtil.Colours.GREY).replace('\n', ' '))
 			outputParts.append(f"From set {card['setNumber']}")
-			if 'echantedId' in card or 'nonEnchantedId' in card:
+			if 'enchantedId' in card or 'nonEnchantedId' in card:
 				outputParts.append("has Enchanted version")
 			if 'promoIds' in card or 'nonPromoId' in card:
 				outputParts.append("has promo version")
