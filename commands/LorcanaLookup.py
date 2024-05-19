@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 import requests
 
-import Constants, GlobalStore
+import Constants, GlobalStore, PermissionLevel
 from commands.CommandTemplate import CommandTemplate
 from CustomExceptions import CommandException, CommandInputException
 from IrcMessage import IrcMessage
@@ -40,6 +40,8 @@ class Command(CommandTemplate):
 		if parameter == 'update' or parameter == 'forceupdate':
 			if parameter == 'update' and not self.shouldUpdate():
 				return message.reply("I checked, and apparently an update is not necessary, since I've got all the latest Lorcana data already. Hooray")
+			elif parameter == 'forceupdate' and not message.doesSenderHavePermission(PermissionLevel.BOT):
+				return message.reply("Sorry, only my admins are allowed to force an update. Ask one of them if they think it's necessary")
 			# We need to update
 			message.reply("Ok, I'll update my Lorcana knowledge, feel free to test it in like half a minute")
 			self.resetScheduledFunctionGreenlet()
