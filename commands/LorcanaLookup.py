@@ -53,11 +53,15 @@ class Command(CommandTemplate):
 				versionData = json.load(versionFile)
 			return message.reply(f"I'm currently using the Lorcana data created on {versionData['generatedOn']} from https://lorcanajson.org")
 
+		# Card file exists and is needed, load it into memory
+		with open(self.CARD_FILE_PATH, "r", encoding="utf-8") as cardFile:
+			cardsData = json.load(cardFile)
+
 		if parameter in ("random", "search"):
-			matchingCards = self.searchCards(" ".join(message.messageParts[1:]), parameter)
+			matchingCards = self.searchCards(cardsData, " ".join(message.messageParts[1:]), parameter)
 		else:
 			# No specific search type provided, assume the whole message is the search query
-			matchingCards = self.searchCards(message.message)
+			matchingCards = self.searchCards(cardsData, message.message)
 
 		showFullCardInfo = message.trigger == 'lorcanafull'
 		numberOfCardsFound = len(matchingCards)
@@ -71,7 +75,7 @@ class Command(CommandTemplate):
 			if message.trigger == 'lorcanaimage':
 				replytext = f"{matchingCard['fullName']}: {matchingCard['images']['full']}"
 			else:
-				replytext = self.formatCardData(matchingCard, showFullCardInfo)
+				replytext = self.formatCardData(matchingCard, cardsData['sets'], showFullCardInfo)
 			if parameter == 'random' and numberOfCardsFound > 1:
 				replytext += f" ({numberOfCardsFound - 1:,} more)"
 		else:
@@ -83,11 +87,7 @@ class Command(CommandTemplate):
 				replytext += f" ({numberOfCardsFound - self.MAX_CARDS_TO_LIST:,} more)"
 		message.reply(replytext)
 
-	def searchCards(self, searchString: str, searchType: str = "search") -> List[Dict]:
-		# Card file exists and is needed, load it into memory
-		with open(self.CARD_FILE_PATH, "r", encoding="utf-8") as cardFile:
-			cardsData = json.load(cardFile)
-
+	def searchCards(self, cardsData: Dict, searchString: str, searchType: str = "search") -> List[Dict]:
 		if searchType == 'random' and not searchString:
 			# Pick one card from all cards
 			return [random.choice(cardsData['cards'])]
@@ -160,7 +160,7 @@ class Command(CommandTemplate):
 					fullNamesMatched.add(card['fullName'])
 		return matchingCards
 
-	def formatCardData(self, card: Dict[str, Any], addExtendedInfo: bool = False) -> str:
+	def formatCardData(self, card: Dict[str, Any], setsData: Dict[str, Any], addExtendedInfo: bool = False) -> str:
 		outputParts = [IrcFormattingUtil.makeTextBold(card['fullName']), card['type']]
 		if 'subtypes' in card:
 			outputParts.append(", ".join(card['subtypes']))
@@ -189,13 +189,15 @@ class Command(CommandTemplate):
 			outputParts.append(card['rarity'])
 			if 'flavorText' in card:
 				outputParts.append(IrcFormattingUtil.makeTextColoured(card['flavorText'], IrcFormattingUtil.Colours.GREY).replace('\n', ' '))
-			outputParts.append(f"From set {card['setNumber']}")
-			if 'enchantedId' in card or 'nonEnchantedId' in card:
+			outputParts.append(setsData[card['setCode']]['name'])
+			outputParts.append(f"from {card['story']}")
+			if 'enchantedId' in card:
 				outputParts.append("has Enchanted version")
 			if 'promoIds' in card or 'nonPromoId' in card:
-				outputParts.append("has promo version")
+				promoPart = ("has" if 'promoIds' in card else "is") + " promo version"
 				if len(card['promoIds']) > 1:
-					outputParts[-1] += "s"
+					promoPart += "s"
+				outputParts.append(promoPart)
 		return Constants.GREY_SEPARATOR.join(outputParts)
 
 	def shouldUpdate(self) -> bool:
