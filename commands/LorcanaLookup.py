@@ -164,7 +164,10 @@ class Command(CommandTemplate):
 		outputParts = [IrcFormattingUtil.makeTextBold(card['fullName']), card['type']]
 		if 'subtypes' in card:
 			outputParts.append(", ".join(card['subtypes']))
-		outputParts.append(card['color'])
+		if card['color']:
+			outputParts.append(card['color'])
+		else:
+			outputParts.append("No color")
 		outputParts.append(f"{card['cost']}⬡, {'Inkable' if card['inkwell'] == 'True' else 'Non-inkable'}")
 		singleValues = []
 		if 'moveCost' in card:
