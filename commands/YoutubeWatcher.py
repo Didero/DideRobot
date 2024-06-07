@@ -409,8 +409,9 @@ class Command(CommandTemplate):
 				liveDuration = datetime.datetime.now(datetime.timezone.utc) - livestreamStart
 				resultStringParts.append(f"Live for {DateTimeUtil.durationSecondsToText(liveDuration.total_seconds())}")
 				# Show the number of current viewers, instead of total views
-				resultStringParts.append(f"{int(livestreamData['concurrentViewers']):,} viewers")
-				includeViewCount = False
+				if 'concurrentViewers' in livestreamData:
+					resultStringParts.append(f"{int(livestreamData['concurrentViewers']):,} viewers")
+					includeViewCount = False
 			else:
 				# Video will go live later
 				if 'scheduledStartTime' in livestreamData:
