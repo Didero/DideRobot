@@ -186,7 +186,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveWikipediaTitle(url):
-		if not re.match('https?://en(?:\.m)?\.wikipedia.org/wiki', url, re.IGNORECASE):
+		if not re.match('https?://en(?:\.m)?\.wikipedia.org/wiki/(?!Help:)', url, re.IGNORECASE):
 			return None
 		articleTitle = unquote(url.rsplit('/', 1)[-1])
 		# Limit length to maximum line length instead of maximum message length because it will be auto-shortened automatically
