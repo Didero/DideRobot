@@ -186,11 +186,11 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveWikipediaTitle(url):
-		if not re.match('https?://en(?:\.m)?\.wikipedia.org/wiki/(?!Help:)', url, re.IGNORECASE):
+		urlMatch = re.match(r'https?://([^.]+)(?:\.m)?\.wikipedia.org/wiki/(.+)', url, re.IGNORECASE)
+		if not urlMatch:
 			return None
-		articleTitle = unquote(url.rsplit('/', 1)[-1])
 		# Limit length to maximum line length instead of maximum message length because it will be auto-shortened automatically
-		apiReturn = requests.get("https://en.wikipedia.org/w/api.php", params={'format': 'json', 'utf8': True, 'redirects': True, 'action': 'query', 'prop': 'extracts', 'titles': articleTitle,
+		apiReturn = requests.get(f"https://{urlMatch.group(1)}.wikipedia.org/w/api.php", params={'format': 'json', 'utf8': True, 'redirects': True, 'action': 'query', 'prop': 'extracts', 'titles': urlMatch.group(2),
 																			   'exchars': Constants.MAX_LINE_LENGTH, 'exlimit': 1, 'explaintext': True, 'exsectionformat': 'plain'})
 		if apiReturn.status_code != 200:
 			return None
