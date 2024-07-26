@@ -126,7 +126,7 @@ class Command(CommandTemplate):
 							raise StopIteration()
 					elif isinstance(card[fieldName], list):
 						if isinstance(card[fieldName][0], str):
-							# A list of strings, like for abilities
+							# A list of strings, like for effects
 							for fieldEntry in card[fieldName]:
 								if fieldRegex.search(fieldEntry):
 									break
@@ -134,7 +134,7 @@ class Command(CommandTemplate):
 								raise StopIteration()
 						elif isinstance(card[fieldName][0], dict):
 							foundMatch = False
-							# A list of dicts, like for effects
+							# A list of dicts, like for abilities
 							for fieldEntry in card[fieldName]:
 								for fieldEntryName, fieldEntryValue in fieldEntry.items():
 									if fieldRegex.search(fieldEntryValue):
@@ -180,14 +180,8 @@ class Command(CommandTemplate):
 			singleValues.append(f"{card['lore']}◊")
 		if singleValues:
 			outputParts.append(" ".join(singleValues))
-		abilitiesAndEffects = []
-		if 'abilities' in card:
-			abilitiesAndEffects.extend(card['abilities'])
-		if 'effects' in card:
-			for effect in card['effects']:
-				abilitiesAndEffects.append(f"{effect['name']} {effect['text']}")
-		if abilitiesAndEffects:
-			outputParts.append(IrcFormattingUtil.makeTextColoured(" / ", IrcFormattingUtil.Colours.GREY).join(abilitiesAndEffects))
+		if card['fullTextSections']:
+			outputParts.append(IrcFormattingUtil.makeTextColoured(" / ", IrcFormattingUtil.Colours.GREY).join(card['fullTextSections']).replace('\n', ' '))
 		if addExtendedInfo:
 			outputParts.append(card['rarity'])
 			if 'flavorText' in card:
