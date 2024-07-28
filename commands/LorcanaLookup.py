@@ -105,6 +105,10 @@ class Command(CommandTemplate):
 			searchDict = {'name': searchString}
 		if 'name' in searchDict:
 			searchName = searchDict.pop('name')
+			# If this isn't a specific regex search, make the search more useful by having it check if each word is in the name, instead of a literal match
+			# Since re.escape also escape spaces, pre-replace them in our comparison so it doesn't trip over that
+			if searchName.replace(" ", "\\ ") == re.escape(searchName):
+				searchName = ".*" + searchName.replace(" ", ".+") + ".*"
 			searchDict['fullName' if ' - ' in searchName else 'simpleName'] = searchName
 
 		# Turn the search dict into regexes, to speed up checks
