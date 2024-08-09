@@ -95,8 +95,6 @@ class Command(CommandTemplate):
 		if not searchString:
 			raise CommandInputException("Please also add a search query. Add (part of) a name to search for, or check my help text to find which query fields are available")
 
-		searchString = searchString.lower()
-
 		# Allow searching for specific fields
 		if ':' in searchString:
 			searchDict = StringUtil.stringToDict(searchString)
