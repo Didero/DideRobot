@@ -1120,11 +1120,5 @@ class Command(CommandTemplate):
 				newDefinitions[keyword] = paragraphText
 		except Exception as e:
 			self.logError("[MTG] [DefinitionsUpdate] An error ({}) occurred: {}".format(type(e), e))
-			traceback.print_exc()
-			try:
-				self.logError("[MTG] request url:", e.request.url)
-				self.logError("[MTG] request headers:", e.request.headers)
-			except AttributeError:
-				self.logError(" no request attribute found")
 			raise CommandException("An exception occurred while downloading or parsing MTG definitions")
 		return newDefinitions
