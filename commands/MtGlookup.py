@@ -1056,8 +1056,9 @@ class Command(CommandTemplate):
 				term = term.split('{', 1)[0]
 			if '\u2014' in term:  # This is the special dash, which is sometimes used in costs too
 				term = term.split('\u2014', 1)[0]
-			term = term.rstrip().lower()
-			if len(term) == 0:
+			term = term.rstrip().lstrip("\u2022 ").lower()
+			# Ignore short (or empty) terms since those are most likely a mistake
+			if len(term) <= 3:
 				continue
 			# Check to see if the term ends with mana costs. If it does, strip that off
 			if ' ' in term:
