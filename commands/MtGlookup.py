@@ -1090,34 +1090,34 @@ class Command(CommandTemplate):
 		newDefinitions = {}
 
 		#Get keyword definitions and slang term meanings from other sites
-		definitionSources = [("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", "content"),
-			("http://mtgsalvation.gamepedia.com/List_of_Magic_slang", "mw-parser-output")]
 		try:
-			for url, section in definitionSources:
-				defHeaders = BeautifulSoup(StringUtil.removeNewlines(requests.get(url, timeout=10.0).text), 'html.parser').find(class_=section).find_all(['h3', 'h4'])
-				for defHeader in defHeaders:
-					keyword = defHeader.find(class_='mw-headline').text.lower()
-					#On MTGSalvation, sections are sorted into alphabetized subsections. Ignore the letter headers
-					if len(keyword) <= 1:
-						continue
-					#Don't store any definitions that are already stored
-					if existingDefinitions and keyword in existingDefinitions:
-						continue
-					#Cycle through all the paragraphs following the header
-					currentParagraph = defHeader.next_sibling
-					# Warnings are shown in a table after the header, ignore those
-					if currentParagraph.name == 'table':
-						currentParagraph = currentParagraph.next_sibling
-					paragraphText = ""
-					#If there's no next_sibling, 'currentParagraph' is set to None. Check for that
-					while currentParagraph and currentParagraph.name in ('p', 'ul', 'dl', 'ol'):
-						paragraphText += " " + currentParagraph.text
-						currentParagraph = currentParagraph.next_sibling
-					paragraphText = re.sub(r" ?\[\d+?]", "", paragraphText).lstrip().rstrip(' .')  #Remove the reference links ('[1]')
-					if len(paragraphText) == 0:
-						self.logWarning("[MTG] Definition for '{}' is empty, skipping".format(keyword))
-						continue
-					newDefinitions[keyword] = paragraphText
+			definitionsRequest = requests.get("http://en.m.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords", timeout=10.0)
+			defHeaders = bs4.BeautifulSoup(StringUtil.removeNewlines(definitionsRequest.text), 'html.parser').find_all(class_="mw-heading3")
+			for defHeader in defHeaders:
+				keyword = defHeader.find("h3").text.lower()
+				#On MTGSalvation, sections are sorted into alphabetized subsections. Ignore the letter headers
+				if len(keyword) <= 1:
+					continue
+				#Don't store any definitions that are already stored
+				if existingDefinitions and keyword in existingDefinitions:
+					continue
+				#Cycle through all the paragraphs following the header
+				currentParagraph = defHeader.next_sibling
+				while isinstance(currentParagraph, bs4.element.NavigableString):
+					currentParagraph = currentParagraph.next_sibling
+				# Warnings are shown in a table after the header, ignore those
+				if currentParagraph.name == 'table':
+					currentParagraph = currentParagraph.next_sibling
+				paragraphText = ""
+				#If there's no next_sibling, 'currentParagraph' is set to None. Check for that
+				while currentParagraph and currentParagraph.name in ('p', 'ul', 'dl', 'ol'):
+					paragraphText += " " + currentParagraph.text
+					currentParagraph = currentParagraph.next_sibling
+				paragraphText = re.sub(r" ?\[\d+?]", "", paragraphText).lstrip().rstrip(' .')  #Remove the reference links ('[1]')
+				if len(paragraphText) == 0:
+					self.logWarning("[MTG] Definition for '{}' is empty, skipping".format(keyword))
+					continue
+				newDefinitions[keyword] = paragraphText
 		except Exception as e:
 			self.logError("[MTG] [DefinitionsUpdate] An error ({}) occurred: {}".format(type(e), e))
 			traceback.print_exc()
