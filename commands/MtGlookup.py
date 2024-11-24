@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import gc, json, os, random, re, time, zipfile
-import traceback
 
 import requests
-from bs4 import BeautifulSoup
+import bs4
 import gevent
 
 from commands.CommandTemplate import CommandTemplate
