@@ -284,8 +284,12 @@ class Command(CommandTemplate):
 			embedData = messageData["embed"]
 			if "images" in embedData:
 				embedSuffix = " (has image)"
+			elif "video" in embedData:
+				embedSuffix = " (has video)"
 			elif "record" in embedData:
 				embedSuffix = " (quotes post)"
+			elif "external" in embedData:
+				embedSuffix = " (has link)"
 		messagePostTime = datetime.datetime.fromisoformat(messageData["createdAt"])
 		messageAge = datetime.datetime.now(tz=messagePostTime.tzinfo) - messagePostTime
 		# For older messages, list the post date, otherwise list how old it is
