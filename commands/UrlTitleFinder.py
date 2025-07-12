@@ -124,9 +124,9 @@ class Command(CommandTemplate):
 			return None
 		#First we need to determine the video ID from something like this: 'http://www.youtube.com/watch?v=[videoID]' or 'http://youtu.be/[videoID]'
 		if url.count('youtu.be') > 0:
-			videoIdMatch = re.search('youtu\.be/([^?/#]+)', url)
+			videoIdMatch = re.search('youtu\.be/([^?/#)]+)', url)
 		else:
-			videoIdMatch = re.search('.+v=([^&#]+)', url)
+			videoIdMatch = re.search('.+v=([^&#)]+)', url)
 			if not videoIdMatch:
 				# Live videos and Shorts have a different format: https://www.youtube.com/[type]/[videoID]
 				videoIdMatch = re.search('(?:live|shorts)/([^?/#]+)', url)
