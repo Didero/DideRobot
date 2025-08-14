@@ -186,6 +186,9 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveWikipediaTitle(url):
+		# Skip images and other media
+		if "media/File:" in url:
+			return None
 		urlMatch = re.match(r'https?://([^.]+)(?:\.m)?\.wikipedia.org/wiki/(.+)', url, re.IGNORECASE)
 		if not urlMatch:
 			return None
