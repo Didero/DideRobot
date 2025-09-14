@@ -38,6 +38,7 @@ class Command(CommandTemplate):
 			self.logWarning("[url] Module triggered, but no url found in message '{}'".format(message.message))
 		else:
 			for url in urlmatches:
+				url = url.strip(".,'\"")
 				# Go through the methods alphabetically, and use the generic method last
 				title = None
 				for parseMethod in (self.retrieveBlueskyTitle, self.retrieveImgurTitle, self.retrieveMastodonTitle, self.retrieveSteamTitle, self.retrieveTumblrTitle,
