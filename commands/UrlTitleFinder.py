@@ -9,7 +9,7 @@ import GlobalStore
 import MessageTypes
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, WebRequestException
-from util import DateTimeUtil, IrcFormattingUtil, StringUtil
+from util import DateTimeUtil, IrcFormattingUtil, StringUtil, WebUtil
 from StringWithSuffix import StringWithSuffix
 
 class Command(CommandTemplate):
@@ -195,7 +195,7 @@ class Command(CommandTemplate):
 			return None
 		# Limit length to maximum line length instead of maximum message length because it will be auto-shortened automatically
 		apiReturn = requests.get(f"https://{urlMatch.group(1)}.wikipedia.org/w/api.php", params={'format': 'json', 'utf8': True, 'redirects': True, 'action': 'query', 'prop': 'extracts', 'titles': urlMatch.group(2),
-																			   'exchars': Constants.MAX_LINE_LENGTH, 'exlimit': 1, 'explaintext': True, 'exsectionformat': 'plain'})
+																			   'exchars': Constants.MAX_LINE_LENGTH, 'exlimit': 1, 'explaintext': True, 'exsectionformat': 'plain'}, headers={"User-Agent": WebUtil.USER_AGENT})
 		if apiReturn.status_code != 200:
 			return None
 		apiData = apiReturn.json()

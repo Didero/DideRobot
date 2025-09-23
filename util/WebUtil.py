@@ -6,6 +6,8 @@ from CustomExceptions import WebRequestException
 import GlobalStore
 
 
+USER_AGENT = "DideRobot (https://github.com/Didero/DideRobot)"
+
 def downloadFile(url, targetFilename, timeout=30.0):
 	try:
 		r = requests.get(url, headers={'user-agent': 'DideRobot (http://github.com/Didero/DideRobot)'}, timeout=timeout)

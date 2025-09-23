@@ -6,7 +6,7 @@ from commands.CommandTemplate import CommandTemplate
 from IrcMessage import IrcMessage
 from CustomExceptions import CommandException, CommandInputException
 import Constants
-from util import StringUtil
+from util import StringUtil, WebUtil
 from StringWithSuffix import StringWithSuffix
 
 
@@ -53,7 +53,7 @@ class Command(CommandTemplate):
 			requestParams['gsrsearch'] = searchQuery
 
 		try:
-			apiResult = requests.get(wikiApiUrl, params=requestParams, timeout=10.0)
+			apiResult = requests.get(wikiApiUrl, params=requestParams, timeout=10.0, headers={"User-Agent": WebUtil.USER_AGENT})
 		except requests.exceptions.Timeout:
 			raise CommandException("{} took too long to respond. Maybe try again in a little while?".format(wikiDisplayName))
 
