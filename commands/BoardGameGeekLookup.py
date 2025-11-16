@@ -13,7 +13,7 @@ import Constants
 
 class Command(CommandTemplate):
 	triggers = ['boardgame']
-	helptext = "Searches info on the provided board game name on BoardGameGeek.com (which can be pretty slow, sorry about that)"
+	helptext = "Searches info on the provided board game name on https://BoardGameGeek.com"
 
 	def execute(self, message):
 		"""
