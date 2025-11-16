@@ -108,7 +108,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveTwitchTitle(url):
-		channelmatches = re.search("https?://(?:www\.)?twitch\.tv/([^/]+)/?$", url)
+		channelmatches = re.search(r"https?://(?:www\.)?twitch\.tv/([^/]+)/?$", url)
 		if not channelmatches:
 			return None
 		channel = channelmatches.group(1)
@@ -125,7 +125,7 @@ class Command(CommandTemplate):
 			return None
 		#First we need to determine the video ID from something like this: 'http://www.youtube.com/watch?v=[videoID]' or 'http://youtu.be/[videoID]'
 		if url.count('youtu.be') > 0:
-			videoIdMatch = re.search('youtu\.be/([^?/#)]+)', url)
+			videoIdMatch = re.search(r'youtu\.be/([^?/#)]+)', url)
 		else:
 			videoIdMatch = re.search('.+v=([^&#)]+)', url)
 			if not videoIdMatch:
@@ -138,7 +138,7 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveImgurTitle(url):
-		imageIdMatches = re.search('imgur\.com/([^.]+)', url, re.IGNORECASE)
+		imageIdMatches = re.search(r'imgur\.com/([^.]+)', url, re.IGNORECASE)
 		if imageIdMatches is None:
 			return None
 		apiClientId = GlobalStore.commandhandler.getApiKey('clientid', 'imgur')
@@ -207,21 +207,21 @@ class Command(CommandTemplate):
 
 	@staticmethod
 	def retrieveMastodonTitle(url):
-		urlMatch = re.match('https://(?P<server>[^.]+\.[^/]+)/@(?P<user>[^/@]+)(?:@[^/]+)?/(?P<messageid>\d+)', url, re.IGNORECASE)
+		urlMatch = re.match(r'https://(?P<server>[^.]+\.[^/]+)/@(?P<user>[^/@]+)(?:@[^/]+)?/(?P<messageid>\d+)', url, re.IGNORECASE)
 		if not urlMatch:
 			return None
 		return GlobalStore.commandhandler.runCommandFunction('getMastodonMessageDescription', None, urlMatch.group('server'), urlMatch.group('user'), urlMatch.group('messageid'), False)
 
 	@staticmethod
 	def retrieveSteamTitle(url):
-		urlMatch = re.match('https://store.steampowered.com/app/(?P<appid>\d+)(?:/.*)?', url, re.IGNORECASE)
+		urlMatch = re.match(r'https://store.steampowered.com/app/(?P<appid>\d+)(?:/.*)?', url, re.IGNORECASE)
 		if not urlMatch:
 			return None
 		return GlobalStore.commandhandler.runCommandFunction('getSteamAppDescriptionById', None, urlMatch.group('appid'), False)
 
 	@staticmethod
 	def retrieveTumblrTitle(url):
-		urlMatch = re.match('https://(?:www\.)?tumblr.com/(?P<user>[^/]+)/(?P<postId>\d+)', url, re.IGNORECASE)
+		urlMatch = re.match(r'https://(?:www\.)?tumblr.com/(?P<user>[^/]+)/(?P<postId>\d+)', url, re.IGNORECASE)
 		if not urlMatch:
 			return None
 		apiKey = GlobalStore.commandhandler.getApiKey('tumblr')

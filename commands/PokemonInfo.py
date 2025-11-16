@@ -26,7 +26,7 @@ class Command(CommandTemplate):
 		tableAsDict = self.turnWolframTableIntoDict(wolframReply)
 		for key, value in tableAsDict.items():
 			if key in dataKeysToKeep:
-				value = re.sub(' *\| *', ', ', value)  #'type' for instance is displayed as 'fire  |  flying' sometimes. Clean that up
+				value = re.sub(' *\\| *', ', ', value)  #'type' for instance is displayed as 'fire  |  flying' sometimes. Clean that up
 				pokemondata[key] = value
 		if len(pokemondata) == 0:
 			return message.reply("No data on that Pokémon was found, for some reason. Did you make a typo?")

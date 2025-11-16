@@ -27,7 +27,7 @@ class Command(CommandTemplate):
 
 		apiParams = {}
 		if message.messagePartsLength == 1:
-			setNumberMatch = re.match("^(\d{3,}(-\d)?)$", message.messageParts[0])
+			setNumberMatch = re.match(r"^(\d{3,}(-\d)?)$", message.messageParts[0])
 			if setNumberMatch:
 				# Set number
 				apiParams['setNumber'] = message.messageParts[0]

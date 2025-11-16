@@ -109,11 +109,11 @@ def removeFormatting(text):
 	"""
 	if COLOUR in text:
 		# The colour character is followed by color numbers
-		text = re.sub(COLOUR + "\d{1,2}(,\d{1,2})?", '', text)
+		text = re.sub(COLOUR + r"\d{1,2}(,\d{1,2})?", '', text)
 	for formattingChar in (BOLD, COLOUR, CLEAR, ITALIC, UNDERLINE):
 		if formattingChar in text:
 			text = text.replace(formattingChar, '')
 	if COLOUR in text:
 		# The colour character is followed by color numbers
-		text = re.sub(COLOUR + "\d{1,2}(,\d{1,2})?", '', text)
+		text = re.sub(COLOUR + r"\d{1,2}(,\d{1,2})?", '', text)
 	return text
