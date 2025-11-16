@@ -41,7 +41,7 @@ class Command(CommandTemplate):
 			message.reply("BoardGameGeek doesn't think a game called '{}' exists. Maybe you made a typo?".format(message.message))
 			return
 		#Then get the link to the board game page from that, to get the game ID from the URL
-		# Format of the url is '/boardgame/[ID]/[NAME]
+		# Format of the url is '/boardgame/[ID]/[NAME]'
 		gameId = row.find('a')['href'].split('/', 3)[2]
 
 		#Now query the API to get info on this game
