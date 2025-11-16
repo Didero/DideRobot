@@ -52,7 +52,8 @@ class Command(CommandTemplate):
 			return
 		try:
 			xml = ElementTree.fromstring(request.content)
-		except ElementTree.ParseError:
+		except ElementTree.ParseError as e:
+			self.logError(f"[BoardGameGeekLookup] Unable to parse text {request.content!r} as XML: {e}")
 			message.reply("I don't know how to read the data returned by BoardGameGeek, which is weird because I'm coded very well. Try again in a little while, see if it works then?")
 			return
 
