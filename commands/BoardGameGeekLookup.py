@@ -46,7 +46,7 @@ class Command(CommandTemplate):
 
 		#Now query the API to get info on this game
 		try:
-			request = requests.get("https://www.boardgamegeek.com/xmlapi2/thing", params={'id': gameId}, timeout=10.0)
+			request = requests.get("https://boardgamegeek.com/xmlapi2/thing", params={'id': gameId}, timeout=10.0)
 		except requests.exceptions.Timeout:
 			message.reply("I know you need some patience for boardgames, but not for info about boardgames. BoardGameGeek took too long to respond, sorry")
 			return
