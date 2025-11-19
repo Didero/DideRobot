@@ -4,7 +4,9 @@ import xml.etree.ElementTree as ElementTree
 import requests
 from bs4 import BeautifulSoup
 
+import GlobalStore
 from commands.CommandTemplate import CommandTemplate
+from CustomExceptions import CommandException
 from IrcMessage import IrcMessage
 from StringWithSuffix import StringWithSuffix
 from util import IrcFormattingUtil, StringUtil
@@ -23,6 +25,11 @@ class Command(CommandTemplate):
 		if message.messagePartsLength == 0:
 			message.reply("There's far too many boardgames to just pick a random one! Please provide a search query")
 			return
+
+		apiKey = GlobalStore.commandhandler.getApiKey('boardgamegeek')
+		if not apiKey:
+			self.logError("[BoardGameGeekLookup] Missing key for API")
+			raise CommandException("While I've played a lot of boardgames, I don't know all of them. And to look them up on BoardGameGeek, I need an API key, which seems to be missing. Sorry!", False)
 
 		#Since the API's search is a bit crap and doesn't sort properly, scrape the web search page
 		try:
@@ -46,7 +53,7 @@ class Command(CommandTemplate):
 
 		#Now query the API to get info on this game
 		try:
-			request = requests.get("https://boardgamegeek.com/xmlapi2/thing", params={'id': gameId}, timeout=10.0)
+			request = requests.get("https://boardgamegeek.com/xmlapi2/thing", headers={"Authorization": f"Bearer {apiKey}"}, params={'id': gameId}, timeout=10.0)
 		except requests.exceptions.Timeout:
 			message.reply("I know you need some patience for boardgames, but not for info about boardgames. BoardGameGeek took too long to respond, sorry")
 			return
