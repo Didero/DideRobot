@@ -188,7 +188,8 @@ class Command(CommandTemplate):
 			outputParts.append(card['rarity'])
 			if 'flavorText' in card:
 				outputParts.append(IrcFormattingUtil.makeTextColoured(card['flavorText'], IrcFormattingUtil.Colours.GREY).replace('\n', ' '))
-			outputParts.append(setsData[card['setCode']]['name'])
+			setData = setsData[card["setCode"]]
+			outputParts.append(f"Set {card['setCode']} \"{setData['name']}\" ({setData['releaseDate']})")
 			outputParts.append(f"from {card['story']}")
 			if 'enchantedId' in card:
 				outputParts.append("has Enchanted version")
