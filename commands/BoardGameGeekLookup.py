@@ -30,26 +30,35 @@ class Command(CommandTemplate):
 		if not apiKey:
 			self.logError("[BoardGameGeekLookup] Missing key for API")
 			raise CommandException("While I've played a lot of boardgames, I don't know all of them. And to look them up on BoardGameGeek, I need an API key, which seems to be missing. Sorry!", False)
+		headers = {"Authorization": f"Bearer {apiKey}"}
 
-		#Since the API's search is a bit crap and doesn't sort properly, scrape the web search page
+		# Search the API to get a game ID
 		try:
-			request = requests.get("https://boardgamegeek.com/geeksearch.php", params={"action": "search", "objecttype": "boardgame", "q": message.message}, timeout=10.0)
+			searchResponse = requests.get("https://boardgamegeek.com/xmlapi2/search", headers=headers, params={"query": message.message}, timeout=10.0)
 		except requests.exceptions.Timeout:
 			message.reply("Either your search query was too extensive for BoardGameGeek, or they're distracted by a boardgame. Either way, they took too long to respond, sorry")
 			return
-		if request.status_code != 200:
+		if searchResponse.status_code != 200:
 			message.reply("Something seems to have gone wrong. At BoardGameGeek, I mean, because I never make mistaks. Try again in a little while")
 			return
-		page = BeautifulSoup(request.content, "html.parser")
-
-		#Get the first result row
-		row = page.find(class_="collection_objectname")
-		if row is None:
+		searchXml = ElementTree.fromstring(searchResponse.content)
+		if len(searchXml) == 0:
 			message.reply("BoardGameGeek doesn't think a game called '{}' exists. Maybe you made a typo?".format(message.message))
 			return
-		#Then get the link to the board game page from that, to get the game ID from the URL
-		# Format of the url is '/boardgame/[ID]/[NAME]'
-		gameId = row.find('a')['href'].split('/', 3)[2]
+		elif len(searchXml) == 1:
+			# One result, use that
+			gameId = searchXml[0].attrib["id"]
+		else:
+			nameToFind = message.message.lower()
+			# Go through all results trying to find an exact match, otherwise use the first result
+			# Do this instead of adding 'exact=1' to the search query, so we can fall back on something in case no exact match is found
+			for item in searchXml:
+				if item[0].attrib["value"].lower() == nameToFind:
+					gameId = item.attrib["id"]
+					break
+			else:
+				# If no exact match was found, just use the first item from the search results
+				gameId = searchXml[0].attrib["id"]
 
 		#Now query the API to get info on this game
 		try:
