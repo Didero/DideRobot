@@ -83,7 +83,7 @@ class Command(CommandTemplate):
 			if message.messagePartsLength == 2:
 				return message.reply("There seems to be a missing parameter. The format of this command is '{} [field name] [value]".format(param))
 
-			newSettingValue = " ".join(message.messageParts[2:])
+			newSettingValue: str = " ".join(message.messageParts[2:])
 
 			if param == 'set' or param == 'setlist':
 				if param == 'set' and settingsKey in settings and isinstance(settings[settingsKey], list):
@@ -93,14 +93,22 @@ class Command(CommandTemplate):
 				if param == 'setlist':
 					newSettingValue = re.split(r"; ?", newSettingValue)
 				#Make sure that keys that should be a number are actually stored as a number
-				if settingsKey in settings and isinstance(settings[settingsKey], (int, float)):
-					try:
-						if isinstance(settings[settingsKey], int):
-							newSettingValue = int(newSettingValue)
+				if settingsKey in settings:
+					if isinstance(settings[settingsKey], bool):
+						if newSettingValue.lower() == "true":
+							newSettingValue = True
+						elif newSettingValue.lower() == "false":
+							newSettingValue = False
 						else:
-							newSettingValue = float(newSettingValue)
-					except ValueError:
-						return message.reply("'{}' is not a valid number, while the '{}' setting requires a numerical value".format(newSettingValue, settingsKey))
+							return message.reply(f"The key '{settingsKey}' is a boolean setting, but the provided value {newSettingValue!r} could not be parsed as a boolean. Please only use 'true' or 'false'")
+					elif isinstance(settings[settingsKey], (int, float)):
+						try:
+							if isinstance(settings[settingsKey], int):
+								newSettingValue = int(newSettingValue)
+							else:
+								newSettingValue = float(newSettingValue)
+						except ValueError:
+							return message.reply("'{}' is not a valid number, while the '{}' setting requires a numerical value".format(newSettingValue, settingsKey))
 				oldValue = settings.get(settingsKey, None)
 				settings[settingsKey] = newSettingValue
 				try:
