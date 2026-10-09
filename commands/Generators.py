@@ -469,7 +469,7 @@ class Command(CommandTemplate):
 		"""
 		parsedSeedParts = []
 		#A lot of possible seed part variables depend on the date, so retrieve that now
-		now = datetime.datetime.utcnow()
+		now = datetime.datetime.now(datetime.UTC)
 		dateRelatedSeedParts = {'year': "%y", 'month': "%m", 'week': "%W", 'date': "%y-%m-%d", 'dayofyear': "%j", 'hour': "%H"}
 		variableRelatedSeedParts = {'server': '_sourceserver', 'channel': '_sourcechannel', 'nick': '_sourcenick'}
 		for seedPart in seedParts:
@@ -1642,7 +1642,7 @@ class GrammarCommands(object):
 		<$lowercase|stringToMakeLowercase>
 		Returns the provided string with every letter made lowercase
 		"""
-		return GrammarCommands._startFormattingBlock(grammarParseState, argumentList[0], string.lower)
+		return GrammarCommands._startFormattingBlock(grammarParseState, argumentList[0], lambda s: s.lower())
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
@@ -1651,7 +1651,7 @@ class GrammarCommands(object):
 		<$uppercase|stringToMakeUppercase>
 		Returns the provided string with every letter made uppercase
 		"""
-		return GrammarCommands._startFormattingBlock(grammarParseState, argumentList[0], string.upper)
+		return GrammarCommands._startFormattingBlock(grammarParseState, argumentList[0], lambda s: s.upper())
 
 	@staticmethod
 	@validateArguments(argumentCount=1)
