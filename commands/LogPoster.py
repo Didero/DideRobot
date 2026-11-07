@@ -10,7 +10,7 @@ from CustomExceptions import WebRequestException
 class Command(CommandTemplate):
 	triggers = ['log']
 	helptext = "Posts the log of the given day. If you don't provide any parameters, it posts today's log." \
-			   " You can also provide a day in 'yyyy-mm-dd' format, or for instance '-1' to get yesterday's log"
+			   " You can also provide a day in 'yyyy-mm-dd' format, or a negative amount to go that many days back (for instance '-1' to get yesterday's log)"
 	
 	def execute(self, message):
 		"""
@@ -59,11 +59,11 @@ class Command(CommandTemplate):
 						for line in logfile:
 							logtext += line
 					try:
-						pasteLink = WebUtil.uploadText(logtext, "Log for {} from {}".format(message.source, date.strftime("%Y-%m-%d")), 600)
+						pasteLink = WebUtil.uploadText(logtext, "Log for {} from {}".format(message.source, date.strftime("%Y-%m-%d")))
 					except WebRequestException as wre:
 						self.logError("[LogPoster] Uploading log failed: {}".format(wre))
 						replytext = "Something went wrong with uploading the log, sorry. Either try again in a bit, or tell my owner(s) so they can try to fix it"
 					else:
-						replytext = "Log uploaded to Paste.ee: {} (Expires in 10 minutes)".format(pasteLink)
+						replytext = "Log uploaded: {} (Expires in 10 minutes)".format(pasteLink)
 
 		message.reply(replytext)

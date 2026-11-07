@@ -271,7 +271,7 @@ class Command(CommandTemplate):
 					entry = entries.pop(0)
 					formattedEntries.append(self.formatEntry(entry, True))
 				try:
-					pasteLink = WebUtil.uploadText("\n".join(formattedEntries), "Entries for the '{}' list".format(listname), 600)
+					pasteLink = WebUtil.uploadText("\n".join(formattedEntries), "Entries for the '{}' list".format(listname))
 				except WebRequestException as wre:
 					self.logError("[List] An error occurred while trying to upload '{}' list entries (Search query is '{}': {}".format(listname, searchQuery, wre))
 					return message.reply("Uh oh, something went wrong with uploading the '{}' list entries. Try again in a bit, and if it keeps happening, please tell my owner(s)".format(listname))
